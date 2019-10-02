@@ -15,6 +15,9 @@ run frombrnch tobrnch = do
   fedpkg "switch-branch" [tobrnch]
   git_ "diff" [frombrnch]
   git_ "merge" [frombrnch]
+  -- FIXME condition on tty
+  putStr "Press Enter to push:"
+  _ <- getLine
   fedpkg "push" []
   fedpkg "build" []
 
