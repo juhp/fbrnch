@@ -14,36 +14,17 @@ category:            Utility
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.4
+tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5
 
 source-repository head
   type:                git
   location:            https://github.com/juhp/fedbrnch.git
 
-library
-  hs-source-dirs:      src
-  exposed-modules:     Fedbrnch
-                       Prelude
-
-  build-depends:       base-noprelude >= 4.8.0.2 && < 4.13
-                     , basic-prelude
-
-  ghc-options:         -Wall
-                       -Wincomplete-uni-patterns
-                       -Wincomplete-record-updates
-                       -Wcompat
-                       -Widentities
-                       
-
-  default-language:    Haskell2010
-  default-extensions:  OverloadedStrings
-
 executable fedbrnch
   hs-source-dirs:      app
   main-is:             Main.hs
 
-  build-depends:       base-noprelude >= 4.8.0.2 && < 4.13
-                     , fedbrnch
+  build-depends:       base < 5
                      , basic-prelude
 
   ghc-options:         -Wall
