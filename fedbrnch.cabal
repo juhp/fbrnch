@@ -14,28 +14,22 @@ category:            Utility
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5
+tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
+                     GHC == 8.6.5
 
 source-repository head
   type:                git
   location:            https://github.com/juhp/fedbrnch.git
 
 executable fedbrnch
-  hs-source-dirs:      app
   main-is:             Main.hs
 
   build-depends:       base < 5
                      , basic-prelude
+                     , simple-cmd-args
+                     , simple-cmd
 
   ghc-options:         -Wall
-                       -threaded
-                       -rtsopts
-                       -with-rtsopts=-N
-                       -Wincomplete-uni-patterns
-                       -Wincomplete-record-updates
-                       -Wcompat
-                       -Widentities
-                       
 
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
