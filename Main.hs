@@ -1,8 +1,9 @@
-module Main (main) where
-
 import SimpleCmd
 import SimpleCmd.Git
 import SimpleCmdArgs
+
+import Control.Monad (when)
+import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
 
 main :: IO ()
 main =
@@ -13,13 +14,18 @@ main =
 run :: String -> String -> IO ()
 run frombrnch tobrnch = do
   fedpkg "switch-branch" [tobrnch]
-  git_ "diff" [frombrnch]
+  git_ "diff" [tobrnch, frombrnch]
   git_ "merge" [frombrnch]
-  -- FIXME condition on tty
-  putStr "Press Enter to push:"
-  _ <- getLine
+  tty <- hIsTerminalDevice stdin
+  when tty $ do
+    hSetBuffering stdout NoBuffering
+    putStr "Press Enter to push"
+    getLine >> return ()
   fedpkg "push" []
   fedpkg "build" []
+  --waitFor build
+  --cmd_ "bodhi" ["updates", "new", build]
+  --when override $ cmd_ "bodhi" ["overrides", "save", build]
 
 fedpkg :: String -> [String] -> IO ()
 fedpkg c args =
