@@ -26,8 +26,15 @@ executable fedbrnch
 
   build-depends:       base < 5
                      , basic-prelude
-                     , simple-cmd-args
+                     , bugzilla >= 0.2.1.2
+                     , config-ini
+                     , directory
+                     , filepath
+                     , http-conduit
+                     , simple-cmd-args >= 0.1.4
                      , simple-cmd
+                     , text
+                     , xdg-basedir
 
   ghc-options:         -Wall
 
