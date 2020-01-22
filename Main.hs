@@ -55,9 +55,12 @@ build mprev (br:brs) = do
   --when override $ cmd_ "bodhi" ["overrides", "save", build]
   build mprev brs
 
+brc :: T.Text
+brc = "bugzilla.redhat.com"
+
 bugsSession :: String -> IO ([BugId],BugzillaSession)
 bugsSession pkg = do
-  ctx <- newBugzillaContext "bugzilla.redhat.com"
+  ctx <- newBugzillaContext brc
   token <- getBzToken
   let session = LoginSession ctx token
       query = SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
@@ -73,7 +76,8 @@ requestRepo pkg = do
   case bugs of
     [] -> error' $ "no review bug found for " ++ pkg
     [pid] -> do
-      print pid
+      T.putStrLn $ brc <> "/" <> intAsText pid
+      -- show comments?
       url <- T.pack <$> cmd "fedpkg" ["request-repo", pkg, show pid]
       T.putStrLn url
       let comment = T.pack "Thank you for the review\n\n" <> url
@@ -104,7 +108,7 @@ importPkg pkg = do
 --   where
 --     rcParser :: IniParser BzConfig
 --     rcParser =
---       section "bugzilla.redhat.com" $ do
+--       section brc $ do
 --         user <- fieldOf "user" string
 --         return $ BzConfig user
 
@@ -123,7 +127,7 @@ getBzToken = do
   where
     rcParser :: IniParser BzTokenConf
     rcParser =
-      section "bugzilla.redhat.com" $ do
+      section brc $ do
         token <- fieldOf "token" string
         return $ BzTokenConf token
 
