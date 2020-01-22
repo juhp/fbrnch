@@ -76,10 +76,12 @@ requestRepo pkg = do
       print pid
       url <- T.pack <$> cmd "fedpkg" ["request-repo", pkg, show pid]
       T.putStrLn url
-      let req = setRequestMethod "POST" $ newBzRequest session ["bug", intAsText pid, "comment"] [("comment", Just (T.pack "Thank you for the review\n\n" <> url))]
-      print req
-      resp <- httpLbs req
-      print resp
+      let comment = T.pack "Thank you for the review\n\n" <> url
+          req = setRequestMethod "POST" $
+                setRequestCheckStatus $
+                newBzRequest session ["bug", intAsText pid, "comment"] [("comment", Just comment)]
+      void $ httpNoBody req
+      putStrLn "comment posted"
     _ -> error' "more than one review bug found!"
 
 importPkg :: String -> IO ()
