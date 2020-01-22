@@ -2,23 +2,27 @@ import SimpleCmd
 import SimpleCmd.Git
 import SimpleCmdArgs
 
-import Control.Monad (void, when)
+import Control.Monad
 import Data.Ini.Config
+import Data.List
 import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Network.HTTP.Simple
+import Network.URI (isURI)
 import System.Directory
 --import System.Environment
 import System.Environment.XDG.BaseDir
---import System.FilePath
+import System.FilePath
 import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
 
 import Web.Bugzilla
 import Web.Bugzilla.Search
 
 main :: IO ()
-main =
+main = do
+  tty <- hIsTerminalDevice stdin
+  when tty $ hSetBuffering stdout NoBuffering
   simpleCmdArgs Nothing "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
@@ -43,10 +47,7 @@ build mprev (br:brs) = do
     git_ "diff" [br, prev]
     git_ "merge" [prev]
   tty <- hIsTerminalDevice stdin
-  when tty $ do
-    hSetBuffering stdout NoBuffering
-    putStr "Press Enter to push"
-    void getLine
+  when tty $ prompt "push"
   fedpkg "push" []
   -- check for existing build
   fedpkg "build" []
@@ -58,8 +59,8 @@ build mprev (br:brs) = do
 brc :: T.Text
 brc = "bugzilla.redhat.com"
 
-bugsSession :: String -> IO ([BugId],BugzillaSession)
-bugsSession pkg = do
+bugSession :: String -> IO (BugId,BugzillaSession)
+bugSession pkg = do
   ctx <- newBugzillaContext brc
   token <- getBzToken
   let session = LoginSession ctx token
@@ -68,34 +69,62 @@ bugsSession pkg = do
               StatusField ./=. "CLOSED" .&&.
               FlagsField `contains` "fedora-review+"
   bugs <- searchBugs' session query
-  return (bugs, session)
+  case bugs of
+    [] -> error $ "No review bug found for " ++ pkg
+    [bug] -> return (bug, session)
+    _ -> error' "more than one review bug found!"
 
 requestRepo :: String -> IO ()
 requestRepo pkg = do
-  (bugs,session) <- bugsSession pkg
-  case bugs of
-    [] -> error' $ "no review bug found for " ++ pkg
-    [pid] -> do
-      T.putStrLn $ brc <> "/" <> intAsText pid
-      -- show comments?
-      url <- T.pack <$> cmd "fedpkg" ["request-repo", pkg, show pid]
-      T.putStrLn url
-      let comment = T.pack "Thank you for the review\n\n" <> url
-          req = setRequestMethod "POST" $
-                setRequestCheckStatus $
-                newBzRequest session ["bug", intAsText pid, "comment"] [("comment", Just comment)]
-      void $ httpNoBody req
-      putStrLn "comment posted"
-    _ -> error' "more than one review bug found!"
+  (bid,session) <- bugSession pkg
+  T.putStrLn $ brc <> "/" <> intAsText bid
+  -- show comments?
+  url <- T.pack <$> cmd "fedpkg" ["request-repo", pkg, show bid]
+  T.putStrLn url
+  let comment = T.pack "Thank you for the review\n\n" <> url
+      req = setRequestMethod "POST" $
+            setRequestCheckStatus $
+            newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just comment)]
+  void $ httpNoBody req
+  putStrLn "comment posted"
+
+prompt :: String -> IO ()
+prompt s = do
+  putStr $ "Press Enter to " ++ s
+  void getLine
 
 importPkg :: String -> IO ()
 importPkg pkg = do
-  (bugs,session) <- bugsSession pkg
-  mapM_ (showComments session) bugs
+  dir <- getCurrentDirectory
+  when (dir /= pkg) $ do
+    direxists <- doesDirectoryExist pkg
+    unless direxists $ fedpkg "clone" [pkg]
+    setCurrentDirectory pkg
+  (bid,session) <- bugSession pkg
+  comments <- getComments session bid
+  putStrLn ""
+  T.putStrLn $ "https://" <> brc <> "/" <> intAsText bid
+  mapM_ showComment comments
+  prompt "continue"
+  let srpms = concatMap findSRPMs comments
+  when (null srpms) $ error "No srpm urls found!"
+  mapM_ T.putStrLn srpms
+  let srpm = (head . filter isURI . filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms
+  let srpmfile = takeFileName srpm
+  prompt $ "import " ++ srpmfile
+  cmd_ "curl" ["-O", srpm]
+  fedpkg "import" [srpmfile]
+  git_ "commit" ["import #" ++ show bid]
   where
-    showComments session bid = do
-      cmts <- getComments session bid
-      mapM_ T.putStrLn $ concatMap (filter (\ l -> "https://" `T.isInfixOf` l && not (any (`T.isPrefixOf` T.toLower l) ["srpm url:", "srpm:", "new srpm:", "updated srpm:"]) && "src.rpm" `T.isSuffixOf` l) . T.lines . commentText) cmts
+    findSRPMs :: Comment -> [T.Text]
+    findSRPMs =
+      filter (\ l -> "https://" `T.isInfixOf` l && any (`T.isPrefixOf` T.toLower l) ["srpm url:", "srpm:", "new srpm:", "updated srpm:"] && ".src.rpm" `T.isSuffixOf` l) . T.lines . commentText
+
+showComment :: Comment -> IO ()
+showComment cmt = do
+  T.putStr $ "(Comment " <> intAsText (commentCount cmt) <> ") <" <> commentCreator cmt <> "> " <> (T.pack . show) (commentCreationTime cmt)
+            <> "\n" <> (T.unlines . map ("  " <>) . T.lines $ commentText cmt)
+  putStrLn ""
 
 -- newtype BzConfig = BzConfig {rcUserEmail :: UserEmail}
 --   deriving (Eq, Show)

@@ -31,6 +31,7 @@ executable fedbrnch
                      , directory
                      , filepath
                      , http-conduit
+                     , network-uri
                      , simple-cmd-args >= 0.1.4
                      , simple-cmd
                      , text
