@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 import SimpleCmd
 import SimpleCmd.Git
 import SimpleCmdArgs
@@ -38,37 +40,89 @@ fedpkg :: String -> [String] -> IO ()
 fedpkg c args =
   cmd_ "fedpkg" (c:args)
 
+#if (defined(MIN_VERSION_simple_cmd) && MIN_VERSION_simple_cmd(0,2,2))
+#else
+-- | 'gitBool c args' runs git command and return result
+gitBool :: String -- ^ git command
+        -> [String] -- ^ arguments
+        -> IO Bool -- ^ result
+gitBool c args =
+  cmdBool "git" (c:args)
+#endif
+
 build :: Maybe String -> [String] -> IO ()
 build _ [] = return ()
 build mprev (br:brs) = do
-  fedpkg "switch-branch" [br]
-  let prev = fromMaybe "master" mprev
-  when (br /= "master") $ do
-    git_ "diff" [br, prev]
-    git_ "merge" [prev]
-  tty <- hIsTerminalDevice stdin
-  when tty $ prompt "push"
-  fedpkg "push" []
-  -- check for existing build
-  fedpkg "build" []
-  --waitFor build
-  --cmd_ "bodhi" ["updates", "new", build]
-  --when override $ cmd_ "bodhi" ["overrides", "save", build]
-  build mprev brs
+  -- assertFedoraBranchName
+  checkWorkingDirClean
+  switched <- cmdBool "fedpkg" ["switch-branch", "--fetch", br]
+  if not switched && br /= "master"
+    then do
+    -- "refs/remotes/origin/" ?
+    branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/heads/" ++ br]
+    if branched then error' $ "Could not switch to branch " ++ br
+      else do
+      putStrLn ("requesting branch " ++ br)
+      fedpkg "request-branch" [br]
+    else do
+    let prev = fromMaybe "master" mprev
+    when (br /= "master") $ do
+      git_ "diff" [br, prev]
+      git_ "merge" [prev]
+    tty <- hIsTerminalDevice stdin
+    when tty $ prompt "push"
+    fedpkg "push" []
+    -- check for existing koji build
+    when False $ -- Option to skip mock build
+      fedpkg "mockbuild" []
+    fedpkg "build" []
+    --waitForbuild
+    (mbid,session) <- bugSessionPkg
+    if br == "master"
+      then
+      forM_ mbid $ postBuild session
+      else do
+      let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
+      nvr <- cmd "fedpkg" ["verrel"]
+      cmd_ "bodhi" (["updates", "new", "--notes", "update"] ++ bugs ++ [nvr])
+      -- override option
+      when False $ cmd_ "bodhi" ["overrides", "save", nvr]
+    build mprev brs
+  where
+    postBuild session bid = do
+      nvr <- T.pack <$> cmd "fedpkg" ["verrel"]
+      let req = setRequestMethod "POST" $
+                setRequestCheckStatus $
+                newBzRequest session ["bug", intAsText bid] [("cf_fixed_in", Just nvr), ("status", Just "MODIFIED")]
+      void $ httpNoBody req
+      putStrLn $ "build posted to review bug " ++ show bid
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
 
-bugSession :: String -> IO (BugId,BugzillaSession)
-bugSession pkg = do
+bugSessionPkg :: IO (Maybe BugId,BugzillaSession)
+bugSessionPkg = do
+  pkg <- getCurrentDirectory
+  (bids,session) <- bugsSession pkg
+  case bids of
+    [bid] -> return (Just bid, session)
+    _ -> return (Nothing, session)
+
+bugsSession :: String -> IO ([BugId],BugzillaSession)
+bugsSession pkg = do
   ctx <- newBugzillaContext brc
   token <- getBzToken
   let session = LoginSession ctx token
       query = SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
-              ComponentField .==. ["Package Review"] .&&.
+              ComponentField .==. "Package Review" .&&.
               StatusField ./=. "CLOSED" .&&.
               FlagsField `contains` "fedora-review+"
   bugs <- searchBugs' session query
+  return (bugs, session)
+
+bugSession :: String -> IO (BugId,BugzillaSession)
+bugSession pkg = do
+  (bugs,session) <- bugsSession pkg
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
     [bug] -> return (bug, session)
@@ -93,6 +147,11 @@ prompt s = do
   putStr $ "Press Enter to " ++ s
   void getLine
 
+checkWorkingDirClean :: IO ()
+checkWorkingDirClean = do
+  clean <- gitBool "diff-index" ["--quiet", "HEAD"]
+  unless clean $ error' "Working dir is not clean"
+
 importPkg :: String -> IO ()
 importPkg pkg = do
   dir <- getCurrentDirectory
@@ -100,21 +159,26 @@ importPkg pkg = do
     direxists <- doesDirectoryExist pkg
     unless direxists $ fedpkg "clone" [pkg]
     setCurrentDirectory pkg
+    when direxists checkWorkingDirClean
+  when (dir == pkg) checkWorkingDirClean
   (bid,session) <- bugSession pkg
   comments <- getComments session bid
   putStrLn ""
   T.putStrLn $ "https://" <> brc <> "/" <> intAsText bid
   mapM_ showComment comments
   prompt "continue"
-  let srpms = concatMap findSRPMs comments
+  let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
   when (null srpms) $ error "No srpm urls found!"
   mapM_ T.putStrLn srpms
   let srpm = (head . filter isURI . filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms
   let srpmfile = takeFileName srpm
   prompt $ "import " ++ srpmfile
-  cmd_ "curl" ["-O", srpm]
+  havesrpm <- doesFileExist srpmfile
+  unless havesrpm $
+    cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
+  -- check for krb5 ticket
   fedpkg "import" [srpmfile]
-  git_ "commit" ["import #" ++ show bid]
+  git_ "commit" ["--message", "import #" ++ show bid]
   where
     findSRPMs :: Comment -> [T.Text]
     findSRPMs =
@@ -122,8 +186,9 @@ importPkg pkg = do
 
 showComment :: Comment -> IO ()
 showComment cmt = do
+  -- comment0 from fedora-create-review has leading newline
   T.putStr $ "(Comment " <> intAsText (commentCount cmt) <> ") <" <> commentCreator cmt <> "> " <> (T.pack . show) (commentCreationTime cmt)
-            <> "\n" <> (T.unlines . map ("  " <>) . T.lines $ commentText cmt)
+            <> "\n\n" <> (T.unlines . map ("  " <>) . dropDuplicates . removeLeadingNewline . T.lines $ commentText cmt)
   putStrLn ""
 
 -- newtype BzConfig = BzConfig {rcUserEmail :: UserEmail}
@@ -169,3 +234,15 @@ readIniConfig inifile iniparser record = do
     let config = parseIniFile ini iniparser
     return $ either error (Just . record) config
 
+-- uniq for lists
+dropDuplicates :: Eq a => [a] -> [a]
+dropDuplicates (x:xs) =
+  let ys = dropDuplicates xs in
+    case ys of
+      (y:_) | x == y -> ys
+      _ -> x:ys
+dropDuplicates _ = []
+
+removeLeadingNewline :: [T.Text] -> [T.Text]
+removeLeadingNewline ("":ts) = ts
+removeLeadingNewline ts = ts
