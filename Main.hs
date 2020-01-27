@@ -6,12 +6,14 @@ import SimpleCmdArgs
 
 import Control.Monad
 import Data.Ini.Config
+import Data.Char (isDigit)
 import Data.List
 import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Network.HTTP.Simple
 import Network.URI (isURI)
+import Options.Applicative (maybeReader)
 import System.Directory
 --import System.Environment
 import System.Environment.XDG.BaseDir
@@ -21,6 +23,27 @@ import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, std
 import Web.Bugzilla
 import Web.Bugzilla.Search
 
+data Branch = Fedora Int | Master
+  deriving (Eq, Ord)
+
+readBranch :: String -> Maybe Branch
+readBranch "master" = Just Master
+readBranch ('f':ns) | all isDigit ns && ((read ns :: Int) `elem` [30,31]) = Just $ Fedora (read ns)
+readBranch unknown = error' $ "Unknown branch " ++ unknown
+
+instance Show Branch where
+  show Master = "master"
+  show (Fedora n) = "f" ++ show n
+--  show (EPEL n) = (if n <= 6 then "el" else "epel") ++ show n
+
+latestBranch :: Branch
+latestBranch = Fedora 31
+
+newerBranch :: Branch -> Branch
+newerBranch Master = Master
+newerBranch (Fedora n) | Fedora n >= latestBranch = Master
+newerBranch (Fedora n) = Fedora (n+1)
+
 main :: IO ()
 main = do
   tty <- hIsTerminalDevice stdin
@@ -29,12 +52,15 @@ main = do
     "This tool helps with updating and building package branches" $
     subcommands
     [ Subcommand "build" "Build for branches" $
-      build Nothing <$> some (strArg "BRANCH...")
+      build Nothing <$> some branchArg
     , Subcommand "request" "Request dist git repo for new package" $
       requestRepo <$> strArg "NEWPACKAGE"
     , Subcommand "import" "Import new package via bugzilla" $
       importPkg <$> strArg "NEWPACKAGE"
     ]
+  where
+    branchArg :: Parser Branch
+    branchArg = argumentWith (maybeReader readBranch) "BRANCH.."
 
 fedpkg :: String -> [String] -> IO ()
 fedpkg c args =
@@ -50,25 +76,25 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
-build :: Maybe String -> [String] -> IO ()
+build :: Maybe Branch -> [Branch] -> IO ()
 build _ [] = return ()
 build mprev (br:brs) = do
-  -- assertFedoraBranchName
   checkWorkingDirClean
-  switched <- cmdBool "fedpkg" ["switch-branch", "--fetch", br]
-  if not switched && br /= "master"
+  switched <- cmdBool "fedpkg" ["switch-branch", "--fetch", show br]
+  if not switched && br /= Master
     then do
     -- "refs/remotes/origin/" ?
-    branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/heads/" ++ br]
-    if branched then error' $ "Could not switch to branch " ++ br
+    branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/heads/" ++ show br]
+    if branched then error' $ "Could not switch to branch " ++ show br
       else do
-      putStrLn ("requesting branch " ++ br)
-      fedpkg "request-branch" [br]
+      putStrLn ("requesting branch " ++ show br)
+      fedpkg "request-branch" [show br]
     else do
-    let prev = fromMaybe "master" mprev
-    when (br /= "master") $ do
-      git_ "diff" [br, prev]
-      git_ "merge" [prev]
+    let prev = fromMaybe (newerBranch br) mprev
+    -- FIXME check for is fedora
+    when (br /= Master) $ do
+      git_ "diff" [show br, show prev]
+      git_ "merge" [show prev]
     tty <- hIsTerminalDevice stdin
     when tty $ prompt "push"
     fedpkg "push" []
@@ -78,7 +104,7 @@ build mprev (br:brs) = do
     fedpkg "build" []
     --waitForbuild
     (mbid,session) <- bugSessionPkg
-    if br == "master"
+    if br == Master
       then
       forM_ mbid $ postBuild session
       else do
@@ -87,7 +113,7 @@ build mprev (br:brs) = do
       cmd_ "bodhi" (["updates", "new", "--notes", "update"] ++ bugs ++ [nvr])
       -- override option
       when False $ cmd_ "bodhi" ["overrides", "save", nvr]
-    build mprev brs
+    build (Just br) brs
   where
     postBuild session bid = do
       nvr <- T.pack <$> cmd "fedpkg" ["verrel"]

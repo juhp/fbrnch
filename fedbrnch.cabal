@@ -32,6 +32,7 @@ executable fedbrnch
                      , filepath
                      , http-conduit
                      , network-uri
+                     , optparse-applicative
                      , simple-cmd-args >= 0.1.4
                      , simple-cmd
                      , text
