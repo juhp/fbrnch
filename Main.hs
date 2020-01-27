@@ -91,11 +91,11 @@ build mprev (br:brs) = do
       fedpkg "request-branch" [show br]
     else do
     let prev = fromMaybe (newerBranch br) mprev
-    -- FIXME check for is fedora
     when (br /= Master) $ do
       git_ "diff" [show br, show prev]
       git_ "merge" [show prev]
     tty <- hIsTerminalDevice stdin
+    git_ "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
     when tty $ prompt "push"
     fedpkg "push" []
     -- check for existing koji build
