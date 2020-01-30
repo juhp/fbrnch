@@ -48,6 +48,8 @@ newerBranch Master = Master
 newerBranch (Fedora n) | Fedora n >= latestBranch = Master
 newerBranch (Fedora n) = Fedora (n+1)
 
+type Package = String
+
 main :: IO ()
 main = do
   tty <- hIsTerminalDevice stdin
@@ -57,8 +59,10 @@ main = do
     subcommands
     [ Subcommand "approved" "List approved reviews" $
       pure approved
-    , Subcommand "build" "Build for branches" $
-      build Nothing <$> some branchArg
+    , Subcommand "build-branch" "Build branch(s) of package" $
+      buildBranch Nothing <$> some branchArg
+    , Subcommand "build" "Build package(s)" $
+      build <$> branchOpt <*> some pkgArg
     , Subcommand "request" "Request dist git repo for new package" $
       requestRepo <$> strArg "NEWPACKAGE"
     , Subcommand "review" "Package review for package" $
@@ -69,6 +73,11 @@ main = do
   where
     branchArg :: Parser Branch
     branchArg = argumentWith (maybeReader readBranch) "BRANCH.."
+
+    branchOpt = optionWith (maybeReader readBranch) 'b' "branch" "BRANCH" "branch"
+
+    pkgArg :: Parser Package
+    pkgArg = strArg "PACKAGE.."
 
 fedpkg :: String -> [String] -> IO ()
 fedpkg c args =
@@ -84,9 +93,15 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
-build :: Maybe Branch -> [Branch] -> IO ()
+build :: Branch -> [Package] -> IO ()
 build _ [] = return ()
-build mprev (br:brs) = do
+build br (pkg:pkgs) = do
+  withCurrentDirectory pkg $ buildBranch Nothing [br]
+  build br pkgs
+
+buildBranch :: Maybe Branch -> [Branch] -> IO ()
+buildBranch _ [] = return ()
+buildBranch mprev (br:brs) = do
   checkWorkingDirClean
   git_ "pull" []
   branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/heads/" ++ show br]
@@ -122,7 +137,7 @@ build mprev (br:brs) = do
       cmd_ "bodhi" (["updates", "new", "--type", "newpackage", "--notes", "update"] ++ bugs ++ [nvr])
       -- override option
       when False $ cmd_ "bodhi" ["overrides", "save", nvr]
-    build (Just br) brs
+    buildBranch (Just br) brs
   where
     postBuild session bid = do
       nvr <- T.pack <$> cmd "fedpkg" ["verrel"]
