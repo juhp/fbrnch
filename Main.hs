@@ -55,6 +55,8 @@ main = do
       build Nothing <$> some branchArg
     , Subcommand "request" "Request dist git repo for new package" $
       requestRepo <$> strArg "NEWPACKAGE"
+    , Subcommand "review" "Package review for package" $
+      review <$> strArg "PACKAGE"
     , Subcommand "import" "Import new package via bugzilla" $
       importPkg <$> strArg "NEWPACKAGE"
     ]
@@ -294,3 +296,8 @@ dropDuplicates _ = []
 removeLeadingNewline :: [T.Text] -> [T.Text]
 removeLeadingNewline ("":ts) = ts
 removeLeadingNewline ts = ts
+
+review :: String -> IO ()
+review pkg = do
+  (bugs, _) <- bugsSession False pkg
+  mapM_ (T.putStrLn . (("https://" <> brc <> "/show_bug.cgi?id=") <>) . intAsText) bugs
