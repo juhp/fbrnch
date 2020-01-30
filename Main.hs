@@ -363,3 +363,12 @@ review pkg = do
 putBug :: BugId -> IO ()
 putBug =
   T.putStrLn . (("https://" <> brc <> "/show_bug.cgi?id=") <>) . intAsText
+
+#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
+#else
+withCurrentDirectory :: FilePath -> IO a -> IO a
+withCurrentDirectory dir action =
+  bracket getCurrentDirectory setCurrentDirectory $ \ _ -> do
+    setCurrentDirectory dir
+    action
+#endif
