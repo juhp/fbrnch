@@ -108,7 +108,7 @@ buildBranch mprev (br:brs) = do
   if not branched then
     when (br /= Master) $ do
     putStrLn $ "requesting branch " ++ show br
-    -- FIXME check if request exists
+    checkNoBranchRequest
     url <- cmd "fedpkg" ["request-branch", show br]
     putStrLn url
     postBranchReq url
@@ -158,12 +158,22 @@ buildBranch mprev (br:brs) = do
           putStrLn $ "branch-request posted to review bug " ++ show bid
         Nothing -> putStrLn "no review bug found"
 
+    checkNoBranchRequest = do
+      current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
+      pkg <- getPackageDir
+      let reqs = filter (("New Branch for " ++ show br ++ "\"rpms/" ++ pkg ++ "\"") `isPrefixOf`) current
+      unless (null reqs) $
+        error' $ "Request exists:\n" ++ unlines reqs
+
 brc :: T.Text
 brc = "bugzilla.redhat.com"
 
+getPackageDir :: IO String
+getPackageDir = takeFileName <$> getCurrentDirectory
+
 bugSessionPkg :: IO (Maybe BugId,BugzillaSession)
 bugSessionPkg = do
-  pkg <- takeFileName <$> getCurrentDirectory
+  pkg <- getPackageDir
   (bids,session) <- bugsSession False pkg
   case bids of
     [bid] -> return (Just bid, session)
@@ -203,7 +213,7 @@ requestRepo pkg = do
   (bid,session) <- bugSession pkg
   putBug bid
   -- show comments?
-  -- FIXME check not already requested
+  checkNoRepoRequest
   url <- T.pack <$> cmd "fedpkg" ["request-repo", pkg, show bid]
   T.putStrLn url
   let comment = T.pack "Thank you for the review\n\n" <> url
@@ -212,6 +222,13 @@ requestRepo pkg = do
             newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just comment)]
   void $ httpNoBody req
   putStrLn "comment posted"
+  where
+    checkNoRepoRequest :: IO ()
+    checkNoRepoRequest = do
+      current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
+      let reqs = filter (("\"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
+      unless (null reqs) $
+        error' $ "Request exists:\n" ++ unlines reqs
 
 prompt :: String -> IO ()
 prompt s = do
