@@ -107,8 +107,8 @@ buildBranch mprev (br:brs) = do
   branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/heads/" ++ show br]
   if not branched then
     when (br /= Master) $ do
-    putStrLn $ "requesting branch " ++ show br
     checkNoBranchRequest
+    putStrLn $ "requesting branch " ++ show br
     url <- cmd "fedpkg" ["request-branch", show br]
     putStrLn url
     postBranchReq url
@@ -158,10 +158,11 @@ buildBranch mprev (br:brs) = do
           putStrLn $ "branch-request posted to review bug " ++ show bid
         Nothing -> putStrLn "no review bug found"
 
+    checkNoBranchRequest :: IO ()
     checkNoBranchRequest = do
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
       pkg <- getPackageDir
-      let reqs = filter (("New Branch for " ++ show br ++ "\"rpms/" ++ pkg ++ "\"") `isPrefixOf`) current
+      let reqs = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
         error' $ "Request exists:\n" ++ unlines reqs
 
