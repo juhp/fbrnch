@@ -55,7 +55,9 @@ main = do
   simpleCmdArgs Nothing "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
-    [ Subcommand "build" "Build for branches" $
+    [ Subcommand "approved" "List approved reviews" $
+      pure approved
+    , Subcommand "build" "Build for branches" $
       build Nothing <$> some branchArg
     , Subcommand "request" "Request dist git repo for new package" $
       requestRepo <$> strArg "NEWPACKAGE"
@@ -184,7 +186,7 @@ bugSession pkg = do
 requestRepo :: String -> IO ()
 requestRepo pkg = do
   (bid,session) <- bugSession pkg
-  T.putStrLn $ brc <> "/" <> intAsText bid
+  putBug bid
   -- show comments?
   -- FIXME check not already requested
   url <- T.pack <$> cmd "fedpkg" ["request-repo", pkg, show bid]
@@ -218,7 +220,7 @@ importPkg pkg = do
   (bid,session) <- bugSession pkg
   comments <- getComments session bid
   putStrLn ""
-  T.putStrLn $ "https://" <> brc <> "/" <> intAsText bid
+  putBug bid
   mapM_ showComment comments
   prompt "continue"
   let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
@@ -288,6 +290,26 @@ readIniConfig inifile iniparser record = do
     let config = parseIniFile ini iniparser
     return $ either error (Just . record) config
 
+approved :: IO ()
+approved = do
+  ctx <- newBugzillaContext brc
+  token <- getBzToken
+  muser <- getBzUser
+  case muser of
+    Nothing -> do
+      putStrLn "Please login to bugzilla:"
+      cmd_ "bugzilla" ["login"]
+      approved
+    Just user -> do
+      let session = LoginSession ctx token
+          query = ReporterField .==. user .&&.
+                  ComponentField .==. "Package Review" .&&.
+                  StatusField ./=. "CLOSED" .&&.
+                  FlagsField `contains` "fedora-review+"
+      -- FIXME use searchBugs to extract package names
+      bugs <- searchBugs' session query
+      mapM_ putBug bugs
+
 -- uniq for lists
 dropDuplicates :: Eq a => [a] -> [a]
 dropDuplicates (x:xs) =
@@ -304,4 +326,8 @@ removeLeadingNewline ts = ts
 review :: String -> IO ()
 review pkg = do
   (bugs, _) <- bugsSession False pkg
-  mapM_ (T.putStrLn . (("https://" <> brc <> "/show_bug.cgi?id=") <>) . intAsText) bugs
+  mapM_ putBug bugs
+
+putBug :: BugId -> IO ()
+putBug =
+  T.putStrLn . (("https://" <> brc <> "/show_bug.cgi?id=") <>) . intAsText
