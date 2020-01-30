@@ -15,7 +15,7 @@ import Network.HTTP.Simple
 import Network.URI (isURI)
 import Options.Applicative (maybeReader)
 import System.Directory
---import System.Environment
+import System.Environment
 import System.Environment.XDG.BaseDir
 import System.FilePath
 import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
@@ -80,37 +80,38 @@ build :: Maybe Branch -> [Branch] -> IO ()
 build _ [] = return ()
 build mprev (br:brs) = do
   checkWorkingDirClean
-  switched <- cmdBool "fedpkg" ["switch-branch", "--fetch", show br]
-  if not switched && br /= Master
-    then do
-    -- "refs/remotes/origin/" ?
-    branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/heads/" ++ show br]
-    if branched then error' $ "Could not switch to branch " ++ show br
-      else do
-      putStrLn ("requesting branch " ++ show br)
-      fedpkg "request-branch" [show br]
+  git_ "pull" []
+  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/heads/" ++ show br]
+  if not branched then
+    when (br /= Master) $ do
+    putStrLn $ "requesting branch " ++ show br
+    -- FIXME check if request exists
+    url <- cmd "fedpkg" ["request-branch", show br]
+    putStrLn url
+    postBranchReq url
     else do
+    current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
+    when (current /= show br) $
+      cmd_ "fedpkg" ["switch-branch", "--fetch", show br]
     let prev = fromMaybe (newerBranch br) mprev
     when (br /= Master) $ do
-      git_ "diff" [show br, show prev]
-      git_ "merge" [show prev]
+      same <- gitBool "diff" ["--quiet", show br, show prev]
+      unless same $ git_ "merge" [show prev]
     tty <- hIsTerminalDevice stdin
     git_ "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
     when tty $ prompt "push"
     fedpkg "push" []
-    -- check for existing koji build
-    when False $ -- Option to skip mock build
-      fedpkg "mockbuild" []
+    -- FIXME check for existing koji build
+    when False $ fedpkg "mockbuild" []
     fedpkg "build" []
     --waitForbuild
     (mbid,session) <- bugSessionPkg
     if br == Master
-      then
-      forM_ mbid $ postBuild session
+      then forM_ mbid $ postBuild session
       else do
       let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
       nvr <- cmd "fedpkg" ["verrel"]
-      cmd_ "bodhi" (["updates", "new", "--notes", "update"] ++ bugs ++ [nvr])
+      cmd_ "bodhi" (["updates", "new", "--type", "newpackage", "--notes", "update"] ++ bugs ++ [nvr])
       -- override option
       when False $ cmd_ "bodhi" ["overrides", "save", nvr]
     build (Just br) brs
@@ -123,32 +124,52 @@ build mprev (br:brs) = do
       void $ httpNoBody req
       putStrLn $ "build posted to review bug " ++ show bid
 
+    postBranchReq url = do
+      (mbid,session) <- bugSessionPkg
+      case mbid of
+        Just bid -> do
+          let req = setRequestMethod "POST" $
+                    setRequestCheckStatus $
+                    newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just (T.pack url <> " (" <> T.pack (show br) <> ")"))]
+          void $ httpNoBody req
+          putStrLn $ "branch-request posted to review bug " ++ show bid
+        Nothing -> putStrLn "no review bug found"
+
 brc :: T.Text
 brc = "bugzilla.redhat.com"
 
 bugSessionPkg :: IO (Maybe BugId,BugzillaSession)
 bugSessionPkg = do
-  pkg <- getCurrentDirectory
-  (bids,session) <- bugsSession pkg
+  pkg <- takeFileName <$> getCurrentDirectory
+  (bids,session) <- bugsSession False pkg
   case bids of
     [bid] -> return (Just bid, session)
     _ -> return (Nothing, session)
 
-bugsSession :: String -> IO ([BugId],BugzillaSession)
-bugsSession pkg = do
+bugsSession :: Bool -> String -> IO ([BugId],BugzillaSession)
+bugsSession retry pkg = do
   ctx <- newBugzillaContext brc
   token <- getBzToken
+  muser <- getBzUser
   let session = LoginSession ctx token
-      query = SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
-              ComponentField .==. "Package Review" .&&.
-              StatusField ./=. "CLOSED" .&&.
-              FlagsField `contains` "fedora-review+"
-  bugs <- searchBugs' session query
-  return (bugs, session)
+      validreq = setRequestCheckStatus $
+                 newBzRequest session ["valid_login"] [("login", muser)]
+  valid <- getResponseBody <$> httpLBS validreq
+  if valid == "false" then do
+    when retry $ error' "invalid login token"
+    cmd_ "bugzilla" ["login"]
+    bugsSession True pkg
+    else do
+    let query = SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
+                ComponentField .==. "Package Review" .&&.
+                StatusField ./=. "CLOSED" .&&.
+                FlagsField `contains` "fedora-review+"
+    bugs <- searchBugs' session query
+    return (bugs, session)
 
 bugSession :: String -> IO (BugId,BugzillaSession)
 bugSession pkg = do
-  (bugs,session) <- bugsSession pkg
+  (bugs,session) <- bugsSession False pkg
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
     [bug] -> return (bug, session)
@@ -159,6 +180,7 @@ requestRepo pkg = do
   (bid,session) <- bugSession pkg
   T.putStrLn $ brc <> "/" <> intAsText bid
   -- show comments?
+  -- FIXME check not already requested
   url <- T.pack <$> cmd "fedpkg" ["request-repo", pkg, show bid]
   T.putStrLn url
   let comment = T.pack "Thank you for the review\n\n" <> url
@@ -217,20 +239,20 @@ showComment cmt = do
             <> "\n\n" <> (T.unlines . map ("  " <>) . dropDuplicates . removeLeadingNewline . T.lines $ commentText cmt)
   putStrLn ""
 
--- newtype BzConfig = BzConfig {rcUserEmail :: UserEmail}
---   deriving (Eq, Show)
+newtype BzConfig = BzConfig {rcUserEmail :: UserEmail}
+  deriving (Eq, Show)
 
--- getBzUser :: IO (Maybe UserEmail)
--- getBzUser = do
---   home <- getEnv "HOME"
---   let rc = home </> ".bugzillarc"
---   readIniConfig rc rcParser rcUserEmail
---   where
---     rcParser :: IniParser BzConfig
---     rcParser =
---       section brc $ do
---         user <- fieldOf "user" string
---         return $ BzConfig user
+getBzUser :: IO (Maybe UserEmail)
+getBzUser = do
+  home <- getEnv "HOME"
+  let rc = home </> ".bugzillarc"
+  readIniConfig rc rcParser rcUserEmail
+  where
+    rcParser :: IniParser BzConfig
+    rcParser =
+      section brc $ do
+        user <- fieldOf "user" string
+        return $ BzConfig user
 
 newtype BzTokenConf = BzTokenConf {bzToken :: T.Text}
   deriving (Eq, Show)
