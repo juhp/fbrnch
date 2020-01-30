@@ -28,7 +28,7 @@ executable fedbrnch
                      , basic-prelude
                      , bugzilla >= 0.2.1.2
                      , config-ini
-                     , directory
+                     , directory >= 1.2.3
                      , filepath
                      , http-conduit
                      , network-uri

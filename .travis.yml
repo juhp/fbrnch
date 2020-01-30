@@ -14,7 +14,7 @@ cache:
 
 matrix:
   include:
-  - ghc: 7.10.3
+#  - ghc: 7.10.3
   - ghc: 8.0.2
   - ghc: 8.2.2
   - ghc: 8.4.4
