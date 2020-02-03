@@ -104,7 +104,7 @@ buildBranch _ [] = return ()
 buildBranch mprev (br:brs) = do
   checkWorkingDirClean
   git_ "pull" []
-  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/heads/" ++ show br]
+  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
   if not branched then
     when (br /= Master) $ do
     checkNoBranchRequest
