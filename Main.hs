@@ -79,8 +79,12 @@ main = do
     pkgArg :: Parser Package
     pkgArg = strArg "PACKAGE.."
 
-fedpkg :: String -> [String] -> IO ()
+fedpkg :: String -> [String] -> IO String
 fedpkg c args =
+  cmd "fedpkg" (c:args)
+
+fedpkg_ :: String -> [String] -> IO ()
+fedpkg_ c args =
   cmd_ "fedpkg" (c:args)
 
 #if (defined(MIN_VERSION_simple_cmd) && MIN_VERSION_simple_cmd(0,2,2))
@@ -105,17 +109,18 @@ buildBranch mprev (br:brs) = do
   checkWorkingDirClean
   git_ "pull" []
   branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+  pkg <- getPackageDir
   if not branched then
     when (br /= Master) $ do
-    checkNoBranchRequest
+    checkNoBranchRequest pkg
     putStrLn $ "requesting branch " ++ show br
-    url <- cmd "fedpkg" ["request-branch", show br]
+    url <- fedpkg "request-branch" [show br]
     putStrLn url
     postBranchReq url
     else do
     current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
     when (current /= show br) $
-      cmd_ "fedpkg" ["switch-branch", "--fetch", show br]
+      fedpkg_ "switch-branch" ["--fetch", show br]
     let prev = fromMaybe (newerBranch br) mprev
     when (br /= Master) $ do
       same <- gitBool "diff" ["--quiet", show br, show prev]
@@ -123,27 +128,29 @@ buildBranch mprev (br:brs) = do
     tty <- hIsTerminalDevice stdin
     git_ "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
     when tty $ prompt "push"
-    fedpkg "push" []
-    -- FIXME check for existing koji build
-    when False $ fedpkg "mockbuild" []
-    fedpkg "build" []
-    --waitForbuild
-    (mbid,session) <- bugSessionPkg
-    if br == Master
-      then forM_ mbid $ postBuild session
+    fedpkg_ "push" []
+    latest <- cmd "koji" ["latest-build", "--quiet", show br, pkg]
+    nvr <- fedpkg "verrel" []
+    if dropExtension nvr == dropExtension latest
+      then putStrLn $ nvr ++ " is already latest"
       else do
-      let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
-      nvr <- cmd "fedpkg" ["verrel"]
-      cmd_ "bodhi" (["updates", "new", "--type", "newpackage", "--notes", "update"] ++ bugs ++ [nvr])
-      -- override option
-      when False $ cmd_ "bodhi" ["overrides", "save", nvr]
+      when False $ fedpkg_ "mockbuild" []
+      fedpkg_ "build" []
+      --waitForbuild
+      (mbid,session) <- bugSessionPkg
+      if br == Master
+        then forM_ mbid $ postBuild session nvr
+        else do
+        let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
+        cmd_ "bodhi" (["updates", "new", "--type", "newpackage", "--notes", "update"] ++ bugs ++ [nvr])
+        -- override option
+        when False $ cmd_ "bodhi" ["overrides", "save", nvr]
     buildBranch (Just br) brs
   where
-    postBuild session bid = do
-      nvr <- T.pack <$> cmd "fedpkg" ["verrel"]
+    postBuild session nvr bid = do
       let req = setRequestMethod "POST" $
                 setRequestCheckStatus $
-                newBzRequest session ["bug", intAsText bid] [("cf_fixed_in", Just nvr), ("status", Just "MODIFIED")]
+                newBzRequest session ["bug", intAsText bid] [("cf_fixed_in", Just (T.pack nvr)), ("status", Just "MODIFIED")]
       void $ httpNoBody req
       putStrLn $ "build posted to review bug " ++ show bid
 
@@ -158,10 +165,9 @@ buildBranch mprev (br:brs) = do
           putStrLn $ "branch-request posted to review bug " ++ show bid
         Nothing -> putStrLn "no review bug found"
 
-    checkNoBranchRequest :: IO ()
-    checkNoBranchRequest = do
+    checkNoBranchRequest :: Package -> IO ()
+    checkNoBranchRequest pkg = do
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
-      pkg <- getPackageDir
       let reqs = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
         error' $ "Request exists:\n" ++ unlines reqs
@@ -215,7 +221,7 @@ requestRepo pkg = do
   putBug bid
   -- show comments?
   checkNoRepoRequest
-  url <- T.pack <$> cmd "fedpkg" ["request-repo", pkg, show bid]
+  url <- T.pack <$> fedpkg "request-repo" [pkg, show bid]
   T.putStrLn url
   let comment = T.pack "Thank you for the review\n\n" <> url
       req = setRequestMethod "POST" $
@@ -246,7 +252,7 @@ importPkg pkg = do
   dir <- getCurrentDirectory
   when (dir /= pkg) $ do
     direxists <- doesDirectoryExist pkg
-    unless direxists $ fedpkg "clone" [pkg]
+    unless direxists $ fedpkg_ "clone" [pkg]
     setCurrentDirectory pkg
     when direxists checkWorkingDirClean
   when (dir == pkg) checkWorkingDirClean
@@ -266,7 +272,7 @@ importPkg pkg = do
   unless havesrpm $
     cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
   -- check for krb5 ticket
-  fedpkg "import" [srpmfile]
+  fedpkg_ "import" [srpmfile]
   git_ "commit" ["--message", "import #" ++ show bid]
   where
     findSRPMs :: Comment -> [T.Text]
