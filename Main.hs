@@ -48,6 +48,10 @@ newerBranch Master = Master
 newerBranch (Fedora n) | Fedora n >= latestBranch = Master
 newerBranch (Fedora n) = Fedora (n+1)
 
+olderBranch :: Branch -> Branch
+olderBranch Master = latestBranch
+olderBranch (Fedora n) = Fedora (n-1)
+
 type Package = String
 
 main :: IO ()
@@ -60,9 +64,9 @@ main = do
     [ Subcommand "approved" "List approved reviews" $
       pure approved
     , Subcommand "build-branch" "Build branch(s) of package" $
-      buildBranch Nothing <$> some branchArg
+      buildBranch Nothing Nothing <$> noMockOpt <*> some branchArg
     , Subcommand "build" "Build package(s)" $
-      build <$> branchOpt <*> some pkgArg
+      build <$> noMockOpt <*> branchOpt <*> some pkgArg
     , Subcommand "request" "Request dist git repo for new package" $
       requestRepo <$> strArg "NEWPACKAGE"
     , Subcommand "review" "Package review for package" $
@@ -74,10 +78,13 @@ main = do
     branchArg :: Parser Branch
     branchArg = argumentWith (maybeReader readBranch) "BRANCH.."
 
-    branchOpt = optionWith (maybeReader readBranch) 'b' "branch" "BRANCH" "branch"
+    branchOpt :: Parser (Maybe Branch)
+    branchOpt = optional (optionWith (maybeReader readBranch) 'b' "branch" "BRANCH" "branch")
 
     pkgArg :: Parser Package
-    pkgArg = strArg "PACKAGE.."
+    pkgArg = removeSuffix "/" <$> strArg "PACKAGE.."
+
+    noMockOpt = switchWith 'n' "no-mock" "Do not use mock to test branch"
 
 fedpkg :: String -> [String] -> IO String
 fedpkg c args =
@@ -97,55 +104,74 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
-build :: Branch -> [Package] -> IO ()
-build _ [] = return ()
-build br (pkg:pkgs) = do
-  withCurrentDirectory pkg $ buildBranch Nothing [br]
-  build br pkgs
+build :: Bool -> Maybe Branch -> [Package] -> IO ()
+build _ _ [] = return ()
+build noMock mbr (pkg:pkgs) = do
+  -- FIXME active branches determination
+  let branches = maybe [Master, latestBranch, olderBranch latestBranch] pure mbr
+  withCurrentDirectory pkg $ buildBranch Nothing (Just pkg) noMock branches
+  build noMock mbr pkgs
 
-buildBranch :: Maybe Branch -> [Branch] -> IO ()
-buildBranch _ [] = return ()
-buildBranch mprev (br:brs) = do
+buildBranch :: Maybe Branch -> Maybe Package -> Bool -> [Branch] -> IO ()
+buildBranch _ _ _ [] = return ()
+buildBranch mprev mpkg noMock (br:brs) = do
   checkWorkingDirClean
   git_ "pull" []
+  pkg <- maybe getPackageDir return mpkg
   branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
-  pkg <- getPackageDir
   if not branched then
-    when (br /= Master) $ do
-    checkNoBranchRequest pkg
-    putStrLn $ "requesting branch " ++ show br
-    url <- fedpkg "request-branch" [show br]
-    putStrLn url
-    postBranchReq url
+    if br == Master
+    then error' "no origin/master found!"
+    else do
+      unless noMock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
+      checkNoBranchRequest pkg
+      putStrLn $ "requesting branch " ++ show br
+      -- FIXME? request all branches? or mock first?
+      url <- fedpkg "request-branch" [show br]
+      putStrLn url
+      postBranchReq url
     else do
     current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
     when (current /= show br) $
       fedpkg_ "switch-branch" ["--fetch", show br]
     let prev = fromMaybe (newerBranch br) mprev
-    when (br /= Master) $ do
-      same <- gitBool "diff" ["--quiet", show br, show prev]
-      unless same $ git_ "merge" [show prev]
     tty <- hIsTerminalDevice stdin
-    git_ "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
-    when tty $ prompt "push"
-    fedpkg_ "push" []
-    latest <- cmd "koji" ["latest-build", "--quiet", show br, pkg]
+    git_ "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+    when (br /= Master) $ do
+      merged <- gitBool "diff" ["--quiet", show br, show prev]
+      unless merged $ do
+        -- FIXME ignore Mass_Rebuild
+        mref <- prompt "or ref to merge, or no: "
+        unless (mref == "no") $ do
+          let ref = if null mref then show prev else mref
+          git_ "merge" [ref]
+    logs <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+    unless (null logs) $ do
+      git_ "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+      when tty $ prompt_ "to push"
+      fedpkg_ "push" []
     nvr <- fedpkg "verrel" []
-    if dropExtension nvr == dropExtension latest
-      then putStrLn $ nvr ++ " is already latest"
+    buildstatus <- kojiBuildStatus nvr
+    if buildstatus == COMPLETE
+      then buildBranch (Just br) mpkg noMock brs
       else do
-      when False $ fedpkg_ "mockbuild" []
-      fedpkg_ "build" []
-      --waitForbuild
-      (mbid,session) <- bugSessionPkg
-      if br == Master
-        then forM_ mbid $ postBuild session nvr
+      -- FIXME handle master branch and target
+      latest <- cmd "koji" ["latest-build", "--quiet", show br ++ "-updates-candidate", pkg]
+      if dropExtension nvr == dropExtension latest
+        then putStrLn $ nvr ++ " is already latest"
         else do
-        let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
-        cmd_ "bodhi" (["updates", "new", "--type", "newpackage", "--notes", "update"] ++ bugs ++ [nvr])
-        -- override option
-        when False $ cmd_ "bodhi" ["overrides", "save", nvr]
-    buildBranch (Just br) brs
+        fedpkg_ "build" ["--fail-fast"]
+        --waitForbuild
+        (mbid,session) <- bugSessionPkg
+        if br == Master
+          then forM_ mbid $ postBuild session nvr
+          else do
+          let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
+          -- FIXME sometimes bodhi cli hangs
+          cmd_ "bodhi" (["updates", "new", "--type", "newpackage", "--notes", "update"] ++ bugs ++ [nvr])
+          -- override option
+          when False $ cmd_ "bodhi" ["overrides", "save", nvr]
+        buildBranch (Just br) mpkg noMock brs
   where
     postBuild session nvr bid = do
       let req = setRequestMethod "POST" $
@@ -171,6 +197,10 @@ buildBranch mprev (br:brs) = do
       let reqs = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
         error' $ "Request exists:\n" ++ unlines reqs
+
+    mockConfig :: Branch -> String
+    mockConfig Master = "fedora-rawhide-x86_64"
+    mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
@@ -237,10 +267,13 @@ requestRepo pkg = do
       unless (null reqs) $
         error' $ "Request exists:\n" ++ unlines reqs
 
-prompt :: String -> IO ()
+prompt :: String -> IO String
 prompt s = do
-  putStr $ "Press Enter to " ++ s
-  void getLine
+  putStr $ "Press Enter " ++ s
+  getLine
+
+prompt_ :: String -> IO ()
+prompt_ = void <$> prompt
 
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
@@ -261,13 +294,13 @@ importPkg pkg = do
   putStrLn ""
   putBug bid
   mapM_ showComment comments
-  prompt "continue"
+  prompt_ "to continue"
   let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
   when (null srpms) $ error "No srpm urls found!"
   mapM_ T.putStrLn srpms
   let srpm = (head . filter isURI . filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms
   let srpmfile = takeFileName srpm
-  prompt $ "import " ++ srpmfile
+  prompt_ $ "to import " ++ srpmfile
   havesrpm <- doesFileExist srpmfile
   unless havesrpm $
     cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
@@ -370,3 +403,13 @@ review pkg = do
 putBug :: BugId -> IO ()
 putBug =
   T.putStrLn . (("https://" <> brc <> "/show_bug.cgi?id=") <>) . intAsText
+
+data KojiBuildStatus = COMPLETE | FAILED | BUILDING | NoBuild
+  deriving (Eq, Read, Show)
+
+kojiBuildStatus :: String -> IO KojiBuildStatus
+kojiBuildStatus nvr = do
+  mout <- cmdMaybe "koji" ["list-builds", "--quiet", "--buildid=" ++ nvr]
+  case mout of
+    Nothing -> return NoBuild
+    Just out -> (return . read . last . words) out
