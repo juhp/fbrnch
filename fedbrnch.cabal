@@ -29,6 +29,7 @@ executable fedbrnch
                      , bugzilla >= 0.2.1.2
                      , config-ini
                      , directory >= 1.2.3
+                     , fedora-dists > 2.0
                      , filepath
                      , http-conduit
                      , network-uri

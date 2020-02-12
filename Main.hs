@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 
+import Distribution.Fedora (Release(..), getProductReleases)
 import SimpleCmd
 import SimpleCmd.Git
 import SimpleCmdArgs
@@ -40,21 +41,31 @@ instance Show Branch where
   show (Fedora n) = "f" ++ show n
 --  show (EPEL n) = (if n <= 6 then "el" else "epel") ++ show n
 
-latestBranch :: Branch
-latestBranch = Fedora 31
-
 branchDestTag :: Branch -> String
 branchDestTag Master = "rawhide"
 branchDestTag (Fedora n) = show (Fedora n) ++ "-updates-candidate"
 
-newerBranch :: Branch -> Branch
-newerBranch Master = Master
-newerBranch (Fedora n) | Fedora n >= latestBranch = Master
-newerBranch (Fedora n) = Fedora (n+1)
+--latestBranch :: Branch
+--latestBranch = Fedora 32
 
-olderBranch :: Branch -> Branch
-olderBranch Master = latestBranch
-olderBranch (Fedora n) = Fedora (n-1)
+newerBranch :: [Branch] -> Branch -> Branch
+newerBranch _ Master = Master
+newerBranch branches (Fedora n) =
+  if Fedora n `elem` branches
+  then if Fedora (n+1) `elem` branches
+       then Fedora (n+1)
+       else Master
+  else error' $ "Unsupported branch: " ++ show (Fedora n)
+
+--olderBranch :: Branch -> Branch
+--olderBranch Master = latestBranch
+--olderBranch (Fedora n) = Fedora (n-1)
+
+releaseBranch :: Release -> Branch
+releaseBranch rel
+  | releaseProductVersionId rel == "fedora-rawhide" = Master
+  | releaseProduct rel == "Fedora" = Fedora $ read . show $ releaseVersion rel
+  | otherwise = error' "Unsupport release"
 
 type Package = String
 
@@ -108,11 +119,14 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
+getFedoraBranches :: IO [Branch]
+getFedoraBranches =
+  reverse . map releaseBranch <$> getProductReleases (T.pack "Fedora")
+
 build :: Bool -> Maybe Branch -> [Package] -> IO ()
 build _ _ [] = return ()
 build noMock mbr (pkg:pkgs) = do
-  -- FIXME active branches determination
-  let branches = maybe [Master, latestBranch, olderBranch latestBranch] pure mbr
+  branches <- getFedoraBranches
   withCurrentDirectory pkg $ buildBranch Nothing (Just pkg) noMock branches
   build noMock mbr pkgs
 
@@ -138,7 +152,11 @@ buildBranch mprev mpkg noMock (br:brs) = do
     current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
     when (current /= show br) $
       fedpkg_ "switch-branch" ["--fetch", show br]
-    let prev = fromMaybe (newerBranch br) mprev
+    prev <- case mprev of
+              Just p -> return p
+              Nothing -> do
+                branches <- getFedoraBranches
+                return $ newerBranch branches br
     tty <- hIsTerminalDevice stdin
     git_ "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
     when (br /= Master) $ do
