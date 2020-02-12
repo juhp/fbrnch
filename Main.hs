@@ -43,6 +43,10 @@ instance Show Branch where
 latestBranch :: Branch
 latestBranch = Fedora 31
 
+branchDestTag :: Branch -> String
+branchDestTag Master = "rawhide"
+branchDestTag (Fedora n) = show (Fedora n) ++ "-updates-candidate"
+
 newerBranch :: Branch -> Branch
 newerBranch Master = Master
 newerBranch (Fedora n) | Fedora n >= latestBranch = Master
@@ -155,8 +159,8 @@ buildBranch mprev mpkg noMock (br:brs) = do
     if buildstatus == COMPLETE
       then buildBranch (Just br) mpkg noMock brs
       else do
-      -- FIXME handle master branch and target
-      latest <- cmd "koji" ["latest-build", "--quiet", show br ++ "-updates-candidate", pkg]
+      -- FIXME handle target
+      latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
       if dropExtension nvr == dropExtension latest
         then putStrLn $ nvr ++ " is already latest"
         else do
