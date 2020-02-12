@@ -9,7 +9,7 @@ license:             GPL-2
 license-file:        LICENSE
 author:              Jens Petersen
 maintainer:          petersen@fedoraproject.org
-copyright:           2019 Jens Petersen
+copyright:           2019-2020 Jens Petersen
 category:            Utility
 build-type:          Simple
 extra-doc-files:     README.md
