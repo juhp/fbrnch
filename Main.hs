@@ -168,7 +168,8 @@ buildBranch mprev mpkg noMock (br:brs) = do
           else do
           let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
           -- FIXME sometimes bodhi cli hangs
-          cmd_ "bodhi" (["updates", "new", "--type", "newpackage", "--notes", "update"] ++ bugs ++ [nvr])
+          -- FIXME detect version update/include changelog
+          cmd_ "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", nvr, "--autokarma", "--autotime"] ++ bugs ++ [nvr])
           -- override option
           when False $ cmd_ "bodhi" ["overrides", "save", nvr]
         buildBranch (Just br) mpkg noMock brs
