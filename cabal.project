@@ -1,4 +1,4 @@
-packages: .
+packages: . fedora-dists
 
 source-repository-package
     type: git
