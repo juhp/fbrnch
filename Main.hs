@@ -213,13 +213,16 @@ bzReviewSession = do
     [bid] -> return (Just bid, session)
     _ -> return (Nothing, session)
 
+bzLoginSession :: IO BugzillaSession
+bzLoginSession = do
+  ctx <- newBugzillaContext brc
+  LoginSession ctx <$> getBzToken
+
 bzSession :: Bool -> IO BugzillaSession
 bzSession retry = do
-  ctx <- newBugzillaContext brc
-  token <- getBzToken
+  session <- bzLoginSession
   muser <- getBzUser
-  let session = LoginSession ctx token
-      validreq = setRequestCheckStatus $
+  let validreq = setRequestCheckStatus $
                  newBzRequest session ["valid_login"] [("login", muser)]
   valid <- getResponseBody <$> httpLBS validreq
   if valid == "false" then do
@@ -365,8 +368,7 @@ readIniConfig inifile iniparser record = do
 
 approved :: IO ()
 approved = do
-  ctx <- newBugzillaContext brc
-  token <- getBzToken
+  session <- bzLoginSession
   muser <- getBzUser
   case muser of
     Nothing -> do
@@ -374,8 +376,7 @@ approved = do
       cmd_ "bugzilla" ["login"]
       approved
     Just user -> do
-      let session = LoginSession ctx token
-          query = ReporterField .==. user .&&.
+      let query = ReporterField .==. user .&&.
                   ComponentField .==. "Package Review" .&&.
                   StatusField ./=. "CLOSED" .&&.
                   FlagsField `contains` "fedora-review+"
