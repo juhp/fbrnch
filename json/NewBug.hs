@@ -9,7 +9,7 @@ import           Data.Aeson(Value(..), FromJSON(..), ToJSON(..),
                             pairs,
                             (.:), (.=), object)
 
-data NewBug = NewBug {
+newtype NewBug = NewBug {
     newBugId :: Int
   } deriving (Show,Eq)
 
