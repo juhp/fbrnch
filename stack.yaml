@@ -3,4 +3,5 @@ resolver: lts-14.26
 extra-deps:
   - git: https://github.com/juhp/hsbugzilla.git
     commit: 71cf2d42092396a2f5703a496565c376c89d28f9
-  - ./fedora-dists
+  - git: https://github.com/juhp/fedora-dists.git
+    commit: 78643db27bb9aca9b2f929db4c5c35a80e18888b
