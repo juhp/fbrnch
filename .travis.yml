@@ -8,7 +8,7 @@ cabal: "2.4"
 
 cache:
   directories:
-  - "$HOME/.cabal/store"
+  - "$HOME/.cabal"
   - "$HOME/.stack"
   - "$TRAVIS_BUILD_DIR/.stack-work"
 
