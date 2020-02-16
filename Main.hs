@@ -208,7 +208,7 @@ getPackageDir = takeFileName <$> getCurrentDirectory
 bzReviewSession :: IO (Maybe BugId,BugzillaSession)
 bzReviewSession = do
   pkg <- getPackageDir
-  (bids,session) <- bugsSession pkg
+  (bids,session) <- bugsSession $ openApprovedReviews pkg
   case bids of
     [bid] -> return (Just bid, session)
     _ -> return (Nothing, session)
@@ -231,19 +231,26 @@ bzSession retry = do
     bzSession True
     else return session
 
-bugsSession :: String -> IO ([BugId],BugzillaSession)
-bugsSession pkg = do
+openApprovedReviews :: String -> SearchExpression
+openApprovedReviews pkg =
+  allReviews pkg .&&.
+  StatusField ./=. "CLOSED" .&&.
+  FlagsField `contains` "fedora-review+"
+
+allReviews :: String -> SearchExpression
+allReviews pkg =
+  SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
+  ComponentField .==. "Package Review"
+
+bugsSession :: SearchExpression -> IO ([BugId],BugzillaSession)
+bugsSession query = do
   session <- bzSession False
-  let query = SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
-              ComponentField .==. "Package Review" .&&.
-              StatusField ./=. "CLOSED" .&&.
-              FlagsField `contains` "fedora-review+"
   bugs <- searchBugs' session query
   return (bugs, session)
 
 bugSession :: String -> IO (BugId,BugzillaSession)
 bugSession pkg = do
-  (bugs,session) <- bugsSession pkg
+  (bugs,session) <- bugsSession $ openApprovedReviews pkg
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
     [bug] -> return (bug, session)
@@ -399,7 +406,7 @@ removeLeadingNewline ts = ts
 
 review :: String -> IO ()
 review pkg = do
-  (bugs, _) <- bugsSession pkg
+  (bugs, _) <- bugsSession $ allReviews pkg
   mapM_ putBug bugs
 
 putBug :: BugId -> IO ()
