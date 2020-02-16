@@ -40,6 +40,7 @@ executable fedbrnch
                      , simple-cmd-args >= 0.1.4
                      , simple-cmd
                      , text
+                     , utf8-string
                      , xdg-basedir
   if impl(ghc<8.0)
        build-depends: semigroups

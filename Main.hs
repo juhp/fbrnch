@@ -5,6 +5,7 @@ import SimpleCmd
 import SimpleCmd.Git
 import SimpleCmdArgs
 
+import Codec.Binary.UTF8.String (utf8Encode)
 import Control.Monad
 import Data.Ini.Config
 import Data.List
@@ -416,6 +417,9 @@ kojiBuildStatus nvr = do
 
 createReview :: FilePath -> IO ()
 createReview spec = do
+  pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+  when (pkg /= utf8Encode pkg) $
+    putStrLn "Warning: package name uses UTF8 chars!"
   -- FIXME or check existing srpm newer than spec file
   srpm <- last . words <$> cmd "rpmbuild" ["-bs", spec]
   putStrLn srpm
@@ -429,7 +433,6 @@ createReview spec = do
     case mfasid of
       Nothing -> error' "Could not determine fasid from klist"
       Just fasid -> do
-        pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
         let sshhost = "fedorapeople.org"
             sshpath = "public_html/reviews/" ++ pkg
         cmd_ "ssh" [sshhost, "mkdir", "-p", sshpath]
@@ -467,6 +470,8 @@ createReview spec = do
     postReviewReq srpm fasid kojiurl pkg = do
       session <- bzSession False
       summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
+      when (summary /= utf8Encode summary) $
+        putStrLn "Warning: package summary uses UTF8 chars"
       description <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
       let url = "https://" <> fasid <> ".fedorapeople.org/reviews"
           req = setRequestMethod "POST" $
@@ -475,8 +480,8 @@ createReview spec = do
               [ ("product", Just "Fedora")
               , ("component", Just "Package Review")
               , ("version", Just "rawhide")
-              , ("summary", Just (T.pack ("Review Request: " <> pkg <> " - " <> summary)))
-              , ("description", Just $ T.pack ("Spec URL: " <> url </> takeFileName spec <> "\nSRPM URL: " <> url </> takeFileName srpm <> "\n\nDescription:\n" <> description <> "\n\nKoji scratch build: " <> kojiurl))
+              , ("summary", Just (T.pack ("Review Request: " <> pkg <> " - " <> utf8Encode summary)))
+              , ("description", Just $ T.pack ("Spec URL: " <> url </> takeFileName spec <> "\nSRPM URL: " <> url </> takeFileName srpm <> "\n\nDescription:\n" <> utf8Encode description <> "\n\nKoji scratch build: " <> kojiurl))
               ]
       newBugId . getResponseBody <$> httpJSON req
 
