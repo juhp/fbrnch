@@ -204,13 +204,13 @@ getPackageDir = takeFileName <$> getCurrentDirectory
 bugSessionPkg :: IO (Maybe BugId,BugzillaSession)
 bugSessionPkg = do
   pkg <- getPackageDir
-  (bids,session) <- bugsSession False pkg
+  (bids,session) <- bugsSession pkg
   case bids of
     [bid] -> return (Just bid, session)
     _ -> return (Nothing, session)
 
-bugsSession :: Bool -> String -> IO ([BugId],BugzillaSession)
-bugsSession retry pkg = do
+bzSession :: Bool -> IO BugzillaSession
+bzSession retry = do
   ctx <- newBugzillaContext brc
   token <- getBzToken
   muser <- getBzUser
@@ -221,18 +221,22 @@ bugsSession retry pkg = do
   if valid == "false" then do
     when retry $ error' "invalid login token"
     cmd_ "bugzilla" ["login"]
-    bugsSession True pkg
-    else do
-    let query = SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
-                ComponentField .==. "Package Review" .&&.
-                StatusField ./=. "CLOSED" .&&.
-                FlagsField `contains` "fedora-review+"
-    bugs <- searchBugs' session query
-    return (bugs, session)
+    bzSession True
+    else return session
+
+bugsSession :: String -> IO ([BugId],BugzillaSession)
+bugsSession pkg = do
+  session <- bzSession False
+  let query = SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
+              ComponentField .==. "Package Review" .&&.
+              StatusField ./=. "CLOSED" .&&.
+              FlagsField `contains` "fedora-review+"
+  bugs <- searchBugs' session query
+  return (bugs, session)
 
 bugSession :: String -> IO (BugId,BugzillaSession)
 bugSession pkg = do
-  (bugs,session) <- bugsSession False pkg
+  (bugs,session) <- bugsSession pkg
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
     [bug] -> return (bug, session)
@@ -390,7 +394,7 @@ removeLeadingNewline ts = ts
 
 review :: String -> IO ()
 review pkg = do
-  (bugs, _) <- bugsSession False pkg
+  (bugs, _) <- bugsSession pkg
   mapM_ putBug bugs
 
 putBug :: BugId -> IO ()
