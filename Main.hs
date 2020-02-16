@@ -428,6 +428,12 @@ createReview spec = do
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   when (pkg /= utf8Encode pkg) $
     putStrLn "Warning: package name uses UTF8 chars!"
+  (bids,session) <- bugsSession $ allReviews pkg
+  unless (null bids) $ do
+    putStrLn "Existing review(s):"
+    -- FIXME show bz summaries
+    mapM_ putBug bids
+    prompt_ "to continue"
   -- FIXME or check existing srpm newer than spec file
   srpm <- last . words <$> cmd "rpmbuild" ["-bs", spec]
   putStrLn srpm
@@ -445,8 +451,8 @@ createReview spec = do
             sshpath = "public_html/reviews/" ++ pkg
         cmd_ "ssh" [sshhost, "mkdir", "-p", sshpath]
         cmd_ "scp" [spec, srpm, sshhost ++ ":" ++ sshpath]
-        bugid <- postReviewReq srpm fasid kojiurl pkg
-        putStrLn $ "Review request posted:"
+        bugid <- postReviewReq session srpm fasid kojiurl pkg
+        putStrLn "Review request posted:"
         putBug bugid
   where
     takeWhileEnd p = reverse . takeWhile p . reverse
@@ -474,9 +480,8 @@ createReview spec = do
                   ["free"] -> TaskFree
                   _ -> error "unknown task state!"
 
-    postReviewReq :: FilePath -> String -> String -> String -> IO BugId
-    postReviewReq srpm fasid kojiurl pkg = do
-      session <- bzSession False
+    postReviewReq :: BugzillaSession -> FilePath -> String -> String -> String -> IO BugId
+    postReviewReq session srpm fasid kojiurl pkg = do
       summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
       when (summary /= utf8Encode summary) $
         putStrLn "Warning: package summary uses UTF8 chars"
