@@ -27,6 +27,7 @@ import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, std
 import Web.Bugzilla
 import Web.Bugzilla.Search
 
+import NewBug
 
 --latestBranch :: Branch
 --latestBranch = Fedora 32
@@ -46,6 +47,8 @@ main = do
       buildBranch Nothing Nothing <$> noMockOpt <*> some branchArg
     , Subcommand "build" "Build package(s)" $
       build <$> noMockOpt <*> branchOpt <*> some pkgArg
+    , Subcommand "create" "Create a Package Review request" $
+      createReview <$> strArg "SPECFILE"
     , Subcommand "request" "Request dist git repo for new package" $
       requestRepo <$> strArg "NEWPACKAGE"
     , Subcommand "review" "Package review for package" $
@@ -410,3 +413,71 @@ kojiBuildStatus nvr = do
   case mout of
     Nothing -> return NoBuild
     Just out -> (return . read . last . words) out
+
+createReview :: FilePath -> IO ()
+createReview spec = do
+  -- FIXME or check existing srpm newer than spec file
+  srpm <- last . words <$> cmd "rpmbuild" ["-bs", spec]
+  putStrLn srpm
+  out <- cmd "koji" ["build", "--scratch", "--nowait", "--fail-fast", "rawhide", srpm]
+  let kojiurl = last $ words out
+      task = takeWhileEnd (/= '=') kojiurl
+  okay <- kojiWatchTask task
+  if not okay then error' "scratch build failed"
+    else do
+    mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
+    case mfasid of
+      Nothing -> error' "Could not determine fasid from klist"
+      Just fasid -> do
+        pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+        let sshhost = "fedorapeople.org"
+            sshpath = "public_html/reviews/" ++ pkg
+        cmd_ "ssh" [sshhost, "mkdir", "-p", sshpath]
+        cmd_ "scp" [spec, srpm, sshhost ++ ":" ++ sshpath]
+        bugid <- postReviewReq srpm fasid kojiurl pkg
+        putStrLn $ "Review request posted:"
+        putBug bugid
+  where
+    takeWhileEnd p = reverse . takeWhile p . reverse
+
+    kojiWatchTask :: String -> IO Bool
+    kojiWatchTask task = do
+      res <- cmdBool "koji" ["watch-task", task]
+      if res then return True
+        else do
+        ti <- kojiTaskInfo
+        case ti of
+          TaskClosed -> return True
+          TaskFailed -> error "Task failed!"
+          _ -> kojiWatchTask task
+          where
+            kojiTaskInfo :: IO TaskState
+            kojiTaskInfo = do
+              info <- cmdLines "koji" ["taskinfo", task]
+              let state = removeStrictPrefix "State: " <$> filter ("State: " `isPrefixOf`) info
+              return $
+                case state of
+                  ["open"] -> TaskOpen
+                  ["failed"] -> TaskFailed
+                  ["closed"] -> TaskClosed
+                  ["free"] -> TaskFree
+                  _ -> error "unknown task state!"
+
+    postReviewReq :: FilePath -> String -> String -> String -> IO BugId
+    postReviewReq srpm fasid kojiurl pkg = do
+      session <- bzSession False
+      summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
+      description <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
+      let url = "https://" <> fasid <> ".fedorapeople.org/reviews"
+          req = setRequestMethod "POST" $
+              setRequestCheckStatus $
+              newBzRequest session ["bug"]
+              [ ("product", Just "Fedora")
+              , ("component", Just "Package Review")
+              , ("version", Just "rawhide")
+              , ("summary", Just (T.pack ("Review Request: " <> pkg <> " - " <> summary)))
+              , ("description", Just $ T.pack ("Spec URL: " <> url </> takeFileName spec <> "\nSRPM URL: " <> url </> takeFileName srpm <> "\n\nDescription:\n" <> description <> "\n\nKoji scratch build: " <> kojiurl))
+              ]
+      newBugId . getResponseBody <$> httpJSON req
+
+data TaskState = TaskOpen | TaskFailed | TaskClosed | TaskFree

@@ -23,8 +23,11 @@ source-repository head
 
 executable fedbrnch
   main-is:             Main.hs
+  other-modules:       NewBug
+  hs-source-dirs:      . json
 
-  build-depends:       base < 5
+  build-depends:       aeson
+                     , base < 5
                      , basic-prelude
                      , bugzilla >= 0.2.1.2
                      , config-ini
