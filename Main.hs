@@ -158,7 +158,7 @@ buildBranch mprev mpkg noMock (br:brs) = do
         else do
         fedpkg_ "build" ["--fail-fast"]
         --waitForbuild
-        (mbid,session) <- bugSessionPkg
+        (mbid,session) <- bzReviewSession
         if br == Master
           then forM_ mbid $ postBuild session nvr
           else do
@@ -178,7 +178,7 @@ buildBranch mprev mpkg noMock (br:brs) = do
       putStrLn $ "build posted to review bug " ++ show bid
 
     postBranchReq url = do
-      (mbid,session) <- bugSessionPkg
+      (mbid,session) <- bzReviewSession
       case mbid of
         Just bid -> do
           let req = setRequestMethod "POST" $
@@ -205,8 +205,8 @@ brc = "bugzilla.redhat.com"
 getPackageDir :: IO String
 getPackageDir = takeFileName <$> getCurrentDirectory
 
-bugSessionPkg :: IO (Maybe BugId,BugzillaSession)
-bugSessionPkg = do
+bzReviewSession :: IO (Maybe BugId,BugzillaSession)
+bzReviewSession = do
   pkg <- getPackageDir
   (bids,session) <- bugsSession pkg
   case bids of
