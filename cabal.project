@@ -3,6 +3,7 @@ packages: .
 source-repository-package
     type: git
     location: https://github.com/juhp/hsbugzilla.git
+    tag: e3b424e2f562cebc94bfdf2cc7b466108be15b7a
 
 source-repository-package
     type: git

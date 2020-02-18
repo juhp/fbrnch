@@ -239,7 +239,7 @@ openApproved =
 pkgReviews :: String -> SearchExpression
 pkgReviews pkg =
   SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
-  ComponentField .==. "Package Review"
+  ComponentField .==. ["Package Review"]
 
 bugIdsSession :: SearchExpression -> IO ([BugId],BugzillaSession)
 bugIdsSession query = do
@@ -389,7 +389,7 @@ approved = do
       approved
     Just user -> do
       let query = ReporterField .==. user .&&.
-                  ComponentField .==. "Package Review" .&&.
+                  ComponentField .==. ["Package Review"] .&&.
                   openApproved
       bugs <- searchBugs session query
       mapM_ putBug bugs
