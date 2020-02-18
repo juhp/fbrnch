@@ -30,9 +30,6 @@ import Web.Bugzilla.Search
 
 import NewBug
 
---latestBranch :: Branch
---latestBranch = Fedora 32
-
 type Package = String
 
 main :: IO ()
