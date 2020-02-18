@@ -216,7 +216,8 @@ getPackageDir = takeFileName <$> getCurrentDirectory
 bzReviewSession :: IO (Maybe BugId,BugzillaSession)
 bzReviewSession = do
   pkg <- getPackageDir
-  (bids,session) <- bugIdsSession $ pkgReviews pkg .&&. openApproved
+  (bids,session) <- bugIdsSession $
+                    pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bids of
     [bid] -> return (Just bid, session)
     _ -> return (Nothing, session)
@@ -239,15 +240,26 @@ bzSession retry = do
     bzSession True
     else return session
 
-openApproved :: SearchExpression
-openApproved =
-  StatusField ./=. "CLOSED" .&&.
+packageReview :: SearchExpression
+packageReview =
+  ComponentField .==. ["Package Review"]
+
+statusOpen :: SearchExpression
+statusOpen =
+  StatusField ./=. "CLOSED"
+
+statusNewPost :: SearchExpression
+statusNewPost =
+  StatusField .==. "NEW" .||. StatusField .==. "POST"
+
+reviewApproved :: SearchExpression
+reviewApproved =
   FlagsField `contains` "fedora-review+"
 
 pkgReviews :: String -> SearchExpression
 pkgReviews pkg =
   SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
-  ComponentField .==. ["Package Review"]
+  packageReview
 
 bugIdsSession :: SearchExpression -> IO ([BugId],BugzillaSession)
 bugIdsSession query = do
@@ -263,7 +275,8 @@ bugsSession query = do
 
 bugIdSession :: String -> IO (BugId,BugzillaSession)
 bugIdSession pkg = do
-  (bugs,session) <- bugIdsSession $ pkgReviews pkg .&&. openApproved
+  (bugs,session) <- bugIdsSession $
+                    pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
     [bug] -> return (bug, session)
@@ -396,9 +409,8 @@ approved = do
       cmd_ "bugzilla" ["login"]
       approved
     Just user -> do
-      let query = ReporterField .==. user .&&.
-                  ComponentField .==. ["Package Review"] .&&.
-                  openApproved
+      let query = ReporterField .==. user .&&. packageReview .&&.
+                  statusNewPost .&&. reviewApproved
       bugs <- searchBugs session query
       mapM_ putBug bugs
 
