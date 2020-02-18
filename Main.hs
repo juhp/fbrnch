@@ -176,7 +176,7 @@ buildBranch mprev mpkg noMock (br:brs) = do
         buildBranch (Just br) mpkg noMock brs
   where
     postBuild session nvr bid = do
-      let req = setRequestMethod "POST" $
+      let req = setRequestMethod "PUT" $
                 setRequestCheckStatus $
                 newBzRequest session ["bug", intAsText bid] [("cf_fixed_in", Just (T.pack nvr)), ("status", Just "MODIFIED")]
       void $ httpNoBody req
