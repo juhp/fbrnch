@@ -55,7 +55,7 @@ dispatchCmd activeBranches =
     , Subcommand "build" "Build package(s)" $
       build <$> noMockOpt <*> branchOpt <*> some pkgArg
     , Subcommand "build-branch" "Build branch(s) of package" $
-      buildBranch Nothing Nothing <$> noMockOpt <*> some branchArg
+      buildBranch Nothing <$> pkgOpt <*> noMockOpt <*> some branchArg
     , Subcommand "review" "Find package review bug" $
       review <$> strArg "PACKAGE"
     ]
@@ -70,6 +70,9 @@ dispatchCmd activeBranches =
 
     pkgArg :: Parser Package
     pkgArg = removeSuffix "/" <$> strArg "PACKAGE.."
+
+    pkgOpt :: Parser (Maybe String)
+    pkgOpt = optional (strOptionWith 'p' "package" "PKG" "package")
 
     noMockOpt = switchWith 'n' "no-mock" "Do not use mock to test branch"
 
