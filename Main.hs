@@ -39,6 +39,11 @@ main :: IO ()
 main = do
   tty <- hIsTerminalDevice stdin
   when tty $ hSetBuffering stdout NoBuffering
+  activeBranches <- getFedoraBranches
+  dispatchCmd activeBranches
+
+dispatchCmd :: [Branch] -> IO ()
+dispatchCmd activeBranches =
   simpleCmdArgs Nothing "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
@@ -59,10 +64,12 @@ main = do
     ]
   where
     branchArg :: Parser Branch
-    branchArg = argumentWith (maybeReader readBranch) "BRANCH.."
+    branchArg = argumentWith branchM "BRANCH.."
 
     branchOpt :: Parser (Maybe Branch)
-    branchOpt = optional (optionWith (maybeReader readBranch) 'b' "branch" "BRANCH" "branch")
+    branchOpt = optional (optionWith branchM 'b' "branch" "BRANCH" "branch")
+
+    branchM = maybeReader (readBranch activeBranches)
 
     pkgArg :: Parser Package
     pkgArg = removeSuffix "/" <$> strArg "PACKAGE.."
@@ -88,8 +95,9 @@ gitBool c args =
 #endif
 
 getPackageBranches :: IO [Branch]
-getPackageBranches =
-  mapMaybe (readBranch' . removePrefix "origin/") . words <$> cmd "git" ["branch", "--remote", "--list"]
+getPackageBranches = do
+  activeBranches <- getFedoraBranches
+  mapMaybe (readBranch' activeBranches . removePrefix "origin/") . words <$> cmd "git" ["branch", "--remote", "--list"]
 
 build :: Bool -> Maybe Branch -> [Package] -> IO ()
 build _ _ [] = return ()
