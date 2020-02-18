@@ -42,20 +42,20 @@ main = do
   simpleCmdArgs Nothing "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
-    [ Subcommand "approved" "List approved reviews" $
-      pure approved
-    , Subcommand "build-branch" "Build branch(s) of package" $
-      buildBranch Nothing Nothing <$> noMockOpt <*> some branchArg
-    , Subcommand "build" "Build package(s)" $
-      build <$> noMockOpt <*> branchOpt <*> some pkgArg
-    , Subcommand "create" "Create a Package Review request" $
+    [ Subcommand "create" "Create a Package Review request" $
       createReview <$> strArg "SPECFILE"
+    , Subcommand "approved" "List approved reviews" $
+      pure approved
     , Subcommand "request" "Request dist git repo for new package" $
       requestRepo <$> strArg "NEWPACKAGE"
-    , Subcommand "review" "Package review for package" $
-      review <$> strArg "PACKAGE"
     , Subcommand "import" "Import new package via bugzilla" $
       importPkg <$> strArg "NEWPACKAGE"
+    , Subcommand "build" "Build package(s)" $
+      build <$> noMockOpt <*> branchOpt <*> some pkgArg
+    , Subcommand "build-branch" "Build branch(s) of package" $
+      buildBranch Nothing Nothing <$> noMockOpt <*> some branchArg
+    , Subcommand "review" "Find package review bug" $
+      review <$> strArg "PACKAGE"
     ]
   where
     branchArg :: Parser Branch
