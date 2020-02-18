@@ -208,7 +208,7 @@ getPackageDir = takeFileName <$> getCurrentDirectory
 bzReviewSession :: IO (Maybe BugId,BugzillaSession)
 bzReviewSession = do
   pkg <- getPackageDir
-  (bids,session) <- bugsSession $ openApprovedReviews pkg
+  (bids,session) <- bugIdsSession $ pkgReviews pkg .&&. openApproved
   case bids of
     [bid] -> return (Just bid, session)
     _ -> return (Nothing, session)
@@ -231,26 +231,31 @@ bzSession retry = do
     bzSession True
     else return session
 
-openApprovedReviews :: String -> SearchExpression
-openApprovedReviews pkg =
-  allReviews pkg .&&.
+openApproved :: SearchExpression
+openApproved =
   StatusField ./=. "CLOSED" .&&.
   FlagsField `contains` "fedora-review+"
 
-allReviews :: String -> SearchExpression
-allReviews pkg =
+pkgReviews :: String -> SearchExpression
+pkgReviews pkg =
   SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
   ComponentField .==. "Package Review"
 
-bugsSession :: SearchExpression -> IO ([BugId],BugzillaSession)
-bugsSession query = do
+bugIdsSession :: SearchExpression -> IO ([BugId],BugzillaSession)
+bugIdsSession query = do
   session <- bzSession False
   bugs <- searchBugs' session query
   return (bugs, session)
 
-bugSession :: String -> IO (BugId,BugzillaSession)
-bugSession pkg = do
-  (bugs,session) <- bugsSession $ openApprovedReviews pkg
+bugsSession :: SearchExpression -> IO ([Bug],BugzillaSession)
+bugsSession query = do
+  session <- bzSession False
+  bugs <- searchBugs session query
+  return (bugs, session)
+
+bugIdSession :: String -> IO (BugId,BugzillaSession)
+bugIdSession pkg = do
+  (bugs,session) <- bugIdsSession $ pkgReviews pkg .&&. openApproved
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
     [bug] -> return (bug, session)
@@ -258,8 +263,8 @@ bugSession pkg = do
 
 requestRepo :: String -> IO ()
 requestRepo pkg = do
-  (bid,session) <- bugSession pkg
-  putBug bid
+  (bid,session) <- bugIdSession pkg
+  putBugId bid
   -- show comments?
   checkNoRepoRequest
   url <- T.pack <$> fedpkg "request-repo" [pkg, show bid]
@@ -300,10 +305,10 @@ importPkg pkg = do
     setCurrentDirectory pkg
     when direxists checkWorkingDirClean
   when (dir == pkg) checkWorkingDirClean
-  (bid,session) <- bugSession pkg
+  (bid,session) <- bugIdSession pkg
   comments <- getComments session bid
   putStrLn ""
-  putBug bid
+  putBugId bid
   mapM_ showComment comments
   prompt_ "to continue"
   let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
@@ -385,11 +390,16 @@ approved = do
     Just user -> do
       let query = ReporterField .==. user .&&.
                   ComponentField .==. "Package Review" .&&.
-                  StatusField ./=. "CLOSED" .&&.
-                  FlagsField `contains` "fedora-review+"
-      -- FIXME use searchBugs to extract package names
-      bugs <- searchBugs' session query
+                  openApproved
+      bugs <- searchBugs session query
       mapM_ putBug bugs
+
+putBug :: Bug -> IO ()
+putBug bid = do
+  -- FIXME remove prefix "Review Request: "?
+  T.putStrLn $ bugSummary bid
+  putBugId $ bugId bid
+  putStrLn ""
 
 -- uniq for lists
 dropDuplicates :: Eq a => [a] -> [a]
@@ -406,11 +416,11 @@ removeLeadingNewline ts = ts
 
 review :: String -> IO ()
 review pkg = do
-  (bugs, _) <- bugsSession $ allReviews pkg
-  mapM_ putBug bugs
+  (bugs, _) <- bugIdsSession $ pkgReviews pkg
+  mapM_ putBugId bugs
 
-putBug :: BugId -> IO ()
-putBug =
+putBugId :: BugId -> IO ()
+putBugId =
   T.putStrLn . (("https://" <> brc <> "/show_bug.cgi?id=") <>) . intAsText
 
 data KojiBuildStatus = COMPLETE | FAILED | BUILDING | NoBuild
@@ -428,11 +438,10 @@ createReview spec = do
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   when (pkg /= utf8Encode pkg) $
     putStrLn "Warning: package name uses UTF8 chars!"
-  (bids,session) <- bugsSession $ allReviews pkg
-  unless (null bids) $ do
+  (bugs,session) <- bugsSession $ pkgReviews pkg
+  unless (null bugs) $ do
     putStrLn "Existing review(s):"
-    -- FIXME show bz summaries
-    mapM_ putBug bids
+    mapM_ putBug bugs
     prompt_ "to continue"
   -- FIXME or check existing srpm newer than spec file
   srpm <- last . words <$> cmd "rpmbuild" ["-bs", spec]
@@ -453,7 +462,7 @@ createReview spec = do
         cmd_ "scp" [spec, srpm, sshhost ++ ":" ++ sshpath]
         bugid <- postReviewReq session srpm fasid kojiurl pkg
         putStrLn "Review request posted:"
-        putBug bugid
+        putBugId bugid
   where
     takeWhileEnd p = reverse . takeWhile p . reverse
 
