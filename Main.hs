@@ -54,7 +54,7 @@ dispatchCmd activeBranches =
     , Subcommand "request" "Request dist git repo for new package" $
       requestRepo <$> strArg "NEWPACKAGE"
     , Subcommand "import" "Import new package via bugzilla" $
-      importPkg <$> strArg "NEWPACKAGE"
+      importPkgs <$> many (strArg "NEWPACKAGE...")
     , Subcommand "build" "Build package(s)" $
       build <$> noMockOpt <*> branchOpt <*> some pkgArg
     , Subcommand "build-branch" "Build branch(s) of package" $
@@ -317,6 +317,17 @@ checkWorkingDirClean = do
   clean <- gitBool "diff-index" ["--quiet", "HEAD"]
   unless clean $ error' "Working dir is not clean"
 
+importPkgs :: [String] -> IO ()
+importPkgs [] = do
+  pkgs <- map reviewBugToPackage <$> approvedReviews
+  mapM_ importPkg pkgs
+importPkgs pkgs =
+  mapM_ importPkg pkgs
+
+reviewBugToPackage :: Bug -> String
+reviewBugToPackage =
+  head . words . removePrefix "Review Request: " . T.unpack . bugSummary
+
 importPkg :: String -> IO ()
 importPkg pkg = do
   dir <- getCurrentDirectory
@@ -401,24 +412,28 @@ readIniConfig inifile iniparser record = do
 
 approved :: IO ()
 approved = do
+  bugs <- approvedReviews
+  mapM_ putBug bugs
+
+approvedReviews :: IO [Bug]
+approvedReviews = do
   session <- bzLoginSession
   muser <- getBzUser
   case muser of
     Nothing -> do
       putStrLn "Please login to bugzilla:"
       cmd_ "bugzilla" ["login"]
-      approved
+      approvedReviews
     Just user -> do
       let query = ReporterField .==. user .&&. packageReview .&&.
                   statusNewPost .&&. reviewApproved
-      bugs <- searchBugs session query
-      mapM_ putBug bugs
+      searchBugs session query
 
 putBug :: Bug -> IO ()
-putBug bid = do
+putBug bug = do
   -- FIXME remove prefix "Review Request: "?
-  T.putStrLn $ bugSummary bid
-  putBugId $ bugId bid
+  putStrLn $ reviewBugToPackage bug
+  putBugId $ bugId bug
   putStrLn ""
 
 -- uniq for lists
