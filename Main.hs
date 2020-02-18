@@ -296,6 +296,7 @@ requestRepo pkg = do
   where
     checkNoRepoRequest :: IO ()
     checkNoRepoRequest = do
+      -- FIXME also check for repo or closed ticket
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
       let reqs = filter (("\"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
