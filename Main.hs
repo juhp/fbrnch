@@ -22,8 +22,10 @@ import Options.Applicative (maybeReader)
 import System.Directory
 import System.Environment
 import System.Environment.XDG.BaseDir
+import System.Exit (ExitCode (..))
 import System.FilePath
 import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
+import System.Process.Text (readProcessWithExitCode)
 
 import Web.Bugzilla
 import Web.Bugzilla.Search
@@ -527,10 +529,8 @@ createReview spec = do
 
     postReviewReq :: BugzillaSession -> FilePath -> String -> String -> String -> IO BugId
     postReviewReq session srpm fasid kojiurl pkg = do
-      summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
-      when (summary /= utf8Encode summary) $
-        putStrLn "Warning: package summary uses UTF8 chars"
-      description <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
+      summary <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
+      description <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
       let url = "https://" <> fasid <> ".fedorapeople.org/reviews"
           req = setRequestMethod "POST" $
               setRequestCheckStatus $
@@ -538,9 +538,16 @@ createReview spec = do
               [ ("product", Just "Fedora")
               , ("component", Just "Package Review")
               , ("version", Just "rawhide")
-              , ("summary", Just (T.pack ("Review Request: " <> pkg <> " - " <> utf8Encode summary)))
-              , ("description", Just $ T.pack ("Spec URL: " <> url </> takeFileName spec <> "\nSRPM URL: " <> url </> takeFileName srpm <> "\n\nDescription:\n" <> utf8Encode description <> "\n\nKoji scratch build: " <> kojiurl))
+              , ("summary", Just $ "Review Request: " <> T.pack pkg <> " - " <> summary)
+              , ("description", Just $ "Spec URL: " <> T.pack (url </> takeFileName spec) <> "\nSRPM URL: " <> T.pack (url </> takeFileName srpm) <> "\n\nDescription:\n" <> description <> "\n\nKoji scratch build: " <> T.pack kojiurl)
               ]
       newBugId . getResponseBody <$> httpJSON req
 
 data TaskState = TaskOpen | TaskFailed | TaskClosed | TaskFree
+
+cmdT :: String -> [String] -> IO T.Text
+cmdT c args = do
+  (ret, out, err) <- readProcessWithExitCode c args ""
+  case ret of
+    ExitSuccess -> return out
+    ExitFailure n -> error' $ unwords (c:args) +-+ "failed with status" +-+ show n ++ "\n" ++ T.unpack err

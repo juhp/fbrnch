@@ -37,6 +37,7 @@ executable fedbrnch
                      , http-conduit
                      , network-uri
                      , optparse-applicative
+                     , process-extras
                      , simple-cmd-args >= 0.1.4
                      , simple-cmd
                      , text
