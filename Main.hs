@@ -541,7 +541,7 @@ createReview spec = do
               , ("component", Just "Package Review")
               , ("version", Just "rawhide")
               , ("summary", Just $ "Review Request: " <> T.pack pkg <> " - " <> summary)
-              , ("description", Just $ "Spec URL: " <> T.pack (url </> takeFileName spec) <> "\nSRPM URL: " <> T.pack (url </> takeFileName srpm) <> "\n\nDescription:\n" <> description <> "\n\nKoji scratch build: " <> T.pack kojiurl)
+              , ("description", Just $ "Spec URL: " <> T.pack (url </> takeFileName spec) <> "\nSRPM URL: " <> T.pack (url </> takeFileName srpm) <> "\n\nDescription:\n" <> description <> "\n\n\nKoji scratch build: " <> T.pack kojiurl)
               ]
       newBugId . getResponseBody <$> httpJSON req
 
