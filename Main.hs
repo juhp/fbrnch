@@ -5,8 +5,8 @@ import SimpleCmd
 import SimpleCmd.Git
 import SimpleCmdArgs
 
-import Codec.Binary.UTF8.String (utf8Encode)
 import Control.Monad
+import Data.Char (isAscii)
 import Data.Ini.Config
 import Data.List
 import Data.Maybe
@@ -474,8 +474,8 @@ kojiBuildStatus nvr = do
 createReview :: FilePath -> IO ()
 createReview spec = do
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
-  when (pkg /= utf8Encode pkg) $
-    putStrLn "Warning: package name uses UTF8 chars!"
+  unless (all isAscii pkg) $
+    putStrLn "Warning: package name is not ASCII!"
   (bugs,session) <- bugsSession $ pkgReviews pkg
   unless (null bugs) $ do
     putStrLn "Existing review(s):"
