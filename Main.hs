@@ -172,11 +172,12 @@ buildBranch mprev mpkg noMock (br:brs) = do
         if br == Master
           then forM_ mbid $ postBuild session nvr
           else do
+          -- also query for open bugs
           let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
           -- FIXME sometimes bodhi cli hangs
-          -- FIXME diff previous changelog
+           -- FIXME diff previous changelog?
+          changelog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", pkg <.> "spec"]
           -- FIXME check for autocreated update (pre-updates-testing)
-          changelog <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", pkg <.> "spec"]
           cmd_ "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
           -- override option
           when False $ cmd_ "bodhi" ["overrides", "save", nvr]
@@ -210,6 +211,12 @@ buildBranch mprev mpkg noMock (br:brs) = do
     mockConfig :: Branch -> String
     mockConfig Master = "fedora-rawhide-x86_64"
     mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
+
+    cleanChangelog cs =
+      case length (lines cs) of
+        0 -> error' "empty changelog" -- should not happen
+        1 -> removePrefix "- " cs
+        _ -> cs
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
