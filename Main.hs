@@ -110,6 +110,7 @@ build noMock mbr (pkg:pkgs) = do
       Just b | b `elem` fedBranches -> return [b]
              | otherwise -> error' "Unsupported branch"
       Nothing ->
+        -- FIXME problem is we may want --all: maybe better just to request --all
         filter (`elem` fedBranches) <$> getPackageBranches
     buildBranch Nothing (Just pkg) noMock branches
   build noMock mbr pkgs
@@ -491,6 +492,7 @@ createReview spec = do
     mapM_ putBug bugs
     prompt_ "to continue"
   -- FIXME or check existing srpm newer than spec file
+  -- FIXME build srpm in/from spec file dir
   srpm <- last . words <$> cmd "rpmbuild" ["-bs", spec]
   putStrLn srpm
   out <- cmd "koji" ["build", "--scratch", "--nowait", "--fail-fast", "rawhide", srpm]
