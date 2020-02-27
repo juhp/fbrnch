@@ -177,8 +177,9 @@ buildBranch mprev mpkg mock (br:brs) = do
           else do
           -- also query for open bugs
           let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
-          -- FIXME sometimes bodhi cli hangs
-           -- FIXME diff previous changelog?
+          -- FIXME sometimes bodhi cli hangs or times out:
+              -- check for successful update on 504 etc
+          -- FIXME diff previous changelog?
           changelog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", pkg <.> "spec"]
           putStrLn "Creating Bodhi Update..."
           -- FIXME check for autocreated update (pre-updates-testing)
@@ -335,6 +336,7 @@ checkWorkingDirClean = do
 
 importPkgs :: [String] -> IO ()
 importPkgs [] = do
+  -- FIXME check repo creation done
   pkgs <- map reviewBugToPackage <$> approvedReviews
   mapM_ importPkg pkgs
 importPkgs pkgs =
@@ -349,6 +351,7 @@ importPkg pkg = do
   dir <- getCurrentDirectory
   when (dir /= pkg) $ do
     direxists <- doesDirectoryExist pkg
+    -- FIXME check repo exists
     unless direxists $ fedpkg_ "clone" [pkg]
     setCurrentDirectory pkg
     when direxists checkWorkingDirClean
