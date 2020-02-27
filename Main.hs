@@ -58,6 +58,8 @@ dispatchCmd activeBranches =
       build <$> noMockOpt <*> branchOpt <*> some pkgArg
     , Subcommand "build-branch" "Build branch(s) of package" $
       buildBranch Nothing <$> pkgOpt <*> noMockOpt <*> some branchArg
+    , Subcommand "list" "List package reviews" $
+      pure listReviews
     , Subcommand "review" "Find package review bug" $
       review <$> strArg "PACKAGE"
     ]
@@ -425,9 +427,8 @@ readIniConfig inifile iniparser record = do
     return $ either error (Just . record) config
 
 approved :: IO ()
-approved = do
-  bugs <- approvedReviews
-  mapM_ putBug bugs
+approved =
+  approvedReviews >>= mapM_ putBug
 
 approvedReviews :: IO [Bug]
 approvedReviews = do
@@ -441,6 +442,23 @@ approvedReviews = do
     Just user -> do
       let query = ReporterField .==. user .&&. packageReview .&&.
                   statusNewPost .&&. reviewApproved
+      searchBugs session query
+
+listReviews :: IO ()
+listReviews = do
+  openReviews >>= mapM_ putBug
+
+openReviews :: IO [Bug]
+openReviews = do
+  session <- bzLoginSession
+  muser <- getBzUser
+  case muser of
+    Nothing -> do
+      putStrLn "Please login to bugzilla:"
+      cmd_ "bugzilla" ["login"]
+      openReviews
+    Just user -> do
+      let query = ReporterField .==. user .&&. packageReview .&&. statusNewPost
       searchBugs session query
 
 putBug :: Bug -> IO ()
