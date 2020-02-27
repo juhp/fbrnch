@@ -178,6 +178,7 @@ buildBranch mprev mpkg noMock (br:brs) = do
           -- FIXME sometimes bodhi cli hangs
            -- FIXME diff previous changelog?
           changelog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", pkg <.> "spec"]
+          putStrLn "Creating Bodhi Update..."
           -- FIXME check for autocreated update (pre-updates-testing)
           cmd_ "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
           -- override option
