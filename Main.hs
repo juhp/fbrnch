@@ -55,9 +55,9 @@ dispatchCmd activeBranches =
     , Subcommand "import" "Import new package via bugzilla" $
       importPkgs <$> many (strArg "NEWPACKAGE...")
     , Subcommand "build" "Build package(s)" $
-      build <$> noMockOpt <*> branchOpt <*> some pkgArg
+      build <$> mockOpt <*> branchOpt <*> some pkgArg
     , Subcommand "build-branch" "Build branch(s) of package" $
-      buildBranch Nothing <$> pkgOpt <*> noMockOpt <*> some branchArg
+      buildBranch Nothing <$> pkgOpt <*> mockOpt <*> some branchArg
     , Subcommand "list" "List package reviews" $
       pure listReviews
     , Subcommand "review" "Find package review bug" $
@@ -78,7 +78,7 @@ dispatchCmd activeBranches =
     pkgOpt :: Parser (Maybe String)
     pkgOpt = optional (strOptionWith 'p' "package" "PKG" "package")
 
-    noMockOpt = switchWith 'n' "no-mock" "Do not use mock to test branch"
+    mockOpt = switchWith 'm' "mock" "Do mock build to test branch"
 
 fedpkg :: String -> [String] -> IO String
 fedpkg c args =
@@ -105,7 +105,7 @@ getPackageBranches = do
 
 build :: Bool -> Maybe Branch -> [Package] -> IO ()
 build _ _ [] = return ()
-build noMock mbr (pkg:pkgs) = do
+build mock mbr (pkg:pkgs) = do
   fedBranches <- getFedoraBranches
   withCurrentDirectory pkg $ do
     branches <- case mbr of
@@ -114,12 +114,12 @@ build noMock mbr (pkg:pkgs) = do
       Nothing ->
         -- FIXME problem is we may want --all: maybe better just to request --all
         filter (`elem` fedBranches) <$> getPackageBranches
-    buildBranch Nothing (Just pkg) noMock branches
-  build noMock mbr pkgs
+    buildBranch Nothing (Just pkg) mock branches
+  build mock mbr pkgs
 
 buildBranch :: Maybe Branch -> Maybe Package -> Bool -> [Branch] -> IO ()
 buildBranch _ _ _ [] = return ()
-buildBranch mprev mpkg noMock (br:brs) = do
+buildBranch mprev mpkg mock (br:brs) = do
   checkWorkingDirClean
   git_ "pull" []
   pkg <- maybe getPackageDir return mpkg
@@ -128,10 +128,10 @@ buildBranch mprev mpkg noMock (br:brs) = do
     if br == Master
     then error' "no origin/master found!"
     else do
-      unless noMock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
+      when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
       checkNoBranchRequest pkg
       putStrLn $ "requesting branch " ++ show br
-      -- FIXME? request all branches? or mock first?
+      -- FIXME? request all branches?
       url <- fedpkg "request-branch" [show br]
       putStrLn url
       postBranchReq url
@@ -162,7 +162,7 @@ buildBranch mprev mpkg noMock (br:brs) = do
     nvr <- fedpkg "verrel" []
     buildstatus <- kojiBuildStatus nvr
     if buildstatus == COMPLETE
-      then buildBranch (Just br) mpkg noMock brs
+      then buildBranch (Just br) mpkg mock brs
       else do
       -- FIXME handle target
       latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
@@ -185,7 +185,7 @@ buildBranch mprev mpkg noMock (br:brs) = do
           cmd_ "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
           -- override option
           when False $ cmd_ "bodhi" ["overrides", "save", nvr]
-        buildBranch (Just br) mpkg noMock brs
+        buildBranch (Just br) mpkg mock brs
   where
     postBuild session nvr bid = do
       let req = setRequestMethod "PUT" $
