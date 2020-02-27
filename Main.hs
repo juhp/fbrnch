@@ -543,7 +543,10 @@ createReview spec = do
     postReviewReq session srpm fasid kojiurl pkg = do
       summary <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
       description <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
-      let url = "https://" <> fasid <> ".fedorapeople.org/reviews"
+      -- read ~/.config/fedora-create-review
+      -- FIXME share path with sshpath
+      -- FIXME test urls exist
+      let url = "https://" <> fasid <> ".fedorapeople.org/reviews" </> pkg
           req = setRequestMethod "POST" $
               setRequestCheckStatus $
               newBzRequest session ["bug"]
