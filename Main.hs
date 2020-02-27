@@ -58,6 +58,8 @@ dispatchCmd activeBranches =
       build <$> mockOpt <*> branchOpt <*> some pkgArg
     , Subcommand "build-branch" "Build branch(s) of package" $
       buildBranch Nothing <$> pkgOpt <*> mockOpt <*> some branchArg
+    , Subcommand "pull" "Git pull package" $
+      pullPkg <$> strArg "PACKAGE"
     , Subcommand "list" "List package reviews" $
       pure listReviews
     , Subcommand "review" "Find package review bug" $
@@ -103,11 +105,19 @@ getPackageBranches = do
   activeBranches <- getFedoraBranches
   mapMaybe (readBranch' activeBranches . removePrefix "origin/") . words <$> cmd "git" ["branch", "--remote", "--list"]
 
+withExistingDirectory :: FilePath -> IO () -> IO ()
+withExistingDirectory dir act = do
+  hasDir <- doesDirectoryExist dir
+  if not hasDir
+    then error' $ "No such directory: " ++ dir
+    else
+    withCurrentDirectory dir act
+
 build :: Bool -> Maybe Branch -> [Package] -> IO ()
 build _ _ [] = return ()
 build mock mbr (pkg:pkgs) = do
   fedBranches <- getFedoraBranches
-  withCurrentDirectory pkg $ do
+  withExistingDirectory pkg $ do
     branches <- case mbr of
       Just b | b `elem` fedBranches -> return [b]
              | otherwise -> error' "Unsupported branch"
@@ -587,3 +597,9 @@ cmdT c args = do
   case ret of
     ExitSuccess -> return out
     ExitFailure n -> error' $ unwords (c:args) +-+ "failed with status" +-+ show n ++ "\n" ++ T.unpack err
+
+pullPkg :: String -> IO ()
+pullPkg pkg = do
+  withExistingDirectory pkg $ do
+    checkWorkingDirClean
+    git_ "pull" ["--rebase"]
