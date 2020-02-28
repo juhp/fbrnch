@@ -58,8 +58,8 @@ dispatchCmd activeBranches =
       build <$> mockOpt <*> branchOpt <*> some pkgArg
     , Subcommand "build-branch" "Build branch(s) of package" $
       buildBranch Nothing <$> pkgOpt <*> mockOpt <*> some branchArg
-    , Subcommand "pull" "Git pull package" $
-      pullPkg <$> strArg "PACKAGE"
+    , Subcommand "pull" "Git pull packages" $
+      pullPkgs <$> some (strArg "PACKAGE...")
     , Subcommand "list" "List package reviews" $
       pure listReviews
     , Subcommand "review" "Find package review bug" $
@@ -597,6 +597,9 @@ cmdT c args = do
   case ret of
     ExitSuccess -> return out
     ExitFailure n -> error' $ unwords (c:args) +-+ "failed with status" +-+ show n ++ "\n" ++ T.unpack err
+
+pullPkgs :: [String] -> IO ()
+pullPkgs pkgs = mapM_ pullPkg pkgs
 
 pullPkg :: String -> IO ()
 pullPkg pkg = do
