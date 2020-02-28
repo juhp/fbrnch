@@ -35,6 +35,7 @@ executable fedbrnch
                      , fedora-dists > 2.0
                      , filepath
                      , http-conduit
+                     , http-directory
                      , network-uri
                      , optparse-applicative
                      , process-extras

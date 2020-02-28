@@ -16,6 +16,7 @@ import Data.Semigroup ((<>))
 #endif
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import Network.HTTP.Simple
 import Network.URI (isURI)
 import Options.Applicative (maybeReader)
@@ -609,18 +610,27 @@ createReview spec = do
       description <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
       -- read ~/.config/fedora-create-review
       -- FIXME share path with sshpath
-      -- FIXME test urls exist
       let url = "https://" <> fasid <> ".fedorapeople.org/reviews" </> pkg
-          req = setRequestMethod "POST" $
+          specUrl = url </> takeFileName spec
+          srpmUrl = url </> takeFileName srpm
+      mgr <- httpManager
+      checkUrlOk mgr specUrl
+      checkUrlOk mgr srpmUrl
+      let req = setRequestMethod "POST" $
               setRequestCheckStatus $
               newBzRequest session ["bug"]
               [ ("product", Just "Fedora")
               , ("component", Just "Package Review")
               , ("version", Just "rawhide")
               , ("summary", Just $ "Review Request: " <> T.pack pkg <> " - " <> summary)
-              , ("description", Just $ "Spec URL: " <> T.pack (url </> takeFileName spec) <> "\nSRPM URL: " <> T.pack (url </> takeFileName srpm) <> "\n\nDescription:\n" <> description <> "\n\n\nKoji scratch build: " <> T.pack kojiurl)
+              , ("description", Just $ "Spec URL: " <> T.pack specUrl <> "\nSRPM URL: " <> T.pack srpmUrl <> "\n\nDescription:\n" <> description <> "\n\n\nKoji scratch build: " <> T.pack kojiurl)
               ]
       newBugId . getResponseBody <$> httpJSON req
+        where
+          checkUrlOk :: Manager -> String -> IO ()
+          checkUrlOk mgr url = do
+            okay <- httpExists mgr url
+            unless okay $ error' $ "Could not access: " ++ url
 
 data TaskState = TaskOpen | TaskFailed | TaskClosed | TaskFree
 
