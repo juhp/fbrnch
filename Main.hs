@@ -350,7 +350,7 @@ requestRepo pkg = do
   where
     checkNoRepoRequest :: IO ()
     checkNoRepoRequest = do
-      -- FIXME also check for repo or closed ticket
+      -- FIXME also check pagure for repo
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
       let reqs = filter (("\"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
@@ -510,7 +510,6 @@ openReviews = do
 
 putBug :: Bug -> IO ()
 putBug bug = do
-  -- FIXME remove prefix "Review Request: "?
   putStrLn $ reviewBugToPackage bug
   putBugId $ bugId bug
   putStrLn ""

@@ -1,0 +1,10 @@
+- list: show status of open reviews
+- chain builds
+- build: override if dep
+- multipackage update
+- depsort: rpmbuild-order
+- combine release updates into single bodhi command
+- build branches of packages horizontally?
+- update pagure key in ~/.config/rpkg/fedpkg.conf
+- 'request-branch' with mock build
+- build-branch --all
