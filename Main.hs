@@ -317,16 +317,20 @@ requestRepo :: String -> IO ()
 requestRepo pkg = do
   (bid,session) <- bugIdSession pkg
   putBugId bid
-  -- show comments?
-  checkNoRepoRequest
-  url <- T.pack <$> fedpkg "request-repo" [pkg, show bid]
-  T.putStrLn url
-  let comment = T.pack "Thank you for the review\n\n" <> url
-      req = setRequestMethod "POST" $
-            setRequestCheckStatus $
-            newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just comment)]
-  void $ httpNoBody req
-  putStrLn "comment posted"
+  created <- checkRepoCreatedComment session bid
+  if created
+    then putStrLn "scm repo was already created"
+    else do
+    -- show comments?
+    checkNoRepoRequest
+    url <- T.pack <$> fedpkg "request-repo" [pkg, show bid]
+    T.putStrLn url
+    let comment = T.pack "Thank you for the review\n\n" <> url
+        req = setRequestMethod "POST" $
+              setRequestCheckStatus $
+              newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just comment)]
+    void $ httpNoBody req
+    putStrLn "comment posted"
   where
     checkNoRepoRequest :: IO ()
     checkNoRepoRequest = do
@@ -462,15 +466,14 @@ approvedReviews created = do
                   statusNewPost .&&. reviewApproved
       bugs <- searchBugs session query
       let test = if created
-                 then (checkScmRepoCreated session)
+                 then (checkRepoCreatedComment session . bugId)
                  else const (return True)
       filterM test bugs
-  where
-    checkScmRepoCreated :: BugzillaSession -> Bug -> IO Bool
-    checkScmRepoCreated session bug = do
-        let bid = bugId bug
-        comments <- map commentText <$> getComments session bid
-        return $ any ("(fedscm-admin):  The Pagure repository was created at" `T.isInfixOf`) comments
+
+checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
+checkRepoCreatedComment session bid = do
+    comments <- map commentText <$> getComments session bid
+    return $ any ("(fedscm-admin):  The Pagure repository was created at" `T.isInfixOf`) comments
 
 listReviews :: IO ()
 listReviews = do
