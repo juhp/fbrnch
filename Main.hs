@@ -346,8 +346,7 @@ checkWorkingDirClean = do
 
 importPkgs :: [String] -> IO ()
 importPkgs [] = do
-  -- FIXME check repo creation done
-  pkgs <- map reviewBugToPackage <$> approvedReviews
+  pkgs <- map reviewBugToPackage <$> approvedReviews True
   mapM_ importPkg pkgs
 importPkgs pkgs =
   mapM_ importPkg pkgs
@@ -441,21 +440,31 @@ readIniConfig inifile iniparser record = do
 
 approved :: IO ()
 approved =
-  approvedReviews >>= mapM_ putBug
+  approvedReviews False >>= mapM_ putBug
 
-approvedReviews :: IO [Bug]
-approvedReviews = do
+approvedReviews :: Bool -> IO [Bug]
+approvedReviews created = do
   session <- bzLoginSession
   muser <- getBzUser
   case muser of
     Nothing -> do
       putStrLn "Please login to bugzilla:"
       cmd_ "bugzilla" ["login"]
-      approvedReviews
+      approvedReviews created
     Just user -> do
       let query = ReporterField .==. user .&&. packageReview .&&.
                   statusNewPost .&&. reviewApproved
-      searchBugs session query
+      bugs <- searchBugs session query
+      let test = if created
+                 then (checkScmRepoCreated session)
+                 else const (return True)
+      filterM test bugs
+  where
+    checkScmRepoCreated :: BugzillaSession -> Bug -> IO Bool
+    checkScmRepoCreated session bug = do
+        let bid = bugId bug
+        comments <- map commentText <$> getComments session bid
+        return $ any ("(fedscm-admin):  The Pagure repository was created at" `T.isInfixOf`) comments
 
 listReviews :: IO ()
 listReviews = do
