@@ -160,19 +160,21 @@ buildBranch mprev mpkg mock (br:brs) = do
                 branches <- getFedoraBranches
                 return $ newerBranch branches br
     tty <- hIsTerminalDevice stdin
-    git_ "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
     when (br /= Master) $ do
-      merged <- gitBool "diff" ["--quiet", show br, show prev]
-      unless merged $ do
-        -- FIXME ignore Mass_Rebuild
+      shortlog <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+      unless (null shortlog) $ do
+        putStrLn $ "Commits from " ++ show prev ++ ":"
+        putStrLn $ simplifyCommitLog shortlog
+        -- FIXME ignore Mass_Rebuild?
         mref <- prompt "or ref to merge, or no: "
         unless (mref == "no") $ do
           let ref = if null mref then show prev else mref
           git_ "merge" [ref]
     logs <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
     unless (null logs) $ do
-      git_ "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
-      when tty $ prompt_ "to push"
+      putStrLn $ "Local commits:"
+      putStrLn $ simplifyCommitLog logs
+      when tty $ prompt_ "to push and build"
       fedpkg_ "push" []
     nvr <- fedpkg "verrel" []
     buildstatus <- kojiBuildStatus nvr
@@ -237,6 +239,13 @@ buildBranch mprev mpkg mock (br:brs) = do
         0 -> error' "empty changelog" -- should not happen
         1 -> removePrefix "- " cs
         _ -> cs
+
+    simplifyCommitLog :: String -> String
+    simplifyCommitLog = unlines . map (unwords . shortenHash . words) . lines
+      where
+        shortenHash :: [String] -> [String]
+        shortenHash [] = []
+        shortenHash (h:cs) = (take 8 h):cs
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
