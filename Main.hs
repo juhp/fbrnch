@@ -136,7 +136,9 @@ buildBranch :: Maybe Branch -> Maybe Package -> Bool -> [Branch] -> IO ()
 buildBranch _ _ _ [] = return ()
 buildBranch mprev mpkg mock (br:brs) = do
   checkWorkingDirClean
-  git_ "pull" []
+  pull <- git "pull" ["--rebase"]
+  unless ("Already up to date." `isPrefixOf` pull) $
+    putStrLn pull
   pkg <- maybe getPackageDir return mpkg
   branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
   if not branched then
