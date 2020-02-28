@@ -175,7 +175,7 @@ buildBranch mprev mpkg mock (br:brs) = do
           git_ "merge" [ref]
     logs <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
     unless (null logs) $ do
-      putStrLn $ "Local commits:"
+      putStrLn "Local commits:"
       putStrLn $ simplifyCommitLog logs
       when tty $ prompt_ "to push and build"
       fedpkg_ "push" []
@@ -252,7 +252,7 @@ buildBranch mprev mpkg mock (br:brs) = do
       where
         shortenHash :: [String] -> [String]
         shortenHash [] = []
-        shortenHash (h:cs) = (take 8 h):cs
+        shortenHash (h:cs) = take 8 h : cs
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
@@ -484,7 +484,7 @@ approvedReviews created = do
                   statusNewPost .&&. reviewApproved
       bugs <- searchBugs session query
       let test = if created
-                 then (checkRepoCreatedComment session . bugId)
+                 then checkRepoCreatedComment session . bugId
                  else const (return True)
       filterM test bugs
 
@@ -494,7 +494,7 @@ checkRepoCreatedComment session bid = do
     return $ any ("(fedscm-admin):  The Pagure repository was created at" `T.isInfixOf`) comments
 
 listReviews :: IO ()
-listReviews = do
+listReviews =
   openReviews >>= mapM_ putBug
 
 openReviews :: IO [Bug]
@@ -643,10 +643,10 @@ cmdT c args = do
     ExitFailure n -> error' $ unwords (c:args) +-+ "failed with status" +-+ show n ++ "\n" ++ T.unpack err
 
 pullPkgs :: [Package] -> IO ()
-pullPkgs pkgs = mapM_ pullPkg pkgs
+pullPkgs = mapM_ pullPkg
 
 pullPkg :: String -> IO ()
-pullPkg pkg = do
+pullPkg pkg =
   withExistingDirectory pkg $ do
     checkWorkingDirClean
     git_ "pull" ["--rebase"]
