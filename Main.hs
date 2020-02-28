@@ -6,7 +6,7 @@ import SimpleCmd.Git
 import SimpleCmdArgs
 
 import Control.Monad
-import Data.Char (isAscii)
+import Data.Char (isAscii, toLower)
 import Data.Ini.Config
 import Data.List
 import Data.Maybe
@@ -169,8 +169,8 @@ buildBranch mprev mpkg mock (br:brs) = do
         putStrLn $ "Commits from " ++ show prev ++ ":"
         putStrLn $ simplifyCommitLog shortlog
         -- FIXME ignore Mass_Rebuild?
-        mref <- prompt "or ref to merge, or no: "
-        unless (mref == "no") $ do
+        mref <- prompt "or ref to merge, or 'no': "
+        unless (map toLower mref == "no") $ do
           let ref = if null mref then show prev else mref
           git_ "merge" [ref]
     logs <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
@@ -359,7 +359,9 @@ requestRepo pkg = do
 prompt :: String -> IO String
 prompt s = do
   putStr $ "Press Enter " ++ s
-  getLine
+  inp <- getLine
+  putStrLn ""
+  return inp
 
 prompt_ :: String -> IO ()
 prompt_ = void <$> prompt
