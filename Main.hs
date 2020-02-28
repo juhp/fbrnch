@@ -113,10 +113,15 @@ withExistingDirectory dir act = do
     else
     withCurrentDirectory dir act
 
+putPkgHdr :: String -> IO ()
+putPkgHdr pkg =
+  putStrLn $ "\n== " ++ pkg ++ " =="
+
 build :: Bool -> Maybe Branch -> [Package] -> IO ()
 build _ _ [] = return ()
 build mock mbr (pkg:pkgs) = do
   fedBranches <- getFedoraBranches
+  putPkgHdr pkg
   withExistingDirectory pkg $ do
     branches <- case mbr of
       Just b | b `elem` fedBranches -> return [b]
@@ -357,6 +362,7 @@ reviewBugToPackage =
 
 importPkg :: String -> IO ()
 importPkg pkg = do
+  putPkgHdr pkg
   dir <- getCurrentDirectory
   when (dir /= pkg) $ do
     direxists <- doesDirectoryExist pkg
