@@ -353,7 +353,7 @@ checkWorkingDirClean = do
   clean <- gitBool "diff-index" ["--quiet", "HEAD"]
   unless clean $ error' "Working dir is not clean"
 
-importPkgs :: [String] -> IO ()
+importPkgs :: [Package] -> IO ()
 importPkgs [] = do
   pkgs <- map reviewBugToPackage <$> approvedReviews True
   mapM_ importPkg pkgs
@@ -616,7 +616,7 @@ cmdT c args = do
     ExitSuccess -> return out
     ExitFailure n -> error' $ unwords (c:args) +-+ "failed with status" +-+ show n ++ "\n" ++ T.unpack err
 
-pullPkgs :: [String] -> IO ()
+pullPkgs :: [Package] -> IO ()
 pullPkgs pkgs = mapM_ pullPkg pkgs
 
 pullPkg :: String -> IO ()
