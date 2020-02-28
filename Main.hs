@@ -199,7 +199,11 @@ buildBranch mprev mpkg mock (br:brs) = do
           -- FIXME sometimes bodhi cli hangs or times out:
               -- check for successful update on 504 etc
           -- FIXME diff previous changelog?
-          changelog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", pkg <.> "spec"]
+          changelog <- do
+            clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", pkg <.> "spec"]
+            putStrLn clog
+            usrlog <- prompt "to use above or input Update changelog now"
+            return $ if null usrlog then clog else usrlog
           putStrLn "Creating Bodhi Update..."
           -- FIXME check for autocreated update (pre-updates-testing)
           cmd_ "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
