@@ -297,7 +297,7 @@ statusOpen =
 
 statusNewPost :: SearchExpression
 statusNewPost =
-  StatusField .==. "NEW" .||. StatusField .==. "POST"
+  StatusField .==. "NEW" .||. StatusField .==. "ASSIGNED" .||. StatusField .==. "POST"
 
 reviewApproved :: SearchExpression
 reviewApproved =
