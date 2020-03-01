@@ -491,7 +491,7 @@ approvedReviews created = do
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid = do
     comments <- map commentText <$> getComments session bid
-    return $ any ("(fedscm-admin):  The Pagure repository was created at" `T.isInfixOf`) comments
+    return $ any ("(fedscm-admin):  The Pagure repository was created at" `T.isInfixOf`) $ reverse comments
 
 listReviews :: IO ()
 listReviews =
