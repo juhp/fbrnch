@@ -300,10 +300,11 @@ bzSession retry = do
   muser <- getBzUser
   let validreq = setRequestCheckStatus $
                  newBzRequest session ["valid_login"] [("login", muser)]
-  valid <- getResponseBody <$> httpLBS validreq
-  if valid == "false" then do
+  valid <- validToken . getResponseBody <$> httpJSON validreq
+  if not valid then do
     when retry $ error' "invalid login token"
     cmd_ "bugzilla" ["login"]
+    putStrLn ""
     bzSession True
     else return session
 
