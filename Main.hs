@@ -48,10 +48,10 @@ dispatchCmd activeBranches =
   simpleCmdArgs Nothing "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
-    [ Subcommand "create" "Create a Package Review request" $
-      createReview <$> strArg "SPECFILE"
+    [ Subcommand "create-review" "Create a Package Review request" $
+      createReview <$> optional (strArg "SPECFILE")
     , Subcommand "update-review" "Update a Package Review" $
-      updateReview <$> switchWith 's' "scratch" "Add a Koji scratch build" <*> strArg "SPECFILE"
+      updateReview <$> switchWith 's' "scratch" "Add a Koji scratch build" <*> optional (strArg "SPECFILE")
     , Subcommand "approved" "List approved reviews" $
       pure approvedCmd
     , Subcommand "request" "Request dist git repo for new package" $
@@ -586,8 +586,18 @@ kojiBuildStatus nvr = do
     Nothing -> return NoBuild
     Just out -> (return . read . last . words) out
 
-createReview :: FilePath -> IO ()
-createReview spec = do
+findSpecfile :: IO FilePath
+findSpecfile = fileWithExtension ".spec"
+  where
+    -- looks in dir for a unique file with given extension
+    fileWithExtension :: String -> IO FilePath
+    fileWithExtension ext = do
+      files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents "."
+      maybe (error' ("No unique " ++ ext ++ " file found")) return $ listToMaybe files
+
+createReview :: Maybe FilePath -> IO ()
+createReview mspec = do
+  spec <- getSpecFile mspec
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   unless (all isAscii pkg) $
     putStrLn "Warning: package name is not ASCII!"
@@ -597,24 +607,23 @@ createReview spec = do
     mapM_ putBug bugs
     prompt_ "to continue"
   -- FIXME or check existing srpm newer than spec file
-  -- FIXME build srpm in/from spec file dir
-  srpm <- last . words <$> cmd "rpmbuild" ["-bs", spec]
-  putStrLn srpm
+  -- FIXME assumed srpm in local dir
+  srpm <- takeFileName . last . words <$> cmd "rpmbuild" ["-bs", spec]
+  putStrLn $ "Created " ++ srpm
   kojiurl <- kojiScratchBuild True srpm
   mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
   case mfasid of
     Nothing -> error' "Could not determine fasid from klist"
     Just fasid -> do
-      uploadurl <- uploadPkgFiles fasid pkg spec srpm
-      bugid <- postReviewReq session srpm uploadurl kojiurl pkg
+      specSrpmUrls <- uploadPkgFiles fasid pkg spec srpm
+      bugid <- postReviewReq session spec specSrpmUrls kojiurl pkg
       putStrLn "Review request posted:"
       putBugId bugid
   where
-    postReviewReq :: BugzillaSession -> FilePath -> String -> String -> String -> IO BugId
-    postReviewReq session srpm uploadurl kojiurl pkg = do
+    postReviewReq :: BugzillaSession -> FilePath -> T.Text -> String -> String -> IO BugId
+    postReviewReq session spec specSrpmUrls kojiurl pkg = do
       summary <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
       description <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
-      specSrpmUrls <- getCheckedFileUrls uploadurl spec srpm
       let req = setRequestMethod "POST" $
               setRequestCheckStatus $
               newBzRequest session ["bug"]
@@ -626,19 +635,15 @@ createReview spec = do
               ]
       newId . getResponseBody <$> httpJSON req
 
-getCheckedFileUrls :: String -> FilePath -> FilePath -> IO T.Text
-getCheckedFileUrls uploadurl spec srpm = do
-  let specUrl = uploadurl </> takeFileName spec
-      srpmUrl = uploadurl </> takeFileName srpm
-  mgr <- httpManager
-  checkUrlOk mgr specUrl
-  checkUrlOk mgr srpmUrl
-  return $ "Spec URL: " <> T.pack specUrl <> "\nSRPM URL: " <> T.pack srpmUrl
+getSpecFile :: Maybe FilePath -> IO String
+getSpecFile =
+  -- FIXME or change to dir
+  maybe findSpecfile checkLocalFile
   where
-    checkUrlOk :: Manager -> String -> IO ()
-    checkUrlOk mgr url = do
-      okay <- httpExists mgr url
-      unless okay $ error' $ "Could not access: " ++ url
+    checkLocalFile :: FilePath -> IO FilePath
+    checkLocalFile f =
+      if takeFileName f == f then return f
+        else error' "Please run in the directory of the spec file"
 
 kojiScratchBuild :: Bool -> FilePath -> IO String
 kojiScratchBuild failfast srpm = do
@@ -677,14 +682,28 @@ kojiScratchBuild failfast srpm = do
     takeWhileEnd :: (a -> Bool) -> [a] -> [a]
     takeWhileEnd p = reverse . takeWhile p . reverse
 
-uploadPkgFiles :: String -> String -> FilePath -> FilePath -> IO String
+uploadPkgFiles :: String -> String -> FilePath -> FilePath -> IO T.Text
 uploadPkgFiles fasid pkg spec srpm = do
   -- read ~/.config/fedora-create-review
   let sshhost = "fedorapeople.org"
       sshpath = "public_html/reviews/" ++ pkg
   cmd_ "ssh" [sshhost, "mkdir", "-p", sshpath]
   cmd_ "scp" [spec, srpm, sshhost ++ ":" ++ sshpath]
-  return $ "https://" <> fasid <> ".fedorapeople.org" </> removePrefix "public_html/" sshpath
+  getCheckedFileUrls $ "https://" <> fasid <> ".fedorapeople.org" </> removePrefix "public_html/" sshpath
+  where
+    getCheckedFileUrls :: String -> IO T.Text
+    getCheckedFileUrls uploadurl = do
+      let specUrl = uploadurl </> takeFileName spec
+          srpmUrl = uploadurl </> takeFileName srpm
+      mgr <- httpManager
+      checkUrlOk mgr specUrl
+      checkUrlOk mgr srpmUrl
+      return $ "Spec URL: " <> T.pack specUrl <> "\nSRPM URL: " <> T.pack srpmUrl
+      where
+        checkUrlOk :: Manager -> String -> IO ()
+        checkUrlOk mgr url = do
+          okay <- httpExists mgr url
+          unless okay $ error' $ "Could not access: " ++ url
 
 data TaskState = TaskOpen | TaskFailed | TaskClosed | TaskFree
 
@@ -704,8 +723,9 @@ pullPkg pkg =
     checkWorkingDirClean
     git_ "pull" ["--rebase"]
 
-updateReview :: Bool -> FilePath -> IO ()
-updateReview scratch spec = do
+updateReview :: Bool -> Maybe FilePath -> IO ()
+updateReview scratch mspec = do
+  spec <- getSpecFile mspec
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   (bid,session) <- reviewBugIdSession pkg
   putBugId bid
@@ -721,12 +741,7 @@ updateReview scratch spec = do
   case mfasid of
     Nothing -> error' "Could not determine fasid from klist"
     Just fasid -> do
-      uploadurl <- uploadPkgFiles fasid pkg spec srpm
-      updateReviewBug session bid srpm uploadurl mkojiurl
-      putStrLn "Review bug updated"
-  where
-    updateReviewBug :: BugzillaSession -> BugId -> FilePath -> String -> Maybe String -> IO ()
-    updateReviewBug session bid srpm uploadurl mkojiurl = do
-      specSrpmUrls <- getCheckedFileUrls uploadurl spec srpm
+      specSrpmUrls <- uploadPkgFiles fasid pkg spec srpm
       changelog <- getChangeLog spec
       postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> T.pack changelog) <> maybe "" ("\n\nKoji scratch build: " <>) (T.pack <$> mkojiurl))
+--      putStrLn "Review bug updated"
