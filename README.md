@@ -29,5 +29,5 @@ This is still in development: feedback and contributions are welcome.
 
 ## Usual disclaimer
 While this is already working quite well for me,
-if it breaks things for you, you get to keep the pieces.
-Bug reports are particularly welcome. :-)
+if it breaks things for you, you get to keep the pieces. :)
+Bug reports are welcome.
