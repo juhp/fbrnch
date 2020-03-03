@@ -31,7 +31,8 @@ import System.Process.Text (readProcessWithExitCode)
 import Web.Bugzilla
 import Web.Bugzilla.Search
 
-import NewBug
+import NewId
+import ValidLogin
 
 type Package = String
 
@@ -49,8 +50,10 @@ dispatchCmd activeBranches =
     subcommands
     [ Subcommand "create" "Create a Package Review request" $
       createReview <$> strArg "SPECFILE"
+    , Subcommand "update-review" "Update a Package Review" $
+      updateReview <$> switchWith 's' "scratch" "Add a Koji scratch build" <*> strArg "SPECFILE"
     , Subcommand "approved" "List approved reviews" $
-      pure approved
+      pure approvedCmd
     , Subcommand "request" "Request dist git repo for new package" $
       requestRepo <$> strArg "NEWPACKAGE"
     , Subcommand "import" "Import new package via bugzilla" $
@@ -58,7 +61,7 @@ dispatchCmd activeBranches =
     , Subcommand "build" "Build package(s)" $
       build <$> mockOpt <*> branchOpt <*> some pkgArg
     , Subcommand "build-branch" "Build branch(s) of package" $
-      buildBranch Nothing <$> pkgOpt <*> mockOpt <*> some branchArg
+      buildBranch False Nothing <$> pkgOpt <*> mockOpt <*> some branchArg
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (strArg "PACKAGE...")
     , Subcommand "list" "List package reviews" $
@@ -114,40 +117,45 @@ withExistingDirectory dir act = do
     else
     withCurrentDirectory dir act
 
-putPkgHdr :: String -> Maybe Branch -> IO ()
-putPkgHdr pkg mbr =
-  putStrLn $ "\n== " ++ pkg ++ maybe "" ((':':) . show) mbr ++ " =="
-
 build :: Bool -> Maybe Branch -> [Package] -> IO ()
 build _ _ [] = return ()
 build mock mbr (pkg:pkgs) = do
   fedBranches <- getFedoraBranches
-  putPkgHdr pkg mbr
   withExistingDirectory pkg $ do
+    gitPull
     branches <- case mbr of
       Just b | b `elem` fedBranches -> return [b]
              | otherwise -> error' "Unsupported branch"
       Nothing ->
         -- FIXME problem is we may want --all: maybe better just to request --all
         filter (`elem` fedBranches) <$> getPackageBranches
-    buildBranch Nothing (Just pkg) mock branches
+    buildBranch True Nothing (Just pkg) mock branches
   build mock mbr pkgs
 
-buildBranch :: Maybe Branch -> Maybe Package -> Bool -> [Branch] -> IO ()
-buildBranch _ _ _ [] = return ()
-buildBranch mprev mpkg mock (br:brs) = do
-  checkWorkingDirClean
+gitPull :: IO ()
+gitPull = do
   pull <- git "pull" ["--rebase"]
   unless ("Already up to date." `isPrefixOf` pull) $
     putStrLn pull
+
+putPkgBrnchHdr :: String -> Branch -> IO ()
+putPkgBrnchHdr pkg br =
+  putStrLn $ "\n== " ++ pkg ++ ":" ++ show br ++ " =="
+
+buildBranch :: Bool -> Maybe Branch -> Maybe Package -> Bool -> [Branch] -> IO ()
+buildBranch _ _ _ _ [] = return ()
+buildBranch pulled mprev mpkg mock (br:brs) = do
+  checkWorkingDirClean
+  unless pulled gitPull
   pkg <- maybe getPackageDir return mpkg
+  putPkgBrnchHdr pkg br
   branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
   if not branched then
     if br == Master
     then error' "no origin/master found!"
     else do
-      when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
       checkNoBranchRequest pkg
+      when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
       putStrLn $ "requesting branch " ++ show br
       -- FIXME? request all branches?
       url <- fedpkg "request-branch" [show br]
@@ -169,7 +177,8 @@ buildBranch mprev mpkg mock (br:brs) = do
         putStrLn $ "Commits from " ++ show prev ++ ":"
         putStrLn $ simplifyCommitLog shortlog
         -- FIXME ignore Mass_Rebuild?
-        mref <- prompt "or ref to merge, or 'no': "
+        -- FIXME check input is valid ref
+        mref <- prompt "or ref to merge, or 'no' to skip merge"
         unless (map toLower mref == "no") $ do
           let ref = if null mref then show prev else mref
           git_ "merge" [ref]
@@ -182,7 +191,9 @@ buildBranch mprev mpkg mock (br:brs) = do
     nvr <- fedpkg "verrel" []
     buildstatus <- kojiBuildStatus nvr
     if buildstatus == COMPLETE
-      then buildBranch (Just br) mpkg mock brs
+      then do
+      putStrLn $ nvr ++ " is already built"
+      buildBranch True (Just br) mpkg mock brs
       else do
       -- FIXME handle target
       latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
@@ -200,17 +211,13 @@ buildBranch mprev mpkg mock (br:brs) = do
           -- FIXME sometimes bodhi cli hangs or times out:
               -- check for successful update on 504 etc
           -- FIXME diff previous changelog?
-          changelog <- do
-            clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", pkg <.> "spec"]
-            putStrLn clog
-            usrlog <- prompt "to use above or input Update changelog now"
-            return $ if null usrlog then clog else usrlog
+          changelog <- getChangeLog $ pkg <.> "spec"
           putStrLn "Creating Bodhi Update..."
           -- FIXME check for autocreated update (pre-updates-testing)
           cmd_ "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
           -- override option
           when False $ cmd_ "bodhi" ["overrides", "save", nvr]
-        buildBranch (Just br) mpkg mock brs
+        buildBranch True (Just br) mpkg mock brs
   where
     postBuild session nvr bid = do
       let req = setRequestMethod "PUT" $
@@ -223,10 +230,7 @@ buildBranch mprev mpkg mock (br:brs) = do
       (mbid,session) <- bzReviewSession
       case mbid of
         Just bid -> do
-          let req = setRequestMethod "POST" $
-                    setRequestCheckStatus $
-                    newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just (T.pack url <> " (" <> T.pack (show br) <> ")"))]
-          void $ httpNoBody req
+          postComment session bid (T.pack url <> " (" <> T.pack (show br) <> ")")
           putStrLn $ "branch-request posted to review bug " ++ show bid
         Nothing -> putStrLn "no review bug found"
 
@@ -241,12 +245,6 @@ buildBranch mprev mpkg mock (br:brs) = do
     mockConfig Master = "fedora-rawhide-x86_64"
     mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
 
-    cleanChangelog cs =
-      case length (lines cs) of
-        0 -> error' "empty changelog" -- should not happen
-        1 -> removePrefix "- " cs
-        _ -> cs
-
     simplifyCommitLog :: String -> String
     simplifyCommitLog = unlines . map (unwords . shortenHash . words) . lines
       where
@@ -254,8 +252,30 @@ buildBranch mprev mpkg mock (br:brs) = do
         shortenHash [] = []
         shortenHash (h:cs) = take 8 h : cs
 
+getChangeLog :: FilePath -> IO String
+getChangeLog spec = do
+  clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
+  putStrLn clog
+  usrlog <- prompt "to use above or input the Update notes now"
+  return $ if null usrlog then clog else usrlog
+  where
+    cleanChangelog cs =
+      case length (lines cs) of
+        0 -> error' "empty changelog" -- should not happen
+        1 -> removePrefix "- " cs
+        _ -> cs
+
 brc :: T.Text
 brc = "bugzilla.redhat.com"
+
+postComment :: BugzillaSession -> BugId -> T.Text -> IO ()
+postComment session bid comment = do
+  let req = setRequestMethod "POST" $
+            setRequestCheckStatus $
+            newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just comment)]
+  void $ newId . getResponseBody <$> httpJSON req
+  putStrLn "Comment added:"
+  T.putStrLn comment
 
 getPackageDir :: IO String
 getPackageDir = takeFileName <$> getCurrentDirectory
@@ -320,8 +340,16 @@ bugsSession query = do
   bugs <- searchBugs session query
   return (bugs, session)
 
-bugIdSession :: String -> IO (BugId,BugzillaSession)
-bugIdSession pkg = do
+reviewBugIdSession :: String -> IO (BugId,BugzillaSession)
+reviewBugIdSession pkg = do
+  (bugs,session) <- bugIdsSession $ pkgReviews pkg .&&. statusOpen
+  case bugs of
+    [] -> error $ "No review bug found for " ++ pkg
+    [bug] -> return (bug, session)
+    _ -> error' "more than one review bug found!"
+
+approvedReviewBugIdSession :: String -> IO (BugId,BugzillaSession)
+approvedReviewBugIdSession pkg = do
   (bugs,session) <- bugIdsSession $
                     pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bugs of
@@ -331,7 +359,7 @@ bugIdSession pkg = do
 
 requestRepo :: String -> IO ()
 requestRepo pkg = do
-  (bid,session) <- bugIdSession pkg
+  (bid,session) <- approvedReviewBugIdSession pkg
   putBugId bid
   created <- checkRepoCreatedComment session bid
   if created
@@ -358,7 +386,7 @@ requestRepo pkg = do
 
 prompt :: String -> IO String
 prompt s = do
-  putStr $ "Press Enter " ++ s
+  putStr $ "Press Enter " ++ s ++ ": "
   inp <- getLine
   putStrLn ""
   return inp
@@ -382,9 +410,13 @@ reviewBugToPackage :: Bug -> String
 reviewBugToPackage =
   head . words . removePrefix "Review Request: " . T.unpack . bugSummary
 
+putPkgHdr :: String -> IO ()
+putPkgHdr pkg =
+  putStrLn $ "\n== " ++ pkg ++ " =="
+
 importPkg :: String -> IO ()
 importPkg pkg = do
-  putPkgHdr pkg Nothing
+  putPkgHdr pkg
   dir <- getCurrentDirectory
   when (dir /= pkg) $ do
     direxists <- doesDirectoryExist pkg
@@ -393,7 +425,7 @@ importPkg pkg = do
     setCurrentDirectory pkg
     when direxists checkWorkingDirClean
   when (dir == pkg) checkWorkingDirClean
-  (bid,session) <- bugIdSession pkg
+  (bid,session) <- approvedReviewBugIdSession pkg
   comments <- getComments session bid
   putStrLn ""
   putBugId bid
@@ -466,8 +498,8 @@ readIniConfig inifile iniparser record = do
     let config = parseIniFile ini iniparser
     return $ either error (Just . record) config
 
-approved :: IO ()
-approved =
+approvedCmd :: IO ()
+approvedCmd =
   approvedReviews False >>= mapM_ putBug
 
 approvedReviews :: Bool -> IO [Bug]
@@ -490,8 +522,13 @@ approvedReviews created = do
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid = do
+    checkForComment session bid
+      "(fedscm-admin):  The Pagure repository was created at"
+
+checkForComment :: BugzillaSession -> BugId -> T.Text -> IO Bool
+checkForComment session bid text = do
     comments <- map commentText <$> getComments session bid
-    return $ any ("(fedscm-admin):  The Pagure repository was created at" `T.isInfixOf`) $ reverse comments
+    return $ any (text `T.isInfixOf`) $ reverse comments
 
 listReviews :: IO ()
 listReviews =
@@ -562,26 +599,57 @@ createReview spec = do
   -- FIXME build srpm in/from spec file dir
   srpm <- last . words <$> cmd "rpmbuild" ["-bs", spec]
   putStrLn srpm
-  out <- cmd "koji" ["build", "--scratch", "--nowait", "--fail-fast", "rawhide", srpm]
+  kojiurl <- kojiScratchBuild True srpm
+  mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
+  case mfasid of
+    Nothing -> error' "Could not determine fasid from klist"
+    Just fasid -> do
+      uploadurl <- uploadPkgFiles fasid pkg spec srpm
+      bugid <- postReviewReq session srpm uploadurl kojiurl pkg
+      putStrLn "Review request posted:"
+      putBugId bugid
+  where
+    postReviewReq :: BugzillaSession -> FilePath -> String -> String -> String -> IO BugId
+    postReviewReq session srpm uploadurl kojiurl pkg = do
+      summary <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
+      description <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
+      specSrpmUrls <- getCheckedFileUrls uploadurl spec srpm
+      let req = setRequestMethod "POST" $
+              setRequestCheckStatus $
+              newBzRequest session ["bug"]
+              [ ("product", Just "Fedora")
+              , ("component", Just "Package Review")
+              , ("version", Just "rawhide")
+              , ("summary", Just $ "Review Request: " <> T.pack pkg <> " - " <> summary)
+              , ("description", Just $ specSrpmUrls <> "\n\nDescription:\n" <> description <> "\n\n\nKoji scratch build: " <> T.pack kojiurl)
+              ]
+      newId . getResponseBody <$> httpJSON req
+
+getCheckedFileUrls :: String -> FilePath -> FilePath -> IO T.Text
+getCheckedFileUrls uploadurl spec srpm = do
+  let specUrl = uploadurl </> takeFileName spec
+      srpmUrl = uploadurl </> takeFileName srpm
+  mgr <- httpManager
+  checkUrlOk mgr specUrl
+  checkUrlOk mgr srpmUrl
+  return $ "Spec URL: " <> T.pack specUrl <> "\nSRPM URL: " <> T.pack srpmUrl
+  where
+    checkUrlOk :: Manager -> String -> IO ()
+    checkUrlOk mgr url = do
+      okay <- httpExists mgr url
+      unless okay $ error' $ "Could not access: " ++ url
+
+kojiScratchBuild :: Bool -> FilePath -> IO String
+kojiScratchBuild failfast srpm = do
+  out <- cmd "koji" $ ["build", "--scratch", "--nowait"] ++ ["--fail-fast" | failfast] ++ ["rawhide", srpm]
+  putStrLn out
   let kojiurl = last $ words out
       task = takeWhileEnd (/= '=') kojiurl
   okay <- kojiWatchTask task
-  if not okay then error' "scratch build failed"
-    else do
-    mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
-    case mfasid of
-      Nothing -> error' "Could not determine fasid from klist"
-      Just fasid -> do
-        let sshhost = "fedorapeople.org"
-            sshpath = "public_html/reviews/" ++ pkg
-        cmd_ "ssh" [sshhost, "mkdir", "-p", sshpath]
-        cmd_ "scp" [spec, srpm, sshhost ++ ":" ++ sshpath]
-        bugid <- postReviewReq session srpm fasid kojiurl pkg
-        putStrLn "Review request posted:"
-        putBugId bugid
+  if not okay
+    then error' "scratch build failed"
+    else return kojiurl
   where
-    takeWhileEnd p = reverse . takeWhile p . reverse
-
     kojiWatchTask :: String -> IO Bool
     kojiWatchTask task = do
       res <- cmdBool "koji" ["watch-task", task]
@@ -605,33 +673,17 @@ createReview spec = do
                   ["free"] -> TaskFree
                   _ -> error "unknown task state!"
 
-    postReviewReq :: BugzillaSession -> FilePath -> String -> String -> String -> IO BugId
-    postReviewReq session srpm fasid kojiurl pkg = do
-      summary <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
-      description <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
-      -- read ~/.config/fedora-create-review
-      -- FIXME share path with sshpath
-      let url = "https://" <> fasid <> ".fedorapeople.org/reviews" </> pkg
-          specUrl = url </> takeFileName spec
-          srpmUrl = url </> takeFileName srpm
-      mgr <- httpManager
-      checkUrlOk mgr specUrl
-      checkUrlOk mgr srpmUrl
-      let req = setRequestMethod "POST" $
-              setRequestCheckStatus $
-              newBzRequest session ["bug"]
-              [ ("product", Just "Fedora")
-              , ("component", Just "Package Review")
-              , ("version", Just "rawhide")
-              , ("summary", Just $ "Review Request: " <> T.pack pkg <> " - " <> summary)
-              , ("description", Just $ "Spec URL: " <> T.pack specUrl <> "\nSRPM URL: " <> T.pack srpmUrl <> "\n\nDescription:\n" <> description <> "\n\n\nKoji scratch build: " <> T.pack kojiurl)
-              ]
-      newBugId . getResponseBody <$> httpJSON req
-        where
-          checkUrlOk :: Manager -> String -> IO ()
-          checkUrlOk mgr url = do
-            okay <- httpExists mgr url
-            unless okay $ error' $ "Could not access: " ++ url
+    takeWhileEnd :: (a -> Bool) -> [a] -> [a]
+    takeWhileEnd p = reverse . takeWhile p . reverse
+
+uploadPkgFiles :: String -> String -> FilePath -> FilePath -> IO String
+uploadPkgFiles fasid pkg spec srpm = do
+  -- read ~/.config/fedora-create-review
+  let sshhost = "fedorapeople.org"
+      sshpath = "public_html/reviews/" ++ pkg
+  cmd_ "ssh" [sshhost, "mkdir", "-p", sshpath]
+  cmd_ "scp" [spec, srpm, sshhost ++ ":" ++ sshpath]
+  return $ "https://" <> fasid <> ".fedorapeople.org" </> removePrefix "public_html/" sshpath
 
 data TaskState = TaskOpen | TaskFailed | TaskClosed | TaskFree
 
@@ -650,3 +702,30 @@ pullPkg pkg =
   withExistingDirectory pkg $ do
     checkWorkingDirClean
     git_ "pull" ["--rebase"]
+
+updateReview :: Bool -> FilePath -> IO ()
+updateReview scratch spec = do
+  pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+  (bid,session) <- reviewBugIdSession pkg
+  putBugId bid
+  srpm <- last . words <$> cmd "rpmbuild" ["-bs", spec]
+  putStrLn srpm
+  submitted <- checkForComment session bid (T.pack srpm)
+  when submitted $ error' "SRPM was already submitted to bug: please bump"
+  mkojiurl <-
+    if scratch
+    then Just <$> kojiScratchBuild False srpm
+    else return Nothing
+  mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
+  case mfasid of
+    Nothing -> error' "Could not determine fasid from klist"
+    Just fasid -> do
+      uploadurl <- uploadPkgFiles fasid pkg spec srpm
+      updateReviewBug session bid srpm uploadurl mkojiurl
+      putStrLn "Review bug updated"
+  where
+    updateReviewBug :: BugzillaSession -> BugId -> FilePath -> String -> Maybe String -> IO ()
+    updateReviewBug session bid srpm uploadurl mkojiurl = do
+      specSrpmUrls <- getCheckedFileUrls uploadurl spec srpm
+      changelog <- getChangeLog spec
+      postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> T.pack changelog) <> maybe "" ("\n\nKoji scratch build: " <>) (T.pack <$> mkojiurl))

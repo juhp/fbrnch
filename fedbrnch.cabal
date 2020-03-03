@@ -23,7 +23,7 @@ source-repository head
 
 executable fedbrnch
   main-is:             Main.hs
-  other-modules:       NewBug
+  other-modules:       NewId ValidLogin
   hs-source-dirs:      . json
 
   build-depends:       aeson

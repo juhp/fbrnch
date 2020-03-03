@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 
-module NewBug
-  (NewBug(..))
+module NewId
+  (NewId(..))
 where
 
 import           Control.Monad      (mzero)
@@ -9,16 +9,16 @@ import           Data.Aeson(Value(..), FromJSON(..), ToJSON(..),
                             pairs,
                             (.:), (.=), object)
 
-newtype NewBug = NewBug {
-    newBugId :: Int
+newtype NewId = NewId {
+    newId :: Int
   } deriving (Show,Eq)
 
 
-instance FromJSON NewBug where
-  parseJSON (Object v) = NewBug <$> v .:  "id"
+instance FromJSON NewId where
+  parseJSON (Object v) = NewId <$> v .:  "id"
   parseJSON _          = mzero
 
 
-instance ToJSON NewBug where
-  toJSON     (NewBug bid) = object ["id" .= bid]
-  toEncoding (NewBug bid) = pairs  ("id" .= bid)
+instance ToJSON NewId where
+  toJSON     (NewId i) = object ["id" .= i]
+  toEncoding (NewId i) = pairs  ("id" .= i)
