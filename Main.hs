@@ -749,7 +749,8 @@ updateReview scratch mspec = do
   putBugId bid
   srpm <- generateSrpm spec
   submitted <- checkForComment session bid (T.pack srpm)
-  when submitted $ error' "SRPM was already submitted to bug: please bump"
+  when submitted $
+    error' "This NVR was already posted on the review bug: please bump"
   mkojiurl <-
     if scratch
     then Just <$> kojiScratchBuild False srpm
