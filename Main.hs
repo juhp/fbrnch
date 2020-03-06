@@ -595,6 +595,27 @@ findSpecfile = fileWithExtension ".spec"
       files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents "."
       maybe (error' ("No unique " ++ ext ++ " file found")) return $ listToMaybe files
 
+-- FIXME assumed srpm in local dir
+generateSrpm :: FilePath -> IO FilePath
+generateSrpm spec = do
+  nvr <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}-%{version}-%{release}", spec]
+  let srpm = nvr <.> "src.rpm"
+  haveSrpm <- doesFileExist srpm
+  if haveSrpm then do
+    specTime <- getModificationTime spec
+    srpmTime <- getModificationTime srpm
+    if srpmTime > specTime
+      then do
+      putStrLn $ srpm ++ " is up to date"
+      return srpm
+      else buildSrpm
+    else buildSrpm
+  where
+    buildSrpm = do
+      srpm <- takeFileName . last . words <$> cmd "rpmbuild" ["-bs", spec]
+      putStrLn $ "Created " ++ srpm
+      return srpm
+
 createReview :: Maybe FilePath -> IO ()
 createReview mspec = do
   spec <- getSpecFile mspec
@@ -606,10 +627,7 @@ createReview mspec = do
     putStrLn "Existing review(s):"
     mapM_ putBug bugs
     prompt_ "to continue"
-  -- FIXME or check existing srpm newer than spec file
-  -- FIXME assumed srpm in local dir
-  srpm <- takeFileName . last . words <$> cmd "rpmbuild" ["-bs", spec]
-  putStrLn $ "Created " ++ srpm
+  srpm <- generateSrpm spec
   kojiurl <- kojiScratchBuild True srpm
   mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
   case mfasid of
@@ -729,8 +747,7 @@ updateReview scratch mspec = do
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   (bid,session) <- reviewBugIdSession pkg
   putBugId bid
-  srpm <- last . words <$> cmd "rpmbuild" ["-bs", spec]
-  putStrLn srpm
+  srpm <- generateSrpm spec
   submitted <- checkForComment session bid (T.pack srpm)
   when submitted $ error' "SRPM was already submitted to bug: please bump"
   mkojiurl <-
