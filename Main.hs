@@ -522,7 +522,7 @@ approvedReviews created = do
       filterM test bugs
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
-checkRepoCreatedComment session bid = do
+checkRepoCreatedComment session bid =
     checkForComment session bid
       "(fedscm-admin):  The Pagure repository was created at"
 
