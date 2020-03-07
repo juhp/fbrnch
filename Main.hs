@@ -51,7 +51,7 @@ dispatchCmd activeBranches =
     [ Subcommand "create-review" "Create a Package Review request" $
       createReview <$> optional (strArg "SPECFILE")
     , Subcommand "update-review" "Update a Package Review" $
-      updateReview <$> switchWith 's' "scratch" "Add a Koji scratch build" <*> optional (strArg "SPECFILE")
+      updateReview <$> switchWith 'n' "no-scratch" "Add a Koji scratch build" <*> optional (strArg "SPECFILE")
     , Subcommand "approved" "List approved reviews" $
       pure approvedCmd
     , Subcommand "request" "Request dist git repo for new package" $
@@ -742,7 +742,7 @@ pullPkg pkg =
     git_ "pull" ["--rebase"]
 
 updateReview :: Bool -> Maybe FilePath -> IO ()
-updateReview scratch mspec = do
+updateReview noscratch mspec = do
   spec <- getSpecFile mspec
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   (bid,session) <- reviewBugIdSession pkg
@@ -752,9 +752,9 @@ updateReview scratch mspec = do
   when submitted $
     error' "This NVR was already posted on the review bug: please bump"
   mkojiurl <-
-    if scratch
-    then Just <$> kojiScratchBuild False srpm
-    else return Nothing
+    if noscratch
+    then return Nothing
+    else Just <$> kojiScratchBuild False srpm
   mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
   case mfasid of
     Nothing -> error' "Could not determine fasid from klist"
