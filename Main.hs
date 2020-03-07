@@ -6,7 +6,7 @@ import SimpleCmd.Git
 import SimpleCmdArgs
 
 import Control.Monad
-import Data.Char (isAscii, toLower)
+import Data.Char (isAscii)
 import Data.Ini.Config
 import Data.List
 import Data.Maybe
@@ -172,16 +172,21 @@ buildBranch pulled mprev mpkg mock (br:brs) = do
                 return $ newerBranch branches br
     tty <- hIsTerminalDevice stdin
     when (br /= Master) $ do
-      shortlog <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
-      unless (null shortlog) $ do
-        putStrLn $ "Commits from " ++ show prev ++ ":"
-        putStrLn $ simplifyCommitLog shortlog
-        -- FIXME ignore Mass_Rebuild?
-        -- FIXME check input is valid ref
-        mref <- prompt "or ref to merge, or 'no' to skip merge"
-        unless (map toLower mref == "no") $ do
-          let ref = if null mref then show prev else mref
-          git_ "merge" [ref]
+      ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
+      when ancestor $ do
+        clog <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+        unless (null clog) $ do
+          putStrLn $ "Commits from " ++ show prev ++ ":"
+          let shortlog = simplifyCommitLog clog
+          putStrLn shortlog
+          -- FIXME ignore Mass_Rebuild?
+          mref <- prompt "to merge HEAD or give ref to merge, or 'no' to skip merge"
+          let commitrefs = (map (head . words) . lines) clog
+          when (null mref || any (mref `isPrefixOf`) commitrefs) $ do
+            let ref = if null mref
+                      then [show prev]
+                      else filter (mref `isPrefixOf`) commitrefs
+            git_ "merge" ref
     logs <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
     unless (null logs) $ do
       putStrLn "Local commits:"
