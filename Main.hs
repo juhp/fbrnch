@@ -170,11 +170,10 @@ buildBranch pulled mprev mpkg mock (br:brs) = do
               Nothing -> do
                 branches <- getFedoraBranches
                 return $ newerBranch branches br
-    tty <- hIsTerminalDevice stdin
+    clog <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
     when (br /= Master) $ do
       ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
-      when ancestor $ do
-        clog <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+      when ancestor $
         unless (null clog) $ do
           putStrLn $ "Commits from " ++ show prev ++ ":"
           let shortlog = simplifyCommitLog clog
@@ -189,8 +188,10 @@ buildBranch pulled mprev mpkg mock (br:brs) = do
             git_ "merge" ref
     logs <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
     unless (null logs) $ do
-      putStrLn "Local commits:"
-      putStrLn $ simplifyCommitLog logs
+      when (logs /= clog) $ do
+        putStrLn "Local commits:"
+        putStrLn $ simplifyCommitLog logs
+      tty <- hIsTerminalDevice stdin
       when tty $ prompt_ "to push and build"
       fedpkg_ "push" []
     nvr <- fedpkg "verrel" []
