@@ -212,15 +212,9 @@ buildBranch pulled mprev mpkg mock (br:brs) = do
         if br == Master
           then forM_ mbid $ postBuild session nvr
           else do
-          -- also query for open bugs
-          let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
-          -- FIXME sometimes bodhi cli hangs or times out:
-              -- check for successful update on 504 etc
           -- FIXME diff previous changelog?
           changelog <- getChangeLog $ pkg <.> "spec"
-          putStrLn "Creating Bodhi Update..."
-          -- FIXME check for autocreated update (pre-updates-testing)
-          cmd_ "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+          bodhiUpdate mbid changelog nvr
           -- override option
           when False $ cmd_ "bodhi" ["overrides", "save", nvr]
         buildBranch True (Just br) mpkg mock brs
@@ -257,6 +251,22 @@ buildBranch pulled mprev mpkg mock (br:brs) = do
         shortenHash :: [String] -> [String]
         shortenHash [] = []
         shortenHash (h:cs) = take 8 h : cs
+
+    bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
+    bodhiUpdate mbid changelog nvr = do
+      let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
+      -- FIXME check for autocreated update (pre-updates-testing)
+      -- also query for open bugs
+      putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
+      updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+      unless updateOK $ do
+        updatequery <- cmdLines "bodhi" ["updates", "query", "--builds", nvr]
+        if last updatequery == "1 updates found (1 shown)"
+          then putStrLn $ (unlines . init) updatequery
+          else do
+          putStrLn "bodhi submission failed"
+          prompt_ "to resubmit to Bodhi"
+          bodhiUpdate mbid changelog nvr
 
 getChangeLog :: FilePath -> IO String
 getChangeLog spec = do
