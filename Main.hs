@@ -322,7 +322,9 @@ bzSession retry = do
                  newBzRequest session ["valid_login"] [("login", muser)]
   valid <- validToken . getResponseBody <$> httpJSON validreq
   if not valid then do
-    when retry $ error' "invalid login token"
+    if retry
+      then error' "invalid login token"
+      else putStrLn "bz token invalid"
     cmd_ "bugzilla" ["login"]
     putStrLn ""
     bzSession True
