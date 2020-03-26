@@ -68,6 +68,8 @@ dispatchCmd activeBranches =
       pure listReviews
     , Subcommand "review" "Find package review bug" $
       review <$> strArg "PACKAGE"
+    , Subcommand "test-bz-token" "Check bugzilla login status" $
+      pure $ testBZlogin
     ]
   where
     noScratchBuild = switchWith 'n' "no-scratch-build" "Skip Koji scratch build"
@@ -784,3 +786,8 @@ updateReview noscratch mspec = do
       changelog <- getChangeLog spec
       postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> T.pack changelog) <> maybe "" ("\n\nKoji scratch build: " <>) (T.pack <$> mkojiurl))
 --      putStrLn "Review bug updated"
+
+testBZlogin :: IO ()
+testBZlogin = do
+  void $ bzSession True
+  putStrLn "token is valid"
