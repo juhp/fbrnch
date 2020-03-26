@@ -111,7 +111,8 @@ gitBool c args =
 getPackageBranches :: IO [Branch]
 getPackageBranches = do
   activeBranches <- getFedoraBranches
-  mapMaybe (readBranch' activeBranches . removePrefix "origin/") . words <$> cmd "git" ["branch", "--remote", "--list"]
+  -- newest branch first
+  reverse . sort . mapMaybe (readBranch' activeBranches) . lines <$> cmd "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
 
 withExistingDirectory :: FilePath -> IO () -> IO ()
 withExistingDirectory dir act = do
