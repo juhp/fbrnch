@@ -49,9 +49,9 @@ dispatchCmd activeBranches =
     "This tool helps with updating and building package branches" $
     subcommands
     [ Subcommand "create-review" "Create a Package Review request" $
-      createReview <$> optional (strArg "SPECFILE")
+      createReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
     , Subcommand "update-review" "Update a Package Review" $
-      updateReview <$> switchWith 'n' "no-scratch" "Add a Koji scratch build" <*> optional (strArg "SPECFILE")
+      updateReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
     , Subcommand "approved" "List approved reviews" $
       pure approvedCmd
     , Subcommand "request" "Request dist git repo for new package" $
@@ -70,6 +70,8 @@ dispatchCmd activeBranches =
       review <$> strArg "PACKAGE"
     ]
   where
+    noScratchBuild = switchWith 'n' "no-scratch-build" "Skip Koji scratch build"
+
     branchArg :: Parser Branch
     branchArg = argumentWith branchM "BRANCH.."
 
@@ -632,8 +634,8 @@ generateSrpm spec = do
       putStrLn $ "Created " ++ srpm
       return srpm
 
-createReview :: Maybe FilePath -> IO ()
-createReview mspec = do
+createReview :: Bool -> Maybe FilePath -> IO ()
+createReview noscratch mspec = do
   spec <- getSpecFile mspec
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   unless (all isAscii pkg) $
@@ -644,18 +646,21 @@ createReview mspec = do
     mapM_ putBug bugs
     prompt_ "to continue"
   srpm <- generateSrpm spec
-  kojiurl <- kojiScratchBuild True srpm
+  mkojiurl <-
+    if noscratch
+    then return Nothing
+    else Just <$> kojiScratchBuild False srpm
   mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
   case mfasid of
     Nothing -> error' "Could not determine fasid from klist"
     Just fasid -> do
       specSrpmUrls <- uploadPkgFiles fasid pkg spec srpm
-      bugid <- postReviewReq session spec specSrpmUrls kojiurl pkg
+      bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
       putStrLn "Review request posted:"
       putBugId bugid
   where
-    postReviewReq :: BugzillaSession -> FilePath -> T.Text -> String -> String -> IO BugId
-    postReviewReq session spec specSrpmUrls kojiurl pkg = do
+    postReviewReq :: BugzillaSession -> FilePath -> T.Text -> Maybe String -> String -> IO BugId
+    postReviewReq session spec specSrpmUrls mkojiurl pkg = do
       summary <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
       description <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
       let req = setRequestMethod "POST" $
@@ -665,7 +670,7 @@ createReview mspec = do
               , ("component", Just "Package Review")
               , ("version", Just "rawhide")
               , ("summary", Just $ "Review Request: " <> T.pack pkg <> " - " <> summary)
-              , ("description", Just $ specSrpmUrls <> "\n\nDescription:\n" <> description <> "\n\n\nKoji scratch build: " <> T.pack kojiurl)
+              , ("description", Just $ specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) (T.pack <$> mkojiurl))
               ]
       newId . getResponseBody <$> httpJSON req
 
