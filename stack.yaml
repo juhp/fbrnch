@@ -4,4 +4,4 @@ extra-deps:
   - git: https://github.com/juhp/hsbugzilla.git
     commit: ae1fa7be0e3480c6979fc04f232cc09c16e4cb7d
   - git: https://github.com/juhp/fedora-dists.git
-    commit: 5e4d8af6ed33332cdf378e7c10b0d53b1307d4dc
+    commit: 3ba66fcc538546e9a6dc7c37192a986fcec33513

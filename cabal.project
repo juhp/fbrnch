@@ -8,4 +8,4 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/juhp/fedora-dists.git
-    tag: 5e4d8af6ed33332cdf378e7c10b0d53b1307d4dc
+    tag: 3ba66fcc538546e9a6dc7c37192a986fcec33513

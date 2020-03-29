@@ -43,6 +43,8 @@ main = do
   activeBranches <- getFedoraBranches
   dispatchCmd activeBranches
 
+data BranchesRequest = AllReleases | BranchesRequest [Branch]
+
 dispatchCmd :: [Branch] -> IO ()
 dispatchCmd activeBranches =
   simpleCmdArgs Nothing "Fedora package branch building tool"
@@ -60,6 +62,8 @@ dispatchCmd activeBranches =
       importPkgs <$> many (strArg "NEWPACKAGE...")
     , Subcommand "build" "Build package(s)" $
       build <$> mockOpt <*> branchOpt <*> some pkgArg
+    , Subcommand "request-branches" "Request branches for package" $
+      requestBranches <$> branchesRequest
     , Subcommand "build-branch" "Build branch(s) of package" $
       buildBranch False Nothing <$> pkgOpt <*> mockOpt <*> some branchArg
     , Subcommand "pull" "Git pull packages" $
@@ -87,6 +91,9 @@ dispatchCmd activeBranches =
 
     pkgOpt :: Parser (Maybe String)
     pkgOpt = optional (strOptionWith 'p' "package" "PKG" "package")
+
+    branchesRequest :: Parser BranchesRequest
+    branchesRequest = flagWith' AllReleases 'a' "all" "Request branches for all current releases" <|> BranchesRequest <$> some branchArg
 
     mockOpt = switchWith 'm' "mock" "Do mock build to test branch"
 
@@ -405,6 +412,35 @@ requestRepo pkg = do
       -- FIXME also check pagure for repo
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
       let reqs = filter (("\"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
+      unless (null reqs) $
+        error' $ "Request exists:\n" ++ unlines reqs
+
+requestBranches :: BranchesRequest -> IO ()
+requestBranches request = do
+  -- FIXME check we are in a package repo
+  gitPull
+  requested <- case request of
+                 AllReleases -> getFedoraBranches
+                 BranchesRequest brs -> return brs
+  current <- getPackageBranches
+  forM_ requested $ \ br ->
+    if br `elem` current
+      -- fixme: or should we just error out?
+    then putStrLn $ show br ++ " branch already exists"
+    else requestBranch br
+  where
+    requestBranch :: Branch -> IO ()
+    requestBranch br = do
+      checkNoBranchRequest br
+      fedpkg_ "request-branch" [show br]
+
+    checkNoBranchRequest :: Branch -> IO ()
+    checkNoBranchRequest br = do
+      -- FIXME use rest api
+      -- FIXME check also for any closed tickets?
+      pkg <- getPackageDir
+      current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
+      let reqs = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
         error' $ "Request exists:\n" ++ unlines reqs
 
