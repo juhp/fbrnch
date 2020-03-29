@@ -68,9 +68,9 @@ dispatchCmd activeBranches =
       buildBranch False Nothing <$> pkgOpt <*> mockOpt <*> some branchArg
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (strArg "PACKAGE...")
-    , Subcommand "list" "List package reviews" $
+    , Subcommand "list-reviews" "List package reviews" $
       pure listReviews
-    , Subcommand "review" "Find package review bug" $
+    , Subcommand "find-review" "Find package review bug" $
       review <$> strArg "PACKAGE"
     , Subcommand "test-bz-token" "Check bugzilla login status" $
       pure $ testBZlogin
