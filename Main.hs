@@ -132,15 +132,11 @@ withExistingDirectory dir act = do
 build :: Bool -> Maybe Branch -> [Package] -> IO ()
 build _ _ [] = return ()
 build mock mbr (pkg:pkgs) = do
-  fedBranches <- getFedoraBranches
   withExistingDirectory pkg $ do
     gitPull
     branches <- case mbr of
-      Just b | b `elem` fedBranches -> return [b]
-             | otherwise -> error' "Unsupported branch"
-      Nothing ->
-        -- FIXME problem is we may want --all: maybe better just to request --all
-        filter (`elem` fedBranches) <$> getPackageBranches
+                  Just b -> return [b]
+                  Nothing -> getPackageBranches
     buildBranch True Nothing (Just pkg) mock branches
   build mock mbr pkgs
 
