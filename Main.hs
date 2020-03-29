@@ -394,8 +394,10 @@ requestRepo pkg = do
     else do
     -- show comments?
     checkNoRepoRequest
+    -- FIXME also doublecheck pagure for repo
     url <- T.pack <$> fedpkg "request-repo" [pkg, show bid]
     T.putStrLn url
+    -- FIXME get name of reviewer from bug
     let comment = T.pack "Thank you for the review\n\n" <> url
         req = setRequestMethod "POST" $
               setRequestCheckStatus $
@@ -405,7 +407,8 @@ requestRepo pkg = do
   where
     checkNoRepoRequest :: IO ()
     checkNoRepoRequest = do
-      -- FIXME also check pagure for repo
+      -- FIXME use rest api
+      -- FIXME check also for any closed tickets?
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
       -- don't mention "New Repo" here:
       -- pending Branch requests imply repo already exists
