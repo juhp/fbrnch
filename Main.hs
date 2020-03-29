@@ -407,7 +407,9 @@ requestRepo pkg = do
     checkNoRepoRequest = do
       -- FIXME also check pagure for repo
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
-      let reqs = filter (("\"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
+      -- don't mention "New Repo" here:
+      -- pending Branch requests imply repo already exists
+      let reqs = filter ((" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
         error' $ "Request exists:\n" ++ unlines reqs
 
