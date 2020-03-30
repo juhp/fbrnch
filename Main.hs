@@ -55,7 +55,7 @@ dispatchCmd activeBranches =
     , Subcommand "update-review" "Update a Package Review" $
       updateReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
     , Subcommand "approved" "List approved reviews" $
-      pure approvedCmd
+      approvedCmd <$> switchWith 'c' "created" "List approved packages with created repos"
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
       requestRepos <$> many (strArg "NEWPACKAGE...")
     , Subcommand "import" "Import new package via bugzilla" $
@@ -558,9 +558,9 @@ readIniConfig inifile iniparser record = do
     let config = parseIniFile ini iniparser
     return $ either error (Just . record) config
 
-approvedCmd :: IO ()
-approvedCmd =
-  approvedReviews False >>= mapM_ putBug
+approvedCmd :: Bool -> IO ()
+approvedCmd created =
+  approvedReviews created >>= mapM_ putBug
 
 approvedReviews :: Bool -> IO [Bug]
 approvedReviews created = do
