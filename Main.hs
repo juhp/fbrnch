@@ -533,13 +533,18 @@ importPkg pkg = do
   havesrpm <- doesFileExist srpmfile
   unless havesrpm $
     cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
-  -- check for krb5 ticket
-  fedpkg_ "import" [srpmfile]
-  git_ "commit" ["--message", "import #" ++ show bid]
-  where
-    findSRPMs :: Comment -> [T.Text]
-    findSRPMs =
-      filter (\ l -> "https://" `T.isInfixOf` l && any (`T.isPrefixOf` T.toLower l) ["srpm url:", "srpm:", "new srpm:", "updated srpm:"] && ".src.rpm" `T.isSuffixOf` l) . T.lines . commentText
+  krb <- words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines <$> cmd "klist" ["-l"]
+  if null krb
+    then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
+    else do
+    when (last krb == "(expired)") $
+      cmd_ "kinit" [head krb]
+    fedpkg_ "import" [srpmfile]
+    git_ "commit" ["--message", "import #" ++ show bid]
+    where
+      findSRPMs :: Comment -> [T.Text]
+      findSRPMs =
+        filter (\ l -> "https://" `T.isInfixOf` l && any (`T.isPrefixOf` T.toLower l) ["srpm url:", "srpm:", "new srpm:", "updated srpm:"] && ".src.rpm" `T.isSuffixOf` l) . T.lines . commentText
 
 showComment :: Comment -> IO ()
 showComment cmt = do
