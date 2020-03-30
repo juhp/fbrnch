@@ -493,10 +493,10 @@ checkWorkingDirClean = do
   unless clean $ error' "Working dir is not clean"
 
 importPkgs :: [Package] -> IO ()
-importPkgs [] = do
-  pkgs <- map reviewBugToPackage <$> approvedReviews True
-  mapM_ importPkg pkgs
-importPkgs pkgs =
+importPkgs ps = do
+  pkgs <- if null ps
+    then map reviewBugToPackage <$> approvedReviews True
+    else return ps
   mapM_ importPkg pkgs
 
 reviewBugToPackage :: Bug -> String
