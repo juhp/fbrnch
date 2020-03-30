@@ -56,8 +56,8 @@ dispatchCmd activeBranches =
       updateReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
     , Subcommand "approved" "List approved reviews" $
       pure approvedCmd
-    , Subcommand "request" "Request dist git repo for new package" $
-      requestRepo <$> strArg "NEWPACKAGE"
+    , Subcommand "request-repos" "Request dist git repo for new approved packages" $
+      requestRepos <$> many (strArg "NEWPACKAGE...")
     , Subcommand "import" "Import new package via bugzilla" $
       importPkgs <$> many (strArg "NEWPACKAGE...")
     , Subcommand "build" "Build package(s)" $
@@ -313,26 +313,38 @@ bzReviewSession = do
     [bid] -> return (Just bid, session)
     _ -> return (Nothing, session)
 
-bzLoginSession :: IO BugzillaSession
+bzLoginSession :: IO (BugzillaSession, UserEmail)
 bzLoginSession = do
+  user <- getBzUser
   ctx <- newBugzillaContext brc
-  LoginSession ctx <$> getBzToken
-
-bzSession :: Bool -> IO BugzillaSession
-bzSession retry = do
-  session <- bzLoginSession
-  muser <- getBzUser
+  session <- LoginSession ctx <$> getBzToken
   let validreq = setRequestCheckStatus $
-                 newBzRequest session ["valid_login"] [("login", muser)]
+                 newBzRequest session ["valid_login"] [("login", Just user)]
   valid <- validToken . getResponseBody <$> httpJSON validreq
-  if not valid then do
-    if retry
-      then error' "invalid login token"
-      else putStrLn "bz token invalid"
+  if not valid
+    then do
+    putStrLn "Invalid bugzilla login token, please login:"
     cmd_ "bugzilla" ["login"]
-    putStrLn ""
-    bzSession True
-    else return session
+    bzLoginSession
+    else return (session,user)
+  where
+    getBzUser :: IO UserEmail
+    getBzUser = do
+      home <- getEnv "HOME"
+      let rc = home </> ".bugzillarc"
+      muser <- readIniConfig rc rcParser rcUserEmail
+      case muser of
+        Nothing -> do
+          putStrLn "Please login to bugzilla:"
+          cmd_ "bugzilla" ["login"]
+          getBzUser
+        Just user -> return user
+      where
+        rcParser :: IniParser BzConfig
+        rcParser =
+          section brc $ do
+            user <- fieldOf "user" string
+            return $ BzConfig user
 
 packageReview :: SearchExpression
 packageReview =
@@ -357,13 +369,13 @@ pkgReviews pkg =
 
 bugIdsSession :: SearchExpression -> IO ([BugId],BugzillaSession)
 bugIdsSession query = do
-  session <- bzSession False
+  (session,_) <- bzLoginSession
   bugs <- searchBugs' session query
   return (bugs, session)
 
 bugsSession :: SearchExpression -> IO ([Bug],BugzillaSession)
 bugsSession query = do
-  session <- bzSession False
+  (session,_) <- bzLoginSession
   bugs <- searchBugs session query
   return (bugs, session)
 
@@ -384,8 +396,17 @@ approvedReviewBugIdSession pkg = do
     [bug] -> return (bug, session)
     _ -> error' "more than one review bug found!"
 
+requestRepos :: [String] -> IO ()
+requestRepos ps = do
+  pkgs <- if null ps
+    then map reviewBugToPackage <$> approvedReviews False
+    else return ps
+  mapM_ requestRepo pkgs
+
+-- FIXME also accept bugid instead
 requestRepo :: String -> IO ()
 requestRepo pkg = do
+  putStrLn pkg
   (bid,session) <- approvedReviewBugIdSession pkg
   putBugId bid
   created <- checkRepoCreatedComment session bid
@@ -393,20 +414,23 @@ requestRepo pkg = do
     then putStrLn "scm repo was already created"
     else do
     -- show comments?
-    checkNoRepoRequest
-    -- FIXME also doublecheck pagure for repo
-    url <- T.pack <$> fedpkg "request-repo" [pkg, show bid]
-    T.putStrLn url
-    -- FIXME get name of reviewer from bug
-    let comment = T.pack "Thank you for the review\n\n" <> url
-        req = setRequestMethod "POST" $
-              setRequestCheckStatus $
-              newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just comment)]
-    void $ httpNoBody req
-    putStrLn "comment posted"
+    requestExists <- openRepoRequest
+    if requestExists then return ()
+      else do
+      checkNoPagureRepo
+      url <- T.pack <$> fedpkg "request-repo" [pkg, show bid]
+      T.putStrLn url
+      -- FIXME get name of reviewer from bug
+      let comment = T.pack "Thank you for the review\n\n" <> url
+          req = setRequestMethod "POST" $
+                setRequestCheckStatus $
+                newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just comment)]
+      void $ httpNoBody req
+      putStrLn "comment posted"
+      putStrLn ""
   where
-    checkNoRepoRequest :: IO ()
-    checkNoRepoRequest = do
+    openRepoRequest :: IO Bool
+    openRepoRequest = do
       -- FIXME use rest api
       -- FIXME check also for any closed tickets?
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
@@ -414,7 +438,15 @@ requestRepo pkg = do
       -- pending Branch requests imply repo already exists
       let reqs = filter ((" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
-        error' $ "Request exists:\n" ++ unlines reqs
+        -- FIXME improve formatting (reduce whitespace)
+        putStrLn $ "Request exists:\n" ++ unlines reqs
+      return $ not (null reqs)
+
+    checkNoPagureRepo :: IO ()
+    checkNoPagureRepo = do
+      out <- cmd "pagure" ["list", pkg]
+      unless (null out) $
+        error' $ "Repo for " ++ pkg ++ " already exists"
 
 requestBranches :: BranchesRequest -> IO ()
 requestBranches request = do
@@ -519,18 +551,6 @@ showComment cmt = do
 newtype BzConfig = BzConfig {rcUserEmail :: UserEmail}
   deriving (Eq, Show)
 
-getBzUser :: IO (Maybe UserEmail)
-getBzUser = do
-  home <- getEnv "HOME"
-  let rc = home </> ".bugzillarc"
-  readIniConfig rc rcParser rcUserEmail
-  where
-    rcParser :: IniParser BzConfig
-    rcParser =
-      section brc $ do
-        user <- fieldOf "user" string
-        return $ BzConfig user
-
 newtype BzTokenConf = BzTokenConf {bzToken :: T.Text}
   deriving (Eq, Show)
 
@@ -565,21 +585,14 @@ approvedCmd =
 
 approvedReviews :: Bool -> IO [Bug]
 approvedReviews created = do
-  session <- bzLoginSession
-  muser <- getBzUser
-  case muser of
-    Nothing -> do
-      putStrLn "Please login to bugzilla:"
-      cmd_ "bugzilla" ["login"]
-      approvedReviews created
-    Just user -> do
-      let query = ReporterField .==. user .&&. packageReview .&&.
-                  statusNewPost .&&. reviewApproved
-      bugs <- searchBugs session query
-      let test = if created
-                 then checkRepoCreatedComment session . bugId
-                 else const (return True)
-      filterM test bugs
+  (session,user) <- bzLoginSession
+  let query = ReporterField .==. user .&&. packageReview .&&.
+              statusNewPost .&&. reviewApproved
+  bugs <- searchBugs session query
+  let test = if created
+             then checkRepoCreatedComment session . bugId
+             else const (return True)
+  filterM test bugs
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid =
@@ -597,16 +610,9 @@ listReviews =
 
 openReviews :: IO [Bug]
 openReviews = do
-  session <- bzLoginSession
-  muser <- getBzUser
-  case muser of
-    Nothing -> do
-      putStrLn "Please login to bugzilla:"
-      cmd_ "bugzilla" ["login"]
-      openReviews
-    Just user -> do
-      let query = ReporterField .==. user .&&. packageReview .&&. statusNewPost
-      searchBugs session query
+  (session,user) <- bzLoginSession
+  let query = ReporterField .==. user .&&. packageReview .&&. statusNewPost
+  searchBugs session query
 
 putBug :: Bug -> IO ()
 putBug bug = do
@@ -828,6 +834,5 @@ updateReview noscratch mspec = do
 --      putStrLn "Review bug updated"
 
 testBZlogin :: IO ()
-testBZlogin = do
-  void $ bzSession True
-  putStrLn "token is valid"
+testBZlogin =
+  void $ bzLoginSession
