@@ -61,11 +61,11 @@ dispatchCmd activeBranches =
     , Subcommand "import" "Import new package via bugzilla" $
       importPkgs <$> many (strArg "NEWPACKAGE...")
     , Subcommand "build" "Build package(s)" $
-      build <$> mockOpt <*> branchOpt <*> some pkgArg
+      build <$> branchOpt <*> some pkgArg
     , Subcommand "request-branches" "Request branches for package" $
       requestBranches <$> mockOpt <*> branchesRequest
     , Subcommand "build-branch" "Build branch(s) of package" $
-      buildBranch False Nothing <$> pkgOpt <*> mockOpt <*> some branchArg
+      buildBranch False Nothing <$> pkgOpt <*> some branchArg
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (strArg "PACKAGE...")
     , Subcommand "list-reviews" "List package reviews" $
@@ -129,16 +129,16 @@ withExistingDirectory dir act = do
     else
     withCurrentDirectory dir act
 
-build :: Bool -> Maybe Branch -> [Package] -> IO ()
-build _ _ [] = return ()
-build mock mbr (pkg:pkgs) = do
+build :: Maybe Branch -> [Package] -> IO ()
+build _ [] = return ()
+build mbr (pkg:pkgs) = do
   withExistingDirectory pkg $ do
     gitPull
     branches <- case mbr of
                   Just b -> return [b]
                   Nothing -> getPackageBranches
-    buildBranch True Nothing (Just pkg) mock branches
-  build mock mbr pkgs
+    buildBranch True Nothing (Just pkg) branches
+  build mbr pkgs
 
 gitPull :: IO ()
 gitPull = do
@@ -150,25 +150,16 @@ putPkgBrnchHdr :: String -> Branch -> IO ()
 putPkgBrnchHdr pkg br =
   putStrLn $ "\n== " ++ pkg ++ ":" ++ show br ++ " =="
 
-buildBranch :: Bool -> Maybe Branch -> Maybe Package -> Bool -> [Branch] -> IO ()
-buildBranch _ _ _ _ [] = return ()
-buildBranch pulled mprev mpkg mock (br:brs) = do
+buildBranch :: Bool -> Maybe Branch -> Maybe Package -> [Branch] -> IO ()
+buildBranch _ _ _ [] = return ()
+buildBranch pulled mprev mpkg (br:brs) = do
   checkWorkingDirClean
   unless pulled gitPull
   pkg <- maybe getPackageDir return mpkg
   putPkgBrnchHdr pkg br
   branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
-  if not branched then
-    if br == Master
-    then error' "no origin/master found!"
-    else do
-      checkNoBranchRequest pkg
-      when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
-      putStrLn $ "requesting branch " ++ show br
-      -- FIXME? request all branches?
-      url <- fedpkg "request-branch" [show br]
-      putStrLn url
-      postBranchReq url
+  if not branched
+    then error' $ show br ++ " branch does not exist!"
     else do
     current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
     when (current /= show br) $
@@ -207,7 +198,7 @@ buildBranch pulled mprev mpkg mock (br:brs) = do
     if buildstatus == COMPLETE
       then do
       putStrLn $ nvr ++ " is already built"
-      buildBranch True (Just br) mpkg mock brs
+      buildBranch True (Just br) mpkg brs
       else do
       -- FIXME handle target
       latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
@@ -225,7 +216,7 @@ buildBranch pulled mprev mpkg mock (br:brs) = do
           bodhiUpdate mbid changelog nvr
           -- override option
           when False $ cmd_ "bodhi" ["overrides", "save", nvr]
-        buildBranch True (Just br) mpkg mock brs
+        buildBranch True (Just br) mpkg brs
   where
     postBuild session nvr bid = do
       let req = setRequestMethod "PUT" $
@@ -233,21 +224,6 @@ buildBranch pulled mprev mpkg mock (br:brs) = do
                 newBzRequest session ["bug", intAsText bid] [("cf_fixed_in", Just (T.pack nvr)), ("status", Just "MODIFIED")]
       void $ httpNoBody req
       putStrLn $ "build posted to review bug " ++ show bid
-
-    postBranchReq url = do
-      (mbid,session) <- bzReviewSession
-      case mbid of
-        Just bid -> do
-          postComment session bid (T.pack url <> " (" <> T.pack (show br) <> ")")
-          putStrLn $ "branch-request posted to review bug " ++ show bid
-        Nothing -> putStrLn "no review bug found"
-
-    checkNoBranchRequest :: Package -> IO ()
-    checkNoBranchRequest pkg = do
-      current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
-      let reqs = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
-      unless (null reqs) $
-        error' $ "Request exists:\n" ++ unlines reqs
 
     simplifyCommitLog :: String -> String
     simplifyCommitLog = unlines . map (unwords . shortenHash . words) . lines
@@ -444,10 +420,6 @@ requestRepo pkg = do
       unless (null out) $
         error' $ "Repo for " ++ pkg ++ " already exists"
 
-mockConfig :: Branch -> String
-mockConfig Master = "fedora-rawhide-x86_64"
-mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
-
 requestBranches :: Bool -> BranchesRequest -> IO ()
 requestBranches mock request = do
   -- FIXME check we are in a package repo
@@ -467,13 +439,17 @@ requestBranches mock request = do
   where
     checkNoBranchRequest :: Branch -> IO ()
     checkNoBranchRequest br = do
+      pkg <- getPackageDir
       -- FIXME use rest api
       -- FIXME check also for any closed tickets?
-      pkg <- getPackageDir
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
       let reqs = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
         error' $ "Branch request already open for " ++ pkg ++ ":" ++ show br
+
+    mockConfig :: Branch -> String
+    mockConfig Master = "fedora-rawhide-x86_64"
+    mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
 
 prompt :: String -> IO String
 prompt s = do
