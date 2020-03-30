@@ -63,7 +63,7 @@ dispatchCmd activeBranches =
     , Subcommand "build" "Build package(s)" $
       build <$> mockOpt <*> branchOpt <*> some pkgArg
     , Subcommand "request-branches" "Request branches for package" $
-      requestBranches <$> branchesRequest
+      requestBranches <$> mockOpt <*> branchesRequest
     , Subcommand "build-branch" "Build branch(s) of package" $
       buildBranch False Nothing <$> pkgOpt <*> mockOpt <*> some branchArg
     , Subcommand "pull" "Git pull packages" $
@@ -248,10 +248,6 @@ buildBranch pulled mprev mpkg mock (br:brs) = do
       let reqs = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
         error' $ "Request exists:\n" ++ unlines reqs
-
-    mockConfig :: Branch -> String
-    mockConfig Master = "fedora-rawhide-x86_64"
-    mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
 
     simplifyCommitLog :: String -> String
     simplifyCommitLog = unlines . map (unwords . shortenHash . words) . lines
@@ -448,8 +444,12 @@ requestRepo pkg = do
       unless (null out) $
         error' $ "Repo for " ++ pkg ++ " already exists"
 
-requestBranches :: BranchesRequest -> IO ()
-requestBranches request = do
+mockConfig :: Branch -> String
+mockConfig Master = "fedora-rawhide-x86_64"
+mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
+
+requestBranches :: Bool -> BranchesRequest -> IO ()
+requestBranches mock request = do
   -- FIXME check we are in a package repo
   gitPull
   requested <- case request of
@@ -460,13 +460,11 @@ requestBranches request = do
     if br `elem` current
       -- fixme: or should we just error out?
     then putStrLn $ show br ++ " branch already exists"
-    else requestBranch br
-  where
-    requestBranch :: Branch -> IO ()
-    requestBranch br = do
+    else do
       checkNoBranchRequest br
+      when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
       fedpkg_ "request-branch" [show br]
-
+  where
     checkNoBranchRequest :: Branch -> IO ()
     checkNoBranchRequest br = do
       -- FIXME use rest api
@@ -475,7 +473,7 @@ requestBranches request = do
       current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
       let reqs = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
       unless (null reqs) $
-        error' $ "Request exists:\n" ++ unlines reqs
+        error' $ "Branch request already open for " ++ pkg ++ ":" ++ show br
 
 prompt :: String -> IO String
 prompt s = do

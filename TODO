@@ -6,7 +6,6 @@
 - combine release updates into single bodhi command
 - build sequence of packages by branch
 - update pagure key in ~/.config/rpkg/fedpkg.conf
-- 'request-branch' with mock build
 - build-branch --all
 - request branches for 2 releases by default
 - login via rest
