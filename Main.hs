@@ -54,11 +54,11 @@ dispatchCmd activeBranches =
       createReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
     , Subcommand "update-review" "Update a Package Review" $
       updateReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
-    , Subcommand "approved" "List approved reviews" $
-      approvedCmd <$> switchWith 'c' "created" "List approved packages with created repos"
+    , Subcommand "reviews" "List package reviews" $
+      reviewsCmd <$> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
       requestRepos <$> many (strArg "NEWPACKAGE...")
-    , Subcommand "import" "Import new package via bugzilla" $
+    , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importPkgs <$> many (strArg "NEWPACKAGE...")
     , Subcommand "build" "Build package(s)" $
       build <$> branchOpt <*> some pkgArg
@@ -68,8 +68,6 @@ dispatchCmd activeBranches =
       buildBranch False Nothing <$> pkgOpt <*> some branchArg
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (strArg "PACKAGE...")
-    , Subcommand "list-reviews" "List package reviews" $
-      pure listReviews
     , Subcommand "find-review" "Find package review bug" $
       review <$> strArg "PACKAGE"
     , Subcommand "test-bz-token" "Check bugzilla login status" $
@@ -77,6 +75,14 @@ dispatchCmd activeBranches =
     ]
   where
     noScratchBuild = switchWith 'n' "no-scratch-build" "Skip Koji scratch build"
+
+    reviewStatusOpt :: Parser ReviewStatus
+    reviewStatusOpt =
+      flagWith' ReviewUnApproved 'u' "unapproved" "Package reviews not yet approved" <|>
+      flagWith' ReviewApproved 'a' "approved" "All open approved package reviews" <|>
+      flagWith' ReviewWithoutRepoReq 'w' "without-request" "Approved package reviews without a repo request" <|>
+      flagWith' ReviewRepoRequested 'r' "requested" "Approved package reviews with a pending repo request" <|>
+      flagWith ReviewAllOpen ReviewRepoCreated 'c' "created" "Approved package reviews with a created repo"
 
     branchArg :: Parser Branch
     branchArg = argumentWith branchM "BRANCH.."
@@ -368,10 +374,11 @@ approvedReviewBugIdSession pkg = do
     [bug] -> return (bug, session)
     _ -> error' "more than one review bug found!"
 
+-- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 requestRepos :: [String] -> IO ()
 requestRepos ps = do
   pkgs <- if null ps
-    then map reviewBugToPackage <$> approvedReviews False
+    then map reviewBugToPackage <$> listReviews ReviewWithoutRepoReq
     else return ps
   mapM_ requestRepo pkgs
 
@@ -469,7 +476,7 @@ checkWorkingDirClean = do
 importPkgs :: [Package] -> IO ()
 importPkgs ps = do
   pkgs <- if null ps
-    then map reviewBugToPackage <$> approvedReviews True
+    then map reviewBugToPackage <$> listReviews ReviewRepoCreated
     else return ps
   mapM_ importPkg pkgs
 
@@ -558,20 +565,41 @@ readIniConfig inifile iniparser record = do
     let config = parseIniFile ini iniparser
     return $ either error (Just . record) config
 
-approvedCmd :: Bool -> IO ()
-approvedCmd created =
-  approvedReviews created >>= mapM_ putBug
+data ReviewStatus = ReviewAllOpen
+                  | ReviewUnApproved
+                  | ReviewApproved
+                  | ReviewWithoutRepoReq
+                  | ReviewRepoRequested
+                  | ReviewRepoCreated
 
-approvedReviews :: Bool -> IO [Bug]
-approvedReviews created = do
+reviewsCmd :: ReviewStatus -> IO ()
+reviewsCmd status =
+  listReviews status >>= mapM_ putBug
+
+-- FIXME add --state or --new, --modified, etc
+listReviews :: ReviewStatus -> IO [Bug]
+listReviews status = do
   (session,user) <- bzLoginSession
-  let query = ReporterField .==. user .&&. packageReview .&&.
-              statusNewPost .&&. reviewApproved
+  let reviews = ReporterField .==. user .&&. packageReview .&&. statusNewPost
+  let query = case status of
+        ReviewAllOpen -> reviews
+        ReviewUnApproved -> reviews .&&. not' reviewApproved
+        _ -> reviews .&&. reviewApproved
   bugs <- searchBugs session query
-  let test = if created
-             then checkRepoCreatedComment session . bugId
-             else const (return True)
-  filterM test bugs
+  case status of
+    ReviewWithoutRepoReq ->
+      filterM (fmap not . checkRepoRequestedComment session . bugId) bugs
+    ReviewRepoRequested ->
+      filterM (checkRepoRequestedComment session . bugId) bugs >>=
+      filterM (fmap not . checkRepoCreatedComment session . bugId)
+    ReviewRepoCreated ->
+      filterM (checkRepoCreatedComment session . bugId) bugs
+    _ -> return bugs
+  where
+    checkRepoRequestedComment :: BugzillaSession -> BugId -> IO Bool
+    checkRepoRequestedComment session bid =
+        checkForComment session bid
+          "https://pagure.io/releng/fedora-scm-requests/issue/"
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid =
@@ -582,16 +610,6 @@ checkForComment :: BugzillaSession -> BugId -> T.Text -> IO Bool
 checkForComment session bid text = do
     comments <- map commentText <$> getComments session bid
     return $ any (text `T.isInfixOf`) $ reverse comments
-
-listReviews :: IO ()
-listReviews =
-  openReviews >>= mapM_ putBug
-
-openReviews :: IO [Bug]
-openReviews = do
-  (session,user) <- bzLoginSession
-  let query = ReporterField .==. user .&&. packageReview .&&. statusNewPost
-  searchBugs session query
 
 putBug :: Bug -> IO ()
 putBug bug = do
