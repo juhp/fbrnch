@@ -473,6 +473,7 @@ checkWorkingDirClean = do
   clean <- gitBool "diff-index" ["--quiet", "HEAD"]
   unless clean $ error' "Working dir is not clean"
 
+-- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 importPkgs :: [Package] -> IO ()
 importPkgs ps = do
   pkgs <- if null ps
@@ -488,44 +489,57 @@ putPkgHdr :: String -> IO ()
 putPkgHdr pkg =
   putStrLn $ "\n== " ++ pkg ++ " =="
 
+-- FIXME check not in a different git dir
 importPkg :: String -> IO ()
 importPkg pkg = do
   putPkgHdr pkg
   dir <- getCurrentDirectory
-  when (dir /= pkg) $ do
+  when (pkg /= takeFileName dir) $ do
     direxists <- doesDirectoryExist pkg
     -- FIXME check repo exists
     unless direxists $ fedpkg_ "clone" [pkg]
     setCurrentDirectory pkg
-    when direxists checkWorkingDirClean
-  when (dir == pkg) checkWorkingDirClean
-  (bid,session) <- approvedReviewBugIdSession pkg
-  comments <- getComments session bid
-  putStrLn ""
-  putBugId bid
-  mapM_ showComment comments
-  prompt_ "to continue"
-  let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
-  when (null srpms) $ error "No srpm urls found!"
-  mapM_ T.putStrLn srpms
-  let srpm = (head . filter isURI . filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms
-  let srpmfile = takeFileName srpm
-  prompt_ $ "to import " ++ srpmfile
-  havesrpm <- doesFileExist srpmfile
-  unless havesrpm $
-    cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
-  krb <- words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines <$> cmd "klist" ["-l"]
-  if null krb
-    then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
+    -- FIXME: check branch is master
+  files <- getDirectoryContents "."
+  commits <-
+    if ".git" `elem` files
+    then length . lines <$> git "log" ["--pretty=oneline"]
+    else return 0
+  if commits > 1
+    then putStrLn $ "Skipping: already imported"
     else do
-    when (last krb == "(Expired)") $
-      cmd_ "kinit" [head krb]
-    fedpkg_ "import" [srpmfile]
-    git_ "commit" ["--message", "import #" ++ show bid]
-    where
-      findSRPMs :: Comment -> [T.Text]
-      findSRPMs =
-        filter (\ l -> "https://" `T.isInfixOf` l && any (`T.isPrefixOf` T.toLower l) ["srpm url:", "srpm:", "new srpm:", "updated srpm:"] && ".src.rpm" `T.isSuffixOf` l) . T.lines . commentText
+    checkWorkingDirClean
+    -- FIXME get session from importPkgs
+    (bid,session) <- approvedReviewBugIdSession pkg
+    comments <- getComments session bid
+    putStrLn ""
+    putBugId bid
+    mapM_ showComment comments
+    prompt_ "to continue"
+    let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
+    when (null srpms) $ error "No srpm urls found!"
+    mapM_ T.putStrLn srpms
+    let srpm = (head . filter isURI . filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms
+    let srpmfile = takeFileName srpm
+    -- FIXME if havesrpm then print local filename
+    prompt_ $ "to import " ++ srpmfile
+    havesrpm <- doesFileExist srpmfile
+    unless havesrpm $
+      cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
+    krb <- words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines <$> cmd "klist" ["-l"]
+    if null krb
+      then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
+      else do
+      when (last krb == "(Expired)") $
+        cmd_ "kinit" [head krb]
+      fedpkg_ "import" [srpmfile]
+      git_ "commit" ["--message", "import #" ++ show bid]
+  when (pkg /= takeFileName dir) $
+    setCurrentDirectory dir
+  where
+    findSRPMs :: Comment -> [T.Text]
+    findSRPMs =
+      filter (\ l -> "https://" `T.isInfixOf` l && any (`T.isPrefixOf` T.toLower l) ["srpm url:", "srpm:", "new srpm:", "updated srpm:"] && ".src.rpm" `T.isSuffixOf` l) . T.lines . commentText
 
 showComment :: Comment -> IO ()
 showComment cmt = do
