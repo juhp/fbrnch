@@ -530,7 +530,8 @@ importPkg pkg = do
     if null krb
       then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
       else do
-      when (last krb == "(Expired)") $
+      when (last krb == "(Expired)") $ do
+        putStrLn $ unwords krb
         cmd_ "kinit" [head krb]
       fedpkg_ "import" [srpmfile]
       git_ "commit" ["--message", "import #" ++ show bid]
