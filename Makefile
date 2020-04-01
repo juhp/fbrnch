@@ -4,8 +4,8 @@ stack-all:
 	stack-lts build
 	@echo
 	stack --resolver lts-14 build
-#	@echo
-#	stack --resolver lts-13 build
+	@echo "(needs config-ini):"
+	stack --resolver lts-13 build
 #	@echo
 #	stack --resolver lts-12 build
 #	@echo

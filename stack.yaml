@@ -5,3 +5,4 @@ extra-deps:
     commit: ae1fa7be0e3480c6979fc04f232cc09c16e4cb7d
   - git: https://github.com/juhp/fedora-dists.git
     commit: 3ba66fcc538546e9a6dc7c37192a986fcec33513
+  - config-ini-0.2.4.0
