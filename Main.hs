@@ -262,7 +262,7 @@ getChangeLog :: FilePath -> IO String
 getChangeLog spec = do
   clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
   putStrLn clog
-  usrlog <- prompt "to use above or input the Update notes now"
+  usrlog <- prompt "to use above or input update summary now"
   return $ if null usrlog then clog else usrlog
   where
     cleanChangelog cs =
@@ -305,7 +305,7 @@ bzLoginSession = do
   valid <- validToken . getResponseBody <$> httpJSON validreq
   if not valid
     then do
-    putStrLn "Invalid bugzilla login token, please login:"
+    putStrLn "No valid bugzilla login token, please login:"
     cmd_ "bugzilla" ["login"]
     bzLoginSession
     else return (session,user)
