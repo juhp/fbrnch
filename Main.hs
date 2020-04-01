@@ -71,7 +71,7 @@ dispatchCmd activeBranches =
     , Subcommand "find-review" "Find package review bug" $
       review <$> strArg "PACKAGE"
     , Subcommand "test-bz-token" "Check bugzilla login status" $
-      pure $ testBZlogin
+      pure testBZlogin
     ]
   where
     noScratchBuild = switchWith 'n' "no-scratch-build" "Skip Koji scratch build"
@@ -125,6 +125,7 @@ getPackageBranches :: IO [Branch]
 getPackageBranches = do
   activeBranches <- getFedoraBranches
   -- newest branch first
+  {- HLINT ignore "Avoid reverse"-} -- reverse . sort is fast but not stabilizing
   reverse . sort . mapMaybe (readBranch' activeBranches) . lines <$> cmd "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
 
 withExistingDirectory :: FilePath -> IO () -> IO ()
@@ -508,7 +509,7 @@ importPkg pkg = do
     then length . lines <$> git "log" ["--pretty=oneline"]
     else return 0
   if commits > 1
-    then putStrLn $ "Skipping: already imported"
+    then putStrLn "Skipping: already imported"
     else do
     checkWorkingDirClean
     -- FIXME get session from importPkgs
@@ -855,4 +856,4 @@ updateReview noscratch mspec = do
 
 testBZlogin :: IO ()
 testBZlogin =
-  void $ bzLoginSession
+  void bzLoginSession
