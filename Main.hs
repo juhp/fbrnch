@@ -215,7 +215,7 @@ buildBranch pulled mprev mpkg (br:brs) = do
         --waitForbuild
         (mbid,session) <- bzReviewSession
         if br == Master
-          then forM_ mbid $ postBuild session nvr
+          then forM_ mbid $ postBuildComment session nvr
           else do
           -- FIXME diff previous changelog?
           changelog <- getChangeLog $ pkg <.> "spec"
@@ -224,13 +224,6 @@ buildBranch pulled mprev mpkg (br:brs) = do
           when False $ cmd_ "bodhi" ["overrides", "save", nvr]
         buildBranch True (Just br) mpkg brs
   where
-    postBuild session nvr bid = do
-      let req = setRequestMethod "PUT" $
-                setRequestCheckStatus $
-                newBzRequest session ["bug", intAsText bid] [("cf_fixed_in", Just (T.pack nvr)), ("status", Just "MODIFIED")]
-      void $ httpNoBody req
-      putStrLn $ "build posted to review bug " ++ show bid
-
     simplifyCommitLog :: String -> String
     simplifyCommitLog = unlines . map (unwords . shortenHash . words) . lines
       where
@@ -253,6 +246,15 @@ buildBranch pulled mprev mpkg (br:brs) = do
           putStrLn "bodhi submission failed"
           prompt_ "to resubmit to Bodhi"
           bodhiUpdate mbid changelog nvr
+
+postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
+postBuildComment session nvr bid = do
+  let req = setRequestMethod "PUT" $
+            setRequestCheckStatus $
+            newBzRequest session ["bug", intAsText bid] [("cf_fixed_in", Just (T.pack nvr)), ("status", Just "MODIFIED")]
+  void $ httpNoBody req
+  putStrLn $ "build posted to review bug " ++ show bid
+
 
 getChangeLog :: FilePath -> IO String
 getChangeLog spec = do
@@ -535,6 +537,12 @@ importPkg pkg = do
         cmd_ "kinit" [head krb]
       fedpkg_ "import" [srpmfile]
       git_ "commit" ["--message", "import #" ++ show bid]
+      nvr <- fedpkg "verrel" []
+      prompt_ $ "to push and build " ++ nvr
+      fedpkg_ "push" []
+      fedpkg_ "build" ["--fail-fast"]
+      postBuildComment session nvr bid
+      -- FIXME build branches too
   when (pkg /= takeFileName dir) $
     setCurrentDirectory dir
   where
