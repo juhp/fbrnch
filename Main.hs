@@ -212,6 +212,7 @@ buildBranch pulled mprev mpkg (br:brs) = do
       if dropExtension nvr == dropExtension latest
         then putStrLn $ nvr ++ " is already latest"
         else do
+        krbTicket
         fedpkg_ "build" ["--fail-fast"]
         --waitForbuild
         (mbid,session) <- bzReviewSession
@@ -529,27 +530,38 @@ importPkg pkg = do
     havesrpm <- doesFileExist srpmfile
     unless havesrpm $
       cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
-    krb <- words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines <$> cmd "klist" ["-l"]
-    if null krb
-      then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
-      else do
-      when (last krb == "(Expired)") $ do
-        putStrLn $ unwords krb
-        cmd_ "kinit" [head krb]
-      fedpkg_ "import" [srpmfile]
-      git_ "commit" ["--message", "import #" ++ show bid]
-      nvr <- fedpkg "verrel" []
-      prompt_ $ "to push and build " ++ nvr
-      fedpkg_ "push" []
-      fedpkg_ "build" ["--fail-fast"]
-      postBuildComment session nvr bid
-      -- FIXME build branches too
+    krbTicket
+    fedpkg_ "import" [srpmfile]
+    git_ "commit" ["--message", "import #" ++ show bid]
+    nvr <- fedpkg "verrel" []
+    prompt_ $ "to push and build " ++ nvr
+    fedpkg_ "push" []
+    fedpkg_ "build" ["--fail-fast"]
+    postBuildComment session nvr bid
+    -- FIXME build branches too
   when (pkg /= takeFileName dir) $
     setCurrentDirectory dir
   where
     findSRPMs :: Comment -> [T.Text]
     findSRPMs =
       filter (\ l -> "https://" `T.isInfixOf` l && any (`T.isPrefixOf` T.toLower l) ["srpm url:", "srpm:", "new srpm:", "updated srpm:"] && ".src.rpm" `T.isSuffixOf` l) . T.lines . commentText
+
+krbTicket :: IO ()
+krbTicket = do
+  krb <- words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines <$> cmd "klist" ["-l"]
+  if null krb
+    then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
+    else do
+    when (last krb == "(Expired)") $ do
+      putStrLn $ unwords krb
+      cmd_ "kinit" [head krb]
+
+fasIdFromKrb :: IO String
+fasIdFromKrb = do
+  mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
+  case mfasid of
+    Nothing -> error' "Could not determine fasid from klist"
+    Just fasid -> return fasid
 
 showComment :: Comment -> IO ()
 showComment cmt = do
@@ -719,14 +731,11 @@ createReview noscratch mspec = do
     if noscratch
     then return Nothing
     else Just <$> kojiScratchBuild False srpm
-  mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
-  case mfasid of
-    Nothing -> error' "Could not determine fasid from klist"
-    Just fasid -> do
-      specSrpmUrls <- uploadPkgFiles fasid pkg spec srpm
-      bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
-      putStrLn "Review request posted:"
-      putBugId bugid
+  fasid <- fasIdFromKrb
+  specSrpmUrls <- uploadPkgFiles fasid pkg spec srpm
+  bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
+  putStrLn "Review request posted:"
+  putBugId bugid
   where
     postReviewReq :: BugzillaSession -> FilePath -> T.Text -> Maybe String -> String -> IO BugId
     postReviewReq session spec specSrpmUrls mkojiurl pkg = do
@@ -845,14 +854,11 @@ updateReview noscratch mspec = do
     if noscratch
     then return Nothing
     else Just <$> kojiScratchBuild False srpm
-  mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
-  case mfasid of
-    Nothing -> error' "Could not determine fasid from klist"
-    Just fasid -> do
-      specSrpmUrls <- uploadPkgFiles fasid pkg spec srpm
-      changelog <- getChangeLog spec
-      postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> T.pack changelog) <> maybe "" ("\n\nKoji scratch build: " <>) (T.pack <$> mkojiurl))
---      putStrLn "Review bug updated"
+  fasid <- fasIdFromKrb
+  specSrpmUrls <- uploadPkgFiles fasid pkg spec srpm
+  changelog <- getChangeLog spec
+  postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> T.pack changelog) <> maybe "" ("\n\nKoji scratch build: " <>) (T.pack <$> mkojiurl))
+  -- putStrLn "Review bug updated"
 
 testBZlogin :: IO ()
 testBZlogin =
