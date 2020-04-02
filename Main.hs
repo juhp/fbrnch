@@ -176,30 +176,46 @@ buildBranch pulled mprev mpkg (br:brs) = do
               Nothing -> do
                 branches <- getFedoraBranches
                 return $ newerBranch branches br
-    clog <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
-    when (br /= Master) $ do
-      ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
-      when ancestor $
-        unless (null clog) $ do
-          putStrLn $ "Commits from " ++ show prev ++ ":"
-          let shortlog = simplifyCommitLog clog
-          putStrLn shortlog
-          -- FIXME ignore Mass_Rebuild?
-          mref <- prompt "to merge HEAD or give ref to merge, or 'no' to skip merge"
-          let commitrefs = (map (head . words) . lines) clog
-          when (null mref || any (mref `isPrefixOf`) commitrefs) $ do
-            let ref = if null mref
-                      then [show prev]
-                      else filter (mref `isPrefixOf`) commitrefs
-            git_ "merge" ref
-    logs <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
-    unless (null logs) $ do
-      when (logs /= clog) $ do
+    if br == Master
+      then do
+      unpushed <- git "log" ["origin/master..HEAD", "--pretty=oneline"]
+      unless (null unpushed) $ do
         putStrLn "Local commits:"
-        putStrLn $ simplifyCommitLog logs
-      tty <- hIsTerminalDevice stdin
-      when tty $ prompt_ "to push and build"
-      fedpkg_ "push" []
+        putStrLn $ simplifyCommitLog unpushed
+        tty <- hIsTerminalDevice stdin
+        when tty $ prompt_ "to push and build"
+      else do
+      ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
+      unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+      when ancestor $ do
+        unless (null unmerged) $ do
+          putStrLn $ "New commits in " ++ show prev ++ ":"
+          let shortlog = simplifyCommitLog unmerged
+          putStrLn shortlog
+      unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+      unless (null unpushed) $ do
+        putStrLn "Local commits:"
+        putStrLn $ simplifyCommitLog unpushed
+          -- FIXME ignore Mass_Rebuild?
+          -- FIXME want also to select build/review
+      if ancestor && not (null unmerged) then do
+        -- FIXME if only initial README commit then package can't be built without merge
+        mhash <- prompt $ "to merge " ++ show prev ++ ", push and build; or give a ref to merge, push and build; otherwise 'no' to skip merging, but " ++ (if null unpushed then "" else "push and ") ++ "build " ++ show br
+        -- FIXME check for "no"
+        let commitrefs = (map (head . words) . lines) unmerged
+            mref = find (mhash `isPrefixOf`) commitrefs
+        when (null mhash || isJust mref) $ do
+          let ref = if null mhash
+                    then show prev
+                    else fromJust mref
+          git_ "merge" ["--quiet", ref]
+        else do
+        unless (null unpushed) $ do
+          tty <- hIsTerminalDevice stdin
+          when tty $ prompt_ "to push and build"
+    unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+    unless (null unpushed) $
+      gitPushSilent
     nvr <- fedpkg "verrel" []
     buildstatus <- kojiBuildStatus nvr
     if buildstatus == COMPLETE
@@ -248,6 +264,11 @@ buildBranch pulled mprev mpkg (br:brs) = do
           putStrLn "bodhi submission failed"
           prompt_ "to resubmit to Bodhi"
           bodhiUpdate mbid changelog nvr
+
+gitPushSilent :: IO ()
+gitPushSilent = do
+  out <- cmdQuiet "push" ["--quiet"]
+  putStrLn out
 
 postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
 postBuildComment session nvr bid = do
@@ -535,7 +556,7 @@ importPkg pkg = do
     git_ "commit" ["--message", "import #" ++ show bid]
     nvr <- fedpkg "verrel" []
     prompt_ $ "to push and build " ++ nvr
-    fedpkg_ "push" []
+    gitPushSilent
     fedpkg_ "build" ["--fail-fast"]
     postBuildComment session nvr bid
     -- FIXME build branches too
