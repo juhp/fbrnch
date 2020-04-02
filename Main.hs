@@ -99,7 +99,7 @@ dispatchCmd activeBranches =
     pkgOpt = optional (strOptionWith 'p' "package" "PKG" "package")
 
     branchesRequest :: Parser BranchesRequest
-    branchesRequest = flagWith' AllReleases 'a' "all" "Request branches for all current releases" <|> BranchesRequest <$> some branchArg
+    branchesRequest = flagWith' AllReleases 'a' "all" "Request branches for all current releases" <|> BranchesRequest <$> many branchArg
 
     mockOpt = switchWith 'm' "mock" "Do mock build to test branch"
 
@@ -459,11 +459,13 @@ requestBranches mock request = do
   gitPull
   requested <- case request of
                  AllReleases -> getFedoraBranches
+                 BranchesRequest [] -> take 2 <$> getFedoraBranches
                  BranchesRequest brs -> return brs
+  prompt_ $ "to request branches for " ++ unwords (map show requested)
   current <- getPackageBranches
   forM_ requested $ \ br ->
     if br `elem` current
-      -- fixme: or should we just error out?
+      -- FIXME: should we just error out?
     then putStrLn $ show br ++ " branch already exists"
     else do
       checkNoBranchRequest br
