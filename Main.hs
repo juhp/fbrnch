@@ -651,11 +651,14 @@ bugStatusEnum st =
 listReviews :: ReviewStatus -> IO [Bug]
 listReviews status = do
   (session,user) <- bzLoginSession
-  let reviews = ReporterField .==. user .&&. packageReview .&&. statusNewPost
+  let openReviews = ReporterField .==. user .&&. packageReview .&&. statusOpen
+      reviewsNewPost =
+        ReporterField .==. user .&&. packageReview .&&. statusNewPost
   let query = case status of
-        ReviewAllOpen -> reviews
-        ReviewUnApproved -> reviews .&&. not' reviewApproved
-        _ -> reviews .&&. reviewApproved
+        ReviewAllOpen -> openReviews
+        ReviewUnApproved -> reviewsNewPost .&&. not' reviewApproved
+        _ -> reviewsNewPost .&&. reviewApproved
+  -- FIXME sort by status, bid/pkg?
   bugs <- searchBugs session query
   case status of
     ReviewWithoutRepoReq ->
