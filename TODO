@@ -1,3 +1,4 @@
+- list pending new package builds
 - chain builds
 - build: override if dep
 - multipackage update
@@ -6,5 +7,12 @@
 - build sequence of packages by branch
 - update pagure key in ~/.config/rpkg/fedpkg.conf
 - build-branch --all
-- request branches for 2 releases by default
-- login via rest
+- request branches for 2 releases by default?
+- bugzilla login via rest, not python
+- test without .rpmmacros, ie in vanilla Fedora account
+- use gitlib?
+- --override
+- ask about bodhi update type
+- --parallel build
+- list builds not pushed to bodhi
+- list package bugs

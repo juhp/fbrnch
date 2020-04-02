@@ -136,6 +136,7 @@ withExistingDirectory dir act = do
     else
     withCurrentDirectory dir act
 
+-- FIXME sort packages in build dependency order (chain-build?)
 build :: Maybe Branch -> [Package] -> IO ()
 build _ [] = return ()
 build mbr (pkg:pkgs) = do
