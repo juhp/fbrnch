@@ -670,7 +670,7 @@ checkForComment session bid text = do
 
 putBug :: Bug -> IO ()
 putBug bug = do
-  putStrLn $ reviewBugToPackage bug
+  putStrLn $ reviewBugToPackage bug ++ " (" ++ T.unpack (bugStatus bug) ++ ")"
   putBugId $ bugId bug
   putStrLn ""
 
