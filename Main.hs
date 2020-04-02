@@ -632,7 +632,20 @@ data ReviewStatus = ReviewAllOpen
 
 reviewsCmd :: ReviewStatus -> IO ()
 reviewsCmd status =
-  listReviews status >>= mapM_ putBug
+  listReviews status >>= mapM_ putBug . sortOn (bugStatusEnum . bugStatus)
+
+bugStatusEnum :: T.Text -> Int
+bugStatusEnum st =
+  case st of
+    "NEW" -> 0
+    "ASSIGNED" -> 1
+    "POST" -> 2
+    "MODIFIED" -> 3
+    "ON_QA" -> 4
+    "VERIFIED" -> 5
+    "RELEASE_PENDING" -> 6
+    "CLOSED" -> 7
+    _ -> -1
 
 -- FIXME add --state or --new, --modified, etc
 listReviews :: ReviewStatus -> IO [Bug]
