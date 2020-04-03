@@ -268,7 +268,7 @@ buildBranch pulled mprev mpkg (br:brs) = do
 
 gitPushSilent :: IO ()
 gitPushSilent = do
-  out <- cmdQuiet "push" ["--quiet"]
+  out <- cmdQuiet "git" ["push", "--quiet"]
   putStrLn out
 
 postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
