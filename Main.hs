@@ -279,8 +279,9 @@ buildBranch pulled mprev mpkg (br:brs) = do
 
 gitPushSilent :: IO ()
 gitPushSilent = do
+  putStr "git pushing... "
   out <- cmdQuiet "git" ["push", "--quiet"]
-  putStrLn out
+  putStrLn $ if null out then "done" else "\n" ++ out
 
 postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
 postBuildComment session nvr bid = do
