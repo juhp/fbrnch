@@ -456,8 +456,8 @@ requestRepo pkg = do
     openRepoRequest :: IO Bool
     openRepoRequest = do
       -- FIXME use rest api
-      -- FIXME check also for any closed tickets?
-      current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
+      fasid <- fasIdFromKrb
+      current <- cmdLines "pagure" ["issues", "--server", "pagure.io", "--all", "--author", fasid, "releng/fedora-scm-requests"]
       -- don't mention "New Repo" here:
       -- pending Branch requests imply repo already exists
       let reqs = filter ((" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
