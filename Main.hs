@@ -82,7 +82,8 @@ dispatchCmd activeBranches =
       flagWith' ReviewApproved 'a' "approved" "All open approved package reviews" <|>
       flagWith' ReviewWithoutRepoReq 'w' "without-request" "Approved package reviews without a repo request" <|>
       flagWith' ReviewRepoRequested 'r' "requested" "Approved package reviews with a pending repo request" <|>
-      flagWith ReviewAllOpen ReviewRepoCreated 'c' "created" "Approved package reviews with a created repo"
+      flagWith' ReviewRepoCreated 'c' "created" "Approved package reviews with a created repo" <|>
+      flagWith ReviewAllOpen ReviewUnbranched 'b' "unbranched" "Approved created package reviews not yet branched"
 
     branchArg :: Parser Branch
     branchArg = argumentWith branchM "BRANCH.."
@@ -121,12 +122,22 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
-getPackageBranches :: IO [Branch]
-getPackageBranches = do
-  activeBranches <- getFedoraBranches
+getActiveBranches :: [Branch] -> [String] -> [Branch]
+getActiveBranches active branches =
   -- newest branch first
   {- HLINT ignore "Avoid reverse"-} -- reverse . sort is fast but not stabilizing
-  reverse . sort . mapMaybe (readBranch' activeBranches) . lines <$> cmd "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
+  (reverse . sort . mapMaybe (readBranch' active)) branches
+
+localBranches :: IO [Branch]
+localBranches = do
+  active <- getFedoraBranches
+  getActiveBranches active <$>
+    cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
+
+packageRemoteBranched :: String -> IO [Branch]
+packageRemoteBranched pkg = do
+  current <- getFedoraBranched
+  getActiveBranches current <$> cmdLines "pagure" ["branches", "rpms/" ++ pkg]
 
 withExistingDirectory :: FilePath -> IO () -> IO ()
 withExistingDirectory dir act = do
@@ -144,7 +155,7 @@ build mbr (pkg:pkgs) = do
     gitPull
     branches <- case mbr of
                   Just b -> return [b]
-                  Nothing -> getPackageBranches
+                  Nothing -> localBranches
     buildBranch True Nothing (Just pkg) branches
   build mbr pkgs
 
@@ -350,6 +361,9 @@ bzLoginSession = do
             user <- fieldOf "user" string
             return $ BzConfig user
 
+reporterIs :: T.Text -> SearchExpression
+reporterIs = (ReporterField .==.)
+
 packageReview :: SearchExpression
 packageReview =
   ComponentField .==. ["Package Review"]
@@ -361,6 +375,10 @@ statusOpen =
 statusNewPost :: SearchExpression
 statusNewPost =
   StatusField .==. "NEW" .||. StatusField .==. "ASSIGNED" .||. StatusField .==. "POST"
+
+statusNewModified :: SearchExpression
+statusNewModified =
+  StatusField .==. "NEW" .||. StatusField .==. "ASSIGNED" .||. StatusField .==. "POST" .||. StatusField .==. "MODIFIED"
 
 reviewApproved :: SearchExpression
 reviewApproved =
@@ -631,10 +649,12 @@ data ReviewStatus = ReviewAllOpen
                   | ReviewWithoutRepoReq
                   | ReviewRepoRequested
                   | ReviewRepoCreated
+                  | ReviewUnbranched
 
+-- FIXME add --state or --new, --modified, etc
 reviewsCmd :: ReviewStatus -> IO ()
 reviewsCmd status =
-  listReviews status >>= mapM_ putBug . sortOn (bugStatusEnum . bugStatus)
+  listReviews' True status >>= mapM_ putBug . sortOn (bugStatusEnum . bugStatus)
 
 bugStatusEnum :: T.Text -> Int
 bugStatusEnum st =
@@ -649,17 +669,19 @@ bugStatusEnum st =
     "CLOSED" -> 7
     _ -> -1
 
--- FIXME add --state or --new, --modified, etc
 listReviews :: ReviewStatus -> IO [Bug]
-listReviews status = do
+listReviews = listReviews' False
+
+listReviews' :: Bool -> ReviewStatus -> IO [Bug]
+listReviews' allopen status = do
   (session,user) <- bzLoginSession
-  let openReviews = ReporterField .==. user .&&. packageReview .&&. statusOpen
-      reviewsNewPost =
-        ReporterField .==. user .&&. packageReview .&&. statusNewPost
-  let query = case status of
-        ReviewAllOpen -> openReviews
-        ReviewUnApproved -> reviewsNewPost .&&. not' reviewApproved
-        _ -> reviewsNewPost .&&. reviewApproved
+  let reviews = reporterIs user .&&. packageReview
+      open = if allopen then statusOpen else statusNewPost
+      query = case status of
+        ReviewAllOpen -> reviews .&&. statusOpen
+        ReviewUnApproved -> reviews .&&. statusOpen .&&. not' reviewApproved
+        ReviewUnbranched -> reviews .&&. statusNewModified .&&. reviewApproved
+        _ -> reviews .&&. open .&&. reviewApproved
   -- FIXME sort by status, bid/pkg?
   bugs <- searchBugs session query
   case status of
@@ -670,12 +692,17 @@ listReviews status = do
       filterM (fmap not . checkRepoCreatedComment session . bugId)
     ReviewRepoCreated ->
       filterM (checkRepoCreatedComment session . bugId) bugs
+    ReviewUnbranched ->
+      filterM (notBranched . reviewBugToPackage) bugs
     _ -> return bugs
   where
     checkRepoRequestedComment :: BugzillaSession -> BugId -> IO Bool
     checkRepoRequestedComment session bid =
         checkForComment session bid
           "https://pagure.io/releng/fedora-scm-requests/issue/"
+
+    notBranched :: String -> IO Bool
+    notBranched pkg = null <$> packageRemoteBranched pkg
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid =
