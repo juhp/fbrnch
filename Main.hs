@@ -62,7 +62,7 @@ dispatchCmd activeBranches =
       importPkgs <$> many (strArg "NEWPACKAGE...")
     , Subcommand "build" "Build package(s)" $
       build <$> branchOpt <*> some pkgArg
-    , Subcommand "request-branches" "Request branches for package" $
+    , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranches <$> mockOpt <*> branchesRequest
     , Subcommand "build-branch" "Build branch(s) of package" $
       buildBranch False Nothing <$> pkgOpt <*> some branchArg
@@ -471,34 +471,51 @@ requestRepo pkg = do
       unless (null out) $
         error' $ "Repo for " ++ pkg ++ " already exists"
 
+-- FIXME if pkg dir than just act on package
 requestBranches :: Bool -> BranchesRequest -> IO ()
 requestBranches mock request = do
-  -- FIXME check we are in a package repo
+  pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
+  mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request p) pkgs
+
+requestPkgBranches :: Bool -> BranchesRequest -> String -> IO ()
+requestPkgBranches mock request pkg = do
+  putPkgHdr pkg
   gitPull
-  requested <- case request of
-                 AllReleases -> getFedoraBranches
-                 BranchesRequest [] -> take 2 <$> getFedoraBranches
-                 BranchesRequest brs -> return brs
-  prompt_ $ "to request branches for " ++ unwords (map show requested)
-  current <- getPackageBranches
-  forM_ requested $ \ br ->
-    if br `elem` current
-      -- FIXME: should we just error out?
-    then putStrLn $ show br ++ " branch already exists"
-    else do
-      checkNoBranchRequest br
-      when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
-      fedpkg_ "request-branch" [show br]
+  active <- getFedoraBranched
+  branches <- do
+    let requested = case request of
+                      AllReleases -> active
+                      BranchesRequest [] -> take 2 active
+                      BranchesRequest brs -> brs
+    inp <- prompt $ "to request branches [" ++ unwords (map show requested) ++ "]"
+    return $ if null inp
+             then requested
+             else mapMaybe (readBranch active) $ words inp
+  newbranches <- filterExistingBranchRequests branches
+  forM_ newbranches $ \ br -> do
+    when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
+    fedpkg_ "request-branch" [show br]
   where
-    checkNoBranchRequest :: Branch -> IO ()
-    checkNoBranchRequest br = do
-      pkg <- getPackageDir
-      -- FIXME use rest api
-      -- FIXME check also for any closed tickets?
-      current <- cmdLines "pagure-cli" ["issues", "releng/fedora-scm-requests"]
-      let reqs = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
-      unless (null reqs) $
-        error' $ "Branch request already open for " ++ pkg ++ ":" ++ show br
+    filterExistingBranchRequests :: [Branch] -> IO [Branch]
+    filterExistingBranchRequests brs = do
+      current <- packageRemoteBranched pkg
+      forM_ brs $ \ br ->
+        when (br `elem` current) $
+        putStrLn $ show br ++ " branch already exists"
+      let newbranches = brs \\ current
+      if null newbranches then return []
+        else do
+        fasid <- fasIdFromKrb
+        -- FIXME use rest api
+        open <- cmdLines "pagure" ["issues", "--server", "pagure.io", "--author", fasid, "releng/fedora-scm-requests"]
+        filterM (notExistingRequest open) newbranches
+
+    notExistingRequest :: [String] -> Branch -> IO Bool
+    notExistingRequest requests br = do
+      let pending = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) requests
+      unless (null pending) $
+        putStrLn $ "Branch request already open for " ++ pkg ++ ":" ++ show br ++ "\n" ++ unlines pending
+      return $ null pending
 
     mockConfig :: Branch -> String
     mockConfig Master = "fedora-rawhide-x86_64"
