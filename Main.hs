@@ -128,14 +128,20 @@ getActiveBranches active branches =
   {- HLINT ignore "Avoid reverse"-} -- reverse . sort is fast but not stabilizing
   (reverse . sort . mapMaybe (readBranch' active)) branches
 
-localBranches :: IO [Branch]
-localBranches = do
+packageBranches :: IO [Branch]
+packageBranches = do
   active <- getFedoraBranches
   getActiveBranches active <$>
     cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
 
-packageRemoteBranched :: String -> IO [Branch]
-packageRemoteBranched pkg = do
+packageBranched :: IO [Branch]
+packageBranched = do
+  active <- getFedoraBranched
+  getActiveBranches active <$>
+    cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
+
+packagePagureBranched :: String -> IO [Branch]
+packagePagureBranched pkg = do
   current <- getFedoraBranched
   getActiveBranches current <$> cmdLines "pagure" ["branches", "rpms/" ++ pkg]
 
@@ -155,7 +161,7 @@ build mbr (pkg:pkgs) = do
     gitPull
     branches <- case mbr of
                   Just b -> return [b]
-                  Nothing -> localBranches
+                  Nothing -> packageBranches
     buildBranch True Nothing (Just pkg) branches
   build mbr pkgs
 
@@ -499,17 +505,24 @@ requestPkgBranches mock request pkg = do
   where
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests brs = do
-      current <- packageRemoteBranched pkg
+      existing <- packageBranched
       forM_ brs $ \ br ->
-        when (br `elem` current) $
+        when (br `elem` existing) $
         putStrLn $ show br ++ " branch already exists"
-      let newbranches = brs \\ current
-      if null newbranches then return []
+      let brs' = brs \\ existing
+      if null brs' then return []
         else do
-        fasid <- fasIdFromKrb
-        -- FIXME use rest api
-        open <- cmdLines "pagure" ["issues", "--server", "pagure.io", "--author", fasid, "releng/fedora-scm-requests"]
-        filterM (notExistingRequest open) newbranches
+        current <- packagePagureBranched pkg
+        forM_ brs' $ \ br ->
+          when (br `elem` current) $
+          putStrLn $ show br ++ " remote branch already exists"
+        let newbranches = brs' \\ current
+        if null newbranches then return []
+          else do
+          fasid <- fasIdFromKrb
+          -- FIXME use rest api
+          open <- cmdLines "pagure" ["issues", "--server", "pagure.io", "--author", fasid, "releng/fedora-scm-requests"]
+          filterM (notExistingRequest open) newbranches
 
     notExistingRequest :: [String] -> Branch -> IO Bool
     notExistingRequest requests br = do
@@ -720,7 +733,7 @@ listReviews' allopen status = do
           "https://pagure.io/releng/fedora-scm-requests/issue/"
 
     notBranched :: String -> IO Bool
-    notBranched pkg = null <$> packageRemoteBranched pkg
+    notBranched pkg = null <$> packagePagureBranched pkg
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid =
