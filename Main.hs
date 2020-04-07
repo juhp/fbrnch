@@ -61,9 +61,9 @@ dispatchCmd activeBranches =
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importPkgs <$> many (strArg "NEWPACKAGE...")
     , Subcommand "merge" "Merge branches" $
-      mergePkgs <$> branchOpt <*> some pkgArg
+      mergePkgs <$> optional (optionWith branchM 't' "to" "BRANCH" "merge from newer branch") <*> some pkgArg
     , Subcommand "build" "Build package(s)" $
-      buildPkgs <$> branchOpt <*> some pkgArg
+      buildPkgs <$> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> some pkgArg
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranches <$> mockOpt <*> branchesRequestOpt
     , Subcommand "build-branch" "Build branch(s) of package" $
@@ -89,9 +89,6 @@ dispatchCmd activeBranches =
 
     branchArg :: Parser Branch
     branchArg = argumentWith branchM "BRANCH.."
-
-    branchOpt :: Parser (Maybe Branch)
-    branchOpt = optional (optionWith branchM 'b' "branch" "BRANCH" "branch")
 
     branchM = maybeReader (readBranch activeBranches)
 
