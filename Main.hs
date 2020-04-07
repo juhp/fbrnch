@@ -60,6 +60,8 @@ dispatchCmd activeBranches =
       requestRepos <$> many (strArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importPkgs <$> many (strArg "NEWPACKAGE...")
+    , Subcommand "merge" "Merge branches" $
+      mergePkgs <$> branchOpt <*> some pkgArg
     , Subcommand "build" "Build package(s)" $
       buildPkgs <$> branchOpt <*> some pkgArg
     , Subcommand "request-branches" "Request branches for approved created packages" $
@@ -152,6 +154,64 @@ withExistingDirectory dir act = do
     then error' $ "No such directory: " ++ dir
     else
     withCurrentDirectory dir act
+
+mergePkgs :: Maybe Branch -> [Package] -> IO ()
+mergePkgs _ [] = return ()
+mergePkgs mbr (pkg:pkgs) = do
+  withExistingDirectory pkg $ do
+    gitPull
+    branches <- case mbr of
+                  Just b -> return [b]
+                  Nothing -> packageBranched
+    when (isNothing mbr) $
+      putStrLn $ "\nBranches: " ++ unwords (map show branches)
+    mergeBranch True Nothing (Just pkg) branches
+  mergePkgs mbr pkgs
+
+mergeBranch :: Bool -> Maybe Branch -> Maybe Package -> [Branch] -> IO ()
+mergeBranch _ _ _ [] = return ()
+mergeBranch pulled mprev mpkg (br:brs) = do
+  checkWorkingDirClean
+  unless pulled gitPull
+  pkg <- maybe getPackageDir return mpkg
+  putPkgBrnchHdr pkg br
+  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+  if not branched
+    then error' $ show br ++ " branch does not exist!"
+    else do
+    current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
+    when (current /= show br) $
+      fedpkg_ "switch-branch" ["--fetch", show br]
+    prev <- case mprev of
+              Just p -> return p
+              Nothing -> do
+                branches <- getFedoraBranches
+                return $ newerBranch branches br
+    unless (br == Master) $ do
+      ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
+      unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+      when ancestor $ do
+        unless (null unmerged) $ do
+          putStrLn $ "New commits in " ++ show prev ++ ":"
+          let shortlog = simplifyCommitLog unmerged
+          putStrLn shortlog
+      unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+      unless (null unpushed) $ do
+        putStrLn "Local commits:"
+        putStrLn $ simplifyCommitLog unpushed
+          -- FIXME ignore Mass_Rebuild?
+      when (ancestor && not (null unmerged)) $ do
+        -- FIXME if only initial README commit then package can't be built without merge
+        mhash <- prompt $ "to merge " ++ show prev ++ "; or give a ref to merge; otherwise 'no' to skip merge"
+        -- FIXME really check for "no"?
+        let commitrefs = (map (head . words) . lines) unmerged
+            mref = find (mhash `isPrefixOf`) commitrefs
+        when (null mhash || isJust mref) $ do
+          let ref = if null mhash
+                    then show prev
+                    else fromJust mref
+          git_ "merge" ["--quiet", ref]
+      mergeBranch True (Just br) mpkg brs
 
 -- FIXME sort packages in build dependency order (chain-build?)
 buildPkgs :: Maybe Branch -> [Package] -> IO ()
@@ -262,13 +322,6 @@ buildBranch pulled mprev mpkg (br:brs) = do
           when False $ cmd_ "bodhi" ["overrides", "save", nvr]
         buildBranch True (Just br) mpkg brs
   where
-    simplifyCommitLog :: String -> String
-    simplifyCommitLog = unlines . map (unwords . shortenHash . words) . lines
-      where
-        shortenHash :: [String] -> [String]
-        shortenHash [] = []
-        shortenHash (h:cs) = take 8 h : cs
-
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mbid changelog nvr = do
       let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
@@ -284,6 +337,13 @@ buildBranch pulled mprev mpkg (br:brs) = do
           putStrLn "bodhi submission failed"
           prompt_ "to resubmit to Bodhi"
           bodhiUpdate mbid changelog nvr
+
+simplifyCommitLog :: String -> String
+simplifyCommitLog = unlines . map (unwords . shortenHash . words) . lines
+  where
+    shortenHash :: [String] -> [String]
+    shortenHash [] = []
+    shortenHash (h:cs) = take 8 h : cs
 
 gitPushSilent :: IO ()
 gitPushSilent = do
