@@ -162,6 +162,8 @@ buildPkgs mbr (pkg:pkgs) = do
     branches <- case mbr of
                   Just b -> return [b]
                   Nothing -> packageBranches
+    when (isNothing mbr) $
+      putStrLn $ "\nBranches: " ++ unwords (map show branches)
     buildBranch True Nothing (Just pkg) branches
   buildPkgs mbr pkgs
 
