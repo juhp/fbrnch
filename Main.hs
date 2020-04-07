@@ -468,7 +468,7 @@ requestRepo pkg = do
 
     checkNoPagureRepo :: IO ()
     checkNoPagureRepo = do
-      out <- cmd "pagure" ["list", pkg]
+      out <- cmd "pagure" ["list", "--namespace", "rpms", pkg]
       unless (null out) $
         error' $ "Repo for " ++ pkg ++ " already exists"
 
