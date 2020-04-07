@@ -125,10 +125,10 @@ gitBool c args =
 #endif
 
 getActiveBranches :: [Branch] -> [String] -> [Branch]
-getActiveBranches active branches =
+getActiveBranches active =
   -- newest branch first
   {- HLINT ignore "Avoid reverse"-} -- reverse . sort is fast but not stabilizing
-  (reverse . sort . mapMaybe (readBranch' active)) branches
+  reverse . sort . mapMaybe (readBranch' active)
 
 packageBranches :: IO [Branch]
 packageBranches = do
@@ -190,7 +190,7 @@ mergeBranch pulled mprev mpkg (br:brs) = do
     unless (br == Master) $ do
       ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
       unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
-      when ancestor $ do
+      when ancestor $
         unless (null unmerged) $ do
           putStrLn $ "New commits in " ++ show prev ++ ":"
           let shortlog = simplifyCommitLog unmerged
@@ -267,7 +267,7 @@ buildBranch pulled mprev mpkg (br:brs) = do
       else do
       ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
       unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
-      when ancestor $ do
+      when ancestor $
         unless (null unmerged) $ do
           putStrLn $ "New commits in " ++ show prev ++ ":"
           let shortlog = simplifyCommitLog unmerged
@@ -289,12 +289,12 @@ buildBranch pulled mprev mpkg (br:brs) = do
                     then show prev
                     else fromJust mref
           git_ "merge" ["--quiet", ref]
-        else do
+        else
         unless (null unpushed) $ do
           tty <- hIsTerminalDevice stdin
           when tty $ prompt_ "to push and build"
     unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
-    unless (null unpushed) $
+    unless (null unpushed)
       gitPushSilent
     nvr <- fedpkg "verrel" []
     buildstatus <- kojiBuildStatus nvr
@@ -686,7 +686,7 @@ krbTicket = do
   krb <- words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines <$> cmd "klist" ["-l"]
   if null krb
     then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
-    else do
+    else
     when (last krb == "(Expired)") $ do
       putStrLn $ unwords krb
       cmd_ "kinit" [head krb]
