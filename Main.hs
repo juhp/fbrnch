@@ -63,7 +63,7 @@ dispatchCmd activeBranches =
     , Subcommand "build" "Build package(s)" $
       build <$> branchOpt <*> some pkgArg
     , Subcommand "request-branches" "Request branches for approved created packages" $
-      requestBranches <$> mockOpt <*> branchesRequest
+      requestBranches <$> mockOpt <*> branchesRequestOpt
     , Subcommand "build-branch" "Build branch(s) of package" $
       buildBranch False Nothing <$> pkgOpt <*> some branchArg
     , Subcommand "pull" "Git pull packages" $
@@ -99,8 +99,8 @@ dispatchCmd activeBranches =
     pkgOpt :: Parser (Maybe String)
     pkgOpt = optional (strOptionWith 'p' "package" "PKG" "package")
 
-    branchesRequest :: Parser BranchesRequest
-    branchesRequest = flagWith' AllReleases 'a' "all" "Request branches for all current releases [default latest 2]" <|> BranchesRequest <$> many branchArg
+    branchesRequestOpt :: Parser BranchesRequest
+    branchesRequestOpt = flagWith' AllReleases 'a' "all" "Request branches for all current releases [default latest 2]" <|> BranchesRequest <$> many branchArg
 
     mockOpt = switchWith 'm' "mock" "Do mock build to test branch"
 
