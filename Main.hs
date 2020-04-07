@@ -100,7 +100,7 @@ dispatchCmd activeBranches =
     pkgOpt = optional (strOptionWith 'p' "package" "PKG" "package")
 
     branchesRequest :: Parser BranchesRequest
-    branchesRequest = flagWith' AllReleases 'a' "all" "Request branches for all current releases" <|> BranchesRequest <$> many branchArg
+    branchesRequest = flagWith' AllReleases 'a' "all" "Request branches for all current releases [default latest 2]" <|> BranchesRequest <$> many branchArg
 
     mockOpt = switchWith 'm' "mock" "Do mock build to test branch"
 
