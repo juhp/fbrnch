@@ -849,6 +849,7 @@ getSpecFile =
 
 kojiScratchBuild :: Bool -> FilePath -> IO String
 kojiScratchBuild failfast srpm = do
+  krbTicket
   out <- cmd "koji" $ ["build", "--scratch", "--nowait"] ++ ["--fail-fast" | failfast] ++ ["rawhide", srpm]
   putStrLn out
   let kojiurl = last $ words out
