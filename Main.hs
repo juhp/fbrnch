@@ -61,7 +61,7 @@ dispatchCmd activeBranches =
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importPkgs <$> many (strArg "NEWPACKAGE...")
     , Subcommand "build" "Build package(s)" $
-      build <$> branchOpt <*> some pkgArg
+      buildPkgs <$> branchOpt <*> some pkgArg
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranches <$> mockOpt <*> branchesRequestOpt
     , Subcommand "build-branch" "Build branch(s) of package" $
@@ -154,16 +154,16 @@ withExistingDirectory dir act = do
     withCurrentDirectory dir act
 
 -- FIXME sort packages in build dependency order (chain-build?)
-build :: Maybe Branch -> [Package] -> IO ()
-build _ [] = return ()
-build mbr (pkg:pkgs) = do
+buildPkgs :: Maybe Branch -> [Package] -> IO ()
+buildPkgs _ [] = return ()
+buildPkgs mbr (pkg:pkgs) = do
   withExistingDirectory pkg $ do
     gitPull
     branches <- case mbr of
                   Just b -> return [b]
                   Nothing -> packageBranches
     buildBranch True Nothing (Just pkg) branches
-  build mbr pkgs
+  buildPkgs mbr pkgs
 
 gitPull :: IO ()
 gitPull = do
