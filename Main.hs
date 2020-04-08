@@ -59,15 +59,17 @@ dispatchCmd activeBranches =
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
       requestRepos <$> many (strArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
-      importPkgs <$> many (strArg "NEWPACKAGE...")
+      importCmd <$> many (strArg "NEWPACKAGE...")
+    , Subcommand "status" "Status package/branch status" $
+      statusCmd <$> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> many pkgArg
     , Subcommand "merge" "Merge branches" $
-      mergePkgs <$> optional (optionWith branchM 't' "to" "BRANCH" "merge from newer branch") <*> some pkgArg
+      mergeCmd <$> optional (optionWith branchM 't' "to" "BRANCH" "merge from newer branch") <*> some pkgArg
     , Subcommand "build" "Build package(s)" $
-      buildPkgs <$> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> some pkgArg
+      buildCmd <$> mergeOpt <*> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> some pkgArg
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranches <$> mockOpt <*> branchesRequestOpt
     , Subcommand "build-branch" "Build branch(s) of package" $
-      buildBranch False Nothing <$> pkgOpt <*> some branchArg
+      buildBranches False Nothing <$> mergeOpt <*> pkgOpt <*> some branchArg
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (strArg "PACKAGE...")
     , Subcommand "find-review" "Find package review bug" $
@@ -94,6 +96,8 @@ dispatchCmd activeBranches =
 
     pkgArg :: Parser Package
     pkgArg = removeSuffix "/" <$> strArg "PACKAGE.."
+
+    mergeOpt = switchWith 'm' "merge" "merge from newer branch"
 
     pkgOpt :: Parser (Maybe String)
     pkgOpt = optional (strOptionWith 'p' "package" "PKG" "package")
@@ -152,77 +156,170 @@ withExistingDirectory dir act = do
     else
     withCurrentDirectory dir act
 
-mergePkgs :: Maybe Branch -> [Package] -> IO ()
-mergePkgs _ [] = return ()
-mergePkgs mbr (pkg:pkgs) = do
+-- FIXME add --no-pull?
+-- FIXME --pending
+statusCmd :: Maybe Branch -> [Package] -> IO ()
+statusCmd mbr ps = do
+  pkgs <- if null ps
+    then map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
+    else return ps
+  mapM_ (statusPkg mbr) pkgs
+
+statusPkg :: Maybe Branch -> Package -> IO ()
+statusPkg mbr pkg =
   withExistingDirectory pkg $ do
+    putPkgHdr pkg
+    clean <- workingDirClean
+    when clean gitPull
+    branches <- case mbr of
+                  Just b -> return [b]
+                  Nothing -> packageBranches
+    statusBranches (Just pkg) branches
+
+statusBranches :: Maybe Package -> [Branch] -> IO ()
+statusBranches _ [] = return ()
+statusBranches mpkg (br:brs) = do
+  pkg <- getPackageName mpkg
+  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+  if not branched
+    then putStrLn $ "No " ++ show br ++ " branch"
+    else do
+    clean <- workingDirClean
+    if not clean then
+      putStrLn "working dir is dirty"
+      else do
+      switchBranch br
+      let spec = pkg <.> "spec"
+      haveSpec <- doesFileExist spec
+      if not haveSpec then do
+        newrepo <- initialPkgRepo
+        if newrepo then putStrLn $ show br ++ ": initial repo"
+          else putStrLn $ "missing " ++ spec
+        else do
+        mnvr <- cmdMaybe "fedpkg" ["verrel"]
+        case mnvr of
+          Nothing -> do
+            putStrLn "undefined NVR!\n"
+            putStr "HEAD "
+            simplifyCommitLog <$> git "log" ["--max-count=1", "--pretty=oneline"] >>= putStrLn
+          Just nvr -> do
+            unless (br == Master) $ do
+              prev <- do
+                branches <- getFedoraBranches
+                return $ newerBranch branches br
+              ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
+              when ancestor $ do
+                unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+                unless (null unmerged) $ do
+                  putStrLn $ "Newer commits in " ++ show prev ++ ":"
+                  let shortlog = simplifyCommitLog unmerged
+                  putStrLn shortlog
+            unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+            if null unpushed then do
+              tagged <- kojiBuildTagged nvr
+              unless tagged $ do
+                latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
+                putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else latest ++ " ->\n") ++ nvr
+              else do
+              putStrLn "Local commits:"
+              putStr $ simplifyCommitLog unpushed
+      statusBranches mpkg brs
+
+kojiBuildTagged :: String -> IO Bool
+kojiBuildTagged nvr = do
+  mtags <- cmdMaybe "koji" ["list-tags", "--build", nvr]
+  case mtags of
+    Nothing -> do
+      putStrLn $ nvr ++ " no build yet"
+      return False
+    Just tags -> do
+      unless (null tags) $
+        putStrLn $ nvr ++ " (" ++ (unwords . words) tags ++ ")"
+      return $ not (null tags)
+
+-- newly created Fedora repos/branches have just one README commit
+initialPkgRepo :: IO Bool
+initialPkgRepo = do
+  commits <- length . lines <$> git "log" ["--pretty=oneline"]
+  return $ commits <= 1
+
+mergeCmd :: Maybe Branch -> [Package] -> IO ()
+mergeCmd mbr =
+  mapM_ (mergePkg mbr)
+
+mergePkg :: Maybe Branch -> Package -> IO ()
+mergePkg mbr pkg =
+  withExistingDirectory pkg $ do
+    checkWorkingDirClean
     gitPull
     branches <- case mbr of
                   Just b -> return [b]
                   Nothing -> packageBranched
     when (isNothing mbr) $
       putStrLn $ "\nBranches: " ++ unwords (map show branches)
-    mergeBranch True Nothing (Just pkg) branches
-  mergePkgs mbr pkgs
+    mergeBranches True False Nothing (Just pkg) branches
 
-mergeBranch :: Bool -> Maybe Branch -> Maybe Package -> [Branch] -> IO ()
-mergeBranch _ _ _ [] = return ()
-mergeBranch pulled mprev mpkg (br:brs) = do
-  checkWorkingDirClean
-  unless pulled gitPull
-  pkg <- maybe getPackageDir return mpkg
-  putPkgBrnchHdr pkg br
-  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
-  if not branched
-    then error' $ show br ++ " branch does not exist!"
-    else do
-    current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
-    when (current /= show br) $
-      fedpkg_ "switch-branch" ["--fetch", show br]
-    prev <- case mprev of
-              Just p -> return p
-              Nothing -> do
-                branches <- getFedoraBranches
-                return $ newerBranch branches br
-    unless (br == Master) $ do
-      ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
-      unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
-      when ancestor $
-        unless (null unmerged) $ do
-          putStrLn $ "New commits in " ++ show prev ++ ":"
-          let shortlog = simplifyCommitLog unmerged
-          putStrLn shortlog
-      unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
-      unless (null unpushed) $ do
-        putStrLn "Local commits:"
-        putStrLn $ simplifyCommitLog unpushed
-          -- FIXME ignore Mass_Rebuild?
-      when (ancestor && not (null unmerged)) $ do
-        -- FIXME if only initial README commit then package can't be built without merge
-        mhash <- prompt $ "to merge " ++ show prev ++ "; or give a ref to merge; otherwise 'no' to skip merge"
-        -- FIXME really check for "no"?
-        let commitrefs = (map (head . words) . lines) unmerged
-            mref = find (mhash `isPrefixOf`) commitrefs
-        when (null mhash || isJust mref) $ do
-          let ref = if null mhash
-                    then show prev
-                    else fromJust mref
-          git_ "merge" ["--quiet", ref]
-      mergeBranch True (Just br) mpkg brs
+mergeBranches :: Bool -> Bool -> Maybe Branch -> Maybe Package -> [Branch] -> IO ()
+mergeBranches _ _ _ _ [] = return ()
+mergeBranches pulled build mprev mpkg (br:brs) = do
+  pkg <- getPackageName mpkg
+  unless pulled $ do
+    checkWorkingDirClean
+    gitPull
+  unless build $ do
+    putPkgBrnchHdr pkg br
+    branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+    if not branched
+      then error' $ show br ++ " branch does not exist!"
+      else switchBranch br
+  prev <- case mprev of
+            Just p -> return p
+            Nothing -> do
+              branches <- getFedoraBranches
+              return $ newerBranch branches br
+  unless (br == Master) $ do
+    ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
+    unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+    when ancestor $
+      unless (null unmerged) $ do
+        putStrLn $ "New commits in " ++ show prev ++ ":"
+        let shortlog = simplifyCommitLog unmerged
+        putStrLn shortlog
+    unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+    unless (null unpushed) $ do
+      putStrLn "Local commits:"
+      putStrLn $ simplifyCommitLog unpushed
+        -- FIXME ignore Mass_Rebuild?
+    when (ancestor && not (null unmerged)) $ do
+      -- FIXME if only initial README commit then package can't be built without merge
+      -- FIXME skipping merge makes little sense for new repo
+      mhash <- prompt $ "to merge " ++ show prev ++ "; or give a ref to merge; otherwise 'no' to skip merge"
+      -- FIXME really check for "no"?
+      let commitrefs = (map (head . words) . lines) unmerged
+          mref = find (mhash `isPrefixOf`) commitrefs
+      when (null mhash || isJust mref) $ do
+        let ref = if null mhash
+                  then show prev
+                  else fromJust mref
+        git_ "merge" ["--quiet", ref]
+  mergeBranches True build (Just br) mpkg brs
 
 -- FIXME sort packages in build dependency order (chain-build?)
-buildPkgs :: Maybe Branch -> [Package] -> IO ()
-buildPkgs _ [] = return ()
-buildPkgs mbr (pkg:pkgs) = do
+buildCmd :: Bool -> Maybe Branch -> [Package] -> IO ()
+buildCmd merge mbr =
+  mapM_ (buildPkg merge mbr)
+
+buildPkg :: Bool -> Maybe Branch -> Package -> IO ()
+buildPkg merge mbr pkg =
   withExistingDirectory pkg $ do
+    checkWorkingDirClean
     gitPull
     branches <- case mbr of
                   Just b -> return [b]
                   Nothing -> packageBranches
     when (isNothing mbr) $
       putStrLn $ "\nBranches: " ++ unwords (map show branches)
-    buildBranch True Nothing (Just pkg) branches
-  buildPkgs mbr pkgs
+    buildBranches True Nothing merge (Just pkg) branches
 
 gitPull :: IO ()
 gitPull = do
@@ -234,90 +331,59 @@ putPkgBrnchHdr :: String -> Branch -> IO ()
 putPkgBrnchHdr pkg br =
   putStrLn $ "\n== " ++ pkg ++ ":" ++ show br ++ " =="
 
-buildBranch :: Bool -> Maybe Branch -> Maybe Package -> [Branch] -> IO ()
-buildBranch _ _ _ [] = return ()
-buildBranch pulled mprev mpkg (br:brs) = do
-  checkWorkingDirClean
-  unless pulled gitPull
-  pkg <- maybe getPackageDir return mpkg
+buildBranches :: Bool -> Maybe Branch -> Bool -> Maybe Package -> [Branch] -> IO ()
+buildBranches _ _ _ _ [] = return ()
+buildBranches pulled mprev merge mpkg (br:brs) = do
+  unless pulled $ do
+    checkWorkingDirClean
+    gitPull
+  pkg <- getPackageName mpkg
   putPkgBrnchHdr pkg br
   branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
   if not branched
     then error' $ show br ++ " branch does not exist!"
+    else switchBranch br
+  newrepo <- initialPkgRepo
+  when (merge || newrepo) $
+    mergeBranches True True mprev (Just pkg) [br]
+  unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+  when (not merge || br == Master) $
+    -- FIXME hide if just merged
+    unless (null unpushed) $ do
+      putStrLn "Local commits:"
+      putStrLn $ simplifyCommitLog unpushed
+  -- FIXME offer merge if newer branch has commits
+  unless (null unpushed) $ do
+    tty <- hIsTerminalDevice stdin
+    when tty $ prompt_ "to push and build"
+    gitPushSilent
+  checkForSpecFile pkg
+  nvr <- fedpkg "verrel" []
+  buildstatus <- kojiBuildStatus nvr
+  if buildstatus == COMPLETE
+    then do
+    putStrLn $ nvr ++ " is already built"
+    buildBranches True (Just br) merge mpkg brs
     else do
-    current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
-    when (current /= show br) $
-      fedpkg_ "switch-branch" ["--fetch", show br]
-    prev <- case mprev of
-              Just p -> return p
-              Nothing -> do
-                branches <- getFedoraBranches
-                return $ newerBranch branches br
-    if br == Master
-      then do
-      unpushed <- git "log" ["origin/master..HEAD", "--pretty=oneline"]
-      unless (null unpushed) $ do
-        putStrLn "Local commits:"
-        putStrLn $ simplifyCommitLog unpushed
-        tty <- hIsTerminalDevice stdin
-        when tty $ prompt_ "to push and build"
+    -- FIXME handle target
+    latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
+    if dropExtension nvr == dropExtension latest
+      then putStrLn $ nvr ++ " is already latest"
       else do
-      ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
-      unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
-      when ancestor $
-        unless (null unmerged) $ do
-          putStrLn $ "New commits in " ++ show prev ++ ":"
-          let shortlog = simplifyCommitLog unmerged
-          putStrLn shortlog
-      unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
-      unless (null unpushed) $ do
-        putStrLn "Local commits:"
-        putStrLn $ simplifyCommitLog unpushed
-          -- FIXME ignore Mass_Rebuild?
-          -- FIXME want also to select build/review
-      if ancestor && not (null unmerged) then do
-        -- FIXME if only initial README commit then package can't be built without merge
-        mhash <- prompt $ "to merge " ++ show prev ++ ", push and build; or give a ref to merge, push and build; otherwise 'no' to skip merging, but " ++ (if null unpushed then "" else "push and ") ++ "build " ++ show br
-        -- FIXME check for "no"
-        let commitrefs = (map (head . words) . lines) unmerged
-            mref = find (mhash `isPrefixOf`) commitrefs
-        when (null mhash || isJust mref) $ do
-          let ref = if null mhash
-                    then show prev
-                    else fromJust mref
-          git_ "merge" ["--quiet", ref]
-        else
-        unless (null unpushed) $ do
-          tty <- hIsTerminalDevice stdin
-          when tty $ prompt_ "to push and build"
-    unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
-    unless (null unpushed)
-      gitPushSilent
-    nvr <- fedpkg "verrel" []
-    buildstatus <- kojiBuildStatus nvr
-    if buildstatus == COMPLETE
-      then do
-      putStrLn $ nvr ++ " is already built"
-      buildBranch True (Just br) mpkg brs
-      else do
-      -- FIXME handle target
-      latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
-      if dropExtension nvr == dropExtension latest
-        then putStrLn $ nvr ++ " is already latest"
+      krbTicket
+      fedpkg_ "build" ["--fail-fast"]
+      --waitForbuild
+      -- FIXME check if first build, also add --bz and ask
+      (mbid,session) <- bzReviewSession
+      if br == Master
+        then forM_ mbid $ postBuildComment session nvr
         else do
-        krbTicket
-        fedpkg_ "build" ["--fail-fast"]
-        --waitForbuild
-        (mbid,session) <- bzReviewSession
-        if br == Master
-          then forM_ mbid $ postBuildComment session nvr
-          else do
-          -- FIXME diff previous changelog?
-          changelog <- getChangeLog $ pkg <.> "spec"
-          bodhiUpdate mbid changelog nvr
-          -- override option
-          when False $ cmd_ "bodhi" ["overrides", "save", nvr]
-        buildBranch True (Just br) mpkg brs
+        -- FIXME diff previous changelog?
+        changelog <- getChangeLog $ pkg <.> "spec"
+        bodhiUpdate mbid changelog nvr
+        -- override option
+        when False $ cmd_ "bodhi" ["overrides", "save", nvr]
+      buildBranches True (Just br) merge mpkg brs
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mbid changelog nvr = do
@@ -335,6 +401,12 @@ buildBranch pulled mprev mpkg (br:brs) = do
           prompt_ "to resubmit to Bodhi"
           bodhiUpdate mbid changelog nvr
 
+checkForSpecFile :: String -> IO ()
+checkForSpecFile pkg = do
+  let spec = pkg <.> "spec"
+  have <- doesFileExist $ pkg <.> "spec"
+  unless have $ error' $ spec ++ " not found"
+
 simplifyCommitLog :: String -> String
 simplifyCommitLog = unlines . map (unwords . shortenHash . words) . lines
   where
@@ -347,6 +419,12 @@ gitPushSilent = do
   putStr "git pushing... "
   out <- cmdQuiet "git" ["push", "--quiet"]
   putStrLn $ if null out then "done" else "\n" ++ out
+
+switchBranch :: Branch -> IO ()
+switchBranch br = do
+  current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
+  when (current /= show br) $
+    cmdSilent "fedpkg" $ "switch-branch" : [show br]
 
 postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
 postBuildComment session nvr bid = do
@@ -382,12 +460,13 @@ postComment session bid comment = do
   putStrLn "Comment added:"
   T.putStrLn comment
 
-getPackageDir :: IO String
-getPackageDir = takeFileName <$> getCurrentDirectory
+getPackageName :: Maybe FilePath -> IO String
+getPackageName mdir =
+  takeFileName <$> maybe getCurrentDirectory return mdir
 
 bzReviewSession :: IO (Maybe BugId,BugzillaSession)
 bzReviewSession = do
-  pkg <- getPackageDir
+  pkg <- getPackageName Nothing
   (bids,session) <- bugIdsSession $
                     pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bids of
@@ -604,14 +683,18 @@ prompt s = do
 prompt_ :: String -> IO ()
 prompt_ = void <$> prompt
 
+workingDirClean :: IO Bool
+workingDirClean =
+  gitBool "diff-index" ["--quiet", "HEAD"]
+
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
-  clean <- gitBool "diff-index" ["--quiet", "HEAD"]
+  clean <- workingDirClean
   unless clean $ error' "Working dir is not clean"
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
-importPkgs :: [Package] -> IO ()
-importPkgs ps = do
+importCmd :: [Package] -> IO ()
+importCmd ps = do
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviews ReviewRepoCreated
     else return ps
@@ -623,7 +706,7 @@ reviewBugToPackage =
 
 putPkgHdr :: String -> IO ()
 putPkgHdr pkg =
-  putStrLn $ "\n== " ++ pkg ++ " =="
+  putStrLn $ "\n= " ++ pkg ++ " ="
 
 -- FIXME check not in a different git dir
 importPkg :: String -> IO ()
@@ -636,12 +719,10 @@ importPkg pkg = do
     unless direxists $ fedpkg_ "clone" [pkg]
     setCurrentDirectory pkg
     -- FIXME: check branch is master
-  files <- getDirectoryContents "."
-  commits <-
-    if ".git" `elem` files
-    then length . lines <$> git "log" ["--pretty=oneline"]
-    else return 0
-  if commits > 1
+  isGit <- doesDirectoryExist ".git"
+  unless isGit $ error' "Not a git repo"
+  newrepo <- initialPkgRepo
+  if not newrepo
     then putStrLn "Skipping: already imported"
     else do
     checkWorkingDirClean
