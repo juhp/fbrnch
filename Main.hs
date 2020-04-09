@@ -208,7 +208,7 @@ statusBranch mpkg br = do
           Nothing -> do
             putStrLn "undefined NVR!\n"
             putStr "HEAD "
-            simplifyCommitLog <$> git "log" ["--max-count=1", "--pretty=oneline"] >>= putStrLn
+            simplifyCommitLog <$> gitShortLog1 Nothing >>= putStrLn
           Just nvr -> do
             unless (br == Master) $ do
               prev <- do
@@ -216,12 +216,11 @@ statusBranch mpkg br = do
                 return $ newerBranch branches br
               ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
               when ancestor $ do
-                unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+                unmerged <- gitShortLog $ "HEAD.." ++ show prev
                 unless (null unmerged) $ do
                   putStrLn $ "Newer commits in " ++ show prev ++ ":"
-                  let shortlog = simplifyCommitLog unmerged
-                  putStrLn shortlog
-            unpushed <- git "log" ["--max-count=1", "origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+                  mapM_ (putStrLn . simplifyCommitLog) unmerged
+            unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
             if null unpushed then do
               tagged <- kojiBuildTagged nvr
               unless tagged $ do
@@ -244,7 +243,7 @@ kojiBuildTagged nvr = do
 -- newly created Fedora repos/branches have just one README commit
 initialPkgRepo :: IO Bool
 initialPkgRepo = do
-  commits <- length . lines <$> git "log" ["--pretty=oneline"]
+  commits <- length <$> gitShortLogN 2 Nothing
   return $ commits <= 1
 
 mergeCmd :: Maybe Branch -> [Package] -> IO ()
@@ -277,23 +276,22 @@ mergeBranch pulled build mpkg br = do
     return $ newerBranch branches br
   unless (br == Master) $ do
     ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
-    unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
+    unmerged <- gitShortLog $ "HEAD.." ++ show prev
     when ancestor $
       unless (null unmerged) $ do
         putStrLn $ "New commits in " ++ show prev ++ ":"
-        let shortlog = simplifyCommitLog unmerged
-        putStrLn shortlog
-    unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+        mapM_ (putStrLn . simplifyCommitLog) unmerged
+    unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
     unless (null unpushed) $ do
       putStrLn "Local commits:"
-      putStrLn $ simplifyCommitLog unpushed
+      mapM_ (putStrLn . simplifyCommitLog) unpushed
         -- FIXME ignore Mass_Rebuild?
     when (ancestor && not (null unmerged)) $ do
       -- FIXME if only initial README commit then package can't be built without merge
       -- FIXME skipping merge makes little sense for new repo
-      mhash <- prompt $ "to merge " ++ show prev ++ "; or give a ref to merge; otherwise 'no' to skip merge"
+      mhash <- prompt $ "to merge " ++ show prev ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; otherwise 'no' to skip merge"
       -- FIXME really check for "no"?
-      let commitrefs = (map (head . words) . lines) unmerged
+      let commitrefs = map (head . words) unmerged
           mref = find (mhash `isPrefixOf`) commitrefs
       when (null mhash || isJust mref) $ do
         let ref = if null mhash
@@ -342,12 +340,12 @@ buildBranch pulled merge scratch mtarget mpkg br = do
   newrepo <- initialPkgRepo
   when (merge || newrepo) $
     mergeBranch True True (Just pkg) br
-  unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+  unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   when (not merge || br == Master) $
     -- FIXME hide if just merged
     unless (null unpushed) $ do
       putStrLn "Local commits:"
-      putStrLn $ simplifyCommitLog unpushed
+      mapM_ (putStrLn . simplifyCommitLog) unpushed
   -- FIXME offer merge if newer branch has commits
   when (not (null unpushed) && isNothing scratch) $ do
     tty <- hIsTerminalDevice stdin
@@ -357,34 +355,35 @@ buildBranch pulled merge scratch mtarget mpkg br = do
   nvr <- fedpkg "verrel" []
   -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr
-  if buildstatus == COMPLETE && isNothing scratch
-    then
-    putStrLn $ nvr ++ " is already built"
-    else do
-    let tag = fromMaybe (branchDestTag br) mtarget
-    latest <- cmd "koji" ["latest-build", "--quiet", tag , pkg]
-    if dropExtension nvr == dropExtension latest
-      then error' $ nvr ++ " is already latest (modulo disttag)"
-      else do
-      krbTicket
-      let march = case scratch of
-            Just (Arch arch) -> Just arch
-            _ -> Nothing
-          srpm = not (null unpushed) || not clean
-      -- FIXME use koji directly
-      -- FIXME parse build output
-      fedpkg_ "build" $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ (if isJust march then ["--arch", fromJust march] else []) ++ ["--srpm" | srpm] ++ (if isJust mtarget then ["--target", tag] else [])
-      --waitForbuild
-      -- FIXME check if first build, also add --bz and short buglists query
-      (mbid,session) <- bzReviewSession
-      if br == Master
-        then forM_ mbid $ postBuildComment session nvr
+  case buildstatus of
+    COMPLETE | isNothing scratch -> putStrLn $ nvr ++ " is already built"
+    BUILDING | isNothing scratch -> putStrLn $ nvr ++ " is already building"
+    _ -> do
+      let tag = fromMaybe (branchDestTag br) mtarget
+      latest <- cmd "koji" ["latest-build", "--quiet", tag , pkg]
+      if dropExtension nvr == dropExtension latest
+        then error' $ nvr ++ " is already latest (modulo disttag)"
         else do
-        -- FIXME diff previous changelog?
-        changelog <- getChangeLog $ pkg <.> "spec"
-        bodhiUpdate mbid changelog nvr
-        -- override option
-        when False $ cmd_ "bodhi" ["overrides", "save", nvr]
+        krbTicket
+        unpushed' <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+        let march = case scratch of
+              Just (Arch arch) -> Just arch
+              _ -> Nothing
+            srpm = not (null unpushed') || not clean
+        -- FIXME use koji directly
+        -- FIXME parse build output
+        fedpkg_ "build" $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ (if isJust march then ["--arch", fromJust march] else []) ++ ["--srpm" | srpm] ++ (if isJust mtarget then ["--target", tag] else [])
+        --waitForbuild
+        -- FIXME check if first build, also add --bz and short buglists query
+        (mbid,session) <- bzReviewSession
+        if br == Master
+          then forM_ mbid $ postBuildComment session nvr
+          else do
+          -- FIXME diff previous changelog?
+          changelog <- getChangeLog $ pkg <.> "spec"
+          bodhiUpdate mbid changelog nvr
+          -- override option or autochain
+          when False $ cmd_ "bodhi" ["overrides", "save", nvr]
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mbid changelog nvr = do
@@ -408,6 +407,18 @@ gitPull = do
   unless ("Already up to date." `isPrefixOf` pull) $
     putStrLn pull
 
+gitShortLog :: String -> IO [String]
+gitShortLog range =
+  lines <$> git "log" ["--pretty=oneline", range]
+
+gitShortLogN :: Int -> Maybe String -> IO [String]
+gitShortLogN num mrange =
+  lines <$> git "log" (["--max-count=" ++ show num, "--pretty=oneline"] ++ maybeToList mrange)
+
+gitShortLog1 :: Maybe String -> IO String
+gitShortLog1 mrange =
+  git "log" (["--max-count=1", "--pretty=oneline"] ++ maybeToList mrange)
+
 putPkgBrnchHdr :: String -> Branch -> IO ()
 putPkgBrnchHdr pkg br =
   putStrLn $ "\n== " ++ pkg ++ ":" ++ show br ++ " =="
@@ -419,7 +430,7 @@ checkForSpecFile pkg = do
   unless have $ error' $ spec ++ " not found"
 
 simplifyCommitLog :: String -> String
-simplifyCommitLog = unlines . map (unwords . shortenHash . words) . lines
+simplifyCommitLog = unwords . shortenHash . words
   where
     shortenHash :: [String] -> [String]
     shortenHash [] = []
