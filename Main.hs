@@ -221,15 +221,13 @@ statusBranch mpkg br = do
                   putStrLn $ "Newer commits in " ++ show prev ++ ":"
                   let shortlog = simplifyCommitLog unmerged
                   putStrLn shortlog
-            unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
+            unpushed <- git "log" ["--max-count=1", "origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
             if null unpushed then do
               tagged <- kojiBuildTagged nvr
               unless tagged $ do
                 latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
                 putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else latest ++ " ->\n") ++ nvr
-              else do
-              putStrLn "Local commits:"
-              putStr $ simplifyCommitLog unpushed
+              else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
 
 kojiBuildTagged :: String -> IO Bool
 kojiBuildTagged nvr = do
