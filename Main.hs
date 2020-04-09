@@ -976,6 +976,12 @@ generateSrpm spec = do
       putStrLn $ "Created " ++ srpm
       return srpm
 
+kojiScratchUrl :: Bool -> String -> IO (Maybe String)
+kojiScratchUrl noscratch srpm =
+    if noscratch
+    then return Nothing
+    else Just <$> kojiScratchBuild False srpm
+
 createReview :: Bool -> Maybe FilePath -> IO ()
 createReview noscratch mspec = do
   spec <- getSpecFile mspec
@@ -988,12 +994,8 @@ createReview noscratch mspec = do
     mapM_ putBug bugs
     prompt_ "to continue"
   srpm <- generateSrpm spec
-  mkojiurl <-
-    if noscratch
-    then return Nothing
-    else Just <$> kojiScratchBuild False srpm
-  fasid <- fasIdFromKrb
-  specSrpmUrls <- uploadPkgFiles fasid pkg spec srpm
+  mkojiurl <- kojiScratchUrl noscratch srpm
+  specSrpmUrls <- uploadPkgFiles pkg spec srpm
   bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
   putStrLn "Review request posted:"
   putBugId bugid
@@ -1061,8 +1063,9 @@ kojiScratchBuild failfast srpm = do
     takeWhileEnd :: (a -> Bool) -> [a] -> [a]
     takeWhileEnd p = reverse . takeWhile p . reverse
 
-uploadPkgFiles :: String -> String -> FilePath -> FilePath -> IO T.Text
-uploadPkgFiles fasid pkg spec srpm = do
+uploadPkgFiles :: String -> FilePath -> FilePath -> IO T.Text
+uploadPkgFiles pkg spec srpm = do
+  fasid <- fasIdFromKrb
   -- read ~/.config/fedora-create-review
   let sshhost = "fedorapeople.org"
       sshpath = "public_html/reviews/" ++ pkg
@@ -1112,12 +1115,8 @@ updateReview noscratch mspec = do
   submitted <- checkForComment session bid (T.pack srpm)
   when submitted $
     error' "This NVR was already posted on the review bug: please bump"
-  mkojiurl <-
-    if noscratch
-    then return Nothing
-    else Just <$> kojiScratchBuild False srpm
-  fasid <- fasIdFromKrb
-  specSrpmUrls <- uploadPkgFiles fasid pkg spec srpm
+  mkojiurl <- kojiScratchUrl noscratch srpm
+  specSrpmUrls <- uploadPkgFiles pkg spec srpm
   changelog <- getChangeLog spec
   postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> T.pack changelog) <> maybe "" ("\n\nKoji scratch build: " <>) (T.pack <$> mkojiurl))
   -- putStrLn "Review bug updated"
