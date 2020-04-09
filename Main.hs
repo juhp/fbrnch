@@ -45,7 +45,7 @@ main = do
 
 data BranchesRequest = AllReleases | BranchesRequest [Branch]
 
-data Scratch = AllArches Bool | Arch String Bool
+data Scratch = AllArches | Arch String
 
 dispatchCmd :: [Branch] -> IO ()
 dispatchCmd activeBranches =
@@ -97,8 +97,8 @@ dispatchCmd activeBranches =
     branchM = maybeReader (readBranch activeBranches)
 
     scratchOpt :: Parser Scratch
-    scratchOpt = flagWith' (AllArches False) 's' "scratch" "Koji scratch test build" <|> flagWith' (AllArches True) 'S' "srpm" "Koji srpm scratch build" <|>
-      Arch <$> strOptionWith 'a' "arch" "ARCH" "Koji scratch test build" <*> switchWith 's' "srpm" "Koji srpm scratch build"
+    scratchOpt = flagWith' AllArches 's' "scratch" "Koji scratch test build" <|>
+                 Arch <$> strOptionWith 'a' "arch" "ARCH" "Koji scratch test build"
 
     targetOpt :: Parser (Maybe String)
     targetOpt = optional (strOptionWith 't' "target" "TARGET" "Koji target")
@@ -326,11 +326,12 @@ buildBranches pulled merge scratch mtarget mpkg brs = do
     error' "You can only specify target with one branch"
   mapM_ (buildBranch pulled merge scratch mtarget mpkg) brs
 
--- FIXME allow dirty --srpm build
 buildBranch :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> Branch -> IO ()
 buildBranch pulled merge scratch mtarget mpkg br = do
-  unless pulled $ do
-    checkWorkingDirClean
+  clean <- workingDirClean
+  when (not clean && isNothing scratch) $
+    error' "Working dir is not clean"
+  unless pulled
     gitPull
   pkg <- getPackageName mpkg
   putPkgBrnchHdr pkg br
@@ -348,15 +349,10 @@ buildBranch pulled merge scratch mtarget mpkg br = do
       putStrLn "Local commits:"
       putStrLn $ simplifyCommitLog unpushed
   -- FIXME offer merge if newer branch has commits
-  unless (null unpushed) $
-    case scratch of
-      Just scr -> unless (srpmBuild scr) $
-                  -- FIXME or just use --srpm in this case automatically
-                  error' "Use --srpm for unpushed commits"
-      Nothing -> do
-        tty <- hIsTerminalDevice stdin
-        when tty $ prompt_ "to push and build"
-        gitPushSilent
+  when (not (null unpushed) && isNothing scratch) $ do
+    tty <- hIsTerminalDevice stdin
+    when tty $ prompt_ "to push and build"
+    gitPushSilent
   checkForSpecFile pkg
   nvr <- fedpkg "verrel" []
   -- FIXME should compare git refs
@@ -371,10 +367,10 @@ buildBranch pulled merge scratch mtarget mpkg br = do
       then error' $ nvr ++ " is already latest (modulo disttag)"
       else do
       krbTicket
-      let (march,srpm) = case scratch of
-            Nothing -> (Nothing,False)
-            Just (AllArches s) -> (Nothing,s)
-            Just (Arch arch s) -> (Just arch,s)
+      let march = case scratch of
+            Just (Arch arch) -> Just arch
+            _ -> Nothing
+          srpm = not (null unpushed) || not clean
       -- FIXME use koji directly
       -- FIXME parse build output
       fedpkg_ "build" $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ (if isJust march then ["--arch", fromJust march] else []) ++ ["--srpm" | srpm] ++ (if isJust mtarget then ["--target", tag] else [])
@@ -405,10 +401,6 @@ buildBranch pulled merge scratch mtarget mpkg br = do
           putStrLn "bodhi submission failed"
           prompt_ "to resubmit to Bodhi"
           bodhiUpdate mbid changelog nvr
-
-    srpmBuild :: Scratch -> Bool
-    srpmBuild (AllArches s) = s
-    srpmBuild (Arch _ s) = s
 
 gitPull :: IO ()
 gitPull = do
