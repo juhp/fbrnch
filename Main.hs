@@ -182,11 +182,10 @@ statusPkg mbr pkg =
     branches <- case mbr of
                   Just b -> return [b]
                   Nothing -> packageBranches
-    statusBranches (Just pkg) branches
+    mapM_ (statusBranch (Just pkg)) branches
 
-statusBranches :: Maybe Package -> [Branch] -> IO ()
-statusBranches _ [] = return ()
-statusBranches mpkg (br:brs) = do
+statusBranch :: Maybe Package -> Branch -> IO ()
+statusBranch mpkg br = do
   pkg <- getPackageName mpkg
   branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
   if not branched
@@ -231,7 +230,6 @@ statusBranches mpkg (br:brs) = do
               else do
               putStrLn "Local commits:"
               putStr $ simplifyCommitLog unpushed
-      statusBranches mpkg brs
 
 kojiBuildTagged :: String -> IO Bool
 kojiBuildTagged nvr = do
@@ -265,26 +263,20 @@ mergePkg mbr pkg =
                   Nothing -> packageBranched
     when (isNothing mbr) $
       putStrLn $ "\nBranches: " ++ unwords (map show branches)
-    mergeBranches True False Nothing (Just pkg) branches
+    mapM_ (mergeBranch False False (Just pkg)) branches
 
-mergeBranches :: Bool -> Bool -> Maybe Branch -> Maybe Package -> [Branch] -> IO ()
-mergeBranches _ _ _ _ [] = return ()
-mergeBranches pulled build mprev mpkg (br:brs) = do
+mergeBranch :: Bool -> Bool -> Maybe Package -> Branch -> IO ()
+mergeBranch pulled build mpkg br = do
   pkg <- getPackageName mpkg
   unless pulled $ do
     checkWorkingDirClean
     gitPull
   unless build $ do
     putPkgBrnchHdr pkg br
-    branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
-    if not branched
-      then error' $ show br ++ " branch does not exist!"
-      else switchBranch br
-  prev <- case mprev of
-            Just p -> return p
-            Nothing -> do
-              branches <- getFedoraBranches
-              return $ newerBranch branches br
+    switchBranch br
+  prev <- do
+    branches <- getFedoraBranches
+    return $ newerBranch branches br
   unless (br == Master) $ do
     ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
     unmerged <- git "log" ["HEAD.." ++ show prev, "--pretty=oneline"]
@@ -310,7 +302,6 @@ mergeBranches pulled build mprev mpkg (br:brs) = do
                   then show prev
                   else fromJust mref
         git_ "merge" ["--quiet", ref]
-  mergeBranches True build (Just br) mpkg brs
 
 -- FIXME sort packages in build dependency order (chain-build?)
 -- FIXME --no-fast-fail
@@ -351,7 +342,7 @@ buildBranch pulled merge scratch mtarget mpkg br = do
     else switchBranch br
   newrepo <- initialPkgRepo
   when (merge || newrepo) $
-    mergeBranches True True mprev (Just pkg) [br]
+    mergeBranch True True (Just pkg) br
   unpushed <- git "log" ["origin/" ++ show br ++ "..HEAD", "--pretty=oneline"]
   when (not merge || br == Master) $
     -- FIXME hide if just merged
@@ -452,9 +443,13 @@ gitPushSilent = do
 
 switchBranch :: Branch -> IO ()
 switchBranch br = do
-  current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
-  when (current /= show br) $
-    cmdSilent "fedpkg" $ "switch-branch" : [show br]
+  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+  if not branched
+    then error' $ show br ++ " branch does not exist!"
+    else do
+    current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
+    when (current /= show br) $
+      cmdSilent "fedpkg" $ "switch-branch" : [show br]
 
 postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
 postBuildComment session nvr bid = do
