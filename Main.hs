@@ -45,6 +45,8 @@ main = do
 
 data BranchesRequest = AllReleases | BranchesRequest [Branch]
 
+data Scratch = AllArches Bool | Arch String Bool
+
 dispatchCmd :: [Branch] -> IO ()
 dispatchCmd activeBranches =
   simpleCmdArgs Nothing "Fedora package branch building tool"
@@ -65,11 +67,11 @@ dispatchCmd activeBranches =
     , Subcommand "merge" "Merge branches" $
       mergeCmd <$> optional (optionWith branchM 't' "to" "BRANCH" "merge from newer branch") <*> some pkgArg
     , Subcommand "build" "Build package(s)" $
-      buildCmd <$> mergeOpt <*> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> some pkgArg
+      buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> some pkgArg
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranches <$> mockOpt <*> branchesRequestOpt
     , Subcommand "build-branch" "Build branch(s) of package" $
-      buildBranches False Nothing <$> mergeOpt <*> pkgOpt <*> some branchArg
+      buildBranches False <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> pkgOpt <*> some branchArg
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (strArg "PACKAGE...")
     , Subcommand "find-review" "Find package review bug" $
@@ -93,6 +95,13 @@ dispatchCmd activeBranches =
     branchArg = argumentWith branchM "BRANCH.."
 
     branchM = maybeReader (readBranch activeBranches)
+
+    scratchOpt :: Parser Scratch
+    scratchOpt = flagWith' (AllArches False) 's' "scratch" "Koji scratch test build" <|> flagWith' (AllArches True) 'S' "srpm" "Koji srpm scratch build" <|>
+      Arch <$> strOptionWith 'a' "arch" "ARCH" "Koji scratch test build" <*> switchWith 's' "srpm" "Koji srpm scratch build"
+
+    targetOpt :: Parser (Maybe String)
+    targetOpt = optional (strOptionWith 't' "target" "TARGET" "Koji target")
 
     pkgArg :: Parser Package
     pkgArg = removeSuffix "/" <$> strArg "PACKAGE.."
@@ -305,12 +314,13 @@ mergeBranches pulled build mprev mpkg (br:brs) = do
   mergeBranches True build (Just br) mpkg brs
 
 -- FIXME sort packages in build dependency order (chain-build?)
-buildCmd :: Bool -> Maybe Branch -> [Package] -> IO ()
-buildCmd merge mbr =
-  mapM_ (buildPkg merge mbr)
+-- FIXME --no-fast-fail
+buildCmd :: Bool -> Maybe Scratch -> Maybe String -> Maybe Branch -> [Package] -> IO ()
+buildCmd merge scratch mtarget mbr =
+  mapM_ (buildPkg merge scratch mtarget mbr)
 
-buildPkg :: Bool -> Maybe Branch -> Package -> IO ()
-buildPkg merge mbr pkg =
+buildPkg :: Bool -> Maybe Scratch -> Maybe String -> Maybe Branch -> Package -> IO ()
+buildPkg merge scratch mtarget mbr pkg =
   withExistingDirectory pkg $ do
     checkWorkingDirClean
     gitPull
@@ -319,21 +329,18 @@ buildPkg merge mbr pkg =
                   Nothing -> packageBranches
     when (isNothing mbr) $
       putStrLn $ "\nBranches: " ++ unwords (map show branches)
-    buildBranches True Nothing merge (Just pkg) branches
+    buildBranches False merge scratch mtarget (Just pkg) branches
 
-gitPull :: IO ()
-gitPull = do
-  pull <- git "pull" ["--rebase"]
-  unless ("Already up to date." `isPrefixOf` pull) $
-    putStrLn pull
+buildBranches :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> [Branch] -> IO ()
+buildBranches _ _ _ _ _ [] = return ()
+buildBranches pulled merge scratch mtarget mpkg brs = do
+  when (isJust mtarget && length brs > 1) $
+    error' "You can only specify target with one branch"
+  mapM_ (buildBranch pulled merge scratch mtarget mpkg) brs
 
-putPkgBrnchHdr :: String -> Branch -> IO ()
-putPkgBrnchHdr pkg br =
-  putStrLn $ "\n== " ++ pkg ++ ":" ++ show br ++ " =="
-
-buildBranches :: Bool -> Maybe Branch -> Bool -> Maybe Package -> [Branch] -> IO ()
-buildBranches _ _ _ _ [] = return ()
-buildBranches pulled mprev merge mpkg (br:brs) = do
+-- FIXME allow dirty --srpm build
+buildBranch :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> Branch -> IO ()
+buildBranch pulled merge scratch mtarget mpkg br = do
   unless pulled $ do
     checkWorkingDirClean
     gitPull
@@ -353,27 +360,38 @@ buildBranches pulled mprev merge mpkg (br:brs) = do
       putStrLn "Local commits:"
       putStrLn $ simplifyCommitLog unpushed
   -- FIXME offer merge if newer branch has commits
-  unless (null unpushed) $ do
-    tty <- hIsTerminalDevice stdin
-    when tty $ prompt_ "to push and build"
-    gitPushSilent
+  unless (null unpushed) $
+    case scratch of
+      Just scr -> unless (srpmBuild scr) $
+                  -- FIXME or just use --srpm in this case automatically
+                  error' "Use --srpm for unpushed commits"
+      Nothing -> do
+        tty <- hIsTerminalDevice stdin
+        when tty $ prompt_ "to push and build"
+        gitPushSilent
   checkForSpecFile pkg
   nvr <- fedpkg "verrel" []
+  -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr
-  if buildstatus == COMPLETE
-    then do
+  if buildstatus == COMPLETE && isNothing scratch
+    then
     putStrLn $ nvr ++ " is already built"
-    buildBranches True (Just br) merge mpkg brs
     else do
-    -- FIXME handle target
-    latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
+    let tag = fromMaybe (branchDestTag br) mtarget
+    latest <- cmd "koji" ["latest-build", "--quiet", tag , pkg]
     if dropExtension nvr == dropExtension latest
-      then putStrLn $ nvr ++ " is already latest"
+      then error' $ nvr ++ " is already latest (modulo disttag)"
       else do
       krbTicket
-      fedpkg_ "build" ["--fail-fast"]
+      let (march,srpm) = case scratch of
+            Nothing -> (Nothing,False)
+            Just (AllArches s) -> (Nothing,s)
+            Just (Arch arch s) -> (Just arch,s)
+      -- FIXME use koji directly
+      -- FIXME parse build output
+      fedpkg_ "build" $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ (if isJust march then ["--arch", fromJust march] else []) ++ ["--srpm" | srpm] ++ (if isJust mtarget then ["--target", tag] else [])
       --waitForbuild
-      -- FIXME check if first build, also add --bz and ask
+      -- FIXME check if first build, also add --bz and short buglists query
       (mbid,session) <- bzReviewSession
       if br == Master
         then forM_ mbid $ postBuildComment session nvr
@@ -383,7 +401,6 @@ buildBranches pulled mprev merge mpkg (br:brs) = do
         bodhiUpdate mbid changelog nvr
         -- override option
         when False $ cmd_ "bodhi" ["overrides", "save", nvr]
-      buildBranches True (Just br) merge mpkg brs
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mbid changelog nvr = do
@@ -400,6 +417,20 @@ buildBranches pulled mprev merge mpkg (br:brs) = do
           putStrLn "bodhi submission failed"
           prompt_ "to resubmit to Bodhi"
           bodhiUpdate mbid changelog nvr
+
+    srpmBuild :: Scratch -> Bool
+    srpmBuild (AllArches s) = s
+    srpmBuild (Arch _ s) = s
+
+gitPull :: IO ()
+gitPull = do
+  pull <- git "pull" ["--rebase"]
+  unless ("Already up to date." `isPrefixOf` pull) $
+    putStrLn pull
+
+putPkgBrnchHdr :: String -> Branch -> IO ()
+putPkgBrnchHdr pkg br =
+  putStrLn $ "\n== " ++ pkg ++ ":" ++ show br ++ " =="
 
 checkForSpecFile :: String -> IO ()
 checkForSpecFile pkg = do
