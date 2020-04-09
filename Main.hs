@@ -178,8 +178,7 @@ statusPkg :: Maybe Branch -> Package -> IO ()
 statusPkg mbr pkg =
   withExistingDirectory pkg $ do
     putPkgHdr pkg
-    clean <- workingDirClean
-    when clean gitPull
+    git_ "fetch" []
     branches <- case mbr of
                   Just b -> return [b]
                   Nothing -> packageBranches
@@ -260,7 +259,7 @@ mergePkg :: Maybe Branch -> Package -> IO ()
 mergePkg mbr pkg =
   withExistingDirectory pkg $ do
     checkWorkingDirClean
-    gitPull
+    git_ "fetch" []
     branches <- case mbr of
                   Just b -> return [b]
                   Nothing -> packageBranched
@@ -323,7 +322,7 @@ buildPkg :: Bool -> Maybe Scratch -> Maybe String -> Maybe Branch -> Package -> 
 buildPkg merge scratch mtarget mbr pkg =
   withExistingDirectory pkg $ do
     checkWorkingDirClean
-    gitPull
+    git_ "fetch" []
     branches <- case mbr of
                   Just b -> return [b]
                   Nothing -> packageBranches
