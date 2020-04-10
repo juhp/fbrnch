@@ -24,8 +24,8 @@ buildCmd merge scratch mtarget mbr pkgs =
   if null pkgs
   then do
     branches <- case mbr of
-                  Just b -> return [b]
-                  Nothing -> packageBranches
+      Just b -> return [b]
+      Nothing -> packageBranches
     mapM_ (buildBranch False merge scratch mtarget Nothing) branches
   else mapM_ (buildPkg merge scratch mtarget mbr) pkgs
 

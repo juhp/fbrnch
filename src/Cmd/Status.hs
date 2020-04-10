@@ -15,16 +15,20 @@ import Types (Package)
 
 -- FIXME add --no-pull?
 -- FIXME --pending
+-- FIXME show bodhi days left
 statusCmd :: Maybe Branch -> [Package] -> IO ()
-statusCmd mbr ps = do
-  pkgs <- if null ps
-    then do
+statusCmd mbr pkgs =
+  if null pkgs
+  then do
     isGit <- doesDirectoryExist ".git"
     if isGit
-      then pure <$> getPackageName Nothing
-      else map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
-    else return ps
-  mapM_ (statusPkg mbr) pkgs
+      then do
+      branches <- case mbr of
+        Just b -> return [b]
+        Nothing -> packageBranches
+      mapM_ (statusBranch Nothing) branches
+      else (map reviewBugToPackage <$> listReviews' True ReviewRepoCreated) >>= mapM_ (statusPkg mbr)
+  else mapM_ (statusPkg mbr) pkgs
 
 statusPkg :: Maybe Branch -> Package -> IO ()
 statusPkg mbr pkg =
