@@ -30,8 +30,27 @@ source-repository head
 
 executable fedbrnch
   main-is:             Main.hs
-  other-modules:       NewId ValidLogin
-  hs-source-dirs:      . json
+  other-modules:       Branches
+                       Bugzilla
+                       Bugzilla.NewId
+                       Bugzilla.ValidLogin
+                       Cmd.Build
+                       Cmd.Import
+                       Cmd.Merge
+                       Cmd.PkgReview
+                       Cmd.Pull
+                       Cmd.RequestBranch
+                       Cmd.RequestRepo
+                       Cmd.Reviews
+                       Cmd.Status
+                       Git
+                       Koji
+                       Krb
+                       ListReviews
+                       Package
+                       Prompt
+                       Types
+  hs-source-dirs:      src
 
   build-depends:       aeson
                      , base < 5

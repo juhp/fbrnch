@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings   #-}
 
-module NewId
+module Bugzilla.NewId
   (NewId(..))
 where
 

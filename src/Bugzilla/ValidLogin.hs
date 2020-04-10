@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings   #-}
 
-module ValidLogin
+module Bugzilla.ValidLogin
   (ValidLogin(..))
 where
 
