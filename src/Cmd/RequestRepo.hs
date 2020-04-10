@@ -1,7 +1,13 @@
+{-# LANGUAGE CPP #-}
+
 module Cmd.RequestRepo (requestRepos) where
 
 import Control.Monad
 import Data.List
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,11,0))
+#else
+import Data.Semigroup ((<>))
+#endif
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Network.HTTP.Simple

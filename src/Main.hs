@@ -1,14 +1,8 @@
-{-# LANGUAGE CPP #-}
-
 import Distribution.Fedora.Branch
 import SimpleCmd
 import SimpleCmdArgs
 
 import Control.Monad
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,11,0))
-#else
-import Data.Semigroup ((<>))
-#endif
 import Options.Applicative (maybeReader)
 import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
 
