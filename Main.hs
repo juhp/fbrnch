@@ -277,7 +277,8 @@ mergeBranch pulled build mpkg br = do
   unless (br == Master) $ do
     ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
     unmerged <- gitShortLog $ "HEAD.." ++ show prev
-    when ancestor $
+    newrepo <- initialPkgRepo
+    when (ancestor && not newrepo) $
       unless (null unmerged) $ do
         putStrLn $ "New commits in " ++ show prev ++ ":"
         mapM_ (putStrLn . simplifyCommitLog) unmerged
@@ -288,8 +289,9 @@ mergeBranch pulled build mpkg br = do
         -- FIXME ignore Mass_Rebuild?
     when (ancestor && not (null unmerged)) $ do
       -- FIXME if only initial README commit then package can't be built without merge
-      -- FIXME skipping merge makes little sense for new repo
-      mhash <- prompt $ "to merge " ++ show prev ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; otherwise 'no' to skip merge"
+      mhash <-
+        if newrepo then return ""
+        else prompt $ "to merge " ++ show prev ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; otherwise 'no' to skip merge"
       -- FIXME really check for "no"?
       let commitrefs = map (head . words) unmerged
           mref = find (mhash `isPrefixOf`) commitrefs
