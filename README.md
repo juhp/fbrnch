@@ -17,7 +17,7 @@ like:
 - listing approved package reviews
 - requesting repo and branches
 - importing new packages
-- building a package across releases
+- merging and building a package across release branches
 
 ## Installation
 
@@ -28,6 +28,7 @@ Run `cabal new-install` or `stack install` in a git checkout.
 This is still in development: feedback and contributions are welcome.
 
 ## Usual disclaimer
-While this is already working quite well for me,
-if it breaks things for you, you get to keep the pieces. :)
+This is still in active development.
+While this is generally works well for me,
+if it breaks things for you, you get to clean up the pieces. :)
 Bug reports are welcome.

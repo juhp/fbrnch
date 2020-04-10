@@ -1,8 +1,15 @@
 cabal-version:       2.0
 name:                fedbrnch
 version:             0.1
-synopsis:            Tool to update fedora packages branches
-description:         Tool to update fedora packages branches
+synopsis:            Tool for creating and building Fedora package branches
+description:
+            Fed Brnch is a convenient packaging tool for Fedora Packagers,
+            with integration for bugzilla, koji, and bodhi. Features include:
+            - create and update package reviews and list them
+            - create repo and branch requests for new approved packages
+            - import srpms from package reviews
+            - merge between Fedora branches and build them
+            - package status command.
 homepage:            https://github.com/juhp/fedbrnch
 bug-reports:         https://github.com/juhp/fedbrnch/issues
 license:             GPL-2
