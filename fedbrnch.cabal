@@ -64,12 +64,12 @@ executable fedbrnch
                      , fedora-dists > 2.0
                      , filepath
                      , http-conduit
-                     , http-directory
+                     , http-directory >= 0.1.5
                      , network-uri
                      , optparse-applicative
                      , process-extras
+                     , simple-cmd >= 0.1.4
                      , simple-cmd-args >= 0.1.6
-                     , simple-cmd
                      , text
                      , xdg-basedir
   if impl(ghc<8.0)

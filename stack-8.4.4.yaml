@@ -1,6 +1,10 @@
-resolver: lts-12.26
+resolver: lts-12.27
 
-extra-deps: [base-noprelude-4.11.1.0]
-
-ghc-options:
-  "$locals": -fhide-source-paths
+extra-deps:
+  - git: https://github.com/juhp/hsbugzilla.git
+    commit: ae1fa7be0e3480c6979fc04f232cc09c16e4cb7d
+  - git: https://github.com/juhp/fedora-dists.git
+    commit: 8f8311921d4c9f4ce763c2c146af56f136bd0e7e
+  - http-directory-0.1.5
+  - simple-cmd-args-0.1.6
+  - simple-cmd-0.1.4

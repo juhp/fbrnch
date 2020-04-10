@@ -6,4 +6,3 @@ extra-deps:
   - git: https://github.com/juhp/fedora-dists.git
     commit: 8f8311921d4c9f4ce763c2c146af56f136bd0e7e
   - simple-cmd-args-0.1.6
-  - config-ini-0.2.4.0
