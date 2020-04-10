@@ -1,6 +1,6 @@
 module Prompt where
 
-import Control.Monad
+import Common
 
 prompt :: String -> IO String
 prompt s = do

@@ -1,11 +1,9 @@
 module Package where
 
-import Control.Monad
-import Data.Maybe
+import Common
+import Common.System
+
 import Distribution.Fedora.Branch
-import SimpleCmd
-import System.Directory
-import System.FilePath
 
 import Git
 import Prompt
@@ -17,12 +15,6 @@ fedpkg c args =
 fedpkg_ :: String -> [String] -> IO ()
 fedpkg_ c args =
   cmd_ "fedpkg" (c:args)
-
--- newly created Fedora repos/branches have just one README commit
-initialPkgRepo :: IO Bool
-initialPkgRepo = do
-  commits <- length <$> gitShortLogN 2 Nothing
-  return $ commits <= 1
 
 checkForSpecFile :: String -> IO ()
 checkForSpecFile pkg = do
@@ -102,3 +94,9 @@ withExistingDirectory dir act = do
     then error' $ "No such directory: " ++ dir
     else
     withCurrentDirectory dir act
+
+-- newly created Fedora repos/branches have just one README commit
+initialPkgRepo :: IO Bool
+initialPkgRepo = do
+  commits <- length <$> gitShortLogN 2 Nothing
+  return $ commits <= 1

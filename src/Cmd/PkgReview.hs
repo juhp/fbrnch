@@ -1,19 +1,13 @@
-{-# LANGUAGE CPP #-}
-
 module Cmd.PkgReview where
 
-import Control.Monad
+import Common
+import Common.System
+import qualified Common.Text as T
+
 import Data.Char
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,11,0))
-#else
-import Data.Semigroup ((<>))
-#endif
-import qualified Data.Text as T
 import Network.HTTP.Directory
 import Network.HTTP.Simple
-import SimpleCmd
 import System.Exit (ExitCode (..))
-import System.FilePath
 import System.Process.Text (readProcessWithExitCode)
 import Web.Bugzilla (BugId, BugzillaSession, newBzRequest)
 

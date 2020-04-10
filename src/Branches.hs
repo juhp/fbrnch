@@ -1,8 +1,7 @@
 module Branches where
 
-import Control.Monad
-import Data.Maybe
-import Data.List (sort)
+import Common
+
 import Distribution.Fedora.Branch
 import SimpleCmd
 

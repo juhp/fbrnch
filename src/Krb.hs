@@ -1,8 +1,7 @@
 module Krb where
 
-import Control.Monad
-import Data.List
-import Data.Maybe
+import Common
+
 import SimpleCmd
 
 krbTicket :: IO ()

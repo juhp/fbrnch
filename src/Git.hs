@@ -13,9 +13,8 @@ module Git (
   module SimpleCmd.Git
   ) where
 
-import Control.Monad
-import Data.List
-import Data.Maybe
+import Common
+
 import SimpleCmd
 import SimpleCmd.Git
 

@@ -1,9 +1,8 @@
 module Cmd.RequestBranch (requestBranches) where
 
-import Control.Monad
+import Common
+
 import Distribution.Fedora.Branch
-import Data.List
-import Data.Maybe
 import SimpleCmd
 
 import Branches

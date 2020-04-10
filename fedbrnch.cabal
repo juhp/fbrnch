@@ -43,6 +43,9 @@ executable fedbrnch
                        Cmd.RequestRepo
                        Cmd.Reviews
                        Cmd.Status
+                       Common
+                       Common.System
+                       Common.Text
                        Git
                        Koji
                        Krb

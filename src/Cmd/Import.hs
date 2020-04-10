@@ -1,13 +1,10 @@
 module Cmd.Import (importCmd) where
 
-import Control.Monad
-import Data.List
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import Common
+import Common.System
+import qualified Common.Text as T
+
 import Network.URI
-import SimpleCmd
-import System.Directory
-import System.FilePath
 import Web.Bugzilla (Comment, commentText, getComments)
 
 import Bugzilla

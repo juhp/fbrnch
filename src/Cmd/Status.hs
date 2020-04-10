@@ -1,10 +1,9 @@
 module Cmd.Status (statusCmd) where
 
-import Control.Monad
+import Common
+import Common.System
+
 import Distribution.Fedora.Branch
-import SimpleCmd
-import System.Directory
-import System.FilePath
 
 import Bugzilla
 import Branches

@@ -1,6 +1,7 @@
 module Cmd.Reviews where
 
-import Data.List
+import Common
+
 import Web.Bugzilla
 
 import Bugzilla

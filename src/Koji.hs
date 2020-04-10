@@ -1,7 +1,7 @@
 module Koji where
 
-import Control.Monad
-import Data.List
+import Common
+
 import SimpleCmd
 
 import Krb

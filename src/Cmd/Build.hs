@@ -1,10 +1,9 @@
 module Cmd.Build (buildCmd, buildBranches) where
 
-import Control.Monad
-import Data.Maybe
+import Common
+import Common.System
+
 import Distribution.Fedora.Branch
-import SimpleCmd
-import System.FilePath
 import System.IO (hIsTerminalDevice, stdin)
 import Web.Bugzilla
 

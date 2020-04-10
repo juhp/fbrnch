@@ -1,9 +1,9 @@
+import Common
+
 import Distribution.Fedora.Branch
+import Options.Applicative (maybeReader)
 import SimpleCmd
 import SimpleCmdArgs
-
-import Control.Monad
-import Options.Applicative (maybeReader)
 import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
 
 -- commands

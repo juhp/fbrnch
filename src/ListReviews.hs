@@ -1,6 +1,7 @@
 module ListReviews where
 
-import Control.Monad
+import Common
+
 import Web.Bugzilla
 import Web.Bugzilla.Search
 

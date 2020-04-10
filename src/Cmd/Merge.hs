@@ -1,8 +1,7 @@
 module Cmd.Merge (mergeCmd, mergeBranch) where
 
-import Control.Monad
-import Data.List
-import Data.Maybe
+import Common
+
 import Distribution.Fedora.Branch
 
 import Branches
