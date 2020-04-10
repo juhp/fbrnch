@@ -4,10 +4,10 @@ module Bugzilla.ValidLogin
   (ValidLogin(..))
 where
 
-import           Control.Monad      (mzero)
-import           Data.Aeson(Value(..), FromJSON(..), ToJSON(..),
-                            pairs,
-                            (.:), (.=), object)
+import Control.Monad (mzero)
+import Data.Aeson(Value(..), FromJSON(..), ToJSON(..),
+                   pairs,
+                   (.:), (.=), object)
 
 newtype ValidLogin = ValidLogin {
     validToken :: Bool
