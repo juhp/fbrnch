@@ -12,8 +12,14 @@ import Prompt
 import Types
 
 mergeCmd :: Maybe Branch -> [Package] -> IO ()
-mergeCmd mbr =
-  mapM_ (mergePkg mbr)
+mergeCmd mbr pkgs =
+  if null pkgs
+  then do
+    branches <- case mbr of
+                  Just b -> return [b]
+                  Nothing -> packageBranches
+    mapM_ (mergeBranch False False Nothing) branches
+  else mapM_ (mergePkg mbr) pkgs
 
 mergePkg :: Maybe Branch -> Package -> IO ()
 mergePkg mbr pkg =

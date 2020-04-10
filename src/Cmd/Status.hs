@@ -19,7 +19,11 @@ import Types (Package)
 statusCmd :: Maybe Branch -> [Package] -> IO ()
 statusCmd mbr ps = do
   pkgs <- if null ps
-    then map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
+    then do
+    isGit <- doesDirectoryExist ".git"
+    if isGit
+      then pure <$> getPackageName Nothing
+      else map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
     else return ps
   mapM_ (statusPkg mbr) pkgs
 
