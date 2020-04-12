@@ -33,7 +33,17 @@ dispatchCmd activeBranches =
   simpleCmdArgs Nothing "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
-    [ Subcommand "create-review" "Create a Package Review request" $
+    [ Subcommand "status" "Status package/branch status" $
+      statusCmd <$> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> many pkgArg
+    , Subcommand "merge" "Merge branches" $
+      mergeCmd <$> optional (optionWith branchM 't' "to" "BRANCH" "merge only to this branch") <*> many pkgArg
+    , Subcommand "build" "Build package(s)" $
+      buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> many pkgArg
+    , Subcommand "pull" "Git pull packages" $
+      pullPkgs <$> some (strArg "PACKAGE...")
+    , Subcommand "build-branch" "Build branches of package" $
+      buildBranches False <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> pkgOpt <*> some branchArg
+    , Subcommand "create-review" "Create a Package Review request" $
       createReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
     , Subcommand "update-review" "Update a Package Review" $
       updateReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
@@ -43,18 +53,8 @@ dispatchCmd activeBranches =
       requestRepos <$> many (strArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importCmd <$> many (strArg "NEWPACKAGE...")
-    , Subcommand "status" "Status package/branch status" $
-      statusCmd <$> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> many pkgArg
-    , Subcommand "merge" "Merge branches" $
-      mergeCmd <$> optional (optionWith branchM 't' "to" "BRANCH" "merge from newer branch") <*> some pkgArg
-    , Subcommand "build" "Build package(s)" $
-      buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> some pkgArg
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranches <$> mockOpt <*> branchesRequestOpt
-    , Subcommand "build-branch" "Build branch(s) of package" $
-      buildBranches False <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> pkgOpt <*> some branchArg
-    , Subcommand "pull" "Git pull packages" $
-      pullPkgs <$> some (strArg "PACKAGE...")
     , Subcommand "find-review" "Find package review bug" $
       review <$> strArg "PACKAGE"
     , Subcommand "test-bz-token" "Check bugzilla login status" $
