@@ -37,6 +37,7 @@ buildCmd merge scratch mtarget brs pkgs =
           putStrLn $ "\nBranches: " ++ unwords (map show branches)
         buildBranches False merge scratch mtarget (Just pkg) branches
 
+-- FIXME reverseSort branches from 'build-branch'
 buildBranches :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> [Branch] -> IO ()
 buildBranches _ _ _ _ _ [] = return ()
 buildBranches pulled merge scratch mtarget mpkg brs = do

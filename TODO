@@ -1,17 +1,32 @@
-- list pending new package builds
+# UI
+- finally switch back to original branch if all successful
+- ask about bodhi update type
+
+# multipackage
+- build sequence of packages by branch
 - chain builds
+- --parallel build
 - build: override if dep
+- --override
 - multipackage update
 - depsort: rpmbuild-order
 - combine release updates into single bodhi command
-- build sequence of packages by branch
+
+# auth
 - update pagure key in ~/.config/rpkg/fedpkg.conf
-- build-branch --all
 - bugzilla login via rest, not python
+
 - test without .rpmmacros, ie in vanilla Fedora account
-- use gitlib?
-- --override
-- ask about bodhi update type
-- --parallel build
+
+- list pending new package builds
 - list builds not pushed to bodhi
 - list package bugs
+
+- support containers/
+
+# libs
+- use gitlib?
+- koji
+- pagure
+- bodhi
+- bugzilla-redhat

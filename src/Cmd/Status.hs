@@ -78,10 +78,11 @@ statusBranch mpkg br = do
               case mtags of
                 Nothing -> do
                   latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
-                  -- FIXME should we check for build/task if null?
+                  -- FIXME should we check for any build/task if null?
                   putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
                 Just [] -> do
                   status <- kojiBuildStatus nvr
+                  -- FIXME show pending archs building
                   putStrLn $ nvr ++ " (" ++ show status ++ ")"
                 Just tags -> do
                   putStrLn $ nvr ++ " (" ++ unwords tags ++ ")"
