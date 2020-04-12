@@ -28,7 +28,7 @@ source-repository head
   type:                git
   location:            https://github.com/juhp/fedbrnch.git
 
-executable fedbrnch
+executable fbr
   main-is:             Main.hs
   other-modules:       Branches
                        Bugzilla
