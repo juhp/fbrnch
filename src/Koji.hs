@@ -6,17 +6,9 @@ import SimpleCmd
 
 import Krb
 
-kojiBuildTagged :: String -> IO Bool
-kojiBuildTagged nvr = do
-  mtags <- cmdMaybe "koji" ["list-tags", "--build", nvr]
-  case mtags of
-    Nothing -> do
-      putStrLn $ nvr ++ " no build yet"
-      return False
-    Just tags -> do
-      unless (null tags) $
-        putStrLn $ nvr ++ " (" ++ (unwords . words) tags ++ ")"
-      return $ not (null tags)
+kojiBuildTags :: String -> IO (Maybe [String])
+kojiBuildTags nvr =
+  fmap words <$> cmdMaybe "koji" ["list-tags", "--build", nvr]
 
 data KojiBuildStatus = COMPLETE | FAILED | BUILDING | NoBuild
   deriving (Eq, Read, Show)

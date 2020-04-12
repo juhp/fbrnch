@@ -1,6 +1,6 @@
 module Cmd.Status (statusCmd) where
 
-import Common
+--import Common
 import Common.System
 
 import Distribution.Fedora.Branch
@@ -66,20 +66,27 @@ statusBranch mpkg br = do
             putStr "HEAD "
             simplifyCommitLog <$> gitShortLog1 Nothing >>= putStrLn
           Just nvr -> do
-            unless (br == Master) $ do
-              prev <- do
-                branches <- getFedoraBranches
-                return $ newerBranch branches br
-              ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
-              when ancestor $ do
-                unmerged <- gitShortLog $ "HEAD.." ++ show prev
-                unless (null unmerged) $ do
-                  putStrLn $ "Newer commits in " ++ show prev ++ ":"
-                  mapM_ (putStrLn . simplifyCommitLog) unmerged
+            -- unless (br == Master) $ do
+            --   prev <- do
+            --     branches <- getFedoraBranches
+            --     return $ newerBranch branches br
+            --   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
+            --   when ancestor $ do
+            --     unmerged <- gitShortLog $ "HEAD.." ++ show prev
+            --     unless (null unmerged) $ do
+            --       putStrLn $ "Newer commits in " ++ show prev ++ ":"
+            --       mapM_ (putStrLn . simplifyCommitLog) unmerged
             unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
             if null unpushed then do
-              tagged <- kojiBuildTagged nvr
-              unless tagged $ do
-                latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
-                putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else latest ++ " ->\n") ++ nvr
+              mtags <- kojiBuildTags nvr
+              case mtags of
+                Nothing -> do
+                  latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
+                  -- FIXME should we check for build/task if null?
+                  putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
+                Just [] -> do
+                  status <- kojiBuildStatus nvr
+                  putStrLn $ nvr ++ " (" ++ show status ++ ")"
+                Just tags -> do
+                  putStrLn $ nvr ++ " (" ++ unwords tags ++ ")"
               else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
