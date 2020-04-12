@@ -34,11 +34,11 @@ dispatchCmd activeBranches =
     "This tool helps with updating and building package branches" $
     subcommands
     [ Subcommand "status" "Status package/branch status" $
-      statusCmd <$> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> many pkgArg
-    , Subcommand "merge" "Merge branches" $
-      mergeCmd <$> optional (optionWith branchM 't' "to" "BRANCH" "merge only to this branch") <*> many pkgArg
+      statusCmd <$> many branchOpt <*> many pkgArg
+    , Subcommand "merge" "Merge from newer branch" $
+      mergeCmd <$> many branchOpt <*> many pkgArg
     , Subcommand "build" "Build package(s)" $
-      buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> optional (optionWith branchM 'b' "branch" "BRANCH" "branch") <*> many pkgArg
+      buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> many branchOpt <*> many pkgArg
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (strArg "PACKAGE...")
     , Subcommand "build-branch" "Build branches of package" $
@@ -71,6 +71,9 @@ dispatchCmd activeBranches =
       flagWith' ReviewRepoRequested 'r' "requested" "Approved package reviews with a pending repo request" <|>
       flagWith' ReviewRepoCreated 'c' "created" "Approved package reviews with a created repo" <|>
       flagWith ReviewAllOpen ReviewUnbranched 'b' "unbranched" "Approved created package reviews not yet branched"
+
+    branchOpt :: Parser Branch
+    branchOpt = (optionWith branchM 'b' "branch" "BRANCH" "branch")
 
     branchArg :: Parser Branch
     branchArg = argumentWith branchM "BRANCH.."

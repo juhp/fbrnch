@@ -19,27 +19,23 @@ import Types
 
 -- FIXME sort packages in build dependency order (chain-build?)
 -- FIXME --no-fast-fail
-buildCmd :: Bool -> Maybe Scratch -> Maybe String -> Maybe Branch -> [Package] -> IO ()
-buildCmd merge scratch mtarget mbr pkgs =
+buildCmd :: Bool -> Maybe Scratch -> Maybe String -> [Branch] -> [Package] -> IO ()
+buildCmd merge scratch mtarget brs pkgs =
   if null pkgs
   then do
-    branches <- case mbr of
-      Just b -> return [b]
-      Nothing -> packageBranches
+    branches <- if null brs then packageBranches else return brs
     mapM_ (buildBranch False merge scratch mtarget Nothing) branches
-  else mapM_ (buildPkg merge scratch mtarget mbr) pkgs
-
-buildPkg :: Bool -> Maybe Scratch -> Maybe String -> Maybe Branch -> Package -> IO ()
-buildPkg merge scratch mtarget mbr pkg =
-  withExistingDirectory pkg $ do
-    checkWorkingDirClean
-    git_ "fetch" []
-    branches <- case mbr of
-                  Just b -> return [b]
-                  Nothing -> packageBranches
-    when (isNothing mbr) $
-      putStrLn $ "\nBranches: " ++ unwords (map show branches)
-    buildBranches False merge scratch mtarget (Just pkg) branches
+  else mapM_ buildPkg pkgs
+  where
+    buildPkg :: Package -> IO ()
+    buildPkg pkg =
+      withExistingDirectory pkg $ do
+        checkWorkingDirClean
+        git_ "fetch" []
+        branches <- if null brs then packageBranches else return brs
+        when (null brs) $
+          putStrLn $ "\nBranches: " ++ unwords (map show branches)
+        buildBranches False merge scratch mtarget (Just pkg) branches
 
 buildBranches :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> [Branch] -> IO ()
 buildBranches _ _ _ _ _ [] = return ()
