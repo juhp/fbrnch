@@ -1,4 +1,9 @@
-module Branches where
+module Branches (
+  packageBranches,
+  packageBranched,
+  packagePagureBranched,
+  switchBranch
+) where
 
 import Common
 
