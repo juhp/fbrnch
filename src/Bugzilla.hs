@@ -1,4 +1,32 @@
-module Bugzilla where
+module Bugzilla (
+  bugIdsSession,
+  bugsSession,
+  bzLoginSession,
+  bzReviewSession,
+  reviewBugIdSession,
+  approvedReviewBugIdSession,
+  pkgReviews,
+  testBZlogin,
+  -- search
+  packageReview,
+  reporterIs,
+  reviewApproved,
+  statusNewPost,
+  statusNewModified,
+  statusOpen,
+  -- comments
+  checkForComment,
+  checkRepoCreatedComment,
+  postComment,
+  postBuildComment,
+  showComment,
+  --
+  reviewBugToPackage,
+  sortBugsByStatus,
+  -- output
+  putBug,
+  putBugId
+  ) where
 
 import Common
 import Common.System
@@ -147,6 +175,10 @@ readIniConfig inifile iniparser record = do
     let config = parseIniFile ini iniparser
     return $ either error (Just . record) config
 
+sortBugsByStatus :: [Bug] -> [Bug]
+sortBugsByStatus = sortOn (bugStatusEnum . bugStatus)
+
+-- FIXME make datatype
 bugStatusEnum :: T.Text -> Int
 bugStatusEnum st =
   case st of
