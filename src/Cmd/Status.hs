@@ -1,6 +1,6 @@
 module Cmd.Status (statusCmd) where
 
---import Common
+import Common
 import Common.System
 
 import Distribution.Fedora.Branch
@@ -16,25 +16,11 @@ import Types (Package)
 -- FIXME add --no-pull?
 -- FIXME --pending
 -- FIXME show bodhi days left
-statusCmd :: [Branch] -> [Package] -> IO ()
-statusCmd brs pkgs =
-  if null pkgs
-  then do
-    isGit <- doesDirectoryExist ".git"
-    if isGit
-      then do
-      branches <- if null brs then packageBranches else return brs
-      mapM_ (statusBranch Nothing) branches
-      else (map reviewBugToPackage <$> listReviews' True ReviewRepoCreated) >>= mapM_ statusPkg
-  else mapM_ statusPkg pkgs
-  where
-    statusPkg :: Package -> IO ()
-    statusPkg pkg =
-      withExistingDirectory pkg $ do
-        putPkgHdr pkg
-        git_ "fetch" []
-        branches <- if null brs then packageBranches else return brs
-        mapM_ (statusBranch (Just pkg)) branches
+statusCmd :: Bool -> ([Branch],[Package]) -> IO ()
+statusCmd reviews (brs,pkgs) = do
+  when reviews $
+    (map reviewBugToPackage <$> listReviews' True ReviewRepoCreated) >>= mapM_ (withPackageDir False statusBranch brs)
+  withPackageBranches False statusBranch (brs,pkgs)
 
 statusBranch :: Maybe Package -> Branch -> IO ()
 statusBranch mpkg br = do
@@ -84,6 +70,6 @@ statusBranch mpkg br = do
                   status <- kojiBuildStatus nvr
                   -- FIXME show pending archs building
                   putStrLn $ nvr ++ " (" ++ show status ++ ")"
-                Just tags -> do
+                Just tags ->
                   putStrLn $ nvr ++ " (" ++ unwords tags ++ ")"
               else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed

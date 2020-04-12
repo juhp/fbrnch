@@ -1,4 +1,4 @@
-module Cmd.Build (buildCmd, buildBranches) where
+module Cmd.Build (buildCmd) where
 
 import Common
 import Common.System
@@ -19,31 +19,11 @@ import Types
 
 -- FIXME sort packages in build dependency order (chain-build?)
 -- FIXME --no-fast-fail
-buildCmd :: Bool -> Maybe Scratch -> Maybe String -> [Branch] -> [Package] -> IO ()
-buildCmd merge scratch mtarget brs pkgs =
-  if null pkgs
-  then do
-    branches <- if null brs then packageBranches else return brs
-    mapM_ (buildBranch False merge scratch mtarget Nothing) branches
-  else mapM_ buildPkg pkgs
-  where
-    buildPkg :: Package -> IO ()
-    buildPkg pkg =
-      withExistingDirectory pkg $ do
-        checkWorkingDirClean
-        git_ "fetch" []
-        branches <- if null brs then packageBranches else return brs
-        when (null brs) $
-          putStrLn $ "\nBranches: " ++ unwords (map show branches)
-        buildBranches False merge scratch mtarget (Just pkg) branches
-
--- FIXME reverseSort branches from 'build-branch'
-buildBranches :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> [Branch] -> IO ()
-buildBranches _ _ _ _ _ [] = return ()
-buildBranches pulled merge scratch mtarget mpkg brs = do
+buildCmd :: Bool -> Maybe Scratch -> Maybe String -> ([Branch],[Package]) -> IO ()
+buildCmd merge scratch mtarget (brs,pkgs) = do
   when (isJust mtarget && length brs > 1) $
     error' "You can only specify target with one branch"
-  mapM_ (buildBranch pulled merge scratch mtarget mpkg) brs
+  withPackageBranches True (buildBranch False merge scratch mtarget) (brs,pkgs)
 
 buildBranch :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> Branch -> IO ()
 buildBranch pulled merge scratch mtarget mpkg br = do

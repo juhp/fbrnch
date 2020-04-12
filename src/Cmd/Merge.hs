@@ -10,23 +10,9 @@ import Package
 import Prompt
 import Types
 
-mergeCmd :: [Branch] -> [Package] -> IO ()
-mergeCmd brs pkgs =
-  if null pkgs
-  then do
-    branches <- if null brs then packageBranches else return brs
-    mapM_ (mergeBranch False False Nothing) branches
-  else mapM_ mergePkg pkgs
-  where
-    mergePkg :: Package -> IO ()
-    mergePkg pkg =
-      withExistingDirectory pkg $ do
-        checkWorkingDirClean
-        git_ "fetch" []
-        branches <- if null brs then packageBranches else return brs
-        when (null brs) $
-          putStrLn $ "\nBranches: " ++ unwords (map show branches)
-        mapM_ (mergeBranch False False (Just pkg)) branches
+mergeCmd :: ([Branch],[Package]) -> IO ()
+mergeCmd =
+  withPackageBranches True (mergeBranch False False)
 
 mergeBranch :: Bool -> Bool -> Maybe Package -> Branch -> IO ()
 mergeBranch pulled build mpkg br = do

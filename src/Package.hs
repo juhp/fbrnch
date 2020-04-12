@@ -5,8 +5,10 @@ import Common.System
 
 import Distribution.Fedora.Branch
 
+import Branches
 import Git
 import Prompt
+import Types
 
 fedpkg :: String -> [String] -> IO String
 fedpkg c args =
@@ -100,3 +102,23 @@ initialPkgRepo :: IO Bool
 initialPkgRepo = do
   commits <- length <$> gitShortLogN 2 Nothing
   return $ commits <= 1
+
+withPackageBranches :: Bool -> (Maybe Package -> Branch -> IO ()) -> ([Branch],[Package]) -> IO ()
+withPackageBranches write action (brs,pkgs) =
+  if null pkgs
+  then do
+    checkPkgGitDir
+    branches <- if null brs then packageBranches else return $ (reverse . sort) brs
+    mapM_ (action Nothing) branches
+  else mapM_ (withPackageDir write action brs) pkgs
+
+withPackageDir :: Bool -> (Maybe Package -> Branch -> IO ()) -> [Branch] -> Package -> IO ()
+withPackageDir write action brs pkg =
+  withExistingDirectory pkg $ do
+    when write checkWorkingDirClean
+    putPkgHdr pkg
+    git_ "fetch" []
+    branches <- if null brs then packageBranches else return $ (reverse . sort) brs
+    when (null brs && write) $
+      putStrLn $ "\nBranches: " ++ unwords (map show branches)
+    mapM_ (action (Just pkg)) branches

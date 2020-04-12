@@ -3,6 +3,7 @@ import Common
 import Distribution.Fedora.Branch
 import Options.Applicative (maybeReader)
 import SimpleCmd
+import SimpleCmd.Git
 import SimpleCmdArgs
 import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
 
@@ -26,23 +27,22 @@ main = do
   tty <- hIsTerminalDevice stdin
   when tty $ hSetBuffering stdout NoBuffering
   activeBranches <- getFedoraBranches
-  dispatchCmd activeBranches
+  gitdir <- isGitDir "."
+  dispatchCmd gitdir activeBranches
 
-dispatchCmd :: [Branch] -> IO ()
-dispatchCmd activeBranches =
+dispatchCmd :: Bool -> [Branch] -> IO ()
+dispatchCmd gitdir activeBranches =
   simpleCmdArgs Nothing "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
     [ Subcommand "status" "Status package/branch status" $
-      statusCmd <$> many branchOpt <*> many pkgArg
+      statusCmd <$> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
-      mergeCmd <$> many branchOpt <*> many pkgArg
+      mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s)" $
-      buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> many branchOpt <*> many pkgArg
+      buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> branchesPackages
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (strArg "PACKAGE...")
-    , Subcommand "build-branch" "Build branches of package" $
-      buildBranches False <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> pkgOpt <*> some branchArg
     , Subcommand "create-review" "Create a Package Review request" $
       createReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
     , Subcommand "update-review" "Update a Package Review" $
@@ -73,12 +73,29 @@ dispatchCmd activeBranches =
       flagWith ReviewAllOpen ReviewUnbranched 'b' "unbranched" "Approved created package reviews not yet branched"
 
     branchOpt :: Parser Branch
-    branchOpt = (optionWith branchM 'b' "branch" "BRANCH" "branch")
+    branchOpt = optionWith branchM 'b' "branch" "BRANCH" "branch"
 
     branchArg :: Parser Branch
     branchArg = argumentWith branchM "BRANCH.."
 
     branchM = maybeReader (readBranch activeBranches)
+
+    pkgArg :: Parser Package
+    pkgArg = removeSuffix "/" <$> strArg "PACKAGE.."
+
+    pkgOpt :: Parser String
+    pkgOpt = removeSuffix "/" <$> strOptionWith 'p' "package" "PKG" "package"
+
+    branchesPackages :: Parser ([Branch],[Package])
+    branchesPackages = if gitdir then
+      pair <$> (many branchOpt <|> many branchArg) <*> (pure [])
+      else pair <$> many branchOpt <*> many pkgArg <|>
+           pair <$> many branchArg <*> some pkgOpt
+
+    pair a b = (a,b)
+
+    branchesRequestOpt :: Parser BranchesRequest
+    branchesRequestOpt = flagWith' AllReleases 'a' "all" "Request branches for all current releases [default latest 2]" <|> BranchesRequest <$> many branchArg
 
     scratchOpt :: Parser Scratch
     scratchOpt = flagWith' AllArches 's' "scratch" "Koji scratch test build" <|>
@@ -87,15 +104,6 @@ dispatchCmd activeBranches =
     targetOpt :: Parser (Maybe String)
     targetOpt = optional (strOptionWith 't' "target" "TARGET" "Koji target")
 
-    pkgArg :: Parser Package
-    pkgArg = removeSuffix "/" <$> strArg "PACKAGE.."
-
     mergeOpt = switchWith 'm' "merge" "merge from newer branch"
-
-    pkgOpt :: Parser (Maybe String)
-    pkgOpt = optional (strOptionWith 'p' "package" "PKG" "package")
-
-    branchesRequestOpt :: Parser BranchesRequest
-    branchesRequestOpt = flagWith' AllReleases 'a' "all" "Request branches for all current releases [default latest 2]" <|> BranchesRequest <$> many branchArg
 
     mockOpt = switchWith 'm' "mock" "Do mock build to test branch"

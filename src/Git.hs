@@ -8,14 +8,15 @@ module Git (
   gitShortLogN,
   gitShortLog1,
   simplifyCommitLog,
+  checkPkgGitDir,
   checkWorkingDirClean,
   workingDirClean,
   module SimpleCmd.Git
   ) where
 
 import Common
+import Common.System
 
-import SimpleCmd
 import SimpleCmd.Git
 
 #if (defined(MIN_VERSION_simple_cmd) && MIN_VERSION_simple_cmd(0,2,2))
@@ -67,3 +68,9 @@ checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
   clean <- workingDirClean
   unless clean $ error' "Working dir is not clean"
+
+-- FIXME check actually pkg dist-git
+checkPkgGitDir :: IO ()
+checkPkgGitDir = do
+  isGit <- doesDirectoryExist ".git"
+  unless isGit $ error' "Not a git dir"
