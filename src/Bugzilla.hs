@@ -118,11 +118,11 @@ statusOpen =
 
 statusNewPost :: SearchExpression
 statusNewPost =
-  StatusField .==. "NEW" .||. StatusField .==. "ASSIGNED" .||. StatusField .==. "POST"
+  StatusField `equalsAny` ["NEW", "ASSIGNED", "POST"]
 
 statusNewModified :: SearchExpression
 statusNewModified =
-  StatusField .==. "NEW" .||. StatusField .==. "ASSIGNED" .||. StatusField .==. "POST" .||. StatusField .==. "MODIFIED"
+  StatusField `equalsAny` ["NEW", "ASSIGNED", "POST", "MODIFIED"]
 
 reviewApproved :: SearchExpression
 reviewApproved =
