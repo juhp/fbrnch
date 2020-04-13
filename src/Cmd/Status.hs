@@ -3,7 +3,12 @@ module Cmd.Status (statusCmd) where
 import Common
 import Common.System
 
+import qualified Data.ByteString.Char8 as B
+import Data.Fixed
+import Data.Time.Clock
+import Data.Time.LocalTime
 import Distribution.Fedora.Branch
+import Web.Fedora.Bodhi
 
 import Bugzilla
 import Branches
@@ -70,6 +75,30 @@ statusBranch mpkg br = do
                   status <- kojiBuildStatus nvr
                   -- FIXME show pending archs building
                   putStrLn $ nvr ++ " (" ++ show status ++ ")"
-                Just tags ->
-                  putStrLn $ nvr ++ " (" ++ unwords tags ++ ")"
+                Just tags -> do
+                  putStr $ nvr ++ " (" ++ unwords tags ++ ")"
+                  when (any ("updates-testing" `isSuffixOf`) tags) $ do
+                    updates <- bodhiUpdates $
+                               [makeItem "display_user" "0",
+                                makeItem "builds" nvr]
+                    case updates of
+                      [] -> putStrLn "No update found"
+                      [update] -> do
+                        let msince = lookupKey "date_testing" update :: Maybe LocalTime
+                        case msince of
+                          Nothing -> return ()
+                          Just date -> do
+                            let since = localTimeToUTC utc date
+                            current <- getCurrentTime
+                            let diff = diffUTCTime current since
+                            -- FIXME time-1.10 has formatTime of NominalDiffTime
+                            putStr $ " " ++ show (diff `div'` nominalDay :: Int) ++ " days"
+                      _ -> putStrLn "More than one update found!"
+                  putStrLn ""
               else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
+  where
+    makeItem k val = (B.pack k, Just (B.pack val))
+
+    -- -- | looks up Text from key in object
+    -- lookupText :: T.Text -> Object -> Maybe T.Text
+    -- lookupText k = parseMaybe (.: k)

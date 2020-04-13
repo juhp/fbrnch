@@ -8,3 +8,5 @@ extra-deps:
   - http-directory-0.1.5
   - simple-cmd-args-0.1.6
   - simple-cmd-0.1.4
+  - git: https://github.com/juhp/bodhi-hs.git
+    commit: 05eb60c1b2aa3814077d3e480eb70d5e92271f9d

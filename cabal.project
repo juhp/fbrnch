@@ -9,3 +9,8 @@ source-repository-package
     type: git
     location: https://github.com/juhp/fedora-dists.git
     tag: 8f8311921d4c9f4ce763c2c146af56f136bd0e7e
+
+source-repository-package
+    type: git
+    location: https://github.com/juhp/bodhi-hs.git
+    tag: 05eb60c1b2aa3814077d3e480eb70d5e92271f9d

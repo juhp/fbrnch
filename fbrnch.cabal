@@ -59,7 +59,9 @@ executable fbrnch
   build-depends:       aeson
                      , base < 5
                      , basic-prelude
+                     , bodhi
                      , bugzilla >= 0.2.1.2
+                     , bytestring
                      , config-ini
                      , directory >= 1.2.3
                      , fedora-dists > 2.0
@@ -72,6 +74,7 @@ executable fbrnch
                      , simple-cmd >= 0.1.4
                      , simple-cmd-args >= 0.1.6
                      , text
+                     , time
                      , xdg-basedir
   if impl(ghc<8.0)
        build-depends: semigroups
