@@ -20,7 +20,6 @@
 
 - list pending new package builds
 - list builds not pushed to bodhi
-- list package bugs
 
 - support containers/
 

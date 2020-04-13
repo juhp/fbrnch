@@ -8,6 +8,7 @@ import SimpleCmdArgs
 import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
 
 -- commands
+import Cmd.Bugs
 import Cmd.Build
 import Cmd.Import
 import Cmd.Merge
@@ -41,6 +42,8 @@ dispatchCmd gitdir activeBranches =
       mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s)" $
       buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> branchesPackages
+    , Subcommand "bugs" "List package bugs" $
+      bugsCmd <$> optional (pkgArg "PACKAGE")
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (pkgArg "PACKAGE...")
     , Subcommand "create-review" "Create a Package Review request" $

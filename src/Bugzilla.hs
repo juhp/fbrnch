@@ -5,6 +5,7 @@ module Bugzilla (
   bzReviewSession,
   reviewBugIdSession,
   approvedReviewBugIdSession,
+  pkgBugs,
   pkgReviews,
   testBZlogin,
   -- search
@@ -22,9 +23,11 @@ module Bugzilla (
   showComment,
   --
   reviewBugToPackage,
+  sortBugsByProduct,
   sortBugsByStatus,
   -- output
   putBug,
+  putReviewBug,
   putBugId
   ) where
 
@@ -133,6 +136,10 @@ pkgReviews pkg =
   SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
   packageReview
 
+pkgBugs :: String -> SearchExpression
+pkgBugs pkg =
+  ComponentField .==. [T.pack pkg]
+
 bugIdsSession :: SearchExpression -> IO ([BugId],BugzillaSession)
 bugIdsSession query = do
   (session,_) <- bzLoginSession
@@ -177,6 +184,9 @@ readIniConfig inifile iniparser record = do
 
 sortBugsByStatus :: [Bug] -> [Bug]
 sortBugsByStatus = sortOn (bugStatusEnum . bugStatus)
+
+sortBugsByProduct :: [Bug] -> [Bug]
+sortBugsByProduct = sortOn (bugProduct)
 
 -- FIXME make datatype
 bugStatusEnum :: T.Text -> Int
@@ -231,11 +241,19 @@ checkForComment session bid text = do
     comments <- map commentText <$> getComments session bid
     return $ any (text `T.isInfixOf`) $ reverse comments
 
-putBug :: Bug -> IO ()
-putBug bug = do
+putReviewBug :: Bug -> IO ()
+putReviewBug bug = do
   putStrLn $ reviewBugToPackage bug ++ " (" ++ T.unpack (bugStatus bug) ++ ")"
   putBugId $ bugId bug
   putStrLn ""
+
+putBug :: Bug -> IO ()
+putBug bug = do
+  T.putStrLn $ "[" <> prodVersion <> "] " <> bugSummary bug <> " (" <> bugStatus bug <> ")"
+  putBugId $ bugId bug
+  putStrLn ""
+  where
+    prodVersion = T.unwords (bugVersion bug)
 
 putBugId :: BugId -> IO ()
 putBugId =

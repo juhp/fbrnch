@@ -6,7 +6,7 @@ import ListReviews
 -- FIXME add --state or --new, --modified, etc
 reviewsCmd :: ReviewStatus -> IO ()
 reviewsCmd status =
-  listReviews' True status >>= mapM_ putBug . sortBugsByStatus
+  listReviews' True status >>= mapM_ putReviewBug . sortBugsByStatus
 
 review :: String -> IO ()
 review pkg = do
