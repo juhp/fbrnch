@@ -1,4 +1,10 @@
-module Koji where
+module Koji (
+  KojiBuildStatus(..),
+  kojiBuildTags,
+  kojiBuildStatus,
+  kojiScratchUrl,
+  kojiScratchBuild
+  ) where
 
 import Common
 

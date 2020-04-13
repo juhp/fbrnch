@@ -1,4 +1,7 @@
-module Krb where
+module Krb (
+  fasIdFromKrb,
+  krbTicket
+  ) where
 
 import Common
 

@@ -1,4 +1,19 @@
-module Package where
+module Package (
+  fedpkg,
+  fedpkg_,
+  checkForSpecFile,
+  getChangeLog,
+  getPackageName,
+  findSpecfile,
+  generateSrpm,
+  getSpecFile,
+  putPkgHdr,
+  putPkgBrnchHdr,
+  withExistingDirectory,
+  initialPkgRepo,
+  withPackageBranches,
+  withPackageDir
+               ) where
 
 import Common
 import Common.System

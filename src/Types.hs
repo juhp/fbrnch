@@ -1,4 +1,8 @@
-module Types where
+module Types (
+  BranchesRequest(..),
+  Package,
+  Scratch(..)
+  ) where
 
 import Distribution.Fedora.Branch
 
