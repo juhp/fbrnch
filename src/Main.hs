@@ -42,7 +42,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "build" "Build package(s)" $
       buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> branchesPackages
     , Subcommand "pull" "Git pull packages" $
-      pullPkgs <$> some (strArg "PACKAGE...")
+      pullPkgs <$> some (pkgArg "PACKAGE...")
     , Subcommand "create-review" "Create a Package Review request" $
       createReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
     , Subcommand "update-review" "Update a Package Review" $
@@ -50,13 +50,13 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd <$> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
-      requestRepos <$> many (strArg "NEWPACKAGE...")
+      requestRepos <$> many (pkgArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
-      importCmd <$> many (strArg "NEWPACKAGE...")
+      importCmd <$> many (pkgArg "NEWPACKAGE...")
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranches <$> mockOpt <*> branchesRequestOpt
     , Subcommand "find-review" "Find package review bug" $
-      review <$> strArg "PACKAGE"
+      review <$> pkgArg "PACKAGE"
     , Subcommand "test-bz-token" "Check bugzilla login status" $
       pure testBZlogin
     ]
@@ -80,8 +80,8 @@ dispatchCmd gitdir activeBranches =
 
     branchM = maybeReader (readBranch activeBranches)
 
-    pkgArg :: Parser Package
-    pkgArg = removeSuffix "/" <$> strArg "PACKAGE.."
+    pkgArg :: String -> Parser Package
+    pkgArg lbl = removeSuffix "/" <$> strArg lbl
 
     pkgOpt :: Parser String
     pkgOpt = removeSuffix "/" <$> strOptionWith 'p' "package" "PKG" "package"
@@ -89,7 +89,7 @@ dispatchCmd gitdir activeBranches =
     branchesPackages :: Parser ([Branch],[Package])
     branchesPackages = if gitdir then
       pair <$> (many branchOpt <|> many branchArg) <*> (pure [])
-      else pair <$> many branchOpt <*> many pkgArg <|>
+      else pair <$> many branchOpt <*> many (pkgArg "PACKAGE..") <|>
            pair <$> many branchArg <*> some pkgOpt
 
     pair a b = (a,b)
