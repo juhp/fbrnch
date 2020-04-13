@@ -1,4 +1,4 @@
-module Cmd.Reviews where
+module Cmd.Reviews (reviewsCmd, review) where
 
 import Bugzilla
 import ListReviews
@@ -7,3 +7,8 @@ import ListReviews
 reviewsCmd :: ReviewStatus -> IO ()
 reviewsCmd status =
   listReviews' True status >>= mapM_ putBug . sortBugsByStatus
+
+review :: String -> IO ()
+review pkg = do
+  (bugs, _) <- bugIdsSession $ pkgReviews pkg
+  mapM_ putBugId bugs

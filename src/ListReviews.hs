@@ -1,4 +1,8 @@
-module ListReviews where
+module ListReviews (
+  ReviewStatus(..),
+  listReviews,
+  listReviews'
+  ) where
 
 import Common
 
@@ -50,8 +54,3 @@ listReviews' allopen status = do
 
     notBranched :: String -> IO Bool
     notBranched pkg = null <$> packagePagureBranched pkg
-
-review :: String -> IO ()
-review pkg = do
-  (bugs, _) <- bugIdsSession $ pkgReviews pkg
-  mapM_ putBugId bugs

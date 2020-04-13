@@ -1,4 +1,7 @@
-module Cmd.PkgReview where
+module Cmd.PkgReview (
+  createReview,
+  updateReview
+  ) where
 
 import Common
 import Common.System
