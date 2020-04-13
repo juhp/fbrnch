@@ -1,7 +1,7 @@
 cabal-version:       2.0
-name:                fedbrnch
+name:                fbrnch
 version:             0.1
-synopsis:            Tool for creating and building Fedora package branches
+synopsis:            Build and create Fedora package repos and branches
 description:
             Fed Brnch is a convenient packaging tool for Fedora Packagers,
             with integration for bugzilla, koji, and bodhi. Features include:
@@ -28,7 +28,7 @@ source-repository head
   type:                git
   location:            https://github.com/juhp/fedbrnch.git
 
-executable fbr
+executable fbrnch
   main-is:             Main.hs
   other-modules:       Branches
                        Bugzilla
