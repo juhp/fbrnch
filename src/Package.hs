@@ -120,7 +120,7 @@ withPackageBranches :: Bool -> (Maybe Package -> Branch -> IO ()) -> ([Branch],[
 withPackageBranches write action (brs,pkgs) =
   if null pkgs
   then do
-    checkPkgGitDir
+    checkIsPkgGitDir
     branches <- if null brs then packageBranches else return $ (reverse . sort) brs
     mapM_ (action Nothing) branches
   else mapM_ (withPackageDir write action brs) pkgs
