@@ -186,7 +186,7 @@ sortBugsByStatus :: [Bug] -> [Bug]
 sortBugsByStatus = sortOn (bugStatusEnum . bugStatus)
 
 sortBugsByProduct :: [Bug] -> [Bug]
-sortBugsByProduct = sortOn (bugProduct)
+sortBugsByProduct = sortOn bugProduct
 
 -- FIXME make datatype
 bugStatusEnum :: T.Text -> Int

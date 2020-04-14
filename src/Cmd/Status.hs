@@ -76,7 +76,7 @@ statusBranch mpkg br = do
                 Just tags -> do
                   putStr $ nvr ++ " (" ++ unwords tags ++ ")"
                   when (any ("updates-testing" `isSuffixOf`) tags) $ do
-                    updates <- bodhiUpdates $
+                    updates <- bodhiUpdates
                                [makeItem "display_user" "0",
                                 makeItem "builds" nvr]
                     case updates of

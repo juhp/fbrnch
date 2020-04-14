@@ -96,7 +96,7 @@ dispatchCmd gitdir activeBranches =
 
     branchesPackages :: Parser ([Branch],[Package])
     branchesPackages = if gitdir then
-      pair <$> (many branchOpt <|> many branchArg) <*> (pure [])
+      pair <$> (many branchOpt <|> many branchArg) <*> pure []
       else pair <$> many branchOpt <*> many (pkgArg "PACKAGE..") <|>
            pair <$> many branchArg <*> some pkgOpt
 
