@@ -91,8 +91,7 @@ statusBranch mpkg br = do
                             let since = localTimeToUTC utc date
                             current <- getCurrentTime
                             let diff = diffUTCTime current since
-                            -- FIXME time-1.10 has formatTime of NominalDiffTime
-                            putStr $ " " ++ show (diff `div'` nominalDay :: Int) ++ " days"
+                            putAge diff
                       _ -> putStrLn "More than one update found!"
                   putStrLn ""
               else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
@@ -102,3 +101,15 @@ statusBranch mpkg br = do
     -- -- | looks up Text from key in object
     -- lookupText :: T.Text -> Object -> Maybe T.Text
     -- lookupText k = parseMaybe (.: k)
+
+    putAge :: NominalDiffTime -> IO ()
+    putAge diff = do
+      -- FIXME time-1.10 has formatTime of NominalDiffTime
+      let (days,nomRest) = diff `divMod'` nominalDay :: (Int,NominalDiffTime)
+          nominalHour = 3600 :: NominalDiffTime
+          hours = nomRest `div'` nominalHour :: Int
+      putStr $ " " ++ showUnits days "day" +-+ showUnits hours "hour"
+
+    showUnits :: Int -> String -> String
+    showUnits i uni = show i ++ " " ++ uni ++
+                      if i == 1 then "" else "s"
