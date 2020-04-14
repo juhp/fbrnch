@@ -54,7 +54,6 @@ executable fbrnch
                        ListReviews
                        Package
                        Prompt
-                       Types
   hs-source-dirs:      src
 
   build-depends:       aeson

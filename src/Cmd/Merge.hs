@@ -6,7 +6,6 @@ import Branches
 import Git
 import Package
 import Prompt
-import Types
 
 mergeCmd :: ([Branch],[Package]) -> IO ()
 mergeCmd =

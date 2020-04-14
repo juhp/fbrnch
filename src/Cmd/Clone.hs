@@ -1,7 +1,7 @@
 module Cmd.Clone (cloneCmd) where
 
+import Branches
 import Package
-import Types
 
 cloneCmd :: Maybe Branch -> [Package] -> IO ()
 cloneCmd mbr =

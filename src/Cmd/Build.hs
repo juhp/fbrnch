@@ -1,4 +1,7 @@
-module Cmd.Build (buildCmd) where
+module Cmd.Build (
+  buildCmd,
+  Scratch(..)
+  ) where
 
 import Common
 import Common.System
@@ -14,7 +17,8 @@ import Krb
 import Koji
 import Package
 import Prompt
-import Types
+
+data Scratch = AllArches | Arch String
 
 -- FIXME sort packages in build dependency order (chain-build?)
 -- FIXME --no-fast-fail

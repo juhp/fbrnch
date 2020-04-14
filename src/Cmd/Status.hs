@@ -15,7 +15,6 @@ import Git
 import Koji
 import ListReviews
 import Package
-import Types (Package)
 
 -- FIXME add --no-pull?
 -- FIXME --pending

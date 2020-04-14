@@ -22,7 +22,7 @@ import Cmd.Status
 
 import Bugzilla (testBZlogin)
 import ListReviews
-import Types
+import Package (Package)
 
 main :: IO ()
 main = do

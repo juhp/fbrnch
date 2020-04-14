@@ -12,8 +12,9 @@ module Package (
   withExistingDirectory,
   initialPkgRepo,
   withPackageBranches,
-  withPackageDir
-               ) where
+  withPackageDir,
+  Package
+  ) where
 
 import Common
 import Common.System
@@ -21,7 +22,6 @@ import Common.System
 import Branches
 import Git
 import Prompt
-import Types
 
 fedpkg :: String -> [String] -> IO String
 fedpkg c args =
@@ -115,6 +115,8 @@ initialPkgRepo :: IO Bool
 initialPkgRepo = do
   commits <- length <$> gitShortLogN 2 Nothing
   return $ commits <= 1
+
+type Package = String
 
 withPackageBranches :: Bool -> (Maybe Package -> Branch -> IO ()) -> ([Branch],[Package]) -> IO ()
 withPackageBranches write action (brs,pkgs) =

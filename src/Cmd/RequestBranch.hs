@@ -1,4 +1,7 @@
-module Cmd.RequestBranch (requestBranches) where
+module Cmd.RequestBranch (
+  BranchesRequest(..),
+  requestBranches
+  ) where
 
 import Common
 
@@ -11,7 +14,8 @@ import Krb
 import ListReviews
 import Package
 import Prompt
-import Types
+
+data BranchesRequest = AllReleases | BranchesRequest [Branch]
 
 -- FIXME if pkg dir than just act on package
 requestBranches :: Bool -> BranchesRequest -> IO ()

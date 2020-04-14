@@ -13,7 +13,6 @@ import Krb
 import ListReviews
 import Package
 import Prompt
-import Types (Package)
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 importCmd :: [Package] -> IO ()
