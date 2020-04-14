@@ -2,6 +2,8 @@
 - finally switch back to original branch if all successful
 - ask about bodhi update type
 
+- support containers/
+
 # multipackage
 - build sequence of packages by branch
 - chain builds
@@ -18,10 +20,10 @@
 
 - test without .rpmmacros, ie in vanilla Fedora account
 
+# status
 - list pending new package builds
 - list builds not pushed to bodhi
-
-- support containers/
+- status when no local dir/checkout
 
 # libs
 - use gitlib?

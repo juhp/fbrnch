@@ -83,7 +83,8 @@ buildBranch pulled merge scratch mtarget mpkg br = do
           changelog <- getChangeLog $ pkg <.> "spec"
           bodhiUpdate mbid changelog nvr
           -- override option or autochain
-          when False $ cmd_ "bodhi" ["overrides", "save", nvr]
+          -- FIXME need prompt for override note
+          when False $ cmd_ "bodhi" ["overrides", "save", "--notes", "FIXME", nvr]
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mbid changelog nvr = do
@@ -93,6 +94,7 @@ buildBranch pulled merge scratch mtarget mpkg br = do
       putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
       updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
       unless updateOK $ do
+        -- FIXME replace with bodhi library call
         updatequery <- cmdLines "bodhi" ["updates", "query", "--builds", nvr]
         if last updatequery == "1 updates found (1 shown)"
           then putStrLn $ (unlines . init) updatequery
