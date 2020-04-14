@@ -3,6 +3,7 @@ module Branches (
   packageBranched,
   packagePagureBranched,
   switchBranch,
+  getCurrentBranch,
   module Distribution.Fedora.Branch
 ) where
 
@@ -12,6 +13,15 @@ import Distribution.Fedora.Branch
 import SimpleCmd
 
 import Git
+
+getCurrentBranch :: IO (Maybe Branch)
+getCurrentBranch = do
+  mbr <- cmdMaybe "git" ["rev-parse", "--abbrev-ref", "HEAD"]
+  case mbr of
+    Nothing -> return Nothing
+    Just br -> do
+      active <- getFedoraBranches
+      return $ readBranch active br
 
 getActiveBranches :: [Branch] -> [String] -> [Branch]
 getActiveBranches active =
