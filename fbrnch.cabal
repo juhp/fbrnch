@@ -36,6 +36,7 @@ executable fbrnch
                        Bugzilla.ValidLogin
                        Cmd.Bugs
                        Cmd.Build
+                       Cmd.Clone
                        Cmd.Import
                        Cmd.Merge
                        Cmd.PkgReview

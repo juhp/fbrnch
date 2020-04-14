@@ -10,6 +10,7 @@ import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, std
 -- commands
 import Cmd.Bugs
 import Cmd.Build
+import Cmd.Clone
 import Cmd.Import
 import Cmd.Merge
 import Cmd.PkgReview
@@ -36,7 +37,9 @@ dispatchCmd gitdir activeBranches =
   simpleCmdArgs Nothing "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
-    [ Subcommand "status" "Status package/branch status" $
+    [ Subcommand "clone" "clone packages" $
+      cloneCmd <$> optional branchOpt <*> some (pkgArg "PACKAGE...")
+    , Subcommand "status" "Status package/branch status" $
       statusCmd <$> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd <$> branchesPackages
