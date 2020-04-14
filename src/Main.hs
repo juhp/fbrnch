@@ -21,6 +21,7 @@ import Cmd.RequestBranch
 import Cmd.RequestRepo
 import Cmd.Reviews
 import Cmd.Status
+import Cmd.Switch
 
 import Bugzilla (testBZlogin)
 import ListReviews
@@ -41,6 +42,8 @@ dispatchCmd gitdir activeBranches =
     subcommands
     [ Subcommand "clone" "clone packages" $
       cloneCmd <$> optional branchOpt <*> some (pkgArg "PACKAGE...")
+    , Subcommand "switch" "Switch branch" $
+      switchCmd <$> (branchOpt <|> branchArg) <*> many (pkgArg "PACKAGE...")
     , Subcommand "status" "Status package/branch status" $
       statusCmd <$> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $

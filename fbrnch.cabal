@@ -45,6 +45,7 @@ executable fbrnch
                        Cmd.RequestRepo
                        Cmd.Reviews
                        Cmd.Status
+                       Cmd.Switch
                        Common
                        Common.System
                        Common.Text
