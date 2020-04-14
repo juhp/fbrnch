@@ -1,3 +1,5 @@
+module Main (main) where
+
 import Common
 
 import Distribution.Fedora.Branch

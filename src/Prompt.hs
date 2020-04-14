@@ -1,4 +1,7 @@
-module Prompt where
+module Prompt (
+  prompt,
+  prompt_
+  ) where
 
 import Common
 
