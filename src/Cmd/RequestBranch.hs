@@ -2,7 +2,6 @@ module Cmd.RequestBranch (requestBranches) where
 
 import Common
 
-import Distribution.Fedora.Branch
 import SimpleCmd
 
 import Branches

@@ -7,7 +7,6 @@ import qualified Data.ByteString.Char8 as B
 import Data.Fixed
 import Data.Time.Clock
 import Data.Time.LocalTime
-import Distribution.Fedora.Branch
 import Web.Fedora.Bodhi
 
 import Bugzilla

@@ -3,7 +3,6 @@ module Cmd.Build (buildCmd) where
 import Common
 import Common.System
 
-import Distribution.Fedora.Branch
 import System.IO (hIsTerminalDevice, stdin)
 import Web.Bugzilla
 

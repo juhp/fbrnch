@@ -18,8 +18,6 @@ module Package (
 import Common
 import Common.System
 
-import Distribution.Fedora.Branch
-
 import Branches
 import Git
 import Prompt

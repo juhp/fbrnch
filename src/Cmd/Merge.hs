@@ -2,8 +2,6 @@ module Cmd.Merge (mergeCmd, mergeBranch) where
 
 import Common
 
-import Distribution.Fedora.Branch
-
 import Branches
 import Git
 import Package

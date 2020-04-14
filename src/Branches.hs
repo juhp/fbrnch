@@ -2,7 +2,8 @@ module Branches (
   packageBranches,
   packageBranched,
   packagePagureBranched,
-  switchBranch
+  switchBranch,
+  module Distribution.Fedora.Branch
 ) where
 
 import Common
