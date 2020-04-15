@@ -1,5 +1,6 @@
 # UI
 - ask about bodhi update type
+- check latest tarball added
 
 - support containers/
 
@@ -30,3 +31,16 @@
 - pagure
 - bodhi
 - bugzilla-redhat
+
+# external tools
+- ssh & scp
+- curl
+- git
+- klist
+- rpmbuild
+- rpmspec
+- fedpkg
+- koji
+- bodhi
+- bugzilla
+- pagure
