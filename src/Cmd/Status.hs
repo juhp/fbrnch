@@ -5,7 +5,6 @@ module Cmd.Status (statusCmd) where
 import Common
 import Common.System
 
-import qualified Data.ByteString.Char8 as B
 import Data.Fixed
 import Data.Time.Clock
 import Data.Time.LocalTime
@@ -96,12 +95,6 @@ statusBranch mpkg br = do
                   putStrLn ""
               else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
   where
-    makeItem k val = (B.pack k, Just (B.pack val))
-
-    -- -- | looks up Text from key in object
-    -- lookupText :: T.Text -> Object -> Maybe T.Text
-    -- lookupText k = parseMaybe (.: k)
-
     putAge :: NominalDiffTime -> IO ()
     putAge diff = do
       -- FIXME time-1.10 has formatTime of NominalDiffTime
