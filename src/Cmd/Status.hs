@@ -36,7 +36,7 @@ statusBranch mpkg br = do
     else do
     clean <- workingDirClean
     if not clean then
-      putStrLn "working dir is dirty"
+      error' "working dir is dirty"
       else do
       switchBranch br
       let spec = pkg <.> "spec"
