@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Cmd.Status (statusCmd) where
 
 import Common
@@ -111,3 +113,8 @@ statusBranch mpkg br = do
     showUnits :: Int -> String -> String
     showUnits i uni = show i ++ " " ++ uni ++
                       if i == 1 then "" else "s"
+
+#if (defined(MIN_VERSION_time) && MIN_VERSION_time(1,8,0))
+#else
+    nominalDay = 3600 * 24 :: NominalDiffTime
+#endif
