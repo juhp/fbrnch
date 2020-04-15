@@ -36,7 +36,7 @@ requestPkgBranches mock request pkg = do
     inp <- prompt $ "to request branches [" ++ unwords (map show requested) ++ "]"
     return $ if null inp
              then requested
-             else mapMaybe (readBranch active) $ words inp
+             else map (readActiveBranch' active) $ words inp
   newbranches <- filterExistingBranchRequests branches
   forM_ newbranches $ \ br -> do
     when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]

@@ -123,12 +123,11 @@ withPackageBranches write action (brs,pkgs) =
   if null pkgs
   then do
     checkIsPkgGitDir
-    currentbranch <- if length brs == 1
-                     then return Nothing
-                     else getCurrentBranch
+    currentbranch <- getCurrentBranch
     branches <- if null brs then packageBranches else return $ (reverse . sort) brs
     mapM_ (action Nothing) branches
-    switchBranch (fromMaybe Master currentbranch)
+    unless (length brs == 1) $
+      switchBranch currentbranch
   else mapM_ (withPackageDir write action brs) pkgs
 
 withPackageDir :: Bool -> (Maybe Package -> Branch -> IO ()) -> [Branch] -> Package -> IO ()
@@ -140,8 +139,7 @@ withPackageDir write action brs pkg =
     branches <- if null brs then packageBranches else return $ (reverse . sort) brs
     when (null brs && write) $
       putStrLn $ "\nBranches: " ++ unwords (map show branches)
-    currentbranch <- if length brs == 1
-                     then return Nothing
-                     else getCurrentBranch
+    currentbranch <- getCurrentBranch
     mapM_ (action (Just pkg)) branches
-    switchBranch (fromMaybe Master currentbranch)
+    unless (length brs == 1) $
+      switchBranch currentbranch

@@ -14,37 +14,33 @@ import SimpleCmd
 
 import Git
 
-getCurrentBranch :: IO (Maybe Branch)
+getCurrentBranch :: IO Branch
 getCurrentBranch = do
-  mbr <- cmdMaybe "git" ["rev-parse", "--abbrev-ref", "HEAD"]
-  case mbr of
-    Nothing -> return Nothing
-    Just br -> do
-      active <- getFedoraBranches
-      return $ readBranch active br
+  active <- getFedoraBranches
+  readActiveBranch' active <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
 
-getActiveBranches :: [Branch] -> [String] -> [Branch]
-getActiveBranches active =
+activeBranches :: [Branch] -> [String] -> [Branch]
+activeBranches active =
   -- newest branch first
   {- HLINT ignore "Avoid reverse"-} -- reverse . sort is fast but not stabilizing
-  reverse . sort . mapMaybe (readBranch' active)
+  reverse . sort . mapMaybe (readActiveBranch active)
 
 packageBranches :: IO [Branch]
 packageBranches = do
   active <- getFedoraBranches
-  getActiveBranches active <$>
+  activeBranches active <$>
     cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
 
 packageBranched :: IO [Branch]
 packageBranched = do
   active <- getFedoraBranched
-  getActiveBranches active <$>
+  activeBranches active <$>
     cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
 
 packagePagureBranched :: String -> IO [Branch]
 packagePagureBranched pkg = do
   current <- getFedoraBranched
-  getActiveBranches current <$> cmdLines "pagure" ["branches", "rpms/" ++ pkg]
+  activeBranches current <$> cmdLines "pagure" ["branches", "rpms/" ++ pkg]
 
 switchBranch :: Branch -> IO ()
 switchBranch br = do

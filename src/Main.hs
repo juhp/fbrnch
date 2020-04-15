@@ -3,7 +3,7 @@ module Main (main) where
 import Common
 
 import Distribution.Fedora.Branch
-import Options.Applicative (maybeReader)
+import Options.Applicative (eitherReader, ReadM)
 import SimpleCmd
 import SimpleCmd.Git
 import SimpleCmdArgs
@@ -43,7 +43,7 @@ dispatchCmd gitdir activeBranches =
     [ Subcommand "clone" "clone packages" $
       cloneCmd <$> optional branchOpt <*> some (pkgArg "PACKAGE...")
     , Subcommand "switch" "Switch branch" $
-      switchCmd <$> (branchOpt <|> branchArg) <*> many (pkgArg "PACKAGE...")
+      switchCmd <$> (anyBranchOpt <|> anyBranchArg) <*> many (pkgArg "PACKAGE...")
     , Subcommand "status" "Status package/branch status" $
       statusCmd <$> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
@@ -89,7 +89,17 @@ dispatchCmd gitdir activeBranches =
     branchArg :: Parser Branch
     branchArg = argumentWith branchM "BRANCH.."
 
-    branchM = maybeReader (readBranch activeBranches)
+    branchM :: ReadM Branch
+    branchM = eitherReader (eitherActiveBranch activeBranches)
+
+    anyBranchOpt :: Parser Branch
+    anyBranchOpt = optionWith anyBranchM 'b' "branch" "BRANCH" "branch"
+
+    anyBranchArg :: Parser Branch
+    anyBranchArg = argumentWith anyBranchM "BRANCH.."
+
+    anyBranchM :: ReadM Branch
+    anyBranchM = eitherReader eitherBranch
 
     pkgArg :: String -> Parser Package
     pkgArg lbl = removeSuffix "/" <$> strArg lbl
