@@ -96,11 +96,11 @@ getSpecFile =
 
 putPkgHdr :: String -> IO ()
 putPkgHdr pkg =
-  putStrLn $ "\n= " ++ pkg ++ " ="
+  putStrLn $ "\n= " ++ takeFileName pkg ++ " ="
 
 putPkgBrnchHdr :: String -> Branch -> IO ()
 putPkgBrnchHdr pkg br =
-  putStrLn $ "\n== " ++ pkg ++ ":" ++ show br ++ " =="
+  putStrLn $ "\n== " ++ takeFileName pkg ++ ":" ++ show br ++ " =="
 
 withExistingDirectory :: FilePath -> IO () -> IO ()
 withExistingDirectory dir act = do
