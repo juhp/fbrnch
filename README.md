@@ -1,16 +1,16 @@
-# fedbrnch - "Fed Brunch"
+# fbrnch - "Fed Brunch"
 
-[![Hackage](https://img.shields.io/hackage/v/fedbrnch.svg)](https://hackage.haskell.org/package/fedbrnch)
+[![Hackage](https://img.shields.io/hackage/v/fbrnch.svg)](https://hackage.haskell.org/package/fbrnch)
 [![GPL-2 license](https://img.shields.io/badge/license-GPL--2-blue.svg)](LICENSE)
-[![Stackage Lts](http://stackage.org/package/fedbrnch/badge/lts)](http://stackage.org/lts/package/fedbrnch)
-[![Stackage Nightly](http://stackage.org/package/fedbrnch/badge/nightly)](http://stackage.org/nightly/package/fedbrnch)
-[![Build status](https://secure.travis-ci.org/juhp/fedbrnch.svg)](https://travis-ci.org/juhp/fedbrnch)
+[![Stackage Lts](http://stackage.org/package/fbrnch/badge/lts)](http://stackage.org/lts/package/fbrnch)
+[![Stackage Nightly](http://stackage.org/package/fbrnch/badge/nightly)](http://stackage.org/nightly/package/fbrnch)
+[![Build status](https://secure.travis-ci.org/juhp/fbrnch.svg)](https://travis-ci.org/juhp/fbrnch)
 
 Tool to build fedora package branches
 
 ## Description
 
-fedbrnch is a Fedora Packager client which tries to automate some common tasks
+fbrnch is a Fedora Packager client which tries to automate some common tasks
 like:
 
 - creating package reviews

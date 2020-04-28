@@ -10,8 +10,8 @@ description:
             - import srpms from package reviews
             - merge between Fedora branches and build them
             - package status command.
-homepage:            https://github.com/juhp/fedbrnch
-bug-reports:         https://github.com/juhp/fedbrnch/issues
+homepage:            https://github.com/juhp/fbrnch
+bug-reports:         https://github.com/juhp/fbrnch/issues
 license:             GPL-2
 license-file:        LICENSE
 author:              Jens Petersen
