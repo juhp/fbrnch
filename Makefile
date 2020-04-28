@@ -1,7 +1,7 @@
 stack-all:
-	stack-nightly build
+	stack --resolver nightly --stack-yaml stack-lts15.yaml build
 	@echo
-	stack-lts build
+	stack --resolver lts-15 --stack-yaml stack-lts15.yaml build
 	@echo
 	stack --resolver lts-14 build
 	@echo

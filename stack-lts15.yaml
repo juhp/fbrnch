@@ -1,11 +1,9 @@
-resolver: lts-13.30
+resolver: lts-15.5
 
 extra-deps:
-  - config-ini-0.2.4.0
   - git: https://github.com/juhp/hsbugzilla.git
     commit: ae1fa7be0e3480c6979fc04f232cc09c16e4cb7d
   - git: https://github.com/juhp/fedora-dists.git
     commit: dd035a5c006498f9b9f1b3f34fea7fb08c2de831
-  - simple-cmd-args-0.1.6
   - git: https://github.com/juhp/bodhi-hs.git
     commit: 71dab921fd7760c1c8d86879de0629c499b14582
