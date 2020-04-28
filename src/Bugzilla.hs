@@ -75,6 +75,9 @@ bzReviewSession = do
     [bid] -> return (Just bid, session)
     _ -> return (Nothing, session)
 
+newtype BzConfig = BzConfig {rcUserEmail :: UserEmail}
+  deriving (Eq, Show)
+
 bzLoginSession :: IO (BugzillaSession, UserEmail)
 bzLoginSession = do
   user <- getBzUser
@@ -104,9 +107,8 @@ bzLoginSession = do
       where
         rcParser :: IniParser BzConfig
         rcParser =
-          section brc $ do
-            user <- fieldOf "user" string
-            return $ BzConfig user
+          section brc $
+          BzConfig <$> fieldOf "user" string
 
 reporterIs :: T.Text -> SearchExpression
 reporterIs = (ReporterField .==.)
@@ -209,9 +211,6 @@ showComment cmt = do
             <> "\n\n" <> (T.unlines . map ("  " <>) . dropDuplicates . removeLeadingNewline . T.lines $ commentText cmt)
   putStrLn ""
 
-newtype BzConfig = BzConfig {rcUserEmail :: UserEmail}
-  deriving (Eq, Show)
-
 newtype BzTokenConf = BzTokenConf {bzToken :: T.Text}
   deriving (Eq, Show)
 
@@ -227,9 +226,8 @@ getBzToken = do
   where
     rcParser :: IniParser BzTokenConf
     rcParser =
-      section brc $ do
-        token <- fieldOf "token" string
-        return $ BzTokenConf token
+      section brc $
+      BzTokenConf <$> fieldOf "token" string
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid =
