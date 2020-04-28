@@ -54,6 +54,7 @@ executable fbrnch
                        Krb
                        ListReviews
                        Package
+                       Paths_fbrnch
                        Prompt
   hs-source-dirs:      src
 

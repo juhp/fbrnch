@@ -26,6 +26,7 @@ import Cmd.Switch
 import Bugzilla (testBZlogin)
 import ListReviews
 import Package (Package)
+import Paths_fbrnch (version)
 
 main :: IO ()
 main = do
@@ -37,7 +38,7 @@ main = do
 
 dispatchCmd :: Bool -> [Branch] -> IO ()
 dispatchCmd gitdir activeBranches =
-  simpleCmdArgs Nothing "Fedora package branch building tool"
+  simpleCmdArgs (Just version) "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
     [ Subcommand "clone" "clone packages" $
