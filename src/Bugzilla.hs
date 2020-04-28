@@ -178,7 +178,9 @@ reviewBugToPackage =
 readIniConfig :: FilePath -> IniParser a -> (a -> b) -> IO (Maybe b)
 readIniConfig inifile iniparser record = do
   havefile <- doesFileExist inifile
-  if not havefile then return Nothing
+  if not havefile then do
+    putStrLn $ inifile ++ " not found"
+    return Nothing
     else do
     ini <- T.readFile inifile
     let config = parseIniFile ini iniparser
