@@ -19,7 +19,6 @@ import Package
 
 -- FIXME add --no-pull?
 -- FIXME --pending
--- FIXME show bodhi days left
 statusCmd :: Bool -> ([Branch],[Package]) -> IO ()
 statusCmd reviews (brs,pkgs) = do
   when reviews $
@@ -83,6 +82,7 @@ statusBranch mpkg br = do
                     case updates of
                       [] -> putStrLn "No update found"
                       [update] -> do
+                        -- FIXME could show minus time left using stable_days?
                         let msince = lookupKey "date_testing" update :: Maybe LocalTime
                         case msince of
                           Nothing -> return ()

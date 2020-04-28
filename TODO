@@ -33,14 +33,13 @@
 - bugzilla-redhat
 
 # external tools
-- ssh & scp
-- curl
-- git
-- klist
-- rpmbuild
-- rpmspec
+- bugzilla login
+- pagure
 - fedpkg
 - koji
 - bodhi
-- bugzilla
-- pagure
+- rpmbuild & rpmspec
+- klist
+- git
+- curl
+- ssh & scp
