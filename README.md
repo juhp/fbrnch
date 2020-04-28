@@ -21,7 +21,7 @@ like:
 
 ## Installation
 
-Run `cabal new-install` or `stack install` in a git checkout.
+Run `stack install` or `cabal new-install` in a git checkout.
 
 ## Contributing
 
