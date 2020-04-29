@@ -32,6 +32,7 @@ executable fbrnch
   main-is:             Main.hs
   other-modules:       Branches
                        Bugzilla
+                       Bugzilla.Login
                        Bugzilla.NewId
                        Bugzilla.ValidLogin
                        Cmd.Bugs
@@ -66,6 +67,7 @@ executable fbrnch
                      , bytestring
                      , config-ini
                      , directory >= 1.2.3
+                     , email-validate
                      , fedora-dists > 2.0
                      , filepath
                      , http-conduit

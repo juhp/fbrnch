@@ -34,7 +34,6 @@
 
 # external tools
 - pagure
-- bugzilla login
 - fedpkg
 - koji
 - bodhi

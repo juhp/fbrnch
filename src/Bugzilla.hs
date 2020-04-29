@@ -35,16 +35,22 @@ import Common
 import Common.System
 import qualified Common.Text as T
 
+import Control.Exception (finally)
+import qualified Data.ByteString.Char8 as B
 import Data.Ini.Config
 import Network.HTTP.Simple
 import System.Environment
 import System.Environment.XDG.BaseDir
+import System.IO (hSetEcho, stdin)
+import qualified Text.Email.Validate as Email
 import Web.Bugzilla
 import Web.Bugzilla.Search
 -- local
+import Bugzilla.Login
 import Bugzilla.NewId
 import Bugzilla.ValidLogin
 import Package (getPackageName)
+import Prompt
 
 postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
 postBuildComment session nvr bid = do
@@ -75,40 +81,89 @@ bzReviewSession = do
     [bid] -> return (Just bid, session)
     _ -> return (Nothing, session)
 
-newtype BzConfig = BzConfig {rcUserEmail :: UserEmail}
+newtype BzUserRC = BzUserRC {rcUserEmail :: UserEmail}
   deriving (Eq, Show)
 
+-- FIXME support bugzilla API key
 bzLoginSession :: IO (BugzillaSession, UserEmail)
 bzLoginSession = do
   user <- getBzUser
   ctx <- newBugzillaContext brc
-  session <- LoginSession ctx <$> getBzToken
-  let validreq = setRequestCheckStatus $
-                 newBzRequest session ["valid_login"] [("login", Just user)]
-  valid <- validToken . getResponseBody <$> httpJSON validreq
-  if not valid
-    then do
-    putStrLn "No valid bugzilla login token, please login:"
-    cmd_ "bugzilla" ["login"]
-    bzLoginSession
-    else return (session,user)
+  session <- getBzLoginSession ctx user
+  return (session,user)
   where
     getBzUser :: IO UserEmail
     getBzUser = do
       home <- getEnv "HOME"
       let rc = home </> ".bugzillarc"
-      muser <- readIniConfig rc rcParser rcUserEmail
-      case muser of
-        Nothing -> do
-          putStrLn "Please login to bugzilla:"
-          cmd_ "bugzilla" ["login"]
-          getBzUser
-        Just user -> return user
+      rcExists <- doesFileExist rc
+      -- FIXME assumption if file exists then it has b.r.c user
+      if rcExists then
+        readIniConfig rc rcParser rcUserEmail
+        else do
+        -- FIXME: option to override email
+        email <- prompt "Bugzilla Username"
+        when (Email.isValid (B.pack email)) $ do
+          T.writeFile rc $ "[" <> brc <> "]\nuser = " <> T.pack email <> "\n"
+          putStrLn $ "Saved in " ++ rc
+        getBzUser
       where
-        rcParser :: IniParser BzConfig
+        rcParser :: IniParser BzUserRC
         rcParser =
           section brc $
-          BzConfig <$> fieldOf "user" string
+          BzUserRC <$> fieldOf "user" string
+
+    getBzLoginSession :: BugzillaContext -> UserEmail -> IO BugzillaSession
+    getBzLoginSession ctx user = do
+      cache <- getUserCacheFile "python-bugzilla" "bugzillatoken"
+      fileExists <- doesFileExist cache
+      tokenstatus <- if fileExists
+        then do
+        token <- readIniConfig cache rcParser bzToken
+        let session = LoginSession ctx $ BugzillaToken token
+        let validreq = setRequestCheckStatus $
+                       newBzRequest session ["valid_login"] [("login",Just user)]
+        valid <- validToken . getResponseBody <$> httpJSON validreq
+        return $ if valid then ValidToken session else InvalidToken token
+        else return NoToken
+      case tokenstatus of
+        ValidToken session -> return session
+        InvalidToken oldtoken -> do
+          token <- bzLogin
+          cmd_ "sed" ["-i", "s/" ++ T.unpack oldtoken ++ "/" ++ T.unpack token ++ "/", cache]
+          return $ LoginSession ctx $ BugzillaToken token
+        NoToken -> do
+          token <- bzLogin
+          T.writeFile cache $ "[" <> brc <> "]\ntoken = " <> token
+          putStrLn $ "Saved in " ++ cache
+          return $ LoginSession ctx $ BugzillaToken token
+      where
+        rcParser :: IniParser BzTokenConf
+        rcParser =
+          section brc $
+          BzTokenConf <$> fieldOf "token" string
+
+        bzLogin :: IO T.Text
+        bzLogin = do
+          putStrLn "No valid bugzilla login token, please login:"
+          passwd <- withoutEcho $ prompt "Bugzilla Password"
+          if null passwd then bzLogin
+            else do
+            let anonsession = AnonymousSession ctx
+                tokenReq = setRequestCheckStatus $
+                           newBzRequest anonsession ["login"]
+                           [("login", Just user),
+                            makeTextItem "password" passwd]
+            loginToken . getResponseBody <$> httpJSON tokenReq
+
+        withoutEcho :: IO a -> IO a
+        withoutEcho action =
+          finally (hSetEcho stdin False >> action) (hSetEcho stdin True)
+
+newtype BzTokenConf = BzTokenConf {bzToken :: T.Text}
+  deriving (Eq, Show)
+
+data BzTokenStatus = ValidToken BugzillaSession | InvalidToken T.Text | NoToken
 
 reporterIs :: T.Text -> SearchExpression
 reporterIs = (ReporterField .==.)
@@ -175,16 +230,10 @@ reviewBugToPackage :: Bug -> String
 reviewBugToPackage =
   head . words . removePrefix "Review Request: " . T.unpack . bugSummary
 
-readIniConfig :: FilePath -> IniParser a -> (a -> b) -> IO (Maybe b)
-readIniConfig inifile iniparser record = do
-  havefile <- doesFileExist inifile
-  if not havefile then do
-    putStrLn $ inifile ++ " not found"
-    return Nothing
-    else do
-    ini <- T.readFile inifile
-    let config = parseIniFile ini iniparser
-    return $ either error (Just . record) config
+readIniConfig :: FilePath -> IniParser a -> (a -> b) -> IO b
+readIniConfig inifile iniparser fn = do
+  ini <- T.readFile inifile
+  return $ either error fn $ parseIniFile ini iniparser
 
 sortBugsByStatus :: [Bug] -> [Bug]
 sortBugsByStatus = sortOn (bugStatusEnum . bugStatus)
@@ -212,24 +261,6 @@ showComment cmt = do
   T.putStr $ "(Comment " <> intAsText (commentCount cmt) <> ") <" <> commentCreator cmt <> "> " <> (T.pack . show) (commentCreationTime cmt)
             <> "\n\n" <> (T.unlines . map ("  " <>) . dropDuplicates . removeLeadingNewline . T.lines $ commentText cmt)
   putStrLn ""
-
-newtype BzTokenConf = BzTokenConf {bzToken :: T.Text}
-  deriving (Eq, Show)
-
-getBzToken :: IO BugzillaToken
-getBzToken = do
-  cache <- getUserCacheFile "python-bugzilla" "bugzillatoken"
-  res <- readIniConfig cache rcParser (BugzillaToken . bzToken)
-  case res of
-    Just token -> return token
-    Nothing -> do
-      cmd_ "bugzilla" ["login"]
-      getBzToken
-  where
-    rcParser :: IniParser BzTokenConf
-    rcParser =
-      section brc $
-      BzTokenConf <$> fieldOf "token" string
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid =
@@ -275,3 +306,7 @@ removeLeadingNewline ts = ts
 testBZlogin :: IO ()
 testBZlogin =
   void bzLoginSession
+
+-- | make a key-value
+makeTextItem :: String -> String -> (T.Text, Maybe T.Text)
+makeTextItem k val = (T.pack k, Just (T.pack val))
