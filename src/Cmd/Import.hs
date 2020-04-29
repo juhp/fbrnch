@@ -46,14 +46,14 @@ importPkg pkg = do
     putStrLn ""
     putBugId bid
     mapM_ showComment comments
-    prompt_ "to continue"
+    prompt_ "Press Enter to continue"
     let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
     when (null srpms) $ error "No srpm urls found!"
     mapM_ T.putStrLn srpms
     let srpm = (head . filter isURI . filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms
     let srpmfile = takeFileName srpm
     -- FIXME if havesrpm then print local filename
-    prompt_ $ "to import " ++ srpmfile
+    prompt_ $ "Press Enter to import " ++ srpmfile
     havesrpm <- doesFileExist srpmfile
     unless havesrpm $
       cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
@@ -61,7 +61,7 @@ importPkg pkg = do
     fedpkg_ "import" [srpmfile]
     git_ "commit" ["--message", "import #" ++ show bid]
     nvr <- fedpkg "verrel" []
-    prompt_ $ "to push and build " ++ nvr
+    prompt_ $ "Press Enter to push and build " ++ nvr
     gitPushSilent
     fedpkg_ "build" ["--fail-fast"]
     postBuildComment session nvr bid

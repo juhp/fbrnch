@@ -33,7 +33,7 @@ requestPkgBranches mock request pkg = do
                       AllReleases -> active
                       BranchesRequest [] -> take 2 active
                       BranchesRequest brs -> brs
-    inp <- prompt $ "to request branches [" ++ unwords (map show requested) ++ "]"
+    inp <- prompt $ "Enter branches [" ++ unwords (map show requested) ++ "]"
     return $ if null inp
              then requested
              else map (readActiveBranch' active) $ words inp

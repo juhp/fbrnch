@@ -53,7 +53,7 @@ buildBranch pulled merge scratch mtarget mpkg br = do
   -- FIXME offer merge if newer branch has commits
   when (not (null unpushed) && isNothing scratch) $ do
     tty <- hIsTerminalDevice stdin
-    when tty $ prompt_ "to push and build"
+    when tty $ prompt_ "Press Enter to push and build"
     gitPushSilent
   checkForSpecFile pkg
   nvr <- fedpkg "verrel" []
@@ -104,5 +104,5 @@ buildBranch pulled merge scratch mtarget mpkg br = do
           then putStrLn $ (unlines . init) updatequery
           else do
           putStrLn "bodhi submission failed"
-          prompt_ "to resubmit to Bodhi"
+          prompt_ "Press Enter to resubmit to Bodhi"
           bodhiUpdate mbid changelog nvr

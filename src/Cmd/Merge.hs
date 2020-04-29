@@ -40,7 +40,7 @@ mergeBranch pulled build mpkg br = do
       -- FIXME if only initial README commit then package can't be built without merge
       mhash <-
         if newrepo then return ""
-        else prompt $ "to merge " ++ show prev ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; otherwise 'no' to skip merge"
+        else prompt $ "Press Enter to merge " ++ show prev ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; otherwise 'no' to skip merge"
       -- FIXME really check for "no"?
       let commitrefs = map (head . words) unmerged
           mref = find (mhash `isPrefixOf`) commitrefs

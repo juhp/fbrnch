@@ -7,7 +7,7 @@ import Common
 
 prompt :: String -> IO String
 prompt s = do
-  putStr $ "Press Enter " ++ s ++ ": "
+  putStr $ s ++ ": "
   inp <- getLine
   putStrLn ""
   return inp

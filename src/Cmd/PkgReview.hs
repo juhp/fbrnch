@@ -31,7 +31,7 @@ createReview noscratch mspec = do
   unless (null bugs) $ do
     putStrLn "Existing review(s):"
     mapM_ putBug bugs
-    prompt_ "to continue"
+    prompt_ "Press Enter to continue"
   srpm <- generateSrpm spec
   mkojiurl <- kojiScratchUrl noscratch srpm
   specSrpmUrls <- uploadPkgFiles pkg spec srpm
