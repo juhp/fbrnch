@@ -1,7 +1,5 @@
 module Cmd.Bugs (bugsCmd) where
 
-import Web.Bugzilla.Search
-
 import Bugzilla
 import Package
 

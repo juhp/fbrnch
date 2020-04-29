@@ -13,6 +13,9 @@ module Bugzilla (
   pkgReviews,
   testBZlogin,
   -- search
+  searchBugs,
+  (.&&.),
+  not',
   packageReview,
   reporterIs,
   reviewApproved,

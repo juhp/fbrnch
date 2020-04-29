@@ -6,8 +6,6 @@ module ListReviews (
 
 import Common
 
-import Web.Bugzilla.Search
-
 import Branches
 import Bugzilla
 
