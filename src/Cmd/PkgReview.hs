@@ -10,8 +10,6 @@ import qualified Common.Text as T
 import Data.Char
 import Network.HTTP.Directory
 import Network.HTTP.Simple
-import System.Exit (ExitCode (..))
-import System.Process.Text (readProcessWithExitCode)
 
 import Bugzilla
 import Bugzilla.NewId
@@ -38,18 +36,18 @@ createReview noscratch mspec = do
   putStrLn "Review request posted:"
   putBugId bugid
   where
-    postReviewReq :: BugzillaSession -> FilePath -> T.Text -> Maybe String -> String -> IO BugId
+    postReviewReq :: BugzillaSession -> FilePath -> String -> Maybe String -> String -> IO BugId
     postReviewReq session spec specSrpmUrls mkojiurl pkg = do
-      summary <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
-      description <- cmdT "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
+      summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
+      description <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
       let req = setRequestMethod "POST" $
               setRequestCheckStatus $
               newBzRequest session ["bug"]
-              [ ("product", Just "Fedora")
-              , ("component", Just "Package Review")
-              , ("version", Just "rawhide")
-              , ("summary", Just $ "Review Request: " <> T.pack pkg <> " - " <> summary)
-              , ("description", Just $ specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) (T.pack <$> mkojiurl))
+              [ makeTextItem "product" "Fedora"
+              , makeTextItem "component" "Package Review"
+              , makeTextItem "version" "rawhide"
+              , makeTextItem "summary" $ "Review Request: " <> pkg <> " - " <> summary
+              , makeTextItem "description" $ specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl
               ]
       newId . getResponseBody <$> httpJSON req
 
@@ -66,10 +64,10 @@ updateReview noscratch mspec = do
   mkojiurl <- kojiScratchUrl noscratch srpm
   specSrpmUrls <- uploadPkgFiles pkg spec srpm
   changelog <- getChangeLog spec
-  postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> T.pack changelog) <> maybe "" ("\n\nKoji scratch build: " <>) (T.pack <$> mkojiurl))
+  postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
   -- putStrLn "Review bug updated"
 
-uploadPkgFiles :: String -> FilePath -> FilePath -> IO T.Text
+uploadPkgFiles :: String -> FilePath -> FilePath -> IO String
 uploadPkgFiles pkg spec srpm = do
   fasid <- fasIdFromKrb
   -- read ~/.config/fedora-create-review
@@ -79,22 +77,15 @@ uploadPkgFiles pkg spec srpm = do
   cmd_ "scp" [spec, srpm, sshhost ++ ":" ++ sshpath]
   getCheckedFileUrls $ "https://" <> fasid <> ".fedorapeople.org" </> removePrefix "public_html/" sshpath
   where
-    getCheckedFileUrls :: String -> IO T.Text
+    getCheckedFileUrls :: String -> IO String
     getCheckedFileUrls uploadurl = do
       let specUrl = uploadurl </> takeFileName spec
           srpmUrl = uploadurl </> takeFileName srpm
       mgr <- httpManager
       checkUrlOk mgr specUrl
       checkUrlOk mgr srpmUrl
-      return $ "Spec URL: " <> T.pack specUrl <> "\nSRPM URL: " <> T.pack srpmUrl
+      return $ "Spec URL: " <> specUrl <> "\nSRPM URL: " <> srpmUrl
       where
         checkUrlOk mgr url = do
           okay <- httpExists mgr url
           unless okay $ error' $ "Could not access: " ++ url
-
-cmdT :: String -> [String] -> IO T.Text
-cmdT c args = do
-  (ret, out, err) <- readProcessWithExitCode c args ""
-  case ret of
-    ExitSuccess -> return out
-    ExitFailure n -> error' $ unwords (c:args) +-+ "failed with status" +-+ show n ++ "\n" ++ T.unpack err

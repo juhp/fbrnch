@@ -70,21 +70,22 @@ postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
 postBuildComment session nvr bid = do
   let req = setRequestMethod "PUT" $
             setRequestCheckStatus $
-            newBzRequest session ["bug", intAsText bid] [("cf_fixed_in", Just (T.pack nvr)), ("status", Just "MODIFIED")]
+            newBzRequest session ["bug", intAsText bid]
+            [makeTextItem "cf_fixed_in" nvr, makeTextItem "status" "MODIFIED"]
   void $ httpNoBody req
   putStrLn $ "build posted to review bug " ++ show bid
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
 
-postComment :: BugzillaSession -> BugId -> T.Text -> IO ()
+postComment :: BugzillaSession -> BugId -> String -> IO ()
 postComment session bid comment = do
   let req = setRequestMethod "POST" $
             setRequestCheckStatus $
-            newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just comment)]
+            newBzRequest session ["bug", intAsText bid, "comment"] [makeTextItem "comment" comment]
   void $ newId . getResponseBody <$> httpJSON req
   putStrLn "Comment added:"
-  T.putStrLn comment
+  putStrLn comment
 
 bzReviewSession :: IO (Maybe BugId,BugzillaSession)
 bzReviewSession = do

@@ -1,7 +1,6 @@
 module Cmd.RequestRepo (requestRepos) where
 
 import Common
-import qualified Common.Text as T
 import Network.HTTP.Simple
 import SimpleCmd
 
@@ -33,13 +32,13 @@ requestRepo pkg = do
     if requestExists then return ()
       else do
       checkNoPagureRepo
-      url <- T.pack <$> fedpkg "request-repo" [pkg, show bid]
-      T.putStrLn url
+      url <- fedpkg "request-repo" [pkg, show bid]
+      putStrLn url
       -- FIXME get name of reviewer from bug
-      let comment = T.pack "Thank you for the review\n\n" <> url
+      let comment = "Thank you for the review\n\n" <> url
           req = setRequestMethod "POST" $
                 setRequestCheckStatus $
-                newBzRequest session ["bug", intAsText bid, "comment"] [("comment", Just comment)]
+                newBzRequest session ["bug", intAsText bid, "comment"] [makeTextItem "comment" comment]
       void $ httpNoBody req
       putStrLn "comment posted"
       putStrLn ""
