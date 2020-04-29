@@ -5,7 +5,6 @@ import Common.System
 import qualified Common.Text as T
 
 import Network.URI
-import Web.Bugzilla (Comment, commentText, getComments)
 
 import Bugzilla
 import Git

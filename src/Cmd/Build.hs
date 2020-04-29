@@ -7,7 +7,6 @@ import Common
 import Common.System
 
 import System.IO (hIsTerminalDevice, stdin)
-import Web.Bugzilla
 
 import Bugzilla
 import Branches

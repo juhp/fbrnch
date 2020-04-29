@@ -4,7 +4,6 @@ import Common
 import qualified Common.Text as T
 import Network.HTTP.Simple
 import SimpleCmd
-import Web.Bugzilla
 
 import Bugzilla
 import Krb

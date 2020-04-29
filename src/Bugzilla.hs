@@ -1,4 +1,8 @@
 module Bugzilla (
+  Bug(..),
+  BugId,
+  -- session
+  BugzillaSession,
   bugIdsSession,
   bugsSession,
   bzLoginSession,
@@ -16,11 +20,14 @@ module Bugzilla (
   statusNewModified,
   statusOpen,
   -- comments
+  Comment,
   checkForComment,
   checkRepoCreatedComment,
   postComment,
   postBuildComment,
   showComment,
+  commentText,
+  getComments,
   --
   reviewBugToPackage,
   sortBugsByProduct,
@@ -28,7 +35,11 @@ module Bugzilla (
   -- output
   putBug,
   putReviewBug,
-  putBugId
+  putBugId,
+  -- request
+  newBzRequest,
+  intAsText,
+  makeTextItem
   ) where
 
 import Common

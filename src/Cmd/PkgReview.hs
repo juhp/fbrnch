@@ -12,7 +12,6 @@ import Network.HTTP.Directory
 import Network.HTTP.Simple
 import System.Exit (ExitCode (..))
 import System.Process.Text (readProcessWithExitCode)
-import Web.Bugzilla (BugId, BugzillaSession, newBzRequest)
 
 import Bugzilla
 import Bugzilla.NewId
