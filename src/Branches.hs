@@ -13,6 +13,7 @@ import Distribution.Fedora.Branch
 import SimpleCmd
 
 import Git
+import Pagure
 
 getCurrentBranch :: IO Branch
 getCurrentBranch = do
@@ -40,7 +41,8 @@ packageBranched = do
 packagePagureBranched :: String -> IO [Branch]
 packagePagureBranched pkg = do
   current <- getFedoraBranched
-  activeBranches current <$> cmdLines "pagure" ["branches", "rpms/" ++ pkg]
+  res <- pagureListGitBranches srcfpo ("rpms/" ++ pkg)
+  return $ either error' (activeBranches current) res
 
 switchBranch :: Branch -> IO ()
 switchBranch br = do

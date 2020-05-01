@@ -4,6 +4,7 @@ module Cmd.RequestBranch (
   ) where
 
 import Common
+import qualified Common.Text as T
 
 import SimpleCmd
 
@@ -13,6 +14,7 @@ import Git
 import Krb
 import ListReviews
 import Package
+import Pagure
 import Prompt
 
 data BranchesRequest = AllReleases | BranchesRequest [Branch]
@@ -59,15 +61,18 @@ requestPkgBranches mock request pkg = do
         if null newbranches then return []
           else do
           fasid <- fasIdFromKrb
-          -- FIXME use rest api
-          open <- cmdLines "pagure" ["issues", "--server", "pagure.io", "--author", fasid, "releng/fedora-scm-requests"]
-          filterM (notExistingRequest open) newbranches
+          erecent <- pagureListProjectIssueTitles "pagure.io" "releng/fedora-scm-requests"
+                     [makeItem "author" fasid, makeItem "status" "all"]
+          case erecent of
+            Left err -> error' err
+            Right recent -> filterM (notExistingRequest recent) newbranches
 
-    notExistingRequest :: [String] -> Branch -> IO Bool
+    notExistingRequest :: [(Integer,String,T.Text)] -> Branch -> IO Bool
     notExistingRequest requests br = do
-      let pending = filter (("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) requests
-      unless (null pending) $
-        putStrLn $ "Branch request already open for " ++ pkg ++ ":" ++ show br ++ "\n" ++ unlines pending
+      let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") ==) . snd3) requests
+      unless (null pending) $ do
+        putStrLn $ "Branch request already open for " ++ pkg ++ ":" ++ show br
+        mapM_ printScmIssue pending
       return $ null pending
 
     mockConfig :: Branch -> String

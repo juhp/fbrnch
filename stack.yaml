@@ -8,3 +8,5 @@ extra-deps:
   - simple-cmd-args-0.1.6
   - git: https://github.com/juhp/bodhi-hs.git
     commit: 71dab921fd7760c1c8d86879de0629c499b14582
+  - git: https://github.com/juhp/pagure-hs.git
+    commit: 770e859a7a99dddec9a87d29e4f5643361b2f295

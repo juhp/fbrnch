@@ -55,6 +55,7 @@ executable fbrnch
                        Krb
                        ListReviews
                        Package
+                       Pagure
                        Paths_fbrnch
                        Prompt
   hs-source-dirs:      src
@@ -74,6 +75,7 @@ executable fbrnch
                      , http-directory >= 0.1.5
                      , network-uri
                      , optparse-applicative
+                     , pagure
                      , process-extras
                      , simple-cmd >= 0.1.4
                      , simple-cmd-args >= 0.1.6

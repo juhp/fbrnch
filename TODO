@@ -33,7 +33,6 @@
 - bugzilla-redhat
 
 # external tools
-- pagure
 - fedpkg
 - koji
 - bodhi

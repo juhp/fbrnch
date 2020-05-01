@@ -1,13 +1,17 @@
 module Cmd.RequestRepo (requestRepos) where
 
 import Common
+
+import Data.Either
 import Network.HTTP.Simple
 import SimpleCmd
+import System.FilePath
 
 import Bugzilla
 import Krb
 import ListReviews
 import Package
+import Pagure
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 requestRepos :: [String] -> IO ()
@@ -45,19 +49,21 @@ requestRepo pkg = do
   where
     openRepoRequest :: IO Bool
     openRepoRequest = do
-      -- FIXME use rest api
       fasid <- fasIdFromKrb
-      current <- cmdLines "pagure" ["issues", "--server", "pagure.io", "--all", "--author", fasid, "releng/fedora-scm-requests"]
-      -- don't mention "New Repo" here:
-      -- pending Branch requests imply repo already exists
-      let reqs = filter ((" for \"rpms/" ++ pkg ++ "\"") `isInfixOf`) current
-      unless (null reqs) $
-        -- FIXME improve formatting (reduce whitespace)
-        putStrLn $ "Request exists:\n" ++ unlines reqs
-      return $ not (null reqs)
+      erecent <- pagureListProjectIssueTitles pagureio "releng/fedora-scm-requests" [makeItem "author" fasid, makeItem "status" "all"]
+      case erecent of
+        Left err -> error' err
+        Right recent -> do
+          -- don't mention "New Repo" here, since Branch requests also imply repo already exists
+          let reqs = filter (((" for \"rpms/" ++ pkg ++ "\"") `isSuffixOf`) . snd3) recent
+          unless (null reqs) $ do
+            -- FIXME improve formatting (reduce whitespace)
+            putStrLn "Request exists:"
+            mapM_ printScmIssue reqs
+          return $ not (null reqs)
 
     checkNoPagureRepo :: IO ()
     checkNoPagureRepo = do
-      out <- cmd "pagure" ["list", "--namespace", "rpms", pkg]
-      unless (null out) $
+      res <- pagureProjectInfo srcfpo $ "rpms" </> pkg
+      when (isRight res) $
         error' $ "Repo for " ++ pkg ++ " already exists"
