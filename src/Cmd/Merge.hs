@@ -2,6 +2,8 @@ module Cmd.Merge (mergeCmd, mergeBranch) where
 
 import Common
 
+import Data.Char
+
 import Branches
 import Git
 import Package
@@ -9,17 +11,19 @@ import Prompt
 
 mergeCmd :: ([Branch],[Package]) -> IO ()
 mergeCmd =
-  withPackageBranches True (mergeBranch False False)
+  withPackageBranches True runMergeBranch
+  where
+    runMergeBranch :: Maybe Package -> Branch -> IO ()
+    runMergeBranch mpkg br = do
+      pkg <- getPackageName mpkg
+      checkWorkingDirClean
+      gitPull
+      putPkgBrnchHdr pkg br
+      switchBranch br
+      mergeBranch br
 
-mergeBranch :: Bool -> Bool -> Maybe Package -> Branch -> IO ()
-mergeBranch pulled build mpkg br = do
-  pkg <- getPackageName mpkg
-  unless pulled $ do
-    checkWorkingDirClean
-    gitPull
-  unless build $ do
-    putPkgBrnchHdr pkg br
-    switchBranch br
+mergeBranch :: Branch -> IO ()
+mergeBranch br = do
   prev <- do
     branches <- getFedoraBranches
     return $ newerBranch branches br
@@ -35,17 +39,23 @@ mergeBranch pulled build mpkg br = do
     unless (null unpushed) $ do
       putStrLn "Local commits:"
       mapM_ (putStrLn . simplifyCommitLog) unpushed
-        -- FIXME ignore Mass_Rebuild?
+    -- FIXME avoid Mass_Rebuild bumps
     when (ancestor && not (null unmerged)) $ do
-      -- FIXME if only initial README commit then package can't be built without merge
       mhash <-
-        if newrepo then return ""
-        else prompt $ "Press Enter to merge " ++ show prev ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; otherwise 'no' to skip merge"
-      -- FIXME really check for "no"?
+        if newrepo then return Nothing
+        else mergePrompt unmerged $ "Press Enter to merge " ++ show prev ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; otherwise 'no' to skip merge"
+      case mhash of
+        Nothing -> return ()
+        Just hash -> do
+          let ref = if null hash then show prev else hash
+          git_ "merge" ["--quiet", ref]
+  where
+    mergePrompt :: [String] -> String -> IO (Maybe String)
+    mergePrompt unmerged txt = do
       let commitrefs = map (head . words) unmerged
-          mref = find (mhash `isPrefixOf`) commitrefs
-      when (null mhash || isJust mref) $ do
-        let ref = if null mhash
-                  then show prev
-                  else fromJust mref
-        git_ "merge" ["--quiet", ref]
+      inp <- prompt txt
+      if null inp then return (Just "") else
+        if map toLower inp == "no" then return Nothing
+        else case find (inp `isPrefixOf`) commitrefs of
+          Just ref -> return $ Just ref
+          Nothing -> mergePrompt unmerged txt
