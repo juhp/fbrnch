@@ -32,9 +32,8 @@ fedpkg_ c args =
   cmd_ "fedpkg" (c:args)
 
 checkForSpecFile :: String -> IO ()
-checkForSpecFile pkg = do
-  let spec = pkg <.> "spec"
-  have <- doesFileExist $ pkg <.> "spec"
+checkForSpecFile spec = do
+  have <- doesFileExist spec
   unless have $ error' $ spec ++ " not found"
 
 getChangeLog :: FilePath -> IO String

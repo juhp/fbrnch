@@ -18,6 +18,7 @@ import Krb
 import Package
 import Prompt
 
+-- FIXME run rpmlint
 createReview :: Bool -> Maybe FilePath -> IO ()
 createReview noscratch mspec = do
   spec <- getSpecFile mspec

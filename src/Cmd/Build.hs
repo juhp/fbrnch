@@ -22,6 +22,7 @@ data Scratch = AllArches | Arch String
 
 -- FIXME sort packages in build dependency order (chain-build?)
 -- FIXME --no-fast-fail
+-- FIXME --(no-)rpmlint (only run for master?)
 buildCmd :: Bool -> Maybe Scratch -> Maybe String -> ([Branch],[Package]) -> IO ()
 buildCmd merge scratch mtarget (brs,pkgs) = do
   when (isJust mtarget && length brs > 1) $
@@ -50,12 +51,14 @@ buildBranch pulled merge scratch mtarget mpkg br = do
     unless (null unpushed) $ do
       putStrLn "Local commits:"
       mapM_ (putStrLn . simplifyCommitLog) unpushed
+  let spec = pkg <.> "spec"
   -- FIXME offer merge if newer branch has commits
   when (not (null unpushed) && isNothing scratch) $ do
+    checkSourcesMatch spec
     tty <- hIsTerminalDevice stdin
     when tty $ prompt_ "Press Enter to push and build"
     gitPushSilent
-  checkForSpecFile pkg
+  checkForSpecFile spec
   nvr <- fedpkg "verrel" []
   -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr
@@ -84,7 +87,7 @@ buildBranch pulled merge scratch mtarget mpkg br = do
           then forM_ mbid $ postBuildComment session nvr
           else do
           -- FIXME diff previous changelog?
-          changelog <- getChangeLog $ pkg <.> "spec"
+          changelog <- getChangeLog spec
           bodhiUpdate mbid changelog nvr
           -- override option or autochain
           -- FIXME need prompt for override note
@@ -108,3 +111,15 @@ buildBranch pulled merge scratch mtarget mpkg br = do
             Nothing -> error' "Update created but no url"
             Just uri -> putStrLn uri
           _ -> error' $ "impossible happened: more than one update found for " ++ nvr
+
+    checkSourcesMatch :: FilePath -> IO ()
+    checkSourcesMatch spec = do
+      -- "^[Ss]ource[0-9]*:"
+      source <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
+      sources <- lines <$> readFile "sources"
+      when (length source /= length sources) $
+        putStrLn "Different numbers of Source fields and sources lines"
+      forM_ source $ \ src ->
+        when (isNothing (find (src `isInfixOf`) sources)) $
+        -- FIXME offer to add source
+        error' $ src ++ " not in sources"
