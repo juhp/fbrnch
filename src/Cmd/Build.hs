@@ -7,6 +7,7 @@ import Common
 import Common.System
 
 import System.IO (hIsTerminalDevice, stdin)
+import Web.Fedora.Bodhi hiding (bodhiUpdate)
 
 import Bugzilla
 import Branches
@@ -87,7 +88,7 @@ buildBranch pulled merge scratch mtarget mpkg br = do
           bodhiUpdate mbid changelog nvr
           -- override option or autochain
           -- FIXME need prompt for override note
-          when False $ cmd_ "bodhi" ["overrides", "save", "--notes", "FIXME", nvr]
+          --when False $ bodhiOverrides "save" "FIXME" nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mbid changelog nvr = do
@@ -97,11 +98,13 @@ buildBranch pulled merge scratch mtarget mpkg br = do
       putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
       updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
       unless updateOK $ do
-        -- FIXME replace with bodhi library call
-        updatequery <- cmdLines "bodhi" ["updates", "query", "--builds", nvr]
-        if last updatequery == "1 updates found (1 shown)"
-          then putStrLn $ (unlines . init) updatequery
-          else do
-          putStrLn "bodhi submission failed"
-          prompt_ "Press Enter to resubmit to Bodhi"
-          bodhiUpdate mbid changelog nvr
+        updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
+        case updatequery of
+          [] -> do
+            putStrLn "bodhi submission failed"
+            prompt_ "Press Enter to resubmit to Bodhi"
+            bodhiUpdate mbid changelog nvr
+          [update] -> case lookupKey "url" update of
+            Nothing -> error' "Update created but no url"
+            Just uri -> putStrLn uri
+          _ -> error' $ "impossible happened: more than one update found for " ++ nvr
