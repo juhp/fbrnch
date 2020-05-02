@@ -43,8 +43,10 @@ buildBranch pulled merge scratch mtarget mpkg br = do
     then error' $ show br ++ " branch does not exist!"
     else switchBranch br
   newrepo <- initialPkgRepo
-  when (merge || newrepo) $
-    mergeBranch True True (Just pkg) br
+  tty <- hIsTerminalDevice stdin
+  -- FIXME if already built or failed, offer merge
+  when (merge || newrepo || tty) $
+    mergeBranch br
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   when (not merge || br == Master) $
     -- FIXME hide if just merged
@@ -55,7 +57,6 @@ buildBranch pulled merge scratch mtarget mpkg br = do
   -- FIXME offer merge if newer branch has commits
   when (not (null unpushed) && isNothing scratch) $ do
     checkSourcesMatch spec
-    tty <- hIsTerminalDevice stdin
     when tty $ prompt_ "Press Enter to push and build"
     gitPushSilent
   checkForSpecFile spec
