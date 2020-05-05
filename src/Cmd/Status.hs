@@ -52,14 +52,14 @@ statusBranch mpkg br = do
             simplifyCommitLog <$> gitShortLog1 Nothing >>= putStrLn
           Just nvr -> do
             -- unless (br == Master) $ do
-            --   prev <- do
+            --   newerBr <- do
             --     branches <- getFedoraBranches
             --     return $ newerBranch branches br
-            --   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show prev]
+            --   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show newerBr]
             --   when ancestor $ do
-            --     unmerged <- gitShortLog $ "HEAD.." ++ show prev
+            --     unmerged <- gitShortLog $ "HEAD.." ++ show newerBr
             --     unless (null unmerged) $ do
-            --       putStrLn $ "Newer commits in " ++ show prev ++ ":"
+            --       putStrLn $ "Newer commits in " ++ show newerBr ++ ":"
             --       mapM_ (putStrLn . simplifyCommitLog) unmerged
             unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
             if null unpushed then do
