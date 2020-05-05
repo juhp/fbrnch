@@ -21,7 +21,7 @@ pagureio = "pagure.io"
 
 printScmIssue :: (Integer, String, T.Text) -> IO ()
 printScmIssue (issue,title,status) =
-  putStrLn $ "https://" <> pagureio </> "releng/fedora-scm-requests" </> "issue" </> show issue <> " (" <> T.unpack status <> "): " <> title
+  putStrLn $ "https://" ++ pagureio </> "releng/fedora-scm-requests" </> "issue" </> show issue ++ " (" ++ T.unpack status ++ "): " ++ title
 
 snd3 :: (a,b,c) -> b
 snd3 (_,t,_) = t
