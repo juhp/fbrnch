@@ -6,6 +6,7 @@ module Cmd.Build (
 import Common
 import Common.System
 
+import Data.Char (isDigit)
 import System.IO (hIsTerminalDevice, stdin)
 import Web.Fedora.Bodhi hiding (bodhiUpdate)
 
@@ -105,20 +106,22 @@ buildBranch pulled merge scratch mtarget mpkg br = do
           --when False $ bodhiOverrides "save" "FIXME" nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
-    bodhiUpdate mbid changelog nvr = do
-      let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
+    bodhiUpdate mreview changelog nvr = do
+      let cbugs = mapMaybe extractBugReference $ lines changelog
+          bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
+            if null bids then [] else ["--bugs", intercalate "," bids]
       -- FIXME check for autocreated update (pre-updates-testing)
       -- FIXME also query for open existing bugs
       -- FIXME extract bug no(s) from changelog
       putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
-      updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+      updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
       unless updateOK $ do
         updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
         case updatequery of
           [] -> do
             putStrLn "bodhi submission failed"
             prompt_ "Press Enter to resubmit to Bodhi"
-            bodhiUpdate mbid changelog nvr
+            bodhiUpdate mreview changelog nvr
           [update] -> case lookupKey "url" update of
             Nothing -> error' "Update created but no url"
             Just uri -> putStrLn uri
@@ -135,3 +138,10 @@ buildBranch pulled merge scratch mtarget mpkg br = do
         when (isNothing (find (src `isInfixOf`) sources)) $
         -- FIXME offer to add source
         error' $ src ++ " not in sources"
+
+    extractBugReference :: String -> Maybe String
+    extractBugReference clog =
+      let rest = dropWhile (/= '#') clog in
+        if null rest then Nothing
+        else let bid = takeWhile isDigit $ tail rest in
+          if null bid then Nothing else Just bid
