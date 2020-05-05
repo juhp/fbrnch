@@ -44,12 +44,14 @@ buildBranch pulled merge scratch mtarget mpkg br = do
     else switchBranch br
   newrepo <- initialPkgRepo
   tty <- hIsTerminalDevice stdin
-  -- FIXME if already built or failed, offer merge
-  when (merge || newrepo || tty) $
-    mergeBranch br
+  -- FIXME if already built or failed, also offer merge
+  merged <- do
+    unmerged <- mergeable br
+    if unmerged /= [] && (merge || newrepo || tty)
+      then mergeBranch unmerged br >> return True
+      else return False
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
-  when (not merge || br == Master) $
-    -- FIXME hide if just merged
+  when (not merged || br == Master) $
     unless (null unpushed) $ do
       putStrLn "Local commits:"
       mapM_ (putStrLn . simplifyCommitLog) unpushed
@@ -82,23 +84,32 @@ buildBranch pulled merge scratch mtarget mpkg br = do
         -- FIXME parse build output
         fedpkg_ "build" $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ (if isJust march then ["--arch", fromJust march] else []) ++ ["--srpm" | srpm] ++ (if isJust mtarget then ["--target", tag] else [])
         --waitForbuild
-        -- FIXME check if first build, also add --bz and short buglists query
-        (mbid,session) <- bzReviewSession
+        -- FIXME also add --bz and short buglists query
+        mBugSess <- if null latest
+          then do
+          (mbid, session) <- bzReviewSession
+          return $ case mbid of
+            Just bid -> Just (bid,session)
+            Nothing -> Nothing
+          else return Nothing
         if br == Master
-          then forM_ mbid $ postBuildComment session nvr
+          then case mBugSess of
+                 Just (bid,session) -> postBuildComment session nvr bid
+                 Nothing -> return ()
           else do
           -- FIXME diff previous changelog?
           changelog <- getChangeLog spec
-          bodhiUpdate mbid changelog nvr
-          -- override option or autochain
-          -- FIXME need prompt for override note
+          bodhiUpdate (fmap fst mBugSess) changelog nvr
+          -- FIXME override option or autochain
+          -- FIXME prompt for override note
           --when False $ bodhiOverrides "save" "FIXME" nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mbid changelog nvr = do
       let bugs = maybe [] (\b -> ["--bugs", show b]) mbid
       -- FIXME check for autocreated update (pre-updates-testing)
-      -- also query for open bugs
+      -- FIXME also query for open existing bugs
+      -- FIXME extract bug no(s) from changelog
       putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
       updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mbid then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
       unless updateOK $ do
