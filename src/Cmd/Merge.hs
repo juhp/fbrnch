@@ -51,7 +51,7 @@ mergeBranch unmerged br = do
   -- FIXME avoid Mass_Rebuild bumps
   mhash <-
     if newrepo then return $ Just ""
-    else mergePrompt $ "Press Enter to merge " ++ show newerBr ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; otherwise 'no' to skip merge"
+    else mergePrompt $ "Press Enter to merge " ++ show newerBr ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
   case mhash of
     Nothing -> return ()
     Just hash -> do
