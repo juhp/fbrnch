@@ -4,6 +4,7 @@ module Pagure (
   pagureProjectInfo,
   pagureListGitBranches,
   pagureListProjectIssueTitles,
+  pagureUserRepos,
   makeItem,
   printScmIssue,
   snd3
@@ -11,7 +12,7 @@ module Pagure (
 
 import qualified Common.Text as T
 import System.FilePath
-import Web.Fedora.Pagure
+import Fedora.Pagure
 
 srcfpo :: String
 srcfpo = "src.fedoraproject.org"

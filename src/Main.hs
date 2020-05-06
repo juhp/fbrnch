@@ -42,7 +42,7 @@ dispatchCmd gitdir activeBranches =
     "This tool helps with updating and building package branches" $
     subcommands
     [ Subcommand "clone" "clone packages" $
-      cloneCmd <$> optional branchOpt <*> some (pkgArg "PACKAGE...")
+      cloneCmd <$> optional branchOpt <*> cloneRequest
     , Subcommand "switch" "Switch branch" $
       switchCmd <$> (anyBranchOpt <|> anyBranchArg) <*> many (pkgArg "PACKAGE...")
     , Subcommand "status" "Status package/branch status" $
@@ -73,6 +73,9 @@ dispatchCmd gitdir activeBranches =
       pure testBZlogin
     ]
   where
+    cloneRequest :: Parser CloneRequest
+    cloneRequest = flagWith' (CloneUser Nothing) 'M' "mine" "Your packages" <|> CloneUser . Just <$> strOptionWith 'u' "user" "USER" "Packages of FAS user" <|> ClonePkgs <$> some (pkgArg "PACKAGE...")
+
     noScratchBuild = switchWith 'n' "no-scratch-build" "Skip Koji scratch build"
 
     reviewStatusOpt :: Parser ReviewStatus
