@@ -8,7 +8,7 @@ import Common.System
 import Data.Fixed
 import Data.Time.Clock
 import Data.Time.LocalTime
-import Web.Fedora.Bodhi
+import Fedora.Bodhi
 
 import Bugzilla
 import Branches
