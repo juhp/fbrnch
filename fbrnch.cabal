@@ -73,6 +73,7 @@ executable fbrnch
                      , filepath
                      , http-conduit
                      , http-directory >= 0.1.5
+                     , koji
                      , network-uri
                      , optparse-applicative
                      , pagure
@@ -85,7 +86,8 @@ executable fbrnch
   if impl(ghc<8.0)
        build-depends: semigroups
 
-  ghc-options:         -Wall
+  ghc-options:         -threaded
+                       -Wall
                        -Wcompat
                        -Widentities
                        -Wincomplete-uni-patterns

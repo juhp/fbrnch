@@ -19,3 +19,8 @@ source-repository-package
     type: git
     location: https://github.com/juhp/pagure-hs.git
     tag: 63c3f77935ae8100373a05c9467f6a776d7e454e
+
+source-repository-package
+    type: git
+    location: https://github.com/juhp/koji-hs.git
+    tag: 820714301e41ac14ce3f36d3d8b03ca2c3b7c5d9

@@ -9,3 +9,5 @@ extra-deps:
     commit: f80aa0c1f279be63aff535a8ec600b3fb3cc6113
   - git: https://github.com/juhp/pagure-hs.git
     commit: 63c3f77935ae8100373a05c9467f6a776d7e454e
+  - git: https://github.com/juhp/koji-hs.git
+    commit: 820714301e41ac14ce3f36d3d8b03ca2c3b7c5d9

@@ -1,38 +1,45 @@
 module Koji (
-  KojiBuildStatus(..),
-  kojiBuildTags,
+  kojiNVRTags,
   kojiBuildStatus,
+  kojiBuildTags,
+  kojiGetBuildID,
+  kojiLatestNVR,
   kojiScratchUrl,
-  kojiScratchBuild
+  kojiScratchBuild,
+  buildIDInfo,
+  BuildState(..)
   ) where
 
 import Common
 
+import Fedora.Koji
 import SimpleCmd
 
 import Krb
 
-kojiBuildTags :: String -> IO (Maybe [String])
-kojiBuildTags nvr =
-  fmap words <$> cmdMaybe "koji" ["list-tags", "--build", nvr]
+kojiNVRTags :: String -> IO (Maybe [String])
+kojiNVRTags nvr = do
+  mbldid <- kojiGetBuildID nvr
+  case mbldid of
+    Nothing -> return Nothing
+    Just bldid -> Just <$> kojiBuildTags (buildIDInfo bldid)
 
-data KojiBuildStatus = COMPLETE | FAILED | BUILDING | NoBuild
-  deriving (Eq, Read, Show)
+kojiBuildStatus :: String -> IO (Maybe BuildState)
+kojiBuildStatus nvr =
+  kojiGetBuildState (BuildInfoNVR nvr)
 
-kojiBuildStatus :: String -> IO KojiBuildStatus
-kojiBuildStatus nvr = do
-  mout <- cmdMaybe "koji" ["list-builds", "--quiet", "--buildid=" ++ nvr]
-  case mout of
-    Nothing -> return NoBuild
-    Just out -> (return . read . last . words) out
+kojiLatestNVR :: String -> String -> IO (Maybe String)
+kojiLatestNVR tag pkg = do
+  mbld <- kojiLatestBuild tag pkg
+  return $ case mbld of
+             Nothing -> Nothing
+             Just bld -> lookupStruct "nvr" bld
 
 kojiScratchUrl :: Bool -> String -> IO (Maybe String)
 kojiScratchUrl noscratch srpm =
     if noscratch
     then return Nothing
     else Just <$> kojiScratchBuild False srpm
-
-data TaskState = TaskOpen | TaskFailed | TaskClosed | TaskFree
 
 kojiScratchBuild :: Bool -> FilePath -> IO String
 kojiScratchBuild failfast srpm = do

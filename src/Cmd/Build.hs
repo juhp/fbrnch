@@ -67,12 +67,12 @@ buildBranch pulled merge scratch mtarget mpkg br = do
   -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr
   case buildstatus of
-    COMPLETE | isNothing scratch -> putStrLn $ nvr ++ " is already built"
-    BUILDING | isNothing scratch -> putStrLn $ nvr ++ " is already building"
+    Just BuildComplete | isNothing scratch -> putStrLn $ nvr ++ " is already built"
+    Just BuildBuilding | isNothing scratch -> putStrLn $ nvr ++ " is already building"
     _ -> do
       let tag = fromMaybe (branchDestTag br) mtarget
-      latest <- cmd "koji" ["latest-build", "--quiet", tag , pkg]
-      if dropExtension nvr == dropExtension latest
+      mlatest <- kojiLatestNVR tag pkg
+      if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
         then error' $ nvr ++ " is already latest (modulo disttag)"
         else do
         krbTicket
@@ -86,7 +86,7 @@ buildBranch pulled merge scratch mtarget mpkg br = do
         fedpkg_ "build" $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ (if isJust march then ["--arch", fromJust march] else []) ++ ["--srpm" | srpm] ++ (if isJust mtarget then ["--target", tag] else [])
         --waitForbuild
         -- FIXME also add --bz and short buglists query
-        mBugSess <- if null latest
+        mBugSess <- if isNothing mlatest
           then do
           (mbid, session) <- bzReviewSession
           return $ case mbid of

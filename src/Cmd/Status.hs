@@ -63,35 +63,39 @@ statusBranch mpkg br = do
             --       mapM_ (putStrLn . simplifyCommitLog) unmerged
             unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
             if null unpushed then do
-              mtags <- kojiBuildTags nvr
-              case mtags of
+              mbuild <- kojiGetBuildID nvr
+              case mbuild of
                 Nothing -> do
-                  latest <- cmd "koji" ["latest-build", "--quiet", branchDestTag br, pkg]
-                  -- FIXME should we check for any build/task if null?
-                  putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
-                Just [] -> do
-                  status <- kojiBuildStatus nvr
-                  -- FIXME show pending archs building
-                  putStrLn $ nvr ++ " (" ++ show status ++ ")"
-                Just tags -> do
-                  putStr $ nvr ++ " (" ++ unwords tags ++ ")"
-                  when (any ("updates-testing" `isSuffixOf`) tags) $ do
-                    updates <- bodhiUpdates
-                               [makeItem "display_user" "0",
-                                makeItem "builds" nvr]
-                    case updates of
-                      [] -> putStrLn "No update found"
-                      [update] -> do
-                        -- FIXME could show minus time left using stable_days?
-                        let msince = lookupKey "date_testing" update :: Maybe LocalTime
-                        case msince of
-                          Nothing -> return ()
-                          Just date -> do
-                            let since = localTimeToUTC utc date
-                            current <- getCurrentTime
-                            let diff = diffUTCTime current since
-                            putAge diff
-                      _ -> putStrLn "More than one update found!"
+                  mlatest <- kojiLatestNVR (branchDestTag br) pkg
+                  case mlatest of
+                    Nothing -> putStrLn $ "new " ++ nvr
+                    Just latest ->
+                      putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
+                Just buildid -> do
+                  tags <- kojiBuildTags (buildIDInfo buildid)
+                  if null tags then do
+                    status <- kojiBuildStatus nvr
+                    -- FIXME show pending archs building
+                    putStrLn $ nvr ++ " (" ++ show status ++ ")"
+                  else do
+                    putStr $ nvr ++ " (" ++ unwords tags ++ ")"
+                    when (any ("updates-testing" `isSuffixOf`) tags) $ do
+                      updates <- bodhiUpdates
+                                 [makeItem "display_user" "0",
+                                  makeItem "builds" nvr]
+                      case updates of
+                        [] -> putStrLn "No update found"
+                        [update] -> do
+                          -- FIXME could show minus time left using stable_days?
+                          let msince = lookupKey "date_testing" update :: Maybe LocalTime
+                          case msince of
+                            Nothing -> return ()
+                            Just date -> do
+                              let since = localTimeToUTC utc date
+                              current <- getCurrentTime
+                              let diff = diffUTCTime current since
+                              putAge diff
+                        _ -> putStrLn "More than one update found!"
                   putStrLn ""
               else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
   where
