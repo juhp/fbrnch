@@ -16,18 +16,7 @@ cloneCmd :: Maybe Branch -> CloneRequest -> IO ()
 cloneCmd mbr request = do
   pkgs <- case request of
             CloneUser mid -> do
-              fasid <- maybe fasIdFromKrb return mid
-              map (takeFileName . T.unpack) <$> pagureUserRepos srcfpo fasid
+              userid <- maybe fasIdFromKrb return mid
+              map (takeFileName . T.unpack) <$> pagureUserRepos srcfpo userid
             ClonePkgs ps -> return ps
-  mapM_ clonePkg pkgs
-  where
-    clonePkg :: Package -> IO ()
-    clonePkg pkg = do
-      exists <- doesDirectoryExist pkg
-      if exists then
-        putStrLn $ pkg ++ "/ already exists\n"
-        else do
-        let mbranch = case mbr of
-              Nothing -> []
-              Just br -> ["--branch", show br]
-        fedpkg_ "clone" $ mbranch ++ [pkg]
+  mapM_ (clonePkg mbr) pkgs

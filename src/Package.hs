@@ -1,4 +1,5 @@
 module Package (
+  clonePkg,
   fedpkg,
   fedpkg_,
   checkForSpecFile,
@@ -21,6 +22,7 @@ import Common.System
 
 import Branches
 import Git
+import Krb
 import Prompt
 
 fedpkg :: String -> [String] -> IO String
@@ -142,3 +144,15 @@ withPackageDir write action brs pkg =
     mapM_ (action (Just pkg)) branches
     unless (length brs == 1) $
       switchBranch currentbranch
+
+clonePkg :: Maybe Branch -> Package -> IO ()
+clonePkg mbr pkg = do
+  exists <- doesDirectoryExist pkg
+  if exists then
+    putStrLn $ pkg ++ "/ already exists\n"
+    else do
+    let mbranch = case mbr of
+          Nothing -> []
+          Just br -> ["--branch", show br]
+    fasid <- fasIdFromKrb
+    git_ "clone" $ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg]

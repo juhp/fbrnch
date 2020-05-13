@@ -29,7 +29,7 @@ importPkg pkg = do
   when (pkg /= takeFileName dir) $ do
     direxists <- doesDirectoryExist pkg
     -- FIXME check repo exists
-    unless direxists $ fedpkg_ "clone" [pkg]
+    unless direxists $ clonePkg Nothing pkg
     setCurrentDirectory pkg
     -- FIXME: check branch is master
   isGit <- doesDirectoryExist ".git"
