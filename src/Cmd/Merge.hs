@@ -40,10 +40,9 @@ mergeBranch unmerged br = do
     branches <- getFedoraBranches
     return $ newerBranch branches br
   newrepo <- initialPkgRepo
-  unless newrepo $
-    unless (null unmerged) $ do
-      putStrLn $ "New commits in " ++ show newerBr ++ ":"
-      mapM_ (putStrLn . simplifyCommitLog) unmerged
+  unless (null unmerged) $ do
+    putStrLn $ (if newrepo then "Merging from" else "New commits in") ++ " " ++ show newerBr ++ ":"
+    mapM_ (putStrLn . simplifyCommitLog) unmerged
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"
