@@ -16,9 +16,7 @@ cloneCmd :: Maybe Branch -> CloneRequest -> IO ()
 cloneCmd mbr request = do
   pkgs <- case request of
             CloneUser mid -> do
-              fasid <- case mid of
-                Just fasid -> return fasid
-                Nothing -> fasIdFromKrb
+              fasid <- maybe fasIdFromKrb return mid
               map (takeFileName . T.unpack) <$> pagureUserRepos srcfpo fasid
             ClonePkgs ps -> return ps
   mapM_ clonePkg pkgs
