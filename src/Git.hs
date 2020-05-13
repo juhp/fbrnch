@@ -10,7 +10,6 @@ module Git (
   simplifyCommitLog,
   checkIsPkgGitDir,
   checkWorkingDirClean,
-  workingDirClean,
   module SimpleCmd.Git
   ) where
 
@@ -60,13 +59,9 @@ gitPushSilent = do
   out <- cmdQuiet "git" ["push", "--quiet"]
   putStrLn $ if null out then "done" else "\n" ++ out
 
-workingDirClean :: IO Bool
-workingDirClean =
-  gitBool "diff-index" ["--quiet", "HEAD"]
-
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
-  clean <- workingDirClean
+  clean <- gitBool "diff-index" ["--quiet", "HEAD"]
   unless clean $ error' "Working dir is not clean"
 
 -- FIXME check actually pkg dist-git

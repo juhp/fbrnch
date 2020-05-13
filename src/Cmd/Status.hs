@@ -28,76 +28,69 @@ statusCmd reviews (brs,pkgs) = do
 statusBranch :: Maybe Package -> Branch -> IO ()
 statusBranch mpkg br = do
   pkg <- getPackageName mpkg
-  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
-  if not branched
-    then putStrLn $ "No " ++ show br ++ " branch"
+  checkWorkingDirClean
+  switchBranch br
+  let spec = pkg <.> "spec"
+  haveSpec <- doesFileExist spec
+  if not haveSpec then do
+    newrepo <- initialPkgRepo
+    if newrepo then putStrLn $ show br ++ ": initial repo"
+      else putStrLn $ "missing " ++ spec
     else do
-    clean <- workingDirClean
-    if not clean then
-      error' "working dir is dirty"
-      else do
-      switchBranch br
-      let spec = pkg <.> "spec"
-      haveSpec <- doesFileExist spec
-      if not haveSpec then do
-        newrepo <- initialPkgRepo
-        if newrepo then putStrLn $ show br ++ ": initial repo"
-          else putStrLn $ "missing " ++ spec
-        else do
-        mnvr <- cmdMaybe "fedpkg" ["verrel"]
-        case mnvr of
-          Nothing -> do
-            putStrLn "undefined NVR!\n"
-            putStr "HEAD "
-            simplifyCommitLog <$> gitShortLog1 Nothing >>= putStrLn
-          Just nvr -> do
-            -- unless (br == Master) $ do
-            --   newerBr <- do
-            --     branches <- getFedoraBranches
-            --     return $ newerBranch branches br
-            --   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show newerBr]
-            --   when ancestor $ do
-            --     unmerged <- gitShortLog $ "HEAD.." ++ show newerBr
-            --     unless (null unmerged) $ do
-            --       putStrLn $ "Newer commits in " ++ show newerBr ++ ":"
-            --       mapM_ (putStrLn . simplifyCommitLog) unmerged
-            unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
-            if null unpushed then do
-              mbuild <- kojiGetBuildID nvr
-              case mbuild of
-                Nothing -> do
-                  mlatest <- kojiLatestNVR (branchDestTag br) pkg
-                  case mlatest of
-                    Nothing -> putStrLn $ "new " ++ nvr
-                    Just latest ->
-                      putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
-                Just buildid -> do
-                  tags <- kojiBuildTags (buildIDInfo buildid)
-                  if null tags then do
-                    status <- kojiBuildStatus nvr
-                    -- FIXME show pending archs building
-                    putStrLn $ nvr ++ " (" ++ show status ++ ")"
-                  else do
-                    putStr $ nvr ++ " (" ++ unwords tags ++ ")"
-                    when (any ("updates-testing" `isSuffixOf`) tags) $ do
-                      updates <- bodhiUpdates
-                                 [makeItem "display_user" "0",
-                                  makeItem "builds" nvr]
-                      case updates of
-                        [] -> putStrLn "No update found"
-                        [update] -> do
-                          -- FIXME could show minus time left using stable_days?
-                          let msince = lookupKey "date_testing" update :: Maybe LocalTime
-                          case msince of
-                            Nothing -> return ()
-                            Just date -> do
-                              let since = localTimeToUTC utc date
-                              current <- getCurrentTime
-                              let diff = diffUTCTime current since
-                              putAge diff
-                        _ -> putStrLn "More than one update found!"
-                  putStrLn ""
-              else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
+    mnvr <- cmdMaybe "fedpkg" ["verrel"]
+    case mnvr of
+      Nothing -> do
+        putStrLn "undefined NVR!\n"
+        putStr "HEAD "
+        simplifyCommitLog <$> gitShortLog1 Nothing >>= putStrLn
+      Just nvr -> do
+        -- unless (br == Master) $ do
+        --   newerBr <- do
+        --     branches <- getFedoraBranches
+        --     return $ newerBranch branches br
+        --   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show newerBr]
+        --   when ancestor $ do
+        --     unmerged <- gitShortLog $ "HEAD.." ++ show newerBr
+        --     unless (null unmerged) $ do
+        --       putStrLn $ "Newer commits in " ++ show newerBr ++ ":"
+        --       mapM_ (putStrLn . simplifyCommitLog) unmerged
+        unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
+        if null unpushed then do
+          mbuild <- kojiGetBuildID nvr
+          case mbuild of
+            Nothing -> do
+              mlatest <- kojiLatestNVR (branchDestTag br) pkg
+              case mlatest of
+                Nothing -> putStrLn $ "new " ++ nvr
+                Just latest ->
+                  putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
+            Just buildid -> do
+              tags <- kojiBuildTags (buildIDInfo buildid)
+              if null tags then do
+                status <- kojiBuildStatus nvr
+                -- FIXME show pending archs building
+                putStrLn $ nvr ++ " (" ++ show status ++ ")"
+              else do
+                putStr $ nvr ++ " (" ++ unwords tags ++ ")"
+                when (any ("updates-testing" `isSuffixOf`) tags) $ do
+                  updates <- bodhiUpdates
+                             [makeItem "display_user" "0",
+                              makeItem "builds" nvr]
+                  case updates of
+                    [] -> putStrLn "No update found"
+                    [update] -> do
+                      -- FIXME could show minus time left using stable_days?
+                      let msince = lookupKey "date_testing" update :: Maybe LocalTime
+                      case msince of
+                        Nothing -> return ()
+                        Just date -> do
+                          let since = localTimeToUTC utc date
+                          current <- getCurrentTime
+                          let diff = diffUTCTime current since
+                          putAge diff
+                    _ -> putStrLn "More than one update found!"
+              putStrLn ""
+          else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
   where
     putAge :: NominalDiffTime -> IO ()
     putAge diff = do

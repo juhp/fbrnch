@@ -32,17 +32,13 @@ buildCmd merge scratch mtarget (brs,pkgs) = do
 
 buildBranch :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> Branch -> IO ()
 buildBranch pulled merge scratch mtarget mpkg br = do
-  clean <- workingDirClean
-  when (not clean && isNothing scratch) $
-    error' "Working dir is not clean"
+  when (isNothing scratch) $
+    checkWorkingDirClean
   unless pulled
     gitPull
   pkg <- getPackageName mpkg
   putPkgBrnchHdr pkg br
-  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
-  if not branched
-    then error' $ show br ++ " branch does not exist!"
-    else switchBranch br
+  switchBranch br
   newrepo <- initialPkgRepo
   tty <- hIsTerminalDevice stdin
   -- FIXME if already built or failed, also offer merge
@@ -77,9 +73,11 @@ buildBranch pulled merge scratch mtarget mpkg br = do
         else do
         krbTicket
         unpushed' <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+        clean <- gitBool "diff-index" ["--quiet", "HEAD"]
         let march = case scratch of
               Just (Arch arch) -> Just arch
               _ -> Nothing
+            -- FIXME what if untracked files
             srpm = not (null unpushed') || not clean
         -- FIXME use koji directly
         -- FIXME parse build output
