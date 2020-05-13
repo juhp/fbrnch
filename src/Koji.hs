@@ -10,7 +10,7 @@ module Koji (
   BuildState(..)
   ) where
 
-import Common
+import Data.Char (isDigit)
 
 import Fedora.Koji
 import SimpleCmd
@@ -47,34 +47,22 @@ kojiScratchBuild failfast srpm = do
   out <- cmd "koji" $ ["build", "--scratch", "--nowait"] ++ ["--fail-fast" | failfast] ++ ["rawhide", srpm]
   putStrLn out
   let kojiurl = last $ words out
-      task = takeWhileEnd (/= '=') kojiurl
+      task = read $ takeWhileEnd isDigit kojiurl
   okay <- kojiWatchTask task
   if not okay
     then error' "scratch build failed"
     else return kojiurl
   where
-    kojiWatchTask :: String -> IO Bool
+    kojiWatchTask :: Int -> IO Bool
     kojiWatchTask task = do
-      res <- cmdBool "koji" ["watch-task", task]
+      res <- cmdBool "koji" ["watch-task", show task]
       if res then return True
         else do
-        ti <- kojiTaskInfo
-        case ti of
-          TaskClosed -> return True
-          TaskFailed -> error "Task failed!"
+        mst <- kojiGetTaskState (TaskId task)
+        case mst of
+          Just TaskClosed -> return True
+          Just TaskFailed -> error "Task failed!"
           _ -> kojiWatchTask task
-          where
-            kojiTaskInfo :: IO TaskState
-            kojiTaskInfo = do
-              info <- cmdLines "koji" ["taskinfo", task]
-              let state = removeStrictPrefix "State: " <$> filter ("State: " `isPrefixOf`) info
-              return $
-                case state of
-                  ["open"] -> TaskOpen
-                  ["failed"] -> TaskFailed
-                  ["closed"] -> TaskClosed
-                  ["free"] -> TaskFree
-                  _ -> error "unknown task state!"
 
     takeWhileEnd :: (a -> Bool) -> [a] -> [a]
     takeWhileEnd p = reverse . takeWhile p . reverse
