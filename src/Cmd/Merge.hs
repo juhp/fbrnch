@@ -19,7 +19,7 @@ mergeCmd =
       checkWorkingDirClean
       gitPull
       putPkgBrnchHdr pkg br
-      switchBranch br
+      gitSwitchBranch br
       unmerged <- mergeable br
       mergeBranch unmerged br
 

@@ -29,7 +29,7 @@ statusBranch :: Maybe Package -> Branch -> IO ()
 statusBranch mpkg br = do
   pkg <- getPackageName mpkg
   checkWorkingDirClean
-  switchBranch br
+  gitSwitchBranch br
   let spec = pkg <.> "spec"
   haveSpec <- doesFileExist spec
   if not haveSpec then do

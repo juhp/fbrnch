@@ -128,7 +128,7 @@ withPackageBranches write action (brs,pkgs) =
     branches <- if null brs then packageBranches else return $ (reverse . sort) brs
     mapM_ (action Nothing) branches
     unless (length brs == 1) $
-      switchBranch currentbranch
+      gitSwitchBranch currentbranch
   else mapM_ (withPackageDir write action brs) pkgs
 
 withPackageDir :: Bool -> (Maybe Package -> Branch -> IO ()) -> [Branch] -> Package -> IO ()
@@ -143,7 +143,7 @@ withPackageDir write action brs pkg =
     currentbranch <- getCurrentBranch
     mapM_ (action (Just pkg)) branches
     unless (length brs == 1) $
-      switchBranch currentbranch
+      gitSwitchBranch currentbranch
 
 clonePkg :: Maybe Branch -> Package -> IO ()
 clonePkg mbr pkg = do

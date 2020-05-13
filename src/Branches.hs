@@ -2,7 +2,6 @@ module Branches (
   packageBranches,
   packageBranched,
   packagePagureBranched,
-  switchBranch,
   getCurrentBranch,
   module Distribution.Fedora.Branch
 ) where
@@ -11,8 +10,8 @@ import Common
 
 import Distribution.Fedora.Branch
 import SimpleCmd
+import SimpleCmd.Git
 
-import Git
 import Pagure
 
 getCurrentBranch :: IO Branch
@@ -43,13 +42,3 @@ packagePagureBranched pkg = do
   current <- getFedoraBranched
   res <- pagureListGitBranches srcfpo ("rpms/" ++ pkg)
   return $ either error' (activeBranches current) res
-
-switchBranch :: Branch -> IO ()
-switchBranch br = do
-  branched <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
-  if not branched
-    then error' $ show br ++ " branch does not exist!"
-    else do
-    current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
-    when (current /= show br) $
-      cmdSilent "fedpkg" $ "switch-branch" : [show br]

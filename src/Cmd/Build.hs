@@ -38,7 +38,7 @@ buildBranch pulled merge scratch mtarget mpkg br = do
     gitPull
   pkg <- getPackageName mpkg
   putPkgBrnchHdr pkg br
-  switchBranch br
+  gitSwitchBranch br
   newrepo <- initialPkgRepo
   tty <- hIsTerminalDevice stdin
   -- FIXME if already built or failed, also offer merge

@@ -7,6 +7,7 @@ module Git (
   gitShortLog,
   gitShortLogN,
   gitShortLog1,
+  gitSwitchBranch,
   simplifyCommitLog,
   checkIsPkgGitDir,
   checkWorkingDirClean,
@@ -18,6 +19,8 @@ import Common.System
 
 import SimpleCmd.Git
 
+import Branches
+
 #if (defined(MIN_VERSION_simple_cmd) && MIN_VERSION_simple_cmd(0,2,2))
 #else
 -- | 'gitBool c args' runs git command and return result
@@ -27,6 +30,10 @@ gitBool :: String -- ^ git command
 gitBool c args =
   cmdBool "git" (c:args)
 #endif
+
+gitRemoteBranched :: Branch -> IO Bool
+gitRemoteBranched br =
+  gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
 
 gitPull :: IO ()
 gitPull = do
@@ -69,3 +76,21 @@ checkIsPkgGitDir :: IO ()
 checkIsPkgGitDir = do
   isGit <- doesDirectoryExist ".git"
   unless isGit $ error' "Not a git dir"
+
+gitLines :: String -> [String] -> IO [String]
+gitLines c args = lines <$> git c args
+
+gitSwitchBranch :: Branch -> IO ()
+gitSwitchBranch br = do
+  localbranches <- gitLines "branch" ["--format=%(refname:short)"]
+  if show br `elem` localbranches then do
+    current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
+    when (current /= show br) $
+      -- cmdSilent
+      git_ "checkout" ["-q", show br]
+    else do
+    remotebranch <- gitRemoteBranched br
+    if not remotebranch
+      then error' $ show br ++ " branch does not exist!"
+      else
+      git_ "checkout" ["-q", "-b", show br, "--track", "origin" </> show br]
