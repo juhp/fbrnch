@@ -17,6 +17,8 @@ import Fedora.Koji
 import SimpleCmd
 
 import Common
+import Common.System
+import Git
 import Krb
 
 kojiNVRTags :: String -> IO (Maybe [String])
@@ -75,8 +77,9 @@ kojiBuild target args = do
     takeWhileEnd :: (a -> Bool) -> [a] -> [a]
     takeWhileEnd p = reverse . takeWhile p . reverse
 
-kojiBuildBranch :: String -> [String] -> IO ()
-kojiBuildBranch target args = do
-  giturl <- cmd "fedpkg" ["giturl"]
+kojiBuildBranch :: String -> String -> [String] -> IO ()
+kojiBuildBranch target pkg args = do
+  commit <- git "rev-parse" ["HEAD"]
+  let giturl = "git+https://src.fedoraproject.org/rpms" </> pkg </> ".git#" ++ commit
   -- FIXME --target
   void $ kojiBuild target $ args ++ ["--fail-fast", giturl]

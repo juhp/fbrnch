@@ -86,7 +86,7 @@ buildBranch pulled merge scratch mtarget mpkg br = do
           then do
           srpmfile <- generateSrpm spec
           void $ kojiBuild target $ march ++ ["--fail-fast", srpmfile]
-          else kojiBuildBranch target $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ march
+          else kojiBuildBranch target pkg $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ march
         --waitForbuild
         -- FIXME also add --bz and short buglists query
         mBugSess <- if isNothing mlatest
