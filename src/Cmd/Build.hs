@@ -33,7 +33,7 @@ buildCmd merge scratch mtarget (brs,pkgs) = do
 
 buildBranch :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> Branch -> IO ()
 buildBranch pulled merge scratch mtarget mpkg br = do
-  when (isNothing scratch) $
+  when (isNothing scratch)
     checkWorkingDirClean
   unless pulled
     gitPull
