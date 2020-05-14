@@ -14,11 +14,16 @@ module Package (
   initialPkgRepo,
   withPackageBranches,
   withPackageDir,
-  Package
+  Package,
+  pkgNameVerRel,
+  pkgNameVerRel'
   ) where
 
 import Common
 import Common.System
+
+import Distribution.Fedora
+import SimpleCmd.Rpm
 
 import Branches
 import Git
@@ -156,3 +161,15 @@ clonePkg mbr pkg = do
           Just br -> ["--branch", show br]
     fasid <- fasIdFromKrb
     git_ "clone" $ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg]
+
+pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
+pkgNameVerRel br spec = do
+  dist <- branchDist br
+  listToMaybe <$> rpmspec ["--define", "dist " ++ rpmDistTag dist, "--srpm"] (Just "%{name}-%{version}-%{release}") spec
+
+pkgNameVerRel' :: Branch -> FilePath -> IO String
+pkgNameVerRel' br spec = do
+  mnvr <- pkgNameVerRel br spec
+  case mnvr of
+    Nothing -> error' $ "rpmspec failed to parse " ++ spec
+    Just nvr -> return nvr

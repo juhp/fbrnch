@@ -59,7 +59,7 @@ buildBranch pulled merge scratch mtarget mpkg br = do
     when tty $ prompt_ "Press Enter to push and build"
     gitPushSilent
   checkForSpecFile spec
-  nvr <- fedpkg "verrel" []
+  nvr <- pkgNameVerRel' br spec
   -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr
   case buildstatus of

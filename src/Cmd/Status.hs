@@ -37,7 +37,7 @@ statusBranch mpkg br = do
     if newrepo then putStrLn $ show br ++ ": initial repo"
       else putStrLn $ "missing " ++ spec
     else do
-    mnvr <- cmdMaybe "fedpkg" ["verrel"]
+    mnvr <- pkgNameVerRel br spec
     case mnvr of
       Nothing -> do
         putStrLn "undefined NVR!\n"

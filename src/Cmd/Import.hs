@@ -6,6 +6,7 @@ import qualified Common.Text as T
 
 import Network.URI
 
+import Branches
 import Bugzilla
 import Git
 import Krb
@@ -59,7 +60,7 @@ importPkg pkg = do
     krbTicket
     fedpkg_ "import" [srpmfile]
     git_ "commit" ["--message", "import #" ++ show bid]
-    nvr <- fedpkg "verrel" []
+    nvr <- pkgNameVerRel' Master (pkg <.> "spec")
     prompt_ $ "Press Enter to push and build " ++ nvr
     gitPushSilent
     fedpkg_ "build" ["--fail-fast"]
