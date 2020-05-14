@@ -124,7 +124,7 @@ dispatchCmd gitdir activeBranches =
 
     scratchOpt :: Parser Scratch
     scratchOpt = flagWith' AllArches 's' "scratch" "Koji scratch test build" <|>
-                 Arch <$> strOptionWith 'a' "arch" "ARCH" "Koji scratch test build"
+                 Arch <$> strOptionWith 'a' "arch" "ARCH[,ARCH].." "Scratch build for arch(s)"
 
     targetOpt :: Parser (Maybe String)
     targetOpt = optional (strOptionWith 't' "target" "TARGET" "Koji target")

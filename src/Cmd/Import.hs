@@ -9,6 +9,7 @@ import Network.URI
 import Branches
 import Bugzilla
 import Git
+import Koji
 import Krb
 import ListReviews
 import Package
@@ -63,7 +64,7 @@ importPkg pkg = do
     nvr <- pkgNameVerRel' Master (pkg <.> "spec")
     prompt_ $ "Press Enter to push and build " ++ nvr
     gitPushSilent
-    fedpkg_ "build" ["--fail-fast"]
+    kojiBuildBranch "rawhide" ["--fail-fast"]
     postBuildComment session nvr bid
     -- FIXME build branches too
   when (pkg /= takeFileName dir) $

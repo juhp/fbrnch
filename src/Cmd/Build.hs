@@ -24,6 +24,7 @@ data Scratch = AllArches | Arch String
 -- FIXME sort packages in build dependency order (chain-build?)
 -- FIXME --no-fast-fail
 -- FIXME --(no-)rpmlint (only run for master?)
+-- FIXME support --rebuild-srpm --wait-build=NVR --background
 buildCmd :: Bool -> Maybe Scratch -> Maybe String -> ([Branch],[Package]) -> IO ()
 buildCmd merge scratch mtarget (brs,pkgs) = do
   when (isJust mtarget && length brs > 1) $
@@ -75,13 +76,17 @@ buildBranch pulled merge scratch mtarget mpkg br = do
         unpushed' <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
         clean <- gitBool "diff-index" ["--quiet", "HEAD"]
         let march = case scratch of
-              Just (Arch arch) -> Just arch
-              _ -> Nothing
+                      Just (Arch arch) -> ["--arch-override=" ++ arch]
+                      _ -> []
             -- FIXME what if untracked files
             srpm = not (null unpushed') || not clean
-        -- FIXME use koji directly
         -- FIXME parse build output
-        fedpkg_ "build" $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ (if isJust march then ["--arch", fromJust march] else []) ++ ["--srpm" | srpm] ++ (if isJust mtarget then ["--target", tag] else [])
+        let target = fromMaybe (branchTarget br) mtarget
+        if srpm
+          then do
+          srpmfile <- generateSrpm spec
+          void $ kojiBuild target $ march ++ ["--fail-fast", srpmfile]
+          else kojiBuildBranch target $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ march
         --waitForbuild
         -- FIXME also add --bz and short buglists query
         mBugSess <- if isNothing mlatest

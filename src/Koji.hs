@@ -5,9 +5,10 @@ module Koji (
   kojiGetBuildID,
   kojiLatestNVR,
   kojiScratchUrl,
-  kojiScratchBuild,
   buildIDInfo,
-  BuildState(..)
+  BuildState(..),
+  kojiBuild,
+  kojiBuildBranch
   ) where
 
 import Data.Char (isDigit)
@@ -15,6 +16,7 @@ import Data.Char (isDigit)
 import Fedora.Koji
 import SimpleCmd
 
+import Common
 import Krb
 
 kojiNVRTags :: String -> IO (Maybe [String])
@@ -39,12 +41,18 @@ kojiScratchUrl :: Bool -> String -> IO (Maybe String)
 kojiScratchUrl noscratch srpm =
     if noscratch
     then return Nothing
-    else Just <$> kojiScratchBuild False srpm
+    else Just <$> kojiScratchBuild "rawhide" srpm
 
-kojiScratchBuild :: Bool -> FilePath -> IO String
-kojiScratchBuild failfast srpm = do
+kojiScratchBuild :: String -> FilePath -> IO String
+kojiScratchBuild target srpm =
+  kojiBuild target ["--scratch", "--no-rebuild-srpm", srpm]
+
+kojiBuild :: String -> [String] -> IO String
+kojiBuild target args = do
   krbTicket
-  out <- cmd "koji" $ ["build", "--scratch", "--nowait"] ++ ["--fail-fast" | failfast] ++ ["rawhide", srpm]
+  cmd_ "date" []
+  -- FIXME setTermTitle nvr
+  out <- cmd "koji" $ ["build", "--nowait", target] ++ args
   putStrLn out
   let kojiurl = last $ words out
       task = read $ takeWhileEnd isDigit kojiurl
@@ -66,3 +74,9 @@ kojiScratchBuild failfast srpm = do
 
     takeWhileEnd :: (a -> Bool) -> [a] -> [a]
     takeWhileEnd p = reverse . takeWhile p . reverse
+
+kojiBuildBranch :: String -> [String] -> IO ()
+kojiBuildBranch target args = do
+  giturl <- cmd "fedpkg" ["giturl"]
+  -- FIXME --target
+  void $ kojiBuild target $ args ++ ["--fail-fast", giturl]
