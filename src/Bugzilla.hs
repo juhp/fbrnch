@@ -53,6 +53,7 @@ import Control.Exception (finally)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini.Config
 import Network.HTTP.Simple
+import System.Directory (doesDirectoryExist, createDirectory)
 import System.Environment
 import System.Environment.XDG.BaseDir
 import System.IO (hSetEcho, stdin)
@@ -131,6 +132,9 @@ bzLoginSession = do
     getBzLoginSession :: BugzillaContext -> UserEmail -> IO BugzillaSession
     getBzLoginSession ctx user = do
       cache <- getUserCacheFile "python-bugzilla" "bugzillatoken"
+      let cacheDir = takeDirectory cache
+      cacheDirExists <- doesDirectoryExist cacheDir
+      unless cacheDirExists $ createDirectory cacheDir
       fileExists <- doesFileExist cache
       tokenstatus <- if fileExists
         then do
