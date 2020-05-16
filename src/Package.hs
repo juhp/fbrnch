@@ -7,7 +7,6 @@ module Package (
   getPackageName,
   findSpecfile,
   generateSrpm,
-  getSpecFile,
   putPkgHdr,
   putPkgBrnchHdr,
   withExistingDirectory,
@@ -89,16 +88,6 @@ generateSrpm spec = do
       srpm <- takeFileName . last . words <$> cmd "rpmbuild" ["-bs", spec]
       putStrLn $ "Created " ++ srpm
       return srpm
-
-getSpecFile :: Maybe FilePath -> IO String
-getSpecFile =
-  -- FIXME or change to dir
-  maybe findSpecfile checkLocalFile
-  where
-    checkLocalFile :: FilePath -> IO FilePath
-    checkLocalFile f =
-      if takeFileName f == f then return f
-        else error' "Please run in the directory of the spec file"
 
 putPkgHdr :: String -> IO ()
 putPkgHdr pkg =

@@ -52,6 +52,16 @@ createReview noscratch mspec = do
               ]
       newId . getResponseBody <$> httpJSON req
 
+getSpecFile :: Maybe FilePath -> IO String
+getSpecFile =
+  -- FIXME or change to dir
+  maybe findSpecfile checkLocalFile
+  where
+    checkLocalFile :: FilePath -> IO FilePath
+    checkLocalFile f =
+      if takeFileName f == f then return f
+        else error' "Please run in the directory of the spec file"
+
 updateReview :: Bool -> Maybe FilePath -> IO ()
 updateReview noscratch mspec = do
   spec <- getSpecFile mspec
