@@ -152,7 +152,7 @@ bzLoginSession = do
           return $ LoginSession ctx $ BugzillaToken token
         NoToken -> do
           token <- bzLogin
-          T.writeFile cache $ "[" <> brc <> "]\ntoken = " <> token
+          T.writeFile cache $ "[" <> brc <> "]\ntoken = " <> token <> "\n"
           putStrLn $ "Saved in " ++ cache
           return $ LoginSession ctx $ BugzillaToken token
       where
