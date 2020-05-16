@@ -10,6 +10,7 @@ module Git (
   gitSwitchBranch,
   simplifyCommitLog,
   checkIsPkgGitDir,
+  isPkgGitDir,
   checkWorkingDirClean,
   module SimpleCmd.Git
   ) where
@@ -71,11 +72,13 @@ checkWorkingDirClean = do
   clean <- gitBool "diff-index" ["--quiet", "HEAD"]
   unless clean $ error' "Working dir is not clean"
 
--- FIXME check actually pkg dist-git
 checkIsPkgGitDir :: IO ()
 checkIsPkgGitDir = do
-  isGit <- doesDirectoryExist ".git"
-  unless isGit $ error' "Not a git dir"
+  pkgGit <- isPkgGitDir
+  unless pkgGit $ error' "Not a pkg git dir"
+
+isPkgGitDir :: IO Bool
+isPkgGitDir = grepGitConfig "@\\(pkgs\\|src\\)\\."
 
 gitLines :: String -> [String] -> IO [String]
 gitLines c args = lines <$> git c args
