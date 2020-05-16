@@ -53,7 +53,6 @@ import Control.Exception (finally)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini.Config
 import Network.HTTP.Simple
-import System.Directory (doesDirectoryExist, createDirectory)
 import System.Environment
 import System.Environment.XDG.BaseDir
 import System.IO (hSetEcho, stdin)
