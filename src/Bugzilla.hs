@@ -132,7 +132,7 @@ bzLoginSession = do
     getBzLoginSession :: BugzillaContext -> UserEmail -> IO BugzillaSession
     getBzLoginSession ctx user = do
       cache <- getUserCacheFile "python-bugzilla" "bugzillatoken"
-      let (cacheDir, _) = splitFileName cache
+      let cacheDir = takeDirectory cache
       cacheDirExists <- doesDirectoryExist cacheDir
       unless cacheDirExists $ createDirectory cacheDir
       fileExists <- doesFileExist cache
