@@ -19,11 +19,14 @@ import Prompt
 
 data BranchesRequest = AllReleases | BranchesRequest [Branch]
 
--- FIXME if pkg dir than just act on package
 requestBranches :: Bool -> BranchesRequest -> IO ()
 requestBranches mock request = do
-  pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
-  mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request p) pkgs
+  pkggit <- isPkgGitDir
+  if pkggit then
+    getPackageName Nothing >>= requestPkgBranches mock request
+    else do
+    pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
+    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request p) pkgs
 
 requestPkgBranches :: Bool -> BranchesRequest -> String -> IO ()
 requestPkgBranches mock request pkg = do
