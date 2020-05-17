@@ -111,11 +111,10 @@ bzLoginSession = do
     getBzUser = do
       home <- getEnv "HOME"
       let rc = home </> ".bugzillarc"
-      rcExists <- doesFileExist rc
       -- FIXME assumption if file exists then it has b.r.c user
-      if rcExists then
-        readIniConfig rc rcParser rcUserEmail
-        else do
+      ifM (doesFileExist rc)
+        (readIniConfig rc rcParser rcUserEmail) $
+        do
         -- FIXME: option to override email
         email <- prompt "Bugzilla Username"
         when (Email.isValid (B.pack email)) $ do
@@ -134,16 +133,14 @@ bzLoginSession = do
       let cacheDir = takeDirectory cache
       cacheDirExists <- doesDirectoryExist cacheDir
       unless cacheDirExists $ createDirectory cacheDir
-      fileExists <- doesFileExist cache
-      tokenstatus <- if fileExists
-        then do
+      tokenstatus <- ifM (notM (doesFileExist cache)) (return NoToken) $
+        do
         token <- readIniConfig cache rcParser bzToken
         let session = LoginSession ctx $ BugzillaToken token
         let validreq = setRequestCheckStatus $
                        newBzRequest session ["valid_login"] [("login",Just user)]
         valid <- validToken . getResponseBody <$> httpJSON validreq
         return $ if valid then ValidToken session else InvalidToken token
-        else return NoToken
       case tokenstatus of
         ValidToken session -> return session
         InvalidToken oldtoken -> do

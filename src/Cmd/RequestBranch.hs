@@ -4,9 +4,8 @@ module Cmd.RequestBranch (
   ) where
 
 import Common
+import Common.System
 import qualified Common.Text as T
-
-import SimpleCmd
 
 import Branches
 import Bugzilla
@@ -20,13 +19,11 @@ import Prompt
 data BranchesRequest = AllReleases | BranchesRequest [Branch]
 
 requestBranches :: Bool -> BranchesRequest -> IO ()
-requestBranches mock request = do
-  pkggit <- isPkgGitDir
-  if pkggit then
-    getPackageName Nothing >>= requestPkgBranches mock request
-    else do
-    pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
-    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request p) pkgs
+requestBranches mock request =
+  ifM isPkgGitDir
+    (getPackageName Nothing >>= requestPkgBranches mock request) $
+    do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
+       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request p) pkgs
 
 requestPkgBranches :: Bool -> BranchesRequest -> String -> IO ()
 requestPkgBranches mock request pkg = do

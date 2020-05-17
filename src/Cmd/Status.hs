@@ -31,12 +31,11 @@ statusBranch :: Package -> Branch -> IO ()
 statusBranch pkg br = do
   gitSwitchBranch br
   let spec = pkg <.> "spec"
-  haveSpec <- doesFileExist spec
-  if not haveSpec then do
-    newrepo <- initialPkgRepo
-    if newrepo then putStrLn $ show br ++ ": initial repo"
-      else putStrLn $ "missing " ++ spec
-    else do
+  ifM (notM (doesFileExist spec))
+    (ifM initialPkgRepo
+      (putStrLn $ show br ++ ": initial repo")
+      (putStrLn $ "missing " ++ spec)) $
+    do
     mnvr <- pkgNameVerRel br spec
     case mnvr of
       Nothing -> do

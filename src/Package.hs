@@ -97,12 +97,10 @@ putPkgBrnchHdr pkg br =
   putStrLn $ "\n== " ++ takeFileName pkg ++ ":" ++ show br ++ " =="
 
 withExistingDirectory :: FilePath -> IO () -> IO ()
-withExistingDirectory dir act = do
-  hasDir <- doesDirectoryExist dir
-  if not hasDir
-    then error' $ "No such directory: " ++ dir
-    else
-    withCurrentDirectory dir act
+withExistingDirectory dir act =
+  ifM (doesDirectoryExist dir)
+    (withCurrentDirectory dir act)
+    (error' $ "No such directory: " ++ dir)
 
 -- newly created Fedora repos/branches have just one README commit
 initialPkgRepo :: IO Bool
@@ -140,16 +138,15 @@ withPackageDir remote action brs mdir pkg =
       gitSwitchBranch currentbranch
 
 clonePkg :: Maybe Branch -> Package -> IO ()
-clonePkg mbr pkg = do
-  exists <- doesDirectoryExist pkg
-  if exists then
-    putStrLn $ pkg ++ "/ already exists\n"
-    else do
-    let mbranch = case mbr of
-          Nothing -> []
-          Just br -> ["--branch", show br]
-    fasid <- fasIdFromKrb
-    git_ "clone" $ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg]
+clonePkg mbr pkg =
+  ifM (doesDirectoryExist pkg)
+    (putStrLn $ pkg ++ "/ already exists\n") $
+    do
+      let mbranch = case mbr of
+            Nothing -> []
+            Just br -> ["--branch", show br]
+      fasid <- fasIdFromKrb
+      git_ "clone" $ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg]
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
 pkgNameVerRel br spec = do

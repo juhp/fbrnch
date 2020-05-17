@@ -14,7 +14,6 @@ module Koji (
 import Data.Char (isDigit)
 
 import Fedora.Koji
-import SimpleCmd
 
 import Common
 import Common.System
@@ -58,16 +57,15 @@ kojiBuild target args = do
   putStrLn out
   let kojiurl = last $ words out
       task = read $ takeWhileEnd isDigit kojiurl
-  okay <- kojiWatchTask task
-  if not okay
-    then error' "scratch build failed"
-    else return kojiurl
+  ifM (kojiWatchTask task)
+    (return kojiurl) $
+    error' "scratch build failed"
   where
     kojiWatchTask :: Int -> IO Bool
-    kojiWatchTask task = do
-      res <- cmdBool "koji" ["watch-task", show task]
-      if res then return True
-        else do
+    kojiWatchTask task =
+      ifM (cmdBool "koji" ["watch-task", show task])
+      (return True) $
+      do
         mst <- kojiGetTaskState (TaskId task)
         case mst of
           Just TaskClosed -> return True
