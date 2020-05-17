@@ -67,25 +67,41 @@ findSpecfile = fileWithExtension ".spec"
       files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents "."
       maybe (error' ("No unique " ++ ext ++ " file found")) return $ listToMaybe files
 
--- FIXME assumed srpm in local dir
-generateSrpm :: FilePath -> IO FilePath
-generateSrpm spec = do
-  nvr <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}-%{version}-%{release}", spec]
-  let srpm = nvr <.> "src.rpm"
-  haveSrpm <- doesFileExist srpm
-  if haveSrpm then do
+rpmEval :: String -> IO (Maybe String)
+rpmEval s = do
+  res <- cmd "rpm" ["--eval", s]
+  return $ if null res || res == s then Nothing else Just res
+
+generateSrpm :: Maybe Branch -> FilePath -> IO FilePath
+generateSrpm mbr spec = do
+  distopt <- case mbr of
+               Nothing -> return []
+               Just br -> do
+                 dist <- branchDist br
+                 return ["--define", "dist " ++ rpmDistTag dist]
+  srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", "%{name}-%{version}-%{release}.src.rpm", spec]
+  srcrpmdir <-
+    ifM isPkgGitDir
+      (return "") $
+      rpmEval "_srcrpmdir" >>= maybe (error' "%_srcrpmdir undefined!") return
+  let srpm = srcrpmdir </> srpmfile
+      srpmdiropt = if null srcrpmdir then []
+                   else ["--define", "_srcrpmdir " ++ srcrpmdir]
+  ifM (notM $ doesFileExist srpm)
+    (buildSrpm (distopt ++ srpmdiropt)) $
+    do
     specTime <- getModificationTime spec
     srpmTime <- getModificationTime srpm
     if srpmTime > specTime
       then do
+      -- pretty print with ~/
       putStrLn $ srpm ++ " is up to date"
       return srpm
-      else buildSrpm
-    else buildSrpm
+      else buildSrpm (distopt ++ srpmdiropt)
   where
-    buildSrpm = do
-      srpm <- takeFileName . last . words <$> cmd "rpmbuild" ["-bs", spec]
-      putStrLn $ "Created " ++ srpm
+    buildSrpm opts = do
+      srpm <- last . words <$> cmd "rpmbuild" (opts ++ ["-bs", spec])
+      putStrLn $ "Created " ++ takeFileName srpm
       return srpm
 
 putPkgHdr :: String -> IO ()

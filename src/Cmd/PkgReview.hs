@@ -30,7 +30,7 @@ createReview noscratch mspec = do
     putStrLn "Existing review(s):"
     mapM_ putBug bugs
     prompt_ "Press Enter to continue"
-  srpm <- generateSrpm spec
+  srpm <- generateSrpm Nothing spec
   mkojiurl <- kojiScratchUrl noscratch srpm
   specSrpmUrls <- uploadPkgFiles pkg spec srpm
   bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
@@ -68,7 +68,7 @@ updateReview noscratch mspec = do
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   (bid,session) <- reviewBugIdSession pkg
   putBugId bid
-  srpm <- generateSrpm spec
+  srpm <- generateSrpm Nothing spec
   submitted <- checkForComment session bid (T.pack srpm)
   when submitted $
     error' "This NVR was already posted on the review bug: please bump"

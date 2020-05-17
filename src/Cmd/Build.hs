@@ -80,7 +80,7 @@ buildBranch merge scratch mtarget pkg br = do
         let target = fromMaybe (branchTarget br) mtarget
         if srpm
           then do
-          srpmfile <- generateSrpm spec
+          srpmfile <- generateSrpm (Just br) spec
           void $ kojiBuild target $ march ++ ["--fail-fast", srpmfile]
           else kojiBuildBranch target pkg $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ march
         --waitForbuild
