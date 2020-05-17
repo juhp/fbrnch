@@ -11,8 +11,9 @@ module Pagure (
   ) where
 
 import qualified Common.Text as T
-import System.FilePath
+
 import Fedora.Pagure
+import System.FilePath
 
 srcfpo :: String
 srcfpo = "src.fedoraproject.org"

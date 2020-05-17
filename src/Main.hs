@@ -113,11 +113,11 @@ dispatchCmd gitdir activeBranches =
 
     branchesPackages :: Parser ([Branch],[Package])
     branchesPackages = if gitdir then
-      pair <$> (many branchOpt <|> many branchArg) <*> pure []
-      else pair <$> many branchOpt <*> many (pkgArg "PACKAGE..") <|>
-           pair <$> many branchArg <*> some pkgOpt
+      pairSort <$> (many branchOpt <|> many branchArg) <*> pure []
+      else pairSort <$> many branchOpt <*> many (pkgArg "PACKAGE..") <|>
+           pairSort <$> many branchArg <*> some pkgOpt
 
-    pair a b = (a,b)
+    pairSort a b = ((reverse . sort) a, b)
 
     branchesRequestOpt :: Parser BranchesRequest
     branchesRequestOpt = flagWith' AllReleases 'a' "all" "Request branches for all current releases [default latest 2]" <|> BranchesRequest <$> many branchArg

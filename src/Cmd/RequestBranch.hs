@@ -31,7 +31,7 @@ requestBranches mock request = do
 requestPkgBranches :: Bool -> BranchesRequest -> String -> IO ()
 requestPkgBranches mock request pkg = do
   putPkgHdr pkg
-  gitPull
+  git_ "fetch" []
   active <- getFedoraBranched
   branches <- do
     let requested = case request of
@@ -49,14 +49,14 @@ requestPkgBranches mock request pkg = do
   where
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests brs = do
-      existing <- packageBranched
+      existing <- fedoraBranchesNoMaster localBranches
       forM_ brs $ \ br ->
         when (br `elem` existing) $
         putStrLn $ show br ++ " branch already exists"
       let brs' = brs \\ existing
       if null brs' then return []
         else do
-        current <- packagePagureBranched pkg
+        current <- fedoraBranchesNoMaster $ pagurePkgBranches pkg
         forM_ brs' $ \ br ->
           when (br `elem` current) $
           putStrLn $ show br ++ " remote branch already exists"

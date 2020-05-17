@@ -10,4 +10,5 @@ pullPkg :: String -> IO ()
 pullPkg pkg =
   withExistingDirectory pkg $ do
     checkWorkingDirClean
-    git_ "pull" ["--rebase"]
+    br <- gitCurrentBranch
+    gitMergeOrigin br

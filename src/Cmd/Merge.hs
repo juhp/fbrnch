@@ -11,13 +11,11 @@ import Prompt
 
 mergeCmd :: ([Branch],[Package]) -> IO ()
 mergeCmd =
-  withPackageBranches True runMergeBranch
+  withPackageBranches False runMergeBranch
   where
-    runMergeBranch :: Maybe Package -> Branch -> IO ()
-    runMergeBranch mpkg br = do
-      pkg <- getPackageName mpkg
-      checkWorkingDirClean
-      gitPull
+    runMergeBranch :: Package -> Branch -> IO ()
+    runMergeBranch pkg br = do
+      gitMergeOrigin br
       putPkgBrnchHdr pkg br
       gitSwitchBranch br
       unmerged <- mergeable br
@@ -28,9 +26,7 @@ mergeable br = do
   newerBr <- do
     branches <- getFedoraBranches
     return $ newerBranch branches br
-  ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show newerBr]
-  if ancestor then gitShortLog $ "HEAD.." ++ show newerBr
-    else return []
+  gitMergeable $ show newerBr
 
 mergeBranch :: [String] -> Branch -> IO ()
 mergeBranch _ Master = return ()

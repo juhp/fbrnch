@@ -19,16 +19,16 @@ import Package
 
 -- FIXME add --no-pull?
 -- FIXME --pending
+-- FIXME handle not cloned (remote only)
 statusCmd :: Bool -> ([Branch],[Package]) -> IO ()
 statusCmd reviews (brs,pkgs) = do
-  when reviews $
-    (map reviewBugToPackage <$> listReviews' True ReviewRepoCreated) >>= mapM_ (withPackageDir False statusBranch brs)
-  withPackageBranches False statusBranch (brs,pkgs)
+  reviewpkgs <- if reviews then
+    map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
+    else return []
+  withPackageBranches (null brs) statusBranch (brs, reviewpkgs ++ pkgs)
 
-statusBranch :: Maybe Package -> Branch -> IO ()
-statusBranch mpkg br = do
-  pkg <- getPackageName mpkg
-  checkWorkingDirClean
+statusBranch :: Package -> Branch -> IO ()
+statusBranch pkg br = do
   gitSwitchBranch br
   let spec = pkg <.> "spec"
   haveSpec <- doesFileExist spec

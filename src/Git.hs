@@ -2,7 +2,9 @@
 
 module Git (
   gitBool,
-  gitPull,
+  gitCurrentBranch,
+  gitMergeable,
+  gitMergeOrigin,
   gitPushSilent,
   gitShortLog,
   gitShortLogN,
@@ -32,15 +34,24 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
-gitRemoteBranched :: Branch -> IO Bool
-gitRemoteBranched br =
-  gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+gitCurrentBranch :: IO Branch
+gitCurrentBranch = do
+  active <- getFedoraBranches
+  readActiveBranch' active <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
 
-gitPull :: IO ()
-gitPull = do
-  pull <- git "pull" ["--rebase"]
-  unless ("Already up to date." `isPrefixOf` pull) $
-    putStrLn pull
+gitMergeable :: String -> IO [String]
+gitMergeable ref = do
+  ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
+  if ancestor then gitShortLog $ "HEAD.." ++ ref
+    else return []
+
+gitMergeOrigin :: Branch -> IO ()
+gitMergeOrigin br = do
+  commits <- gitMergeable $ "origin" </> show br
+  unless (null commits) $ do
+    rebase <- git "rebase" []
+    unless ("Already up to date." `isPrefixOf` rebase) $
+      putStrLn rebase
 
 gitShortLog :: String -> IO [String]
 gitShortLog range =
@@ -92,7 +103,8 @@ gitSwitchBranch br = do
       -- cmdSilent
       git_ "checkout" ["-q", show br]
     else do
-    remotebranch <- gitRemoteBranched br
+    -- check remote branch exists
+    remotebranch <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
     if not remotebranch
       then error' $ show br ++ " branch does not exist!"
       else

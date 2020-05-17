@@ -29,17 +29,13 @@ buildCmd :: Bool -> Maybe Scratch -> Maybe String -> ([Branch],[Package]) -> IO 
 buildCmd merge scratch mtarget (brs,pkgs) = do
   when (isJust mtarget && length brs > 1) $
     error' "You can only specify target with one branch"
-  withPackageBranches True (buildBranch False merge scratch mtarget) (brs,pkgs)
+  withPackageBranches False (buildBranch merge scratch mtarget) (brs,pkgs)
 
-buildBranch :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Maybe Package -> Branch -> IO ()
-buildBranch pulled merge scratch mtarget mpkg br = do
-  when (isNothing scratch)
-    checkWorkingDirClean
-  unless pulled
-    gitPull
-  pkg <- getPackageName mpkg
+buildBranch :: Bool -> Maybe Scratch -> Maybe String -> Package -> Branch -> IO ()
+buildBranch merge scratch mtarget pkg br = do
   putPkgBrnchHdr pkg br
   gitSwitchBranch br
+  when (isNothing scratch) $ gitMergeOrigin br
   newrepo <- initialPkgRepo
   tty <- hIsTerminalDevice stdin
   -- FIXME if already built or failed, also offer merge

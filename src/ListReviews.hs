@@ -50,4 +50,4 @@ listReviews' allopen status = do
           "https://pagure.io/releng/fedora-scm-requests/issue/"
 
     notBranched :: String -> IO Bool
-    notBranched pkg = null <$> packagePagureBranched pkg
+    notBranched pkg = null <$> fedoraBranchesNoMaster (pagurePkgBranches pkg)

@@ -1,8 +1,8 @@
 module Branches (
-  packageBranches,
-  packageBranched,
-  packagePagureBranched,
-  getCurrentBranch,
+  fedoraBranches,
+  fedoraBranchesNoMaster,
+  localBranches,
+  pagurePkgBranches,
   module Distribution.Fedora.Branch
 ) where
 
@@ -10,14 +10,8 @@ import Common
 
 import Distribution.Fedora.Branch
 import SimpleCmd
-import SimpleCmd.Git
 
 import Pagure
-
-getCurrentBranch :: IO Branch
-getCurrentBranch = do
-  active <- getFedoraBranches
-  readActiveBranch' active <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
 
 activeBranches :: [Branch] -> [String] -> [Branch]
 activeBranches active =
@@ -25,20 +19,21 @@ activeBranches active =
   {- HLINT ignore "Avoid reverse"-} -- reverse . sort is fast but not stabilizing
   reverse . sort . mapMaybe (readActiveBranch active)
 
-packageBranches :: IO [Branch]
-packageBranches = do
+fedoraBranches :: IO [String] -> IO [Branch]
+fedoraBranches mthd = do
   active <- getFedoraBranches
-  activeBranches active <$>
-    cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
+  activeBranches active <$> mthd
 
-packageBranched :: IO [Branch]
-packageBranched = do
+fedoraBranchesNoMaster :: IO [String] -> IO [Branch]
+fedoraBranchesNoMaster mthd = do
   active <- getFedoraBranched
-  activeBranches active <$>
-    cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
+  activeBranches active <$> mthd
 
-packagePagureBranched :: String -> IO [Branch]
-packagePagureBranched pkg = do
-  current <- getFedoraBranched
+localBranches :: IO [String]
+localBranches =
+  cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
+
+pagurePkgBranches :: String -> IO [String]
+pagurePkgBranches pkg = do
   res <- pagureListGitBranches srcfpo ("rpms/" ++ pkg)
-  return $ either error' (activeBranches current) res
+  return $ either error' id res

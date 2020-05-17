@@ -12,7 +12,6 @@ module Package (
   withExistingDirectory,
   initialPkgRepo,
   withPackageBranches,
-  withPackageDir,
   Package,
   pkgNameVerRel,
   pkgNameVerRel'
@@ -113,29 +112,30 @@ initialPkgRepo = do
 
 type Package = String
 
-withPackageBranches :: Bool -> (Maybe Package -> Branch -> IO ()) -> ([Branch],[Package]) -> IO ()
-withPackageBranches write action (brs,pkgs) =
+withPackageBranches :: Bool -> (Package -> Branch -> IO ()) -> ([Branch],[Package]) -> IO ()
+withPackageBranches newbrs action (brs,pkgs) =
   if null pkgs
   then do
     checkIsPkgGitDir
-    currentbranch <- getCurrentBranch
-    branches <- if null brs then packageBranches else return $ (reverse . sort) brs
-    mapM_ (action Nothing) branches
-    unless (length brs == 1) $
-      gitSwitchBranch currentbranch
-  else mapM_ (withPackageDir write action brs) pkgs
+    pkg <- getPackageName Nothing
+    withPackageDir newbrs action brs (Just ".") pkg
+  else mapM_ (withPackageDir newbrs action brs Nothing) pkgs
 
-withPackageDir :: Bool -> (Maybe Package -> Branch -> IO ()) -> [Branch] -> Package -> IO ()
-withPackageDir write action brs pkg =
-  withExistingDirectory pkg $ do
-    when write checkWorkingDirClean
+withPackageDir :: Bool -> (Package -> Branch -> IO ()) -> [Branch] -> Maybe FilePath -> Package -> IO ()
+withPackageDir remote action brs mdir pkg =
+  withExistingDirectory (fromMaybe pkg mdir) $ do
+    checkWorkingDirClean
     putPkgHdr pkg
     git_ "fetch" []
-    branches <- if null brs then packageBranches else return $ (reverse . sort) brs
-    when (null brs && write) $
-      putStrLn $ "\nBranches: " ++ unwords (map show branches)
-    currentbranch <- getCurrentBranch
-    mapM_ (action (Just pkg)) branches
+    branches <- if null brs then
+                  if remote then
+                    fedoraBranches $ pagurePkgBranches pkg
+                  else fedoraBranches localBranches
+                else return brs
+    when (null brs) $
+      putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
+    currentbranch <- gitCurrentBranch
+    mapM_ (action pkg) branches
     unless (length brs == 1) $
       gitSwitchBranch currentbranch
 
