@@ -71,7 +71,7 @@ statusBranch pkg br = do
                 putStrLn $ nvr ++ " (" ++ show status ++ ")"
               else do
                 putStr $ nvr ++ " (" ++ unwords tags ++ ")"
-                when (any ("updates-testing" `isSuffixOf`) tags) $ do
+                unless (isStable tags) $ do
                   updates <- bodhiUpdates
                              [makeItem "display_user" "0",
                               makeItem "builds" nvr]
@@ -91,6 +91,9 @@ statusBranch pkg br = do
               putStrLn ""
           else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
   where
+    isStable :: [String] -> Bool
+    isStable = not . all ("updates-testing" `isSuffixOf`)
+
     putAge :: NominalDiffTime -> IO ()
     putAge diff = do
       -- FIXME time-1.10 has formatTime of NominalDiffTime
