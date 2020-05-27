@@ -131,10 +131,9 @@ buildBranch merge scratch mtarget pkg br = do
       -- "^[Ss]ource[0-9]*:"
       source <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
       sources <- lines <$> readFile "sources"
-      when (length source /= length sources) $
-        putStrLn "Different numbers of Source fields and sources lines"
       forM_ source $ \ src ->
         when (isNothing (find (src `isInfixOf`) sources)) $
+        unlessM (doesFileExist (takeFileName src)) $
         -- FIXME offer to add source
         error' $ src ++ " not in sources"
 
