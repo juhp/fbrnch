@@ -4,7 +4,7 @@ extra-deps:
   - git: https://github.com/juhp/hsbugzilla.git
     commit: ae1fa7be0e3480c6979fc04f232cc09c16e4cb7d
   - git: https://github.com/juhp/fedora-dists.git
-    commit: f2004efbb7b06edbd24783a5397aa173900522e6
+    commit: 361ca6f8dba14e561d4725a1cc00185971c1e52c
   - http-directory-0.1.5
   - simple-cmd-args-0.1.6
   - simple-cmd-0.1.4
