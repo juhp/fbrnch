@@ -78,6 +78,6 @@ kojiBuild target args = do
 kojiBuildBranch :: String -> String -> [String] -> IO ()
 kojiBuildBranch target pkg args = do
   commit <- git "rev-parse" ["HEAD"]
-  let giturl = "git+https://src.fedoraproject.org/rpms" </> pkg </> ".git#" ++ commit
+  let giturl = "git+https://src.fedoraproject.org/rpms" </> pkg ++ ".git#" ++ commit
   -- FIXME --target
   void $ kojiBuild target $ args ++ ["--fail-fast", giturl]
