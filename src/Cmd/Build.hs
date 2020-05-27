@@ -50,12 +50,12 @@ buildBranch merge scratch mtarget pkg br = do
       putStrLn "Local commits:"
       mapM_ (putStrLn . simplifyCommitLog) unpushed
   let spec = pkg <.> "spec"
+  checkForSpecFile spec
   -- FIXME offer merge if newer branch has commits
   when (not (null unpushed) && isNothing scratch) $ do
     checkSourcesMatch spec
     when tty $ prompt_ "Press Enter to push and build"
     gitPushSilent
-  checkForSpecFile spec
   nvr <- pkgNameVerRel' br spec
   -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr
