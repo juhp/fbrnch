@@ -25,6 +25,7 @@ requestBranches mock request =
     do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
        mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request p) pkgs
 
+-- FIXME add --yes, or skip prompt when args given
 requestPkgBranches :: Bool -> BranchesRequest -> String -> IO ()
 requestPkgBranches mock request pkg = do
   putPkgHdr pkg
@@ -35,7 +36,7 @@ requestPkgBranches mock request pkg = do
                       AllReleases -> active
                       BranchesRequest [] -> take 2 active
                       BranchesRequest brs -> brs
-    inp <- prompt $ "Enter branches [" ++ unwords (map show requested) ++ "]"
+    inp <- prompt $ "Confirm branches [" ++ unwords (map show requested) ++ "]"
     return $ if null inp
              then requested
              else map (readActiveBranch' active) $ words inp
