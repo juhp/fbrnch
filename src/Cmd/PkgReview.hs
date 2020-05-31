@@ -19,6 +19,8 @@ import Package
 import Prompt
 
 -- FIXME run rpmlint
+-- FIXME add --mock option
+-- FIXME add --dependent pkgreview
 createReview :: Bool -> Maybe FilePath -> IO ()
 createReview noscratch mspec = do
   spec <- getSpecFile mspec
@@ -62,6 +64,7 @@ getSpecFile =
       if takeFileName f == f then return f
         else error' "Please run in the directory of the spec file"
 
+-- FIXME add --mock option
 updateReview :: Bool -> Maybe FilePath -> IO ()
 updateReview noscratch mspec = do
   spec <- getSpecFile mspec

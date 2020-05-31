@@ -1,6 +1,5 @@
 # UI
 - ask about bodhi update type
-- check latest tarball added
 
 - support containers/
 
@@ -14,30 +13,37 @@
 - depsort: rpmbuild-order
 - combine release updates into single bodhi command
 
+# misc
+- unify checking for pagure and git remote branches
+
 # auth
 - update pagure key in ~/.config/rpkg/fedpkg.conf
-- bugzilla login via rest, not python
+- bugzilla login via api key
 
 - test without .rpmmacros, ie in vanilla Fedora account
 
-# status
+# status/unbuilt/unreleased
 - list pending new package builds
 - list builds not pushed to bodhi
 - status when no local dir/checkout
 
 # libs
-- use gitlib?
 - koji
 - pagure
 - bodhi
 - bugzilla-redhat
+- (use hs-git)
 
 # external tools
 - fedpkg
-- koji
 - bodhi
+- koji
+
+- (future feature) rpminspect
+
+# required tools
+- curl
 - rpmbuild & rpmspec
 - klist
 - git
-- curl
 - ssh & scp
