@@ -3,7 +3,7 @@ packages: .
 source-repository-package
     type: git
     location: https://github.com/juhp/hsbugzilla.git
-    tag: ae1fa7be0e3480c6979fc04f232cc09c16e4cb7d
+    tag: a01bc593c56ec164554e4874df78e7d026f3a978
 
 source-repository-package
     type: git
@@ -13,12 +13,12 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/juhp/bodhi-hs.git
-    tag: f80aa0c1f279be63aff535a8ec600b3fb3cc6113
+    tag: 279a37b91aa15a54aeda1daa0ad79e4da71c0874
 
 source-repository-package
     type: git
     location: https://github.com/juhp/pagure-hs.git
-    tag: 63c3f77935ae8100373a05c9467f6a776d7e454e
+    tag: a246398bbc0535ca0ce7909728bfbf774894f92f
 
 source-repository-package
     type: git
