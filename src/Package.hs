@@ -82,7 +82,7 @@ generateSrpm mbr spec = do
   srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", "%{name}-%{version}-%{release}.src.rpm", spec]
   srcrpmdir <-
     ifM isPkgGitDir
-      (return "") $
+      (return ".") $
       rpmEval "%{_srcrpmdir}" >>= maybe (error' "%_srcrpmdir undefined!") return
   let srpm = srcrpmdir </> srpmfile
       srpmdiropt = if null srcrpmdir then []
