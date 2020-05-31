@@ -41,7 +41,7 @@ statusBranch pkg br = do
       Nothing -> do
         putStrLn "undefined NVR!\n"
         putStr "HEAD "
-        simplifyCommitLog <$> gitShortLog1 Nothing >>= putStrLn
+        gitShortLog1 Nothing >>= putStrLn . simplifyCommitLog
       Just nvr -> do
         -- unless (br == Master) $ do
         --   newerBr <- do
