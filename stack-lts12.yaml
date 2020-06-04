@@ -7,7 +7,7 @@ extra-deps:
     commit: 361ca6f8dba14e561d4725a1cc00185971c1e52c
   - http-directory-0.1.5
   - simple-cmd-args-0.1.6
-  - simple-cmd-0.1.4
+  - simple-cmd-0.2.0
   - git: https://github.com/juhp/bodhi-hs.git
     commit: 279a37b91aa15a54aeda1daa0ad79e4da71c0874
   - git: https://github.com/juhp/pagure-hs.git
