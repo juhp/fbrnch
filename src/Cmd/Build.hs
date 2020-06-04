@@ -54,6 +54,8 @@ buildBranch merge scratch mtarget pkg br = do
   -- FIXME offer merge if newer branch has commits
   when (not (null unpushed) && isNothing scratch) $ do
     checkSourcesMatch spec
+    -- FIXME offer partial push for master by ref input
+    -- FIXME print nvr
     when tty $ prompt_ "Press Enter to push and build"
     gitPushSilent
   nvr <- pkgNameVerRel' br spec
@@ -83,8 +85,7 @@ buildBranch merge scratch mtarget pkg br = do
           srpmfile <- generateSrpm (Just br) spec
           void $ kojiBuild target $ march ++ ["--fail-fast", srpmfile]
           else kojiBuildBranch target pkg $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ march
-        --waitForbuild
-        -- FIXME also add --bz and short buglists query
+        -- FIXME get bugs from changelog
         mBugSess <- if isNothing mlatest
           then do
           (mbid, session) <- bzReviewSession
