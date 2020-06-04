@@ -9,6 +9,6 @@ pullPkgs = mapM_ pullPkg
 pullPkg :: String -> IO ()
 pullPkg pkg =
   withExistingDirectory pkg $ do
-    checkWorkingDirClean
-    br <- gitCurrentBranch
-    gitMergeOrigin br
+  checkWorkingDirClean
+  br <- gitCurrentBranch
+  gitMergeOrigin br

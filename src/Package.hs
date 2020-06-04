@@ -14,7 +14,9 @@ module Package (
   withPackageBranches,
   Package,
   pkgNameVerRel,
-  pkgNameVerRel'
+  pkgNameVerRel',
+  rpmsNameVerRel,
+  ConstrainBranches(..)
   ) where
 
 import Common
@@ -126,38 +128,48 @@ initialPkgRepo = do
 
 type Package = String
 
-withPackageBranches :: Bool -> (Package -> Branch -> IO ()) -> ([Branch],[Package]) -> IO ()
-withPackageBranches newbrs action (brs,pkgs) =
+data ConstrainBranches = LocalBranches | RemoteBranches | NoGitRepo
+  deriving Eq
+
+withPackageBranches :: ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[Package]) -> IO ()
+withPackageBranches constraint action (brs,pkgs) =
   if null pkgs
   then do
-    checkIsPkgGitDir
+    gitdir <- isPkgGitDir
+    when (not gitdir && constraint /= NoGitRepo) $
+      error' "Not a pkg git dir"
     pkg <- getPackageName Nothing
-    withPackageDir newbrs action brs (Just ".") pkg
-  else mapM_ (withPackageDir newbrs action brs Nothing) pkgs
+    withPackageDir constraint action brs (Just ".") pkg
+  else mapM_ (withPackageDir constraint action brs Nothing) pkgs
 
-withPackageDir :: Bool -> (Package -> Branch -> IO ()) -> [Branch] -> Maybe FilePath -> Package -> IO ()
-withPackageDir remote action brs mdir pkg =
+withPackageDir :: ConstrainBranches -> (Package -> Branch -> IO ()) -> [Branch] -> Maybe FilePath -> Package -> IO ()
+withPackageDir constraint action brs mdir pkg =
   withExistingDirectory (fromMaybe pkg mdir) $ do
-    checkWorkingDirClean
-    putPkgHdr pkg
+  let haveGit = constraint /= NoGitRepo
+  when haveGit checkWorkingDirClean
+  putPkgHdr pkg
+  when haveGit $
     git_ "fetch" []
-    branches <- if null brs then
-                  if remote then
-                    fedoraBranches $ pagurePkgBranches pkg
-                  else fedoraBranches localBranches
-                else return brs
-    when (null brs) $
-      putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
-    currentbranch <- gitCurrentBranch
-    mapM_ (action pkg) branches
-    unless (length brs == 1) $
-      gitSwitchBranch currentbranch
+  branches <- if null brs then
+                case constraint of
+                  RemoteBranches -> fedoraBranches $ pagurePkgBranches pkg
+                  LocalBranches -> fedoraBranches localBranches
+                  NoGitRepo -> let singleton a = [a] in
+                                 singleton <$> systemBranch
+              else return brs
+  when (null brs && haveGit) $
+    putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
+  mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
+                    else return Nothing
+  mapM_ (action pkg) branches
+  when (length brs /= 1) $
+    whenJust mcurrentbranch gitSwitchBranch
 
 clonePkg :: Maybe Branch -> Package -> IO ()
 clonePkg mbr pkg =
   ifM (doesDirectoryExist pkg)
-    (putStrLn $ pkg ++ "/ already exists\n") $
-    do
+    {-then-} (putStrLn $ pkg ++ "/ already exists\n") $
+    {-else-} do
       let mbranch = case mbr of
             Nothing -> []
             Just br -> ["--branch", show br]
@@ -175,3 +187,12 @@ pkgNameVerRel' br spec = do
   case mnvr of
     Nothing -> error' $ "rpmspec failed to parse " ++ spec
     Just nvr -> return nvr
+
+rpmsNameVerRel :: Branch -> FilePath -> IO [String]
+rpmsNameVerRel br spec = do
+  dist <- branchDist br
+  rpmspec ["--define", "dist " ++ rpmDistTag dist] (Just "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") spec
+
+systemBranch :: IO Branch
+systemBranch =
+  readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]

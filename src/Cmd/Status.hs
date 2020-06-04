@@ -25,7 +25,8 @@ statusCmd reviews (brs,pkgs) = do
   reviewpkgs <- if reviews then
     map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
     else return []
-  withPackageBranches (null brs) statusBranch (brs, reviewpkgs ++ pkgs)
+  withPackageBranches (if null brs then RemoteBranches else LocalBranches)
+    statusBranch (brs, reviewpkgs ++ pkgs)
 
 statusBranch :: Package -> Branch -> IO ()
 statusBranch pkg br = do

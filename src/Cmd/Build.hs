@@ -29,7 +29,7 @@ buildCmd :: Bool -> Maybe Scratch -> Maybe String -> ([Branch],[Package]) -> IO 
 buildCmd merge scratch mtarget (brs,pkgs) = do
   when (isJust mtarget && length brs > 1) $
     error' "You can only specify target with one branch"
-  withPackageBranches False (buildBranch merge scratch mtarget) (brs,pkgs)
+  withPackageBranches LocalBranches (buildBranch merge scratch mtarget) (brs,pkgs)
 
 buildBranch :: Bool -> Maybe Scratch -> Maybe String -> Package -> Branch -> IO ()
 buildBranch merge scratch mtarget pkg br = do

@@ -39,6 +39,7 @@ executable fbrnch
                        Cmd.Build
                        Cmd.Clone
                        Cmd.Import
+                       Cmd.Local
                        Cmd.Merge
                        Cmd.PkgReview
                        Cmd.Pull

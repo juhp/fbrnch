@@ -6,6 +6,6 @@ import Package
 
 switchCmd :: Branch -> [Package] -> IO ()
 switchCmd br pkgs =
-  withPackageBranches False dummy ([br],pkgs)
+  withPackageBranches LocalBranches dummy ([br],pkgs)
   where
     dummy _ _ = gitSwitchBranch br

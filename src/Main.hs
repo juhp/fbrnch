@@ -14,6 +14,7 @@ import Cmd.Bugs
 import Cmd.Build
 import Cmd.Clone
 import Cmd.Import
+import Cmd.Local
 import Cmd.Merge
 import Cmd.PkgReview
 import Cmd.Pull
@@ -51,6 +52,10 @@ dispatchCmd gitdir activeBranches =
       mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s)" $
       buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> branchesPackages
+    , Subcommand "local" "Build locally" $
+      localCmd <$> installBranchPackages
+    , Subcommand "install" "Build locally and install package(s)" $
+      installCmd <$> installBranchPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
     , Subcommand "pull" "Git pull packages" $
@@ -118,6 +123,12 @@ dispatchCmd gitdir activeBranches =
            pairSort <$> many branchArg <*> some pkgOpt
 
     pairSort a b = ((reverse . sort) a, b)
+
+    installBranchPackages :: Parser (Maybe Branch,[Package])
+    installBranchPackages = if gitdir
+      then (,) <$> optional (branchOpt <|> branchArg) <*> pure []
+      else (,) <$> optional branchOpt <*> many (pkgArg "PACKAGE..") <|>
+           (,) <$> optional branchArg <*> some pkgOpt
 
     branchesRequestOpt :: Parser BranchesRequest
     branchesRequestOpt = flagWith' AllReleases 'a' "all" "Request branches for all current releases [default latest 2]" <|> BranchesRequest <$> many branchArg
