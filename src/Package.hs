@@ -7,6 +7,7 @@ module Package (
   getPackageName,
   findSpecfile,
   generateSrpm,
+  buildRPMs,
   putPkgHdr,
   putPkgBrnchHdr,
   withExistingDirectory,
@@ -105,6 +106,11 @@ generateSrpm mbr spec = do
       srpm <- last . words <$> cmd "rpmbuild" (opts ++ ["-bs", spec])
       putStrLn $ "Created " ++ takeFileName srpm
       return srpm
+
+buildRPMs :: Branch -> FilePath -> IO ()
+buildRPMs br spec = do
+  dist <- branchDist br
+  cmd_ "rpmbuild" ["--define", "dist " ++ rpmDistTag dist, "-bb", spec]
 
 putPkgHdr :: String -> IO ()
 putPkgHdr pkg =
