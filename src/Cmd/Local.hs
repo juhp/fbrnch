@@ -14,7 +14,8 @@ installCmd (mbr,pkgs) =
 installPkg :: String -> Branch -> IO ()
 installPkg pkg br = do
   gitdir <- isPkgGitDir
-  when gitdir $
+  when gitdir $ do
+    putPkgBrnchHdr pkg br
     gitSwitchBranch br
   spec <- if gitdir then return $ pkg <.> "spec"
           else findSpecfile
@@ -29,7 +30,8 @@ localCmd (mbr,pkgs) =
 localBuildPkg :: String -> Branch -> IO ()
 localBuildPkg pkg br = do
   gitdir <- isPkgGitDir
-  when gitdir $
+  when gitdir $ do
+    putPkgBrnchHdr pkg br
     gitSwitchBranch br
   spec <- if gitdir then return $ pkg <.> "spec"
           else findSpecfile
