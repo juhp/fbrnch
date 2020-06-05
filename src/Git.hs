@@ -76,7 +76,7 @@ gitPushSilent :: IO ()
 gitPushSilent = do
   putStr "git pushing... "
   out <- cmdQuiet "git" ["push", "--quiet"]
-  putStrLn $ if null out then "done" else "\n" ++ out
+  putStrLn $ if null out then "done\n" else "\n" ++ out
 
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
