@@ -19,7 +19,7 @@ mergeCmd =
       putPkgBrnchHdr pkg br
       gitSwitchBranch br
       unmerged <- mergeable br
-      mergeBranch unmerged br
+      mergeBranch False unmerged br
 
 mergeable :: Branch -> IO [String]
 mergeable br = do
@@ -28,10 +28,10 @@ mergeable br = do
     return $ newerBranch branches br
   gitMergeable $ show newerBr
 
-mergeBranch :: [String] -> Branch -> IO ()
-mergeBranch _ Master = return ()
-mergeBranch [] _ = return ()
-mergeBranch unmerged br = do
+mergeBranch :: Bool -> [String] -> Branch -> IO ()
+mergeBranch _ _ Master = return ()
+mergeBranch _ [] _ = return ()
+mergeBranch build unmerged br = do
   newerBr <- do
     branches <- getFedoraBranches
     return $ newerBranch branches br
@@ -46,7 +46,7 @@ mergeBranch unmerged br = do
   -- FIXME avoid Mass_Rebuild bumps
   mhash <-
     if newrepo then return $ Just ""
-    else mergePrompt $ "Press Enter to merge " ++ show newerBr ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
+    else mergePrompt $ "Press Enter to merge " ++ (if build then "and build " else "") ++ show newerBr ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
   case mhash of
     Nothing -> return ()
     Just hash -> do
