@@ -16,7 +16,7 @@ import Pagure
 activeBranches :: [Branch] -> [String] -> [Branch]
 activeBranches active =
   -- newest branch first
-  {- HLINT ignore "Avoid reverse"-} -- reverse . sort is fast but not stabilizing
+  {- HLINT ignore "Avoid reverse"-} -- no longer as of hlint-3.0
   reverse . sort . mapMaybe (readActiveBranch active)
 
 fedoraBranches :: IO [String] -> IO [Branch]
