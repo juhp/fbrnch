@@ -61,6 +61,7 @@ kojiBuild target args = do
     (return kojiurl) $
     error' "scratch build failed"
   where
+    -- FIXME filter/simplify output
     kojiWatchTask :: Int -> IO Bool
     kojiWatchTask task =
       ifM (cmdBool "koji" ["watch-task", show task])
