@@ -25,14 +25,15 @@ data Scratch = AllArches | Arch String
 -- FIXME --no-fast-fail
 -- FIXME --(no-)rpmlint (only run for master?)
 -- FIXME support --rebuild-srpm --wait-build=NVR --background
+-- FIXME add --override
 buildCmd :: Bool -> Maybe Scratch -> Maybe String -> ([Branch],[Package]) -> IO ()
 buildCmd merge scratch mtarget (brs,pkgs) = do
   when (isJust mtarget && length brs > 1) $
     error' "You can only specify target with one branch"
-  withPackageBranches LocalBranches (buildBranch merge scratch mtarget) (brs,pkgs)
+  withPackageBranches LocalBranches (buildBranch merge False scratch mtarget) (brs,pkgs)
 
-buildBranch :: Bool -> Maybe Scratch -> Maybe String -> Package -> Branch -> IO ()
-buildBranch merge scratch mtarget pkg br = do
+buildBranch :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Package -> Branch -> IO ()
+buildBranch merge override scratch mtarget pkg br = do
   putPkgBrnchHdr pkg br
   gitSwitchBranch br
   when (isNothing scratch) $ gitMergeOrigin br
@@ -103,7 +104,7 @@ buildBranch merge scratch mtarget pkg br = do
           bodhiUpdate (fmap fst mBugSess) changelog nvr
           -- FIXME override option or autochain
           -- FIXME prompt for override note
-          --when False $ bodhiOverrides "save" "FIXME" nvr
+          when (override && br /= Master) $ bodhiCreateOverride nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do
@@ -144,3 +145,16 @@ buildBranch merge scratch mtarget pkg br = do
         if null rest then Nothing
         else let bid = takeWhile isDigit $ tail rest in
           if null bid then Nothing else Just bid
+
+    bodhiCreateOverride :: String -> IO ()
+    bodhiCreateOverride nvr = do
+      putStrLn $ "Creating Bodhi Override for " ++ nvr ++ ":"
+      ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building", "--duration", "7", nvr]
+      unless ok $ do
+        moverride <- bodhiOverride nvr
+        case moverride of
+          Nothing -> do
+            putStrLn "bodhi override failed"
+            prompt_ "Press Enter to retry"
+            bodhiCreateOverride nvr
+          Just obj -> print obj
