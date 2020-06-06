@@ -1,5 +1,7 @@
 module Cmd.Local (installCmd, localCmd) where
 
+import Distribution.RPM.Build.Order
+
 import Branches
 import Common
 import Common.System
@@ -8,8 +10,11 @@ import Package
 
 -- FIXME --force
 installCmd :: (Maybe Branch,[String]) -> IO ()
-installCmd (mbr,pkgs) =
-  withPackageBranches NoGitRepo installPkg (maybeToList mbr,pkgs)
+installCmd (mbr,pkgs) = do
+  packages <- dependencySort pkgs
+  when (packages /= pkgs) $
+    putStrLn $ "Ordered: " ++ unwords packages
+  withPackageBranches NoGitRepo installPkg (maybeToList mbr,packages)
 
 installPkg :: String -> Branch -> IO ()
 installPkg pkg br = do
