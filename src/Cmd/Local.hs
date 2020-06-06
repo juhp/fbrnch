@@ -14,7 +14,7 @@ installCmd (mbr,pkgs) = do
   packages <- dependencySort pkgs
   when (packages /= pkgs) $
     putStrLn $ "Ordered: " ++ unwords packages
-  withPackageBranches NoGitRepo installPkg (maybeToList mbr,packages)
+  withPackageByBranches NoGitRepo installPkg (maybeToList mbr,packages)
 
 installPkg :: String -> Branch -> IO ()
 installPkg pkg br = do
@@ -25,7 +25,7 @@ installPkg pkg br = do
 
 localCmd :: (Maybe Branch,[String]) -> IO ()
 localCmd (mbr,pkgs) =
-  withPackageBranches NoGitRepo localBuildPkg (maybeToList mbr,pkgs)
+  withPackageByBranches NoGitRepo localBuildPkg (maybeToList mbr,pkgs)
 
 localBuildPkg :: String -> Branch -> IO ()
 localBuildPkg pkg br = do

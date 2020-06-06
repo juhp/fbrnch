@@ -12,8 +12,8 @@ module Package (
   putPkgBrnchHdr,
   withExistingDirectory,
   initialPkgRepo,
-  withPackageBranches,
   Package,
+  withPackageByBranches,
   pkgNameVerRel,
   pkgNameVerRel',
   rpmsNameVerRel,
@@ -137,8 +137,9 @@ type Package = String
 data ConstrainBranches = LocalBranches | RemoteBranches | NoGitRepo
   deriving Eq
 
-withPackageBranches :: ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[Package]) -> IO ()
-withPackageBranches constraint action (brs,pkgs) =
+-- do package over branches
+withPackageByBranches :: ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[String]) -> IO ()
+withPackageByBranches constraint action (brs,pkgs) =
   if null pkgs
   then do
     gitdir <- isPkgGitDir
