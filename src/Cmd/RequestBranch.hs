@@ -21,7 +21,7 @@ data BranchesRequest = AllReleases | BranchesRequest [Branch]
 requestBranches :: Bool -> BranchesRequest -> IO ()
 requestBranches mock request =
   ifM isPkgGitDir
-    (Package <$> getDirectoryName >>= requestPkgBranches mock request) $
+    (getDirectoryName >>= requestPkgBranches mock request . Package) $
     do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
        mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request (Package p)) pkgs
 

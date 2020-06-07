@@ -142,7 +142,7 @@ initialPkgRepo = do
 data ConstrainBranches = LocalBranches | RemoteBranches | NoGitRepo
   deriving Eq
 
-data Package = Package {unpackage :: String}
+newtype Package = Package {unpackage :: String}
 
 packagePath :: String -> (FilePath, Package)
 packagePath path =
@@ -161,15 +161,12 @@ withPackageByBranches constraint action (brs,pkgs) =
       error' "Not a pkg git dir"
     pkg <- Package <$> getDirectoryName
     withPackageDir constraint action brs (".", pkg)
-  else mapM_ (withPackageDir constraint action brs) $ map packagePath pkgs
+  else mapM_ (withPackageDir constraint action brs . packagePath) pkgs
 
 withPackageDir :: ConstrainBranches -> (Package -> Branch -> IO ()) -> [Branch] -> (FilePath, Package) -> IO ()
 withPackageDir constraint action brs (dir, pkg) =
   withExistingDirectory dir $ do
-  haveGit <- isPkgGitDir
-  when (haveGit && constraint /= NoGitRepo) checkWorkingDirClean
-  putPkgHdr pkg
-  when haveGit $ git_ "fetch" []
+  haveGit <- setupGit pkg constraint
   mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                     else return Nothing
   branches <- if null brs then
@@ -186,6 +183,14 @@ withPackageDir constraint action brs (dir, pkg) =
   when (length brs /= 1) $
     whenJust mcurrentbranch gitSwitchBranch
 
+setupGit :: Package -> ConstrainBranches -> IO Bool
+setupGit pkg constraint = do
+  haveGit <- isPkgGitDir
+  when (haveGit && constraint /= NoGitRepo) checkWorkingDirClean
+  putPkgHdr pkg
+  when haveGit $ git_ "fetch" []
+  return haveGit
+
 -- do branch over packages
 withBranchByPackages :: ConstrainBranches -> (Branch -> Package -> IO ()) -> ([Branch],[String]) -> IO ()
 withBranchByPackages constraint action (brs,pkgs) = do
@@ -195,12 +200,9 @@ withBranchByPackages constraint action (brs,pkgs) = do
     error' "Please specify at least one branch"
   forM_ brs $ \ br ->
     forM_ (map packagePath pkgs) $ \ (dir,pkg) ->
-      withExistingDirectory dir $ do
-      haveGit <- isPkgGitDir
-      when (haveGit && constraint /= NoGitRepo) checkWorkingDirClean
-      putPkgHdr pkg
-      when haveGit $ git_ "fetch" []
-      action br pkg
+    withExistingDirectory dir $ do
+    void $ setupGit pkg constraint
+    action br pkg
 
 clonePkg :: Maybe Branch -> String -> IO ()
 clonePkg mbr pkg =
