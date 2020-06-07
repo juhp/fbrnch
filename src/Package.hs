@@ -13,6 +13,7 @@ module Package (
   withExistingDirectory,
   initialPkgRepo,
   Package,
+  withBranchByPackages,
   withPackageByBranches,
   pkgNameVerRel,
   pkgNameVerRel',
@@ -173,7 +174,23 @@ withPackageDir constraint action brs mdir pkg =
   when (length brs /= 1) $
     whenJust mcurrentbranch gitSwitchBranch
 
-clonePkg :: Maybe Branch -> Package -> IO ()
+-- do branch over packages
+withBranchByPackages :: ConstrainBranches -> (Branch -> Package -> IO ()) -> ([Branch],[String]) -> IO ()
+withBranchByPackages constraint action (brs,pkgs) = do
+  when (null pkgs) $
+    error' "Please give at least one package"
+  when (null brs) $
+    error' "Please specify at least one branch"
+  forM_ brs $ \ br ->
+    forM_ (map packagePath pkgs) $ \ (dir,pkg) ->
+      withExistingDirectory dir $ do
+      haveGit <- isPkgGitDir
+      when (haveGit && constraint /= NoGitRepo) checkWorkingDirClean
+      putPkgHdr pkg
+      when haveGit $ git_ "fetch" []
+      action br pkg
+
+clonePkg :: Maybe Branch -> String -> IO ()
 clonePkg mbr pkg =
   ifM (doesDirectoryExist pkg)
     {-then-} (putStrLn $ pkg ++ "/ already exists\n") $
