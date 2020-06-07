@@ -3,7 +3,7 @@ module Cmd.Pull (pullPkgs) where
 import Git
 import Package
 
-pullPkgs :: [Package] -> IO ()
+pullPkgs :: [String] -> IO ()
 pullPkgs = mapM_ pullPkg
 
 pullPkg :: String -> IO ()

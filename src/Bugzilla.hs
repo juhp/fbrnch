@@ -63,7 +63,7 @@ import Web.Bugzilla.Search
 import Bugzilla.Login
 import Bugzilla.NewId
 import Bugzilla.ValidLogin
-import Package (getPackageName)
+import Package (getDirectoryName)
 import Prompt
 
 postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
@@ -89,7 +89,7 @@ postComment session bid comment = do
 
 bzReviewSession :: IO (Maybe BugId,BugzillaSession)
 bzReviewSession = do
-  pkg <- getPackageName Nothing
+  pkg <- getDirectoryName
   (bids,session) <- bugIdsSession $
                     pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bids of

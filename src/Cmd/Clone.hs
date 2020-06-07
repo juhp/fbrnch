@@ -18,5 +18,6 @@ cloneCmd mbr request = do
             CloneUser mid -> do
               userid <- maybe fasIdFromKrb return mid
               map (takeFileName . T.unpack) <$> pagureUserRepos srcfpo userid
+            -- FIXME detect/prevent "path/dir"
             ClonePkgs ps -> return ps
   mapM_ (clonePkg mbr) pkgs

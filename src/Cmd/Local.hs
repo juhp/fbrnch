@@ -16,7 +16,7 @@ installCmd (mbr,pkgs) = do
     putStrLn $ "Ordered: " ++ unwords packages
   withPackageByBranches NoGitRepo installPkg (maybeToList mbr,packages)
 
-installPkg :: String -> Branch -> IO ()
+installPkg :: Package -> Branch -> IO ()
 installPkg pkg br = do
   spec <- localBranchSpecFile pkg br
   rpms <- rpmsNameVerRel br spec
@@ -27,17 +27,17 @@ localCmd :: (Maybe Branch,[String]) -> IO ()
 localCmd (mbr,pkgs) =
   withPackageByBranches NoGitRepo localBuildPkg (maybeToList mbr,pkgs)
 
-localBuildPkg :: String -> Branch -> IO ()
+localBuildPkg :: Package -> Branch -> IO ()
 localBuildPkg pkg br = do
   spec <- localBranchSpecFile pkg br
   buildRPMs br spec
 
-localBranchSpecFile :: String -> Branch -> IO FilePath
+localBranchSpecFile :: Package -> Branch -> IO FilePath
 localBranchSpecFile pkg br = do
   gitdir <- isPkgGitDir
   when gitdir $ do
     putPkgBrnchHdr pkg br
     gitSwitchBranch br
   if gitdir
-    then return $ pkg <.> "spec"
+    then return $ packageSpec pkg
     else findSpecfile

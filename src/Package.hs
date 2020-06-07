@@ -4,6 +4,7 @@ module Package (
   fedpkg_,
   checkForSpecFile,
   getChangeLog,
+  getDirectoryName,
   getPackageName,
   findSpecfile,
   generateSrpm,
@@ -12,9 +13,10 @@ module Package (
   putPkgBrnchHdr,
   withExistingDirectory,
   initialPkgRepo,
-  Package,
   withBranchByPackages,
   withPackageByBranches,
+  Package(..),
+  packageSpec,
   pkgNameVerRel,
   pkgNameVerRel',
   rpmsNameVerRel,
@@ -58,9 +60,13 @@ getChangeLog spec = do
         1 -> removePrefix "- " cs
         _ -> cs
 
-getPackageName :: Maybe FilePath -> IO String
-getPackageName mdir =
-  takeFileName <$> maybe getCurrentDirectory return mdir
+getDirectoryName :: IO String
+getDirectoryName =
+  takeFileName <$> getCurrentDirectory
+
+getPackageName :: FilePath -> Package
+getPackageName =
+  Package . takeFileName
 
 findSpecfile :: IO FilePath
 findSpecfile = fileWithExtension ".spec"
@@ -113,13 +119,13 @@ buildRPMs br spec = do
   dist <- branchDist br
   cmd_ "rpmbuild" ["--define", "dist " ++ rpmDistTag dist, "-bb", spec]
 
-putPkgHdr :: String -> IO ()
+putPkgHdr :: Package -> IO ()
 putPkgHdr pkg =
-  putStrLn $ "\n= " ++ takeFileName pkg ++ " ="
+  putStrLn $ "\n= " ++ unpackage pkg ++ " ="
 
-putPkgBrnchHdr :: String -> Branch -> IO ()
+putPkgBrnchHdr :: Package -> Branch -> IO ()
 putPkgBrnchHdr pkg br =
-  putStrLn $ "\n== " ++ takeFileName pkg ++ ":" ++ show br ++ " =="
+  putStrLn $ "\n== " ++ unpackage pkg ++ ":" ++ show br ++ " =="
 
 withExistingDirectory :: FilePath -> IO () -> IO ()
 withExistingDirectory dir act =
@@ -133,10 +139,17 @@ initialPkgRepo = do
   commits <- length <$> gitShortLogN 2 Nothing
   return $ commits <= 1
 
-type Package = String
-
 data ConstrainBranches = LocalBranches | RemoteBranches | NoGitRepo
   deriving Eq
+
+data Package = Package {unpackage :: String}
+
+packagePath :: String -> (FilePath, Package)
+packagePath path =
+  (path, Package (takeFileName path))
+
+packageSpec :: Package -> FilePath
+packageSpec pkg = unpackage pkg <.> "spec"
 
 -- do package over branches
 withPackageByBranches :: ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[String]) -> IO ()
@@ -146,23 +159,22 @@ withPackageByBranches constraint action (brs,pkgs) =
     gitdir <- isPkgGitDir
     when (not gitdir && constraint /= NoGitRepo) $
       error' "Not a pkg git dir"
-    pkg <- getPackageName Nothing
-    withPackageDir constraint action brs (Just ".") pkg
-  else mapM_ (withPackageDir constraint action brs Nothing) pkgs
+    pkg <- Package <$> getDirectoryName
+    withPackageDir constraint action brs (".", pkg)
+  else mapM_ (withPackageDir constraint action brs) $ map packagePath pkgs
 
-withPackageDir :: ConstrainBranches -> (Package -> Branch -> IO ()) -> [Branch] -> Maybe FilePath -> Package -> IO ()
-withPackageDir constraint action brs mdir pkg =
-  withExistingDirectory (fromMaybe pkg mdir) $ do
+withPackageDir :: ConstrainBranches -> (Package -> Branch -> IO ()) -> [Branch] -> (FilePath, Package) -> IO ()
+withPackageDir constraint action brs (dir, pkg) =
+  withExistingDirectory dir $ do
   haveGit <- isPkgGitDir
   when (haveGit && constraint /= NoGitRepo) checkWorkingDirClean
   putPkgHdr pkg
-  when haveGit $
-    git_ "fetch" []
+  when haveGit $ git_ "fetch" []
   mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                     else return Nothing
   branches <- if null brs then
                 case constraint of
-                  RemoteBranches -> fedoraBranches $ pagurePkgBranches pkg
+                  RemoteBranches -> fedoraBranches $ pagurePkgBranches (unpackage pkg)
                   LocalBranches -> fedoraBranches localBranches
                   NoGitRepo -> if haveGit then return $ maybeToList mcurrentbranch
                                else let singleton a = [a] in

@@ -20,7 +20,7 @@ import Package
 -- FIXME add --no-pull?
 -- FIXME --pending
 -- FIXME handle not cloned (remote only)
-statusCmd :: Bool -> ([Branch],[Package]) -> IO ()
+statusCmd :: Bool -> ([Branch],[String]) -> IO ()
 statusCmd reviews (brs,pkgs) = do
   reviewpkgs <- if reviews then
     map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
@@ -31,7 +31,7 @@ statusCmd reviews (brs,pkgs) = do
 statusBranch :: Package -> Branch -> IO ()
 statusBranch pkg br = do
   gitSwitchBranch br
-  let spec = pkg <.> "spec"
+  let spec = packageSpec pkg
   ifM (notM (doesFileExist spec))
     (ifM initialPkgRepo
       (putStrLn $ show br ++ ": initial repo")
@@ -59,7 +59,7 @@ statusBranch pkg br = do
           mbuild <- kojiGetBuildID nvr
           case mbuild of
             Nothing -> do
-              mlatest <- kojiLatestNVR (branchDestTag br) pkg
+              mlatest <- kojiLatestNVR (branchDestTag br) (unpackage pkg)
               case mlatest of
                 Nothing -> putStrLn $ "new " ++ nvr
                 Just latest ->

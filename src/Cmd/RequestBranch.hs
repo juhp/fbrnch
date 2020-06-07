@@ -21,12 +21,12 @@ data BranchesRequest = AllReleases | BranchesRequest [Branch]
 requestBranches :: Bool -> BranchesRequest -> IO ()
 requestBranches mock request =
   ifM isPkgGitDir
-    (getPackageName Nothing >>= requestPkgBranches mock request) $
+    (Package <$> getDirectoryName >>= requestPkgBranches mock request) $
     do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
-       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request p) pkgs
+       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request (Package p)) pkgs
 
 -- FIXME add --yes, or skip prompt when args given
-requestPkgBranches :: Bool -> BranchesRequest -> String -> IO ()
+requestPkgBranches :: Bool -> BranchesRequest -> Package -> IO ()
 requestPkgBranches mock request pkg = do
   putPkgHdr pkg
   git_ "fetch" []
@@ -54,7 +54,7 @@ requestPkgBranches mock request pkg = do
       let brs' = brs \\ existing
       if null brs' then return []
         else do
-        current <- fedoraBranchesNoMaster $ pagurePkgBranches pkg
+        current <- fedoraBranchesNoMaster $ pagurePkgBranches (unpackage pkg)
         forM_ brs' $ \ br ->
           when (br `elem` current) $
           putStrLn $ show br ++ " remote branch already exists"
@@ -70,9 +70,9 @@ requestPkgBranches mock request pkg = do
 
     notExistingRequest :: [(Integer,String,T.Text)] -> Branch -> IO Bool
     notExistingRequest requests br = do
-      let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ pkg ++ "\"") ==) . snd3) requests
+      let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unpackage pkg ++ "\"") ==) . snd3) requests
       unless (null pending) $ do
-        putStrLn $ "Branch request already open for " ++ pkg ++ ":" ++ show br
+        putStrLn $ "Branch request already open for " ++ unpackage pkg ++ ":" ++ show br
         mapM_ printScmIssue pending
       return $ null pending
 

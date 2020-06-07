@@ -26,7 +26,6 @@ import Cmd.Switch
 
 import Bugzilla (testBZlogin)
 import ListReviews
-import Package (Package)
 import Paths_fbrnch (version)
 
 main :: IO ()
@@ -110,13 +109,13 @@ dispatchCmd gitdir activeBranches =
     anyBranchM :: ReadM Branch
     anyBranchM = eitherReader eitherBranch
 
-    pkgArg :: String -> Parser Package
+    pkgArg :: String -> Parser String
     pkgArg lbl = removeSuffix "/" <$> strArg lbl
 
     pkgOpt :: Parser String
     pkgOpt = removeSuffix "/" <$> strOptionWith 'p' "package" "PKG" "package"
 
-    branchesPackages :: Parser ([Branch],[Package])
+    branchesPackages :: Parser ([Branch],[String])
     branchesPackages = if gitdir then
       pairSort <$> (many branchOpt <|> many branchArg) <*> pure []
       else pairSort <$> many branchOpt <*> many (pkgArg "PACKAGE..") <|>
@@ -124,7 +123,7 @@ dispatchCmd gitdir activeBranches =
 
     pairSort a b = ((reverse . sort) a, b)
 
-    installBranchPackages :: Parser (Maybe Branch,[Package])
+    installBranchPackages :: Parser (Maybe Branch,[String])
     installBranchPackages = if gitdir
       then (,) <$> optional (branchOpt <|> branchArg) <*> pure []
       else (,) <$> optional branchOpt <*> many (pkgArg "PACKAGE..") <|>

@@ -9,7 +9,7 @@ import Git
 import Package
 import Prompt
 
-mergeCmd :: ([Branch],[Package]) -> IO ()
+mergeCmd :: ([Branch],[String]) -> IO ()
 mergeCmd =
   withPackageByBranches LocalBranches runMergeBranch
   where

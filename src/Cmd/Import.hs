@@ -16,7 +16,7 @@ import Package
 import Prompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
-importCmd :: [Package] -> IO ()
+importCmd :: [String] -> IO ()
 importCmd ps = do
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviews ReviewRepoCreated
@@ -26,7 +26,7 @@ importCmd ps = do
 -- FIXME check not in a different git dir
 importPkg :: String -> IO ()
 importPkg pkg = do
-  putPkgHdr pkg
+  putPkgHdr (Package pkg)
   dir <- getCurrentDirectory
   when (pkg /= takeFileName dir) $ do
     direxists <- doesDirectoryExist pkg
