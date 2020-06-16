@@ -81,7 +81,9 @@ gitPushSilent = do
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
   clean <- gitBool "diff-index" ["--quiet", "HEAD"]
-  unless clean $ error' "Working dir is not clean"
+  unless clean $ do
+    dir <- getCurrentDirectory
+    error' $ "Working dir is not clean: " ++ dir
 
 checkIsPkgGitDir :: IO ()
 checkIsPkgGitDir = do
