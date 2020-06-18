@@ -54,7 +54,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "local" "Build locally" $
       localCmd <$> installBranchPackages
     , Subcommand "install" "Build locally and install package(s)" $
-      installCmd <$> installBranchPackages
+      installCmd <$> switchWith 'r' "reinstall" "use dnf reinstall" <*> installBranchPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
     , Subcommand "pull" "Git pull packages" $

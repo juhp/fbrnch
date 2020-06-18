@@ -8,20 +8,19 @@ import Common.System
 import Git
 import Package
 
--- FIXME --force
-installCmd :: (Maybe Branch,[String]) -> IO ()
-installCmd (mbr,pkgs) = do
+installCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
+installCmd reinstall (mbr,pkgs) = do
   packages <- dependencySort pkgs
   when (packages /= pkgs) $
     putStrLn $ "Ordered: " ++ unwords packages
-  withPackageByBranches NoGitRepo installPkg (maybeToList mbr,packages)
+  withPackageByBranches NoGitRepo (installPkg reinstall) (maybeToList mbr,packages)
 
-installPkg :: Package -> Branch -> IO ()
-installPkg pkg br = do
+installPkg :: Bool -> Package -> Branch -> IO ()
+installPkg reinstall pkg br = do
   spec <- localBranchSpecFile pkg br
   rpms <- rpmsNameVerRel br spec
   buildRPMs br spec
-  sudo_ "dnf" $ "install" : rpms
+  sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : rpms
 
 localCmd :: (Maybe Branch,[String]) -> IO ()
 localCmd (mbr,pkgs) =
