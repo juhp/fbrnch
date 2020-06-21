@@ -59,7 +59,7 @@ statusBranch pkg br = do
           mbuild <- kojiGetBuildID nvr
           case mbuild of
             Nothing -> do
-              mlatest <- kojiLatestNVR (branchDestTag br) (unpackage pkg)
+              mlatest <- kojiLatestNVR (branchDestTag br) (unPackage pkg)
               case mlatest of
                 Nothing -> putStrLn $ "new " ++ nvr
                 Just latest ->

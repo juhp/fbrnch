@@ -119,14 +119,6 @@ buildRPMs br spec = do
   dist <- branchDist br
   cmd_ "rpmbuild" ["--define", "dist " ++ rpmDistTag dist, "-bb", spec]
 
-putPkgHdr :: Package -> IO ()
-putPkgHdr pkg =
-  putStrLn $ "\n= " ++ unpackage pkg ++ " ="
-
-putPkgBrnchHdr :: Package -> Branch -> IO ()
-putPkgBrnchHdr pkg br =
-  putStrLn $ "\n== " ++ unpackage pkg ++ ":" ++ show br ++ " =="
-
 withExistingDirectory :: FilePath -> IO () -> IO ()
 withExistingDirectory dir act =
   ifM (doesDirectoryExist dir)
@@ -142,14 +134,22 @@ initialPkgRepo = do
 data ConstrainBranches = LocalBranches | RemoteBranches | NoGitRepo
   deriving Eq
 
-newtype Package = Package {unpackage :: String}
+newtype Package = Package {unPackage :: String}
+
+putPkgHdr :: Package -> IO ()
+putPkgHdr pkg =
+  putStrLn $ "\n= " ++ unPackage pkg ++ " ="
+
+putPkgBrnchHdr :: Package -> Branch -> IO ()
+putPkgBrnchHdr pkg br =
+  putStrLn $ "\n== " ++ unPackage pkg ++ ":" ++ show br ++ " =="
 
 packagePath :: String -> (FilePath, Package)
 packagePath path =
   (path, Package (takeFileName path))
 
 packageSpec :: Package -> FilePath
-packageSpec pkg = unpackage pkg <.> "spec"
+packageSpec pkg = unPackage pkg <.> "spec"
 
 -- do package over branches
 withPackageByBranches :: Bool -> ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[String]) -> IO ()
@@ -171,7 +171,7 @@ withPackageByBranches quiet constraint action (brs,pkgs) =
                         else return Nothing
       branches <- if null brs then
                     case constraint of
-                      RemoteBranches -> fedoraBranches $ pagurePkgBranches (unpackage pkg)
+                      RemoteBranches -> fedoraBranches $ pagurePkgBranches (unPackage pkg)
                       LocalBranches -> fedoraBranches localBranches
                       NoGitRepo -> if haveGit then return $ maybeToList mcurrentbranch
                                    else let singleton a = [a] in

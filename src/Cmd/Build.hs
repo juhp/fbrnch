@@ -67,7 +67,7 @@ buildBranch merge override scratch mtarget pkg br = do
     Just BuildBuilding | isNothing scratch -> putStrLn $ nvr ++ " is already building"
     _ -> do
       let tag = fromMaybe (branchDestTag br) mtarget
-      mlatest <- kojiLatestNVR tag $ unpackage pkg
+      mlatest <- kojiLatestNVR tag $ unPackage pkg
       if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
         then error' $ nvr ++ " is already latest (modulo disttag)"
         else do
@@ -85,7 +85,7 @@ buildBranch merge override scratch mtarget pkg br = do
           then do
           srpmfile <- generateSrpm (Just br) spec
           void $ kojiBuild target $ march ++ ["--fail-fast", srpmfile]
-          else kojiBuildBranch target (unpackage pkg) $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ march
+          else kojiBuildBranch target (unPackage pkg) $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ march
         -- FIXME get bugs from changelog
         mBugSess <- if isNothing mlatest
           then do

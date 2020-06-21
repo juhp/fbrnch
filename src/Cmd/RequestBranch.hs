@@ -54,7 +54,7 @@ requestPkgBranches mock request pkg = do
       let brs' = brs \\ existing
       if null brs' then return []
         else do
-        current <- fedoraBranchesNoMaster $ pagurePkgBranches (unpackage pkg)
+        current <- fedoraBranchesNoMaster $ pagurePkgBranches (unPackage pkg)
         forM_ brs' $ \ br ->
           when (br `elem` current) $
           putStrLn $ show br ++ " remote branch already exists"
@@ -70,9 +70,9 @@ requestPkgBranches mock request pkg = do
 
     notExistingRequest :: [(Integer,String,T.Text)] -> Branch -> IO Bool
     notExistingRequest requests br = do
-      let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unpackage pkg ++ "\"") ==) . snd3) requests
+      let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"") ==) . snd3) requests
       unless (null pending) $ do
-        putStrLn $ "Branch request already open for " ++ unpackage pkg ++ ":" ++ show br
+        putStrLn $ "Branch request already open for " ++ unPackage pkg ++ ":" ++ show br
         mapM_ printScmIssue pending
       return $ null pending
 
