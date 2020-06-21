@@ -152,43 +152,44 @@ packageSpec :: Package -> FilePath
 packageSpec pkg = unpackage pkg <.> "spec"
 
 -- do package over branches
-withPackageByBranches :: ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[String]) -> IO ()
-withPackageByBranches constraint action (brs,pkgs) =
+withPackageByBranches :: Bool -> ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[String]) -> IO ()
+withPackageByBranches quiet constraint action (brs,pkgs) =
   if null pkgs
   then do
     gitdir <- isPkgGitDir
     when (not gitdir && constraint /= NoGitRepo) $
       error' "Not a pkg git dir"
     pkg <- Package <$> getDirectoryName
-    withPackageDir constraint action brs (".", pkg)
-  else mapM_ (withPackageDir constraint action brs . packagePath) pkgs
+    withPackageDir (".", pkg)
+  else mapM_ (withPackageDir . packagePath) pkgs
+  where
+    withPackageDir :: (FilePath, Package) -> IO ()
+    withPackageDir (dir, pkg) =
+      withExistingDirectory dir $ do
+      haveGit <- setupGit quiet pkg constraint
+      mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
+                        else return Nothing
+      branches <- if null brs then
+                    case constraint of
+                      RemoteBranches -> fedoraBranches $ pagurePkgBranches (unpackage pkg)
+                      LocalBranches -> fedoraBranches localBranches
+                      NoGitRepo -> if haveGit then return $ maybeToList mcurrentbranch
+                                   else let singleton a = [a] in
+                                          singleton <$> systemBranch
+                  else return brs
+      when (null brs && constraint /= NoGitRepo) $
+        putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
+      mapM_ (action pkg) branches
+      when (length brs /= 1) $
+        whenJust mcurrentbranch gitSwitchBranch
 
-withPackageDir :: ConstrainBranches -> (Package -> Branch -> IO ()) -> [Branch] -> (FilePath, Package) -> IO ()
-withPackageDir constraint action brs (dir, pkg) =
-  withExistingDirectory dir $ do
-  haveGit <- setupGit pkg constraint
-  mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
-                    else return Nothing
-  branches <- if null brs then
-                case constraint of
-                  RemoteBranches -> fedoraBranches $ pagurePkgBranches (unpackage pkg)
-                  LocalBranches -> fedoraBranches localBranches
-                  NoGitRepo -> if haveGit then return $ maybeToList mcurrentbranch
-                               else let singleton a = [a] in
-                                      singleton <$> systemBranch
-              else return brs
-  when (null brs && constraint /= NoGitRepo) $
-    putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
-  mapM_ (action pkg) branches
-  when (length brs /= 1) $
-    whenJust mcurrentbranch gitSwitchBranch
-
-setupGit :: Package -> ConstrainBranches -> IO Bool
-setupGit pkg constraint = do
+setupGit :: Bool -> Package -> ConstrainBranches -> IO Bool
+setupGit quiet pkg constraint = do
   haveGit <- isPkgGitDir
   when (haveGit && constraint /= NoGitRepo) checkWorkingDirClean
-  putPkgHdr pkg
-  when haveGit $ git_ "fetch" []
+  unless quiet $ do
+    putPkgHdr pkg
+    when haveGit $ git_ "fetch" []
   return haveGit
 
 -- do branch over packages
@@ -201,7 +202,7 @@ withBranchByPackages constraint action (brs,pkgs) = do
   forM_ brs $ \ br ->
     forM_ (map packagePath pkgs) $ \ (dir,pkg) ->
     withExistingDirectory dir $ do
-    void $ setupGit pkg constraint
+    void $ setupGit False pkg constraint
     action br pkg
 
 clonePkg :: Maybe Branch -> String -> IO ()

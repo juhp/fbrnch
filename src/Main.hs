@@ -51,6 +51,8 @@ dispatchCmd gitdir activeBranches =
       mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s)" $
       buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> branchesPackages
+    , Subcommand "sort" "Sort packages in build dependency order" $
+      sortCmd <$> installBranchPackages
     , Subcommand "local" "Build locally" $
       localCmd <$> installBranchPackages
     , Subcommand "install" "Build locally and install package(s)" $

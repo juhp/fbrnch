@@ -1,4 +1,4 @@
-module Cmd.Local (installCmd, localCmd) where
+module Cmd.Local (installCmd, localCmd, sortCmd) where
 
 import Distribution.RPM.Build.Order
 
@@ -10,10 +10,7 @@ import Package
 
 installCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 installCmd reinstall (mbr,pkgs) = do
-  packages <- dependencySort pkgs
-  when (packages /= pkgs) $
-    putStrLn $ "Ordered: " ++ unwords packages
-  withPackageByBranches NoGitRepo (installPkg reinstall) (maybeToList mbr,packages)
+  withPackageByBranches False NoGitRepo (installPkg reinstall) (maybeToList mbr,pkgs)
 
 installPkg :: Bool -> Package -> Branch -> IO ()
 installPkg reinstall pkg br = do
@@ -24,7 +21,7 @@ installPkg reinstall pkg br = do
 
 localCmd :: (Maybe Branch,[String]) -> IO ()
 localCmd (mbr,pkgs) =
-  withPackageByBranches NoGitRepo localBuildPkg (maybeToList mbr,pkgs)
+  withPackageByBranches False NoGitRepo localBuildPkg (maybeToList mbr,pkgs)
 
 localBuildPkg :: Package -> Branch -> IO ()
 localBuildPkg pkg br = do
@@ -40,3 +37,12 @@ localBranchSpecFile pkg br = do
   if gitdir
     then return $ packageSpec pkg
     else findSpecfile
+
+sortCmd :: (Maybe Branch,[String]) -> IO ()
+sortCmd (_,[]) = return ()
+sortCmd (mbr,pkgs) = do
+  withPackageByBranches True NoGitRepo dummy (maybeToList mbr,pkgs)
+  packages <- dependencySort pkgs
+  putStrLn $ unwords packages
+  where
+    dummy _ br = gitSwitchBranch br
