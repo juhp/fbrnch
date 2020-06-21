@@ -16,8 +16,18 @@ installPkg :: Bool -> Package -> Branch -> IO ()
 installPkg reinstall pkg br = do
   spec <- localBranchSpecFile pkg br
   rpms <- rpmsNameVerRel br spec
-  buildRPMs br spec
-  sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : rpms
+  minstalled <- cmdMaybe "rpm" ["-q", unPackage pkg]
+  case minstalled of
+    Just installed ->
+      if not reinstall && installed <.> "rpm" `elem` map takeFileName rpms
+      then putStrLn $ installed +-+ "already installed!\n"
+      else doInstallPkg spec rpms
+    Nothing -> doInstallPkg spec rpms
+  where
+    doInstallPkg spec rpms = do
+      sudo_ "dnf" ["builddep", "--assumeyes", spec]
+      buildRPMs br spec
+      sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : "--assumeyes" : rpms
 
 localCmd :: (Maybe Branch,[String]) -> IO ()
 localCmd (mbr,pkgs) =
