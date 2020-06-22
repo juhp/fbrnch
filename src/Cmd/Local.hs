@@ -10,7 +10,7 @@ import Package
 
 installCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 installCmd reinstall (mbr,pkgs) = do
-  withPackageByBranches False NoGitRepo (installPkg reinstall) (maybeToList mbr,pkgs)
+  withPackageByBranches True NoGitRepo (installPkg reinstall) (maybeToList mbr,pkgs)
 
 installPkg :: Bool -> Package -> Branch -> IO ()
 installPkg reinstall pkg br = do
@@ -25,8 +25,10 @@ installPkg reinstall pkg br = do
     Nothing -> doInstallPkg spec rpms
   where
     doInstallPkg spec rpms = do
-      sudo_ "dnf" ["builddep", "--assumeyes", spec]
-      buildRPMs br spec
+      putStrLn $ (takeFileName . head) rpms ++ "\n"
+      -- FIXME check for missing deps directly
+      sudo_ "dnf" ["builddep", "--quiet", "--assumeyes", spec]
+      buildRPMs True br spec
       sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : "--assumeyes" : rpms
 
 localCmd :: (Maybe Branch,[String]) -> IO ()
@@ -36,7 +38,7 @@ localCmd (mbr,pkgs) =
 localBuildPkg :: Package -> Branch -> IO ()
 localBuildPkg pkg br = do
   spec <- localBranchSpecFile pkg br
-  buildRPMs br spec
+  buildRPMs False br spec
 
 localBranchSpecFile :: Package -> Branch -> IO FilePath
 localBranchSpecFile pkg br = do

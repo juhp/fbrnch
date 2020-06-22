@@ -114,10 +114,22 @@ generateSrpm mbr spec = do
       putStrLn $ "Created " ++ takeFileName srpm
       return srpm
 
-buildRPMs :: Branch -> FilePath -> IO ()
-buildRPMs br spec = do
+buildRPMs :: Bool -> Branch -> FilePath -> IO ()
+buildRPMs quiet br spec = do
   dist <- branchDist br
-  cmd_ "rpmbuild" ["--define", "dist " ++ rpmDistTag dist, "-bb", spec]
+  cwd <- getCurrentDirectory
+  gitDir <- isGitDir "."
+  let rpmdirs =
+        [ "--define="++ mcr +-+ cwd | gitDir,
+          mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
+      args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist, "-bb", spec]
+  -- FIXME use simple-cmd-0.2.2 cmdStderrToStdout and remove
+  if not quiet then
+    cmd_ "rpmbuild" args
+    else do
+    putStr "Running rpmbuild: "
+    cmdSilent "rpmbuild" args
+    putStrLn "done"
 
 withExistingDirectory :: FilePath -> IO () -> IO ()
 withExistingDirectory dir act =
