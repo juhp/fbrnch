@@ -1,4 +1,5 @@
 module Package (
+  builtRpms,
   clonePkg,
   fedpkg,
   fedpkg_,
@@ -19,7 +20,6 @@ module Package (
   packageSpec,
   pkgNameVerRel,
   pkgNameVerRel',
-  rpmsNameVerRel,
   ConstrainBranches(..)
   ) where
 
@@ -240,10 +240,10 @@ pkgNameVerRel' br spec = do
     Nothing -> error' $ "rpmspec failed to parse " ++ spec
     Just nvr -> return nvr
 
-rpmsNameVerRel :: Branch -> FilePath -> IO [String]
-rpmsNameVerRel br spec = do
+builtRpms :: Branch -> FilePath -> IO [FilePath]
+builtRpms br spec = do
   dist <- branchDist br
-  rpmspec ["--define", "dist " ++ rpmDistTag dist] (Just "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") spec
+  rpmspec ["--builtrpms", "--define", "dist " ++ rpmDistTag dist] (Just "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") spec
 
 systemBranch :: IO Branch
 systemBranch =

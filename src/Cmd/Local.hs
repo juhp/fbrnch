@@ -15,7 +15,7 @@ installCmd reinstall (mbr,pkgs) = do
 installPkg :: Bool -> Package -> Branch -> IO ()
 installPkg reinstall pkg br = do
   spec <- localBranchSpecFile pkg br
-  rpms <- rpmsNameVerRel br spec
+  rpms <- builtRpms br spec
   minstalled <- cmdMaybe "rpm" ["-q", unPackage pkg]
   case minstalled of
     Just installed ->
