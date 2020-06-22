@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
 
 module Git (
+#if !MIN_VERSION_simple_cmd(0,2,2)
   gitBool,
+#endif
   gitCurrentBranch,
   gitMergeable,
   gitMergeOrigin,
@@ -24,8 +26,7 @@ import SimpleCmd.Git
 
 import Branches
 
-#if (defined(MIN_VERSION_simple_cmd) && MIN_VERSION_simple_cmd(0,2,2))
-#else
+#if !MIN_VERSION_simple_cmd(0,2,2)
 -- | 'gitBool c args' runs git command and return result
 gitBool :: String -- ^ git command
         -> [String] -- ^ arguments
