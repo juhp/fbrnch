@@ -57,7 +57,7 @@ sortCmd :: (Maybe Branch,[String]) -> IO ()
 sortCmd (_,[]) = return ()
 sortCmd (mbr,pkgs) = do
   withPackageByBranches True NoGitRepo dummy (maybeToList mbr,pkgs)
-  packages <- dependencySort pkgs
+  packages <- dependencySort $ reverse pkgs
   putStrLn $ unwords packages
   where
     dummy _ br = gitSwitchBranch br
