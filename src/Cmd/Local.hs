@@ -25,11 +25,14 @@ installPkg reinstall pkg br = do
     Nothing -> doInstallPkg spec rpms
   where
     doInstallPkg spec rpms = do
-      putStrLn $ (takeFileName . head) rpms ++ "\n"
-      -- FIXME check for missing deps directly
-      sudo_ "dnf" ["builddep", "--quiet", "--assumeyes", spec]
+      putStrLn $ (takeBaseName . head) rpms ++ "\n"
+      missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
+      unless (null missingdeps) $ do
+        cmdSilent "sudo" $ "dnf":["builddep", "--assumeyes", spec]
+        putStrLn ""
       buildRPMs True br spec
-      sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : "--assumeyes" : rpms
+      putStrLn ""
+      sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : "--quiet" : "--assumeyes" : rpms
 
 localCmd :: (Maybe Branch,[String]) -> IO ()
 localCmd (mbr,pkgs) =

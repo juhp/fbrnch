@@ -20,7 +20,9 @@ module Package (
   packageSpec,
   pkgNameVerRel,
   pkgNameVerRel',
-  ConstrainBranches(..)
+  ConstrainBranches(..),
+  buildRequires,
+  notInstalled
   ) where
 
 import Common
@@ -248,3 +250,13 @@ builtRpms br spec = do
 systemBranch :: IO Branch
 systemBranch =
   readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
+
+-- from fedora-haskell-tools
+buildRequires :: FilePath -> IO [String]
+buildRequires spec =
+  -- FIXME should resolve meta
+  map (head . words) <$> rpmspec ["--buildrequires"] Nothing spec
+
+notInstalled :: String -> IO Bool
+notInstalled pkg =
+  not <$> cmdBool "rpm" ["--quiet", "-q", "--whatprovides", pkg]
