@@ -27,13 +27,13 @@ data Scratch = AllArches | Arch String
 -- FIXME support --rebuild-srpm --wait-build=NVR --background
 -- FIXME add --override
 buildCmd :: Bool -> Maybe Scratch -> Maybe String -> ([Branch],[String]) -> IO ()
-buildCmd merge scratch mtarget (brs,pkgs) = do
+buildCmd merge' scratch mtarget (brs,pkgs) = do
   when (isJust mtarget && length brs > 1) $
     error' "You can only specify target with one branch"
-  withPackageByBranches False LocalBranches (buildBranch merge False scratch mtarget) (brs,pkgs)
+  withPackageByBranches False LocalBranches (buildBranch merge' False scratch mtarget) (brs,pkgs)
 
 buildBranch :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Package -> Branch -> IO ()
-buildBranch merge override scratch mtarget pkg br = do
+buildBranch merge' override scratch mtarget pkg br = do
   putPkgBrnchHdr pkg br
   gitSwitchBranch br
   when (isNothing scratch) $ gitMergeOrigin br
@@ -42,7 +42,7 @@ buildBranch merge override scratch mtarget pkg br = do
   -- FIXME if already built or failed, also offer merge
   merged <- do
     unmerged <- mergeable br
-    if unmerged /= [] && (merge || newrepo || tty)
+    if unmerged /= [] && (merge' || newrepo || tty)
       then mergeBranch True unmerged br >> return True
       else return False
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"

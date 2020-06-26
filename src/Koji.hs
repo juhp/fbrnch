@@ -73,9 +73,6 @@ kojiBuild target args = do
           Just TaskFailed -> error "Task failed!"
           _ -> kojiWatchTask task
 
-    takeWhileEnd :: (a -> Bool) -> [a] -> [a]
-    takeWhileEnd p = reverse . takeWhile p . reverse
-
 kojiBuildBranch :: String -> String -> [String] -> IO ()
 kojiBuildBranch target pkg args = do
   commit <- git "rev-parse" ["HEAD"]
