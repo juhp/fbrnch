@@ -5,7 +5,6 @@ module Cmd.RequestBranch (
 
 import Common
 import Common.System
-import qualified Common.Text as T
 
 import Branches
 import Bugzilla
@@ -62,15 +61,16 @@ requestPkgBranches mock request pkg = do
         if null newbranches then return []
           else do
           fasid <- fasIdFromKrb
-          erecent <- pagureListProjectIssueTitles "pagure.io" "releng/fedora-scm-requests"
+          erecent <- pagureListProjectIssueTitlesStatus "pagure.io" "releng/fedora-scm-requests"
                      [makeItem "author" fasid, makeItem "status" "all"]
           case erecent of
             Left err -> error' err
             Right recent -> filterM (notExistingRequest recent) newbranches
 
-    notExistingRequest :: [(Integer,String,T.Text)] -> Branch -> IO Bool
+    -- FIXME handle close_status Invalid
+    notExistingRequest :: [IssueTitleStatus] -> Branch -> IO Bool
     notExistingRequest requests br = do
-      let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"") ==) . snd3) requests
+      let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"") ==) . pagureIssueTitle) requests
       unless (null pending) $ do
         putStrLn $ "Branch request already open for " ++ unPackage pkg ++ ":" ++ show br
         mapM_ printScmIssue pending

@@ -3,11 +3,11 @@ module Pagure (
   pagureio,
   pagureProjectInfo,
   pagureListGitBranches,
-  pagureListProjectIssueTitles,
+  pagureListProjectIssueTitlesStatus,
+  IssueTitleStatus(..),
   pagureUserRepos,
   makeItem,
-  printScmIssue,
-  snd3
+  printScmIssue
   ) where
 
 import qualified Common.Text as T
@@ -21,9 +21,8 @@ srcfpo = "src.fedoraproject.org"
 pagureio :: String
 pagureio = "pagure.io"
 
-printScmIssue :: (Integer, String, T.Text) -> IO ()
-printScmIssue (issue,title,status) =
-  putStrLn $ "https://" ++ pagureio </> "releng/fedora-scm-requests" </> "issue" </> show issue ++ " (" ++ T.unpack status ++ "): " ++ title
-
-snd3 :: (a,b,c) -> b
-snd3 (_,t,_) = t
+printScmIssue :: IssueTitleStatus -> IO ()
+printScmIssue issue =
+  putStrLn $ "https://" ++ pagureio </> "releng/fedora-scm-requests" </> "issue" </> show (pagureIssueId issue) ++ " (" ++ T.unpack (pagureIssueStatus issue) ++ mclosed ++ "): " ++ pagureIssueTitle issue
+  where
+    mclosed = maybe "" (\s-> ":" ++ T.unpack s) $ pagureIssueCloseStatus issue

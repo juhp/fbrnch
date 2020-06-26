@@ -8,7 +8,7 @@ extra-deps:
   - git: https://github.com/juhp/bodhi-hs.git
     commit: 279a37b91aa15a54aeda1daa0ad79e4da71c0874
   - git: https://github.com/juhp/pagure-hs.git
-    commit: a246398bbc0535ca0ce7909728bfbf774894f92f
+    commit: 813010d6c1377232476f48321cd48808e0b356f2
   - git: https://github.com/juhp/koji-hs.git
     commit: 9ff1fe697c3d007e23373b4a5d8169bcc18e3e53
   - git: https://github.com/juhp/rpmbuild-order.git

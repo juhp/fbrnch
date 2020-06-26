@@ -9,6 +9,7 @@ module Bugzilla (
   bzReviewSession,
   reviewBugIdSession,
   approvedReviewBugIdSession,
+  approvedReviewBugSession,
   pkgBugs,
   pkgReviews,
   testBZlogin,
@@ -235,6 +236,15 @@ reviewBugIdSession pkg = do
 approvedReviewBugIdSession :: String -> IO (BugId,BugzillaSession)
 approvedReviewBugIdSession pkg = do
   (bugs,session) <- bugIdsSession $
+                    pkgReviews pkg .&&. statusOpen .&&. reviewApproved
+  case bugs of
+    [] -> error $ "No review bug found for " ++ pkg
+    [bug] -> return (bug, session)
+    _ -> error' "more than one review bug found!"
+
+approvedReviewBugSession :: String -> IO (Bug,BugzillaSession)
+approvedReviewBugSession pkg = do
+  (bugs,session) <- bugsSession $
                     pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg

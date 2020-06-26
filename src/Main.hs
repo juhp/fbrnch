@@ -68,7 +68,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd <$> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
-      requestRepos <$> many (pkgArg "NEWPACKAGE...")
+      requestRepos <$> switchWith 'r' "retry" "Re-request repo" <*> many (pkgArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importCmd <$> many (pkgArg "NEWPACKAGE...")
     , Subcommand "request-branches" "Request branches for approved created packages" $
