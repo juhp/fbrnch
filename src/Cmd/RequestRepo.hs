@@ -40,9 +40,14 @@ requestRepo retry pkg = do
       then putStrLn "scm repo was already created"
       else do
       -- show comments?
-      requestExists <- existingRepoRequest
-      if requestExists then return ()
-        else do
+      requests <- existingRepoRequests
+      unless (null requests) $ do
+            putStrLn "Request exists:"
+            mapM_ printScmIssue requests
+            when (retry && pagureIssueCloseStatus (head requests) == Just "Processed") $
+              error' "The last repo request was already successfully Processed"
+      when (null requests || retry) $ do
+        putStrLn ""
         checkNoPagureRepo
         url <- fedpkg "request-repo" [pkg, show bid]
         putStrLn url
@@ -52,25 +57,18 @@ requestRepo retry pkg = do
                   setRequestCheckStatus $
                   newBzRequest session ["bug", intAsText bid, "comment"] [makeTextItem "comment" comment]
         void $ httpNoBody req
-        putStrLn "comment posted"
+        putStrLn "comment added to review"
         putStrLn ""
   where
-    existingRepoRequest :: IO Bool
-    existingRepoRequest = do
+    existingRepoRequests :: IO [IssueTitleStatus]
+    existingRepoRequests = do
       fasid <- fasIdFromKrb
       erecent <- pagureListProjectIssueTitlesStatus pagureio "releng/fedora-scm-requests" [makeItem "author" fasid, makeItem "status" "all"]
       case erecent of
         Left err -> error' err
-        Right recent -> do
+        Right recent ->
           -- don't mention "New Repo" here, since Branch requests also imply repo already exists
-          let reqs = filter (((" for \"rpms/" ++ pkg ++ "\"") `isSuffixOf`) . pagureIssueTitle) recent
-          unless (null reqs) $ do
-            -- FIXME improve formatting (reduce whitespace)
-            putStrLn "Request exists:"
-            mapM_ printScmIssue reqs
-            when (retry && pagureIssueCloseStatus (head reqs) == Just "Processed") $
-              error' "The last repo request was already successfully Processed"
-          return $ notNull reqs && not retry
+          return $ filter (((" for \"rpms/" ++ pkg ++ "\"") `isSuffixOf`) . pagureIssueTitle) recent
 
     checkNoPagureRepo :: IO ()
     checkNoPagureRepo = do
