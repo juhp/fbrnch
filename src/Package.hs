@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Package (
   builtRpms,
   clonePkg,
@@ -30,6 +32,9 @@ import Common.System
 
 import Distribution.Fedora
 import SimpleCmd.Rpm
+#if MIN_VERSION_simple_cmd(0,2,2)
+import System.Exit (ExitCode (..))
+#endif
 
 import Branches
 import Git
@@ -125,13 +130,23 @@ buildRPMs quiet br spec = do
         [ "--define="++ mcr +-+ cwd | gitDir,
           mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
       args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist, "-bb", spec]
-  -- FIXME use simple-cmd-0.2.2 cmdStderrToStdout and remove
   if not quiet then
     cmd_ "rpmbuild" args
     else do
     putStr "Running rpmbuild: "
+#if MIN_VERSION_simple_cmd(0,2,2)
+    -- FIXME some logs seem to hang
+    (ret, out) <- cmdStderrToStdout "rpmbuild" args
+    case ret of
+      ExitSuccess -> putStrLn "done"
+      ExitFailure _ -> error' $ "\n" ++ filterBuild out
+  where
+    filterBuild :: String -> String
+    filterBuild = unlines . filter (not .("+" `isPrefixOf`)) . lines
+#else
     cmdSilent "rpmbuild" args
     putStrLn "done"
+#endif
 
 withExistingDirectory :: FilePath -> IO () -> IO ()
 withExistingDirectory dir act =
