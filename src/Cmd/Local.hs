@@ -27,12 +27,11 @@ installPkg reinstall pkg br = do
     doInstallPkg spec rpms = do
       putStrLn $ (takeBaseName . head) rpms ++ "\n"
       missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
-      unless (null missingdeps) $ do
+      unless (null missingdeps) $
         cmdSilent "sudo" $ "dnf":["builddep", "--assumeyes", spec]
-        putStrLn ""
       buildRPMs True br spec
       putStrLn ""
-      sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : "--quiet" : "--assumeyes" : rpms
+      sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : "-q" : "-y" : rpms
 
 localCmd :: (Maybe Branch,[String]) -> IO ()
 localCmd (mbr,pkgs) =
