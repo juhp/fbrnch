@@ -72,7 +72,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importCmd <$> many (pkgArg "NEWPACKAGE...")
     , Subcommand "request-branches" "Request branches for approved created packages" $
-      requestBranches <$> mockOpt <*> branchesRequestOpt
+      requestBranches <$> mockOpt <*> branchesRequestOpt <*> many pkgOpt
     , Subcommand "find-review" "Find package review bug" $
       review <$> pkgArg "PACKAGE"
     , Subcommand "test-bz-token" "Check bugzilla login status" $

@@ -17,12 +17,15 @@ import Prompt
 
 data BranchesRequest = AllReleases | BranchesRequest [Branch]
 
-requestBranches :: Bool -> BranchesRequest -> IO ()
-requestBranches mock request =
-  ifM isPkgGitDir
+requestBranches :: Bool -> BranchesRequest -> [String] -> IO ()
+requestBranches mock request ps =
+  if null ps then
+    ifM isPkgGitDir
     (getDirectoryName >>= requestPkgBranches mock request . Package) $
     do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
        mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request (Package p)) pkgs
+  else
+    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request (Package p)) ps
 
 -- FIXME add --yes, or skip prompt when args given
 requestPkgBranches :: Bool -> BranchesRequest -> Package -> IO ()
