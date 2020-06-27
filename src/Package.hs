@@ -8,8 +8,10 @@ module Package (
   getDirectoryName,
   getPackageName,
   findSpecfile,
+  localBranchSpecFile,
   generateSrpm,
   buildRPMs,
+  prepPackage,
   putPkgHdr,
   putPkgBrnchHdr,
   withExistingDirectory,
@@ -79,6 +81,16 @@ findSpecfile = fileWithExtension ".spec"
       files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents "."
       maybe (error' ("No unique " ++ ext ++ " file found")) return $ listToMaybe files
 
+localBranchSpecFile :: Package -> Branch -> IO FilePath
+localBranchSpecFile pkg br = do
+  gitdir <- isPkgGitDir
+  when gitdir $ do
+    putPkgBrnchHdr pkg br
+    gitSwitchBranch br
+  if gitdir
+    then return $ packageSpec pkg
+    else findSpecfile
+
 rpmEval :: String -> IO (Maybe String)
 rpmEval s = do
   res <- cmd "rpm" ["--eval", s]
@@ -116,6 +128,7 @@ generateSrpm mbr spec = do
       putStrLn $ "Created " ++ takeFileName srpm
       return srpm
 
+-- FIXME pull sources
 buildRPMs :: Bool -> Branch -> FilePath -> IO ()
 buildRPMs quiet br spec = do
   dist <- branchDist br
@@ -128,7 +141,24 @@ buildRPMs quiet br spec = do
   if not quiet then
     cmd_ "rpmbuild" args
     else do
-    putStr "Running rpmbuild: "
+    putStr "Building locally: "
+    cmdSilent "rpmbuild" args
+    putStrLn "done"
+
+-- FIXME pull sources
+prepPackage :: Package -> Branch -> IO ()
+prepPackage pkg br = do
+  ifM (doesFileExist "dead.package")
+    (putStrLn $ "dead.package") $
+    do
+    spec <- localBranchSpecFile pkg br
+    cwd <- getCurrentDirectory
+    gitDir <- isGitDir "."
+    let rpmdirs =
+          [ "--define="++ mcr +-+ cwd | gitDir,
+            mcr <- ["_builddir", "_sourcedir"]]
+        args = rpmdirs ++ ["-bp", spec]
+    putStr "Prepping: "
     cmdSilent "rpmbuild" args
     putStrLn "done"
 

@@ -1,4 +1,4 @@
-module Cmd.Local (installCmd, localCmd, sortCmd) where
+module Cmd.Local (installCmd, localCmd, prepCmd, sortCmd) where
 
 import Distribution.RPM.Build.Order
 
@@ -42,16 +42,6 @@ localBuildPkg pkg br = do
   spec <- localBranchSpecFile pkg br
   buildRPMs False br spec
 
-localBranchSpecFile :: Package -> Branch -> IO FilePath
-localBranchSpecFile pkg br = do
-  gitdir <- isPkgGitDir
-  when gitdir $ do
-    putPkgBrnchHdr pkg br
-    gitSwitchBranch br
-  if gitdir
-    then return $ packageSpec pkg
-    else findSpecfile
-
 sortCmd :: (Maybe Branch,[String]) -> IO ()
 sortCmd (_,[]) = return ()
 sortCmd (mbr,pkgs) = do
@@ -60,3 +50,7 @@ sortCmd (mbr,pkgs) = do
   putStrLn $ unwords packages
   where
     dummy _ br = gitSwitchBranch br
+
+prepCmd :: (Maybe Branch,[String]) -> IO ()
+prepCmd (mbr,pkgs) =
+  withPackageByBranches True NoGitRepo prepPackage (maybeToList mbr,pkgs)
