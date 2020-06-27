@@ -185,7 +185,7 @@ putPkgHdr pkg =
 
 putPkgBrnchHdr :: Package -> Branch -> IO ()
 putPkgBrnchHdr pkg br =
-  putStrLn $ "\n== " ++ unPackage pkg ++ ":" ++ show br ++ " =="
+  putStrLn $ "\n== " ++ unPackage pkg ++ " " ++ show br ++ " =="
 
 packagePath :: String -> (FilePath, Package)
 packagePath path =
