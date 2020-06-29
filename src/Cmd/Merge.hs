@@ -23,18 +23,14 @@ mergeCmd =
 
 mergeable :: Branch -> IO [String]
 mergeable br = do
-  newerBr <- do
-    branches <- getFedoraBranches
-    return $ newerBranch branches br
+  newerBr <- newerBranch br <$> getFedoraBranches
   gitMergeable $ show newerBr
 
 mergeBranch :: Bool -> [String] -> Branch -> IO ()
 mergeBranch _ _ Master = return ()
 mergeBranch _ [] _ = return ()
 mergeBranch build unmerged br = do
-  newerBr <- do
-    branches <- getFedoraBranches
-    return $ newerBranch branches br
+  newerBr <- newerBranch br <$> getFedoraBranches
   newrepo <- initialPkgRepo
   unless (null unmerged) $ do
     putStrLn $ (if newrepo then "Merging from" else "New commits in") ++ " " ++ show newerBr ++ ":"

@@ -45,9 +45,7 @@ statusBranch pkg br = do
         gitShortLog1 Nothing >>= putStrLn . simplifyCommitLog
       Just nvr -> do
         -- unless (br == Master) $ do
-        --   newerBr <- do
-        --     branches <- getFedoraBranches
-        --     return $ newerBranch branches br
+        --   newerBr <- newerBranch br <$> getFedoraBranches
         --   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show newerBr]
         --   when ancestor $ do
         --     unmerged <- gitShortLog $ "HEAD.." ++ show newerBr
