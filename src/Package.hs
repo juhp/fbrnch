@@ -78,7 +78,7 @@ findSpecfile = fileWithExtension ".spec"
     -- looks in dir for a unique file with given extension
     fileWithExtension :: String -> IO FilePath
     fileWithExtension ext = do
-      files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents "."
+      files <- filter ((== ext) . takeExtension) <$> listDirectory "."
       maybe (error' ("No unique " ++ ext ++ " file found")) return $ listToMaybe files
 
 localBranchSpecFile :: Package -> Branch -> IO FilePath
