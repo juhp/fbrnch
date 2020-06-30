@@ -35,5 +35,8 @@ localBranches =
 
 pagurePkgBranches :: String -> IO [String]
 pagurePkgBranches pkg = do
-  res <- pagureListGitBranches srcfpo ("rpms/" ++ pkg)
-  return $ either error' id res
+  let project = "rpms/" ++ pkg
+  res <- pagureListGitBranches srcfpo project
+  return $ either (error' . include project) id res
+  where
+    include p e = e ++ ": " ++ p
