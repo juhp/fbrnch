@@ -2,7 +2,7 @@ resolver: lts-15.16
 
 extra-deps:
   - git: https://github.com/juhp/hsbugzilla.git
-    commit: a01bc593c56ec164554e4874df78e7d026f3a978
+    commit: bd4d90d3696e079fd095b75e23e7a4429635e93a
   - git: https://github.com/juhp/fedora-dists.git
     commit: c6d51f56869065505fc0b8ee453246dd2bb5252f
   - git: https://github.com/juhp/bodhi-hs.git
