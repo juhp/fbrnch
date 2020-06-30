@@ -41,7 +41,8 @@ listReviews' allopen status = do
     ReviewRepoCreated ->
       filterM (checkRepoCreatedComment session . bugId) bugs
     ReviewUnbranched ->
-      filterM (notBranched . reviewBugToPackage) bugs
+      filterM (checkRepoCreatedComment session . bugId) bugs >>=
+      filterM (notBranched . reviewBugToPackage)
     _ -> return bugs
   where
     checkRepoRequestedComment :: BugzillaSession -> BugId -> IO Bool
