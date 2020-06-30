@@ -42,7 +42,7 @@ buildBranch merge' override scratch mtarget pkg br = do
   -- FIXME if already built or failed, also offer merge
   merged <- do
     unmerged <- mergeable br
-    if unmerged /= [] && (merge' || newrepo || tty)
+    if notNull unmerged && (merge' || newrepo || tty)
       then mergeBranch True unmerged br >> return True
       else return False
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
@@ -57,7 +57,7 @@ buildBranch merge' override scratch mtarget pkg br = do
     checkSourcesMatch spec
     -- FIXME offer partial push for master by ref input
     -- FIXME print nvr
-    when (tty && not merged) $ prompt_ "Press Enter to push and build"
+    when (tty && (not merged || newrepo)) $ prompt_ "Press Enter to push and build"
     gitPushSilent
   nvr <- pkgNameVerRel' br spec
   -- FIXME should compare git refs
