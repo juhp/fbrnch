@@ -47,7 +47,6 @@ requestRepo retry pkg = do
             when (retry && pagureIssueCloseStatus (head requests) == Just "Processed") $
               error' "The last repo request was already successfully Processed"
       when (null requests || retry) $ do
-        putStrLn ""
         checkNoPagureRepo
         url <- fedpkg "request-repo" [pkg, show bid]
         putStrLn url
