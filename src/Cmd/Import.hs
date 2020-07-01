@@ -44,9 +44,13 @@ importPkg pkg = do
     -- FIXME get session from importPkgs
     (bid,session) <- approvedReviewBugIdSession pkg
     comments <- getComments session bid
-    putStrLn ""
     putBugId bid
+    putStrLn ""
     mapM_ showComment comments
+    putStrLn ""
+    putStr "Review bug: "
+    putBugId bid
+    putStrLn ""
     prompt_ "Press Enter to continue"
     let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
     when (null srpms) $ error "No srpm urls found!"
