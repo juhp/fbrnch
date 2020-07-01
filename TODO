@@ -40,7 +40,7 @@
 - bugzilla-redhat
 - (use hs-git)
 
-# external tools
+# external clients
 - fedpkg
 - bodhi
 - koji

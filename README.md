@@ -13,7 +13,6 @@ and workflow for adding new packages, etc. The motivation for fbrnch is
 to help to (semi-)automate common workflows to save time and effort.
 
 ## Description
-
 `fbrnch` is a Fedora Packager client which tries to automate some common tasks
 like:
 
@@ -155,22 +154,24 @@ $ fbrnch install package1 package2 package3 ...
 ```
 
 ## Known issues
-
 - currently prep doesn't pull down source (will fixed soon)
 - no support yet for overrides (coming)
 - if you don't specify branches, fbrnch may try to build them all
-- doesn't check already built by git hash only NVR
+- only checks already built by NVR not githash
+- authentication is not implemented yet natively for Koji, Bodhi, Pagure
+  (and source upload)
+  - so the python clients are used for "writing" to them
+    (specifcally koji, bodhi-client, fedpkg).
+    But all queries are done directly by Web RPC for speed and control.
 
 ## Installation
-
 Run `stack install` or `cabal new-install` in a git checkout.
 
 ## Contributing
-
-This is still in development: feedback and contributions are welcome.
+Bug reports, feedback, and fixes are welcome.
 
 ## Usual disclaimer
 This is still in active development.
 While it is generally works well for me,
-if it breaks things for you, you get to keep the pieces. :)
-Bug reports are welcome.
+if it should breaks things for you, you get to keep the pieces. :)
+But please report unsupported or unintuitive workflows.
