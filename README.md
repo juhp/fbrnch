@@ -8,6 +8,10 @@
 -->
 Tool to help Fedora Packagers build package branches and add new packages.
 
+Fedora developers use a lot of time building packages across releases
+and workflow for adding new packages, etc. The motivation for fbrnch is
+to help to (semi-)automate common workflows to save time and effort.
+
 ## Description
 
 `fbrnch` is a Fedora Packager client which tries to automate some common tasks
@@ -66,7 +70,8 @@ will offer to import the srpm from the approved review
 (similar to `fedpkg import`).
 Without any arguments it will offer to import any approved package reviews
 one by one.
-The imported package is then built in Koji Rawhide.
+The imported package is then built in Koji Rawhide,
+and the package review updated.
 
 #### Request branches
 Finally you can request branches with
@@ -98,6 +103,8 @@ $ fbrnch pull [package] ...
 $ fbrnch status [package]
 ```
 which output information about the status of each branch.
+The status command can also be used with `--reviews`
+to check the build status of new packages.
 
 List package bugs:
 ```
