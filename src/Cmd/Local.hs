@@ -29,6 +29,7 @@ installPkg reinstall pkg br = do
       missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
       unless (null missingdeps) $
         cmdSilent "sudo" $ "dnf":["builddep", "--assumeyes", spec]
+      void $ getSources spec
       buildRPMs True br spec
       putStrLn ""
       sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : "-q" : "-y" : rpms
@@ -40,6 +41,7 @@ localCmd (mbr,pkgs) =
 localBuildPkg :: Package -> Branch -> IO ()
 localBuildPkg pkg br = do
   spec <- localBranchSpecFile pkg br
+  void $ getSources spec
   buildRPMs False br spec
 
 sortCmd :: (Maybe Branch,[String]) -> IO ()

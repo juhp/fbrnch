@@ -12,6 +12,7 @@ module Package (
   generateSrpm,
   buildRPMs,
   prepPackage,
+  getSources,
   putPkgHdr,
   putPkgBrnchHdr,
   withExistingDirectory,
@@ -152,8 +153,10 @@ prepPackage pkg br = do
     (putStrLn $ "dead.package") $
     do
     spec <- localBranchSpecFile pkg br
+    unlessM (doesFileExist spec) $
+      error' $ spec ++ " not found"
+    gitDir <- getSources spec
     cwd <- getCurrentDirectory
-    gitDir <- isGitDir "."
     let rpmdirs =
           [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_sourcedir"]]
@@ -161,6 +164,34 @@ prepPackage pkg br = do
     putStr "Prepping: "
     cmdSilent "rpmbuild" args
     putStrLn "done"
+
+getSources :: FilePath -> IO Bool
+getSources spec = do
+    gitDir <- isGitDir "."
+    srcdir <- getSourceDir gitDir
+    sources <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
+    unless gitDir $
+      unlessM (doesDirectoryExist srcdir) $
+      createDirectoryIfMissing True srcdir
+    forM_ sources $ \ src -> do
+      unlessM (doesFileExist (srcdir </> src)) $ do
+        uploaded <- if gitDir then grep_ src "sources" else return False
+        if uploaded then cmd_ "fedpkg" ["sources"]
+          else cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
+    return gitDir
+  where
+    sourceFieldFile :: String -> FilePath
+    sourceFieldFile field =
+      if null field then
+        -- should be impossible
+        error "empty source field!"
+      else (takeFileName . last . words) field
+
+    getSourceDir :: Bool -> IO FilePath
+    getSourceDir gitDir = do
+      if gitDir
+        then getCurrentDirectory
+        else fromJust <$> rpmEval "%{_sourcedir}"
 
 withExistingDirectory :: FilePath -> IO () -> IO ()
 withExistingDirectory dir act =
