@@ -26,6 +26,7 @@ mergeable br = do
   newerBr <- newerBranch br <$> getFedoraBranches
   gitMergeable $ show newerBr
 
+-- FIXME return merged ref
 mergeBranch :: Bool -> [String] -> Branch -> IO ()
 mergeBranch _ _ Master = return ()
 mergeBranch _ [] _ = return ()
@@ -41,7 +42,7 @@ mergeBranch build unmerged br = do
     mapM_ (putStrLn . simplifyCommitLog) unpushed
   -- FIXME avoid Mass_Rebuild bumps
   mhash <-
-    if newrepo then return $ Just ""
+    if newrepo && length unmerged == 1 then return $ Just ""
     else mergePrompt $ "Press Enter to merge " ++ (if build then "and build " else "") ++ show newerBr ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
   case mhash of
     Nothing -> return ()
