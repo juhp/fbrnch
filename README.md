@@ -6,7 +6,7 @@
 [![Stackage Lts](http://stackage.org/package/fbrnch/badge/lts)](http://stackage.org/lts/package/fbrnch)
 [![Stackage Nightly](http://stackage.org/package/fbrnch/badge/nightly)](http://stackage.org/nightly/package/fbrnch)
 -->
-Tool to build fedora package branches
+Tool to help Fedora Packagers build package branches
 
 ## Description
 
