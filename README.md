@@ -66,6 +66,7 @@ will offer to import the srpm from the approved review
 (similar to `fedpkg import`).
 Without any arguments it will offer to import any approved package reviews
 one by one.
+The imported package is then built in Koji Rawhide.
 
 #### Request branches
 Finally you can request branches with
@@ -74,11 +75,15 @@ $ fbrnch request-branches
 ```
 which will confirm which branches you want, unless unless given.
 
+Optionally a mock build can be done first.
+
+
 ### Building
 #### Cloning and switching branch
 ```
 $ fbrnch clone [package] ...
 ```
+(one can also clone all one's packages or another user's packages).
 
 ```
 $ fbrnch switch -b master [package] ...
@@ -112,11 +117,13 @@ $ fbrnch build package
 ```
 will offer to merge newer commits from newer branch.
 Otherwise if a branch NVR is also ready pushed and built it will be skipped.
+Branch builds are pushed to Bodhi.
 
 You can of course specify which branch(es) to build:
 ```
 $ fbrnch build -b f32 package
 ```
+Scratch builds can also be done.
 
 You can sort packages by build dependency order:
 ```
