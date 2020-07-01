@@ -6,11 +6,11 @@
 [![Stackage Lts](http://stackage.org/package/fbrnch/badge/lts)](http://stackage.org/lts/package/fbrnch)
 [![Stackage Nightly](http://stackage.org/package/fbrnch/badge/nightly)](http://stackage.org/nightly/package/fbrnch)
 -->
-Tool to help Fedora Packagers build package branches
+Tool to help Fedora Packagers build package branches and add new packages.
 
 ## Description
 
-fbrnch is a Fedora Packager client which tries to automate some common tasks
+`fbrnch` is a Fedora Packager client which tries to automate some common tasks
 like:
 
 - merging and building a package across release branches
@@ -20,44 +20,132 @@ like:
 - importing new packages
 
 ## Usage
+
+### Creating new packages/branches
+
+#### Creating a new package
 ```
-$ fbrnch --help
-Fedora package branch building tool
+$ fbrnch create-review my-new-package.spec
+```
+This will create (or update) an srpm, upload it to fedorapeople,
+perform a scratch build,
+and open a Review Request in Bugzilla (similar to fedora-create-review).
 
-Usage: fbrnch [--version] COMMAND
-  This tool helps with updating and building package branches
+#### Update a package review
+```
+$ fbrnch update-review my-new-package.spec
+```
+Similar to create-review: uploads to fedorapeople and posts
+updated package links to the open package review.
 
-Available options:
-  -h,--help                Show this help text
-  --version                Show version
+#### List open package reviews
+```
+$ fbrnch reviews --help
+```
+This lists one's open package reviews.
+Various options like `--approved` or `--created` allow filtering by status.
 
-Available commands:
-  clone                    clone packages
-  switch                   Switch branch
-  status                   Status package/branch status
-  merge                    Merge from newer branch
-  build                    Build package(s)
-  sort                     Sort packages in build dependency order
-  prep                     Prep sources
-  local                    Build locally
-  install                  Build locally and install package(s)
-  bugs                     List package bugs
-  pull                     Git pull packages
-  create-review            Create a Package Review request
-  update-review            Update a Package Review
-  reviews                  List package reviews
-  request-repos            Request dist git repo for new approved packages
-  import                   Import new approved created packages from bugzilla
-                           review
-  request-branches         Request branches for approved created packages
-  find-review              Find package review bug
-  test-bz-token            Check bugzilla login status
+One can also search for reviews with:
+```
+$ fbrnch find-review package-name
+```
+
+#### Request repos
+Once a review has been approved
+```
+$ fbrnch request-repos
+```
+will request repos for approved package(s).
+
+#### Import a new package
+With fbrnch this can be done in one step - no need to clone first.
+```
+$ fbrnch import [my-new-package]
+```
+will offer to import the srpm from the approved review
+(similar to `fedpkg import`).
+Without any arguments it will offer to import any approved package reviews
+one by one.
+
+#### Request branches
+Finally you can request branches with
+```
+$ fbrnch request-branches
+```
+which will confirm which branches you want, unless unless given.
+
+### Building
+#### Cloning and switching branch
+```
+$ fbrnch clone [package] ...
+```
+
+```
+$ fbrnch switch -b master [package] ...
+```
+
+You can also git pull:
+```
+$ fbrnch pull [package] ...
+```
+#### Package status
+```
+$ fbrnch status [package]
+```
+which output information about the status of each branch.
+
+List package bugs:
+```
+$ fbrnch bugs [package]
+```
+
+#### Merging and Building in Koji
+You can merge branches with:
+```
+$ fbrnch merge -b f31 package
+```
+which will offer to merge f32 (or some of it) into f31.
+
+Merging can also be done together with building:
+```
+$ fbrnch build package
+```
+will offer to merge newer commits from newer branch.
+Otherwise if a branch NVR is also ready pushed and built it will be skipped.
+
+You can of course specify which branch(es) to build:
+```
+$ fbrnch build -b f32 package
+```
+
+You can sort packages by build dependency order:
+```
+$ fbrnch sort -b master package1 package2 package3 package4 ...
+```
+
+### Local commands
+```
+$ fbrnch prep -b master package
+```
+
+Build locally:
+```
+$ fbrnch local
+```
+this works in the current package dir like other commands
+and one can also specify package.
+
+Locally build and install:
+```
+$ fbrnch install package1 package2 package3 ...
 ```
 
 ## Known issues
 
 - currently prep doesn't pull down source (will fixed soon)
 - no support yet for overrides (coming)
+- if you don't specify branches, fbrnch may try to build them all
+- doesn't check already built by git hash only NVR
 
 ## Installation
 
