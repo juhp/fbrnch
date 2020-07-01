@@ -30,7 +30,7 @@ listReviews' allopen status = do
         ReviewUnApproved -> reviews .&&. statusOpen .&&. not' reviewApproved
         ReviewUnbranched -> reviews .&&. statusNewModified .&&. reviewApproved
         _ -> reviews .&&. open .&&. reviewApproved
-  -- FIXME sort by status, bid/pkg?
+  -- FIXME sort by status, bid (default?) / pkg?
   bugs <- searchBugs session query
   case status of
     ReviewWithoutRepoReq ->

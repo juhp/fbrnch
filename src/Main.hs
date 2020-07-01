@@ -32,6 +32,7 @@ main :: IO ()
 main = do
   tty <- hIsTerminalDevice stdin
   when tty $ hSetBuffering stdout NoBuffering
+  -- FIXME? some commands do not use branches
   activeBranches <- getFedoraBranches
   gitdir <- isGitDir "."
   dispatchCmd gitdir activeBranches

@@ -15,11 +15,12 @@
 - build: override if dep
 - --override
 - multipackage update
-- depsort: rpmbuild-order
-- combine release updates into single bodhi command
+- use sidetag
+  - combines release updates into single bodhi update
 
 # misc
 - unify checking for pagure and git remote branches
+- remove ifM's?
 
 # auth
 - update pagure key in ~/.config/rpkg/fedpkg.conf
@@ -52,3 +53,6 @@
 - klist
 - git
 - ssh & scp
+
+# longterm
+- "fbrnch todo" list - local state caching

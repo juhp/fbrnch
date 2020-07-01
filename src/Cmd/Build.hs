@@ -21,10 +21,11 @@ import Prompt
 
 data Scratch = AllArches | Arch String
 
--- FIXME sort packages in build dependency order (chain-build?)
+-- FIXME vertical vs horizontal builds (ie by package or branch)
 -- FIXME --no-fast-fail
--- FIXME --(no-)rpmlint (only run for master?)
--- FIXME support --rebuild-srpm --wait-build=NVR --background
+-- FIXME --rpmlint (only run for master?)
+-- FIXME --[no-]rebuild-srpm for scratch
+-- FIXME support --wait-build=NVR
 -- FIXME add --override
 buildCmd :: Bool -> Maybe Scratch -> Maybe String -> ([Branch],[String]) -> IO ()
 buildCmd merge' scratch mtarget (brs,pkgs) = do
