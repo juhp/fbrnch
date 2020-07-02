@@ -25,7 +25,8 @@ module Package (
   pkgNameVerRel',
   ConstrainBranches(..),
   buildRequires,
-  notInstalled
+  notInstalled,
+  systemBranch
   ) where
 
 import Common

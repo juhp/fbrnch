@@ -18,7 +18,6 @@ import Krb
 import Package
 import Prompt
 
--- FIXME run rpmlint
 -- FIXME add --mock option
 -- FIXME add --dependent pkgreview
 createReview :: Bool -> Maybe FilePath -> IO ()
@@ -33,6 +32,11 @@ createReview noscratch mspec = do
     mapM_ putBug bugs
     prompt_ "Press Enter to continue"
   srpm <- generateSrpm Nothing spec
+  br <- systemBranch
+  rpms <- builtRpms br spec >>= filterM doesFileExist
+  -- FIXME run on spec too??
+  void $ cmdBool "rpmlint" $ srpm:rpms
+  prompt_ "Press Enter to submit"
   mkojiurl <- kojiScratchUrl noscratch srpm
   specSrpmUrls <- uploadPkgFiles pkg spec srpm
   bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
