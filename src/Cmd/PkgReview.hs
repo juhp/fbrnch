@@ -20,23 +20,22 @@ import Prompt
 
 -- FIXME add --mock option
 -- FIXME add --dependent pkgreview
-createReview :: Bool -> Maybe FilePath -> IO ()
-createReview noscratch mspec = do
+createReview :: Bool -> Bool -> Maybe FilePath -> IO ()
+createReview noscratch mock mspec = do
   spec <- getSpecFile mspec
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+  unless (spec == pkg <.> "spec") $
+    putStrLn "Warning: package name and spec filename differ!"
   unless (all isAscii pkg) $
     putStrLn "Warning: package name is not ASCII!"
+  putStrLn "checking for existing reviews..."
   (bugs,session) <- bugsSession $ pkgReviews pkg
   unless (null bugs) $ do
     putStrLn "Existing review(s):"
     mapM_ putBug bugs
     prompt_ "Press Enter to continue"
   srpm <- generateSrpm Nothing spec
-  br <- systemBranch
-  rpms <- builtRpms br spec >>= filterM doesFileExist
-  -- FIXME run on spec too??
-  void $ cmdBool "rpmlint" $ srpm:rpms
-  prompt_ "Press Enter to submit"
+  mockRpmLint mock pkg spec srpm
   mkojiurl <- kojiScratchUrl noscratch srpm
   specSrpmUrls <- uploadPkgFiles pkg spec srpm
   bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
@@ -68,9 +67,8 @@ getSpecFile =
       if takeFileName f == f then return f
         else error' "Please run in the directory of the spec file"
 
--- FIXME add --mock option
-updateReview :: Bool -> Maybe FilePath -> IO ()
-updateReview noscratch mspec = do
+updateReview :: Bool -> Bool -> Maybe FilePath -> IO ()
+updateReview noscratch mock mspec = do
   spec <- getSpecFile mspec
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   (bid,session) <- reviewBugIdSession pkg
@@ -79,6 +77,7 @@ updateReview noscratch mspec = do
   submitted <- checkForComment session bid (T.pack srpm)
   when submitted $
     error' "This NVR was already posted on the review bug: please bump"
+  mockRpmLint mock pkg spec srpm
   mkojiurl <- kojiScratchUrl noscratch srpm
   specSrpmUrls <- uploadPkgFiles pkg spec srpm
   changelog <- getChangeLog spec
@@ -107,3 +106,16 @@ uploadPkgFiles pkg spec srpm = do
         checkUrlOk mgr url = do
           okay <- httpExists mgr url
           unless okay $ error' $ "Could not access: " ++ url
+
+mockRpmLint :: Bool -> String -> FilePath -> FilePath -> IO ()
+mockRpmLint mock pkg spec srpm = do
+  rpms <- if mock then do
+    let resultsdir = "results_" ++ pkg
+    cmd_ "mock" ["--resultdir=" ++ resultsdir, srpm]
+    map (resultsdir </>) <$> filter ((== ".rpm") . takeExtension) <$> listDirectory resultsdir
+    else do
+    br <- systemBranch
+    builtRpms br spec >>= filterM doesFileExist
+  -- FIXME run rpmlint on spec too??
+  void $ cmdBool "rpmlint" $ srpm:rpms
+  prompt_ "Press Enter to submit"

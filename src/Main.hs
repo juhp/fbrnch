@@ -65,9 +65,9 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (pkgArg "PACKAGE...")
     , Subcommand "create-review" "Create a Package Review request" $
-      createReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
+      createReview <$> noScratchBuild <*> mockOpt <*> optional (strArg "SPECFILE")
     , Subcommand "update-review" "Update a Package Review" $
-      updateReview <$> noScratchBuild <*> optional (strArg "SPECFILE")
+      updateReview <$> noScratchBuild <*> mockOpt <*> optional (strArg "SPECFILE")
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd <$> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
@@ -85,7 +85,7 @@ dispatchCmd gitdir activeBranches =
     cloneRequest :: Parser CloneRequest
     cloneRequest = flagWith' (CloneUser Nothing) 'M' "mine" "Your packages" <|> CloneUser . Just <$> strOptionWith 'u' "user" "USER" "Packages of FAS user" <|> ClonePkgs <$> some (pkgArg "PACKAGE...")
 
-    noScratchBuild = switchWith 'n' "no-scratch-build" "Skip Koji scratch build"
+    noScratchBuild = switchWith 'S' "no-scratch-build" "Skip Koji scratch build"
 
     reviewStatusOpt :: Parser ReviewStatus
     reviewStatusOpt =
@@ -146,4 +146,4 @@ dispatchCmd gitdir activeBranches =
 
     mergeOpt = switchWith 'm' "merge" "merge from newer branch"
 
-    mockOpt = switchWith 'm' "mock" "Do mock build to test branch"
+    mockOpt = switchWith 'm' "mock" "Do mock build to test"
