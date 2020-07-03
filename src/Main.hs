@@ -53,13 +53,13 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "build" "Build package(s)" $
       buildCmd <$> buildOpts <*> branchesPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
-      sortCmd <$> installBranchPackages
+      sortCmd <$> localBranchPackages
     , Subcommand "prep" "Prep sources" $
-      prepCmd <$> installBranchPackages
+      prepCmd <$> localBranchPackages
     , Subcommand "local" "Build locally" $
-      localCmd <$> installBranchPackages
+      localCmd <$> localBranchPackages
     , Subcommand "install" "Build locally and install package(s)" $
-      installCmd <$> switchWith 'r' "reinstall" "use dnf reinstall" <*> installBranchPackages
+      installCmd <$> switchWith 'r' "reinstall" "use dnf reinstall" <*> localBranchPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
     , Subcommand "pull" "Git pull packages" $
@@ -128,8 +128,8 @@ dispatchCmd gitdir activeBranches =
 
     pairSort a b = ((reverse . sort) a, b)
 
-    installBranchPackages :: Parser (Maybe Branch,[String])
-    installBranchPackages = if gitdir
+    localBranchPackages :: Parser (Maybe Branch,[String])
+    localBranchPackages = if gitdir
       then (,) <$> optional (branchOpt <|> branchArg) <*> pure []
       else (,) <$> optional branchOpt <*> many (pkgArg "PACKAGE..") <|>
            (,) <$> optional branchArg <*> some pkgOpt
