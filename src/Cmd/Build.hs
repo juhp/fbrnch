@@ -1,7 +1,6 @@
 module Cmd.Build (
   buildCmd,
   BuildOpts(..),
-  Scratch(..),
   ) where
 
 import Common
@@ -20,35 +19,29 @@ import Koji
 import Package
 import Prompt
 
-data Scratch = AllArches | Arch String
-
--- FIXME --override and --scratch incompatible
 data BuildOpts = BuildOpts
   { buildoptMerge :: Bool
   , buildoptNoFailFast :: Bool
-  , buildoptScratch :: Maybe Scratch
   , buildoptTarget :: Maybe String
   , buildoptOverride :: Bool
   }
 
 -- FIXME vertical vs horizontal builds (ie by package or branch)
 -- FIXME --rpmlint (only run for master?)
--- FIXME --[no-]rebuild-srpm for scratch
 -- FIXME support --wait-build=NVR
 -- FIXME --dry-run
--- FIXME --exclude-arch
 buildCmd :: BuildOpts -> ([Branch],[String]) -> IO ()
 buildCmd opts (brs,pkgs) = do
   when (isJust (buildoptTarget opts) && length brs > 1) $
     error' "You can only specify target with one branch"
   withPackageByBranches False LocalBranches (buildBranch opts) (brs,pkgs)
 
+-- FIXME what if untracked files
 buildBranch :: BuildOpts -> Package -> Branch -> IO ()
 buildBranch opts pkg br = do
   putPkgBrnchHdr pkg br
   gitSwitchBranch br
-  let scratch = buildoptScratch opts
-  when (isNothing scratch) $ gitMergeOrigin br
+  gitMergeOrigin br
   newrepo <- initialPkgRepo
   tty <- hIsTerminalDevice stdin
   unmerged <- mergeable br
@@ -65,7 +58,7 @@ buildBranch opts pkg br = do
   let spec = packageSpec pkg
   checkForSpecFile spec
   -- FIXME offer merge if newer branch has commits
-  when (not (null unpushed) && isNothing scratch) $ do
+  unless (null unpushed) $ do
     checkSourcesMatch spec
     -- FIXME offer partial push for master by ref input
     -- FIXME print nvr
@@ -75,8 +68,8 @@ buildBranch opts pkg br = do
   -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr
   case buildstatus of
-    Just BuildComplete | isNothing scratch -> putStrLn $ nvr ++ " is already built"
-    Just BuildBuilding | isNothing scratch -> putStrLn $ nvr ++ " is already building"
+    Just BuildComplete -> putStrLn $ nvr ++ " is already built"
+    Just BuildBuilding -> putStrLn $ nvr ++ " is already building"
     _ -> do
       let mtarget = buildoptTarget opts
           tag = fromMaybe (branchDestTag br) mtarget
@@ -85,20 +78,13 @@ buildBranch opts pkg br = do
         then error' $ nvr ++ " is already latest (modulo disttag)"
         else do
         krbTicket
-        unpushed' <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
-        clean <- isGitDirClean
-        let march = case scratch of
-                      Just (Arch arch) -> ["--arch-override=" ++ arch]
-                      _ -> []
-            -- FIXME what if untracked files
-            srpm = not (null unpushed') || not clean
+        unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
+          error' "Unpushed changes remain"
+        unlessM isGitDirClean $
+          error' $ "local changes remain (dirty)"
+        let  target = fromMaybe (branchTarget br) mtarget
         -- FIXME parse build output
-        let target = fromMaybe (branchTarget br) mtarget
-        if srpm
-          then do
-          srpmfile <- generateSrpm (Just br) spec
-          void $ kojiBuild target $ march ++ ["--fail-fast" | not (buildoptNoFailFast opts)] ++ [ srpmfile]
-          else kojiBuildBranch target (unPackage pkg) $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ march
+        kojiBuildBranch target (unPackage pkg) $ ["--fail-fast"]
         -- FIXME get bugs from changelog
         mBugSess <- if isNothing mlatest
           then do

@@ -141,18 +141,15 @@ dispatchCmd gitdir activeBranches =
 
     mockOpt = switchWith 'm' "mock" "Do mock build to test"
 
-    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> optional scratchOpt <*> targetOpt <*> overrideOpt
     archOpt :: Parser String
     archOpt = strOptionWith 'a' "arch" "ARCH[,ARCH].." "Scratch build for arch(s)"
 
 
+    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> targetOpt <*> overrideOpt
+
     mergeOpt = switchWith 'm' "merge" "merge from newer branch"
 
     noFailFastOpt = switchWith 'f' "no-fast-fail" "Do not --fast-fail"
-
-    scratchOpt :: Parser Scratch
-    scratchOpt = flagWith' AllArches 's' "scratch" "Koji scratch test build" <|>
-                 Arch <$> strOptionWith 'a' "arch" "ARCH[,ARCH].." "Scratch build for arch(s)"
 
     targetOpt :: Parser (Maybe String)
     targetOpt = optional (strOptionWith 't' "target" "TARGET" "Koji target")
