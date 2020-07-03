@@ -65,16 +65,19 @@ prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd (mbr,pkgs) =
   withPackageByBranches True NoGitRepo prepPackage (maybeToList mbr,pkgs)
 
-scratchCmd :: Bool -> Maybe String -> (Maybe Branch,[String]) -> IO ()
-scratchCmd nofailfast mtarget (mbr,pkgs) =
-  withPackageByBranches False NoGitRepo (scratchBuild nofailfast mtarget) (maybeToList mbr,pkgs)
+scratchCmd :: Bool -> Maybe String -> Maybe String -> (Maybe Branch,[String]) -> IO ()
+scratchCmd nofailfast march mtarget (mbr,pkgs) =
+  withPackageByBranches False NoGitRepo (scratchBuild nofailfast march mtarget) (maybeToList mbr,pkgs)
 
--- FIXME --arch
-scratchBuild :: Bool -> Maybe String -> Package -> Branch -> IO ()
-scratchBuild nofailfast mtarget pkg br = do
+-- FIXME --arches
+-- FIXME --[no-]rebuild-srpm for scratch
+-- FIXME --exclude-arch
+scratchBuild :: Bool -> Maybe String -> Maybe String -> Package -> Branch -> IO ()
+scratchBuild nofailfast march mtarget pkg br = do
   spec <- localBranchSpecFile pkg br
   void $ getSources spec
   let target = fromMaybe "rawhide" mtarget
+  let args = ["--arch-override=" ++ fromJust march | isJust march] ++ ["--fail-fast" | not nofailfast]
   pkggit <- isPkgGitDir
   if pkggit
     then do
@@ -85,10 +88,10 @@ scratchBuild nofailfast mtarget pkg br = do
         null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
         else return False
     if pushed then
-      kojiBuildBranch target (unPackage pkg) $ ["--fail-fast" | not nofailfast] ++ ["--scratch"] -- ++ march
-      else srpmBuild spec target
-    else srpmBuild spec target
+      kojiBuildBranch target (unPackage pkg) $ ["--scratch"] ++ args
+      else srpmBuild target args spec
+    else srpmBuild target args spec
   where
-    srpmBuild :: FilePath -> String -> IO ()
-    srpmBuild spec target =
-      void $ generateSrpm (Just br) spec >>= kojiScratchBuild target
+    srpmBuild :: FilePath -> [String] -> String -> IO ()
+    srpmBuild target args spec =
+      void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args

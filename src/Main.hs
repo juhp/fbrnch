@@ -53,7 +53,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "build" "Build package(s)" $
       buildCmd <$> buildOpts <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
-      scratchCmd <$> noFailFastOpt <*> targetOpt <*> localBranchPackages
+      scratchCmd <$> noFailFastOpt <*> optional archOpt <*> targetOpt <*> localBranchPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd <$> localBranchPackages
     , Subcommand "prep" "Prep sources" $
@@ -142,6 +142,9 @@ dispatchCmd gitdir activeBranches =
     mockOpt = switchWith 'm' "mock" "Do mock build to test"
 
     buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> optional scratchOpt <*> targetOpt <*> overrideOpt
+    archOpt :: Parser String
+    archOpt = strOptionWith 'a' "arch" "ARCH[,ARCH].." "Scratch build for arch(s)"
+
 
     mergeOpt = switchWith 'm' "merge" "merge from newer branch"
 

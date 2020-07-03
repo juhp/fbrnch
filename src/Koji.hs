@@ -45,11 +45,11 @@ kojiScratchUrl :: Bool -> String -> IO (Maybe String)
 kojiScratchUrl noscratch srpm =
     if noscratch
     then return Nothing
-    else Just <$> kojiScratchBuild "rawhide" srpm
+    else Just <$> kojiScratchBuild "rawhide" [] srpm
 
-kojiScratchBuild :: String -> FilePath -> IO String
-kojiScratchBuild target srpm =
-  kojiBuild target ["--scratch", "--no-rebuild-srpm", srpm]
+kojiScratchBuild :: String -> [String] -> FilePath -> IO String
+kojiScratchBuild target args srpm =
+  kojiBuild target $ args ++ ["--scratch", "--no-rebuild-srpm", srpm]
 
 kojiBuild :: String -> [String] -> IO String
 kojiBuild target args = do
