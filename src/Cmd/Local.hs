@@ -1,6 +1,7 @@
 module Cmd.Local (
   installCmd,
   localCmd,
+  mockCmd,
   prepCmd,
   sortCmd,
   scratchCmd,
@@ -82,13 +83,31 @@ prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd (mbr,pkgs) =
   withPackageByBranches True NoGitRepo prepPackage (maybeToList mbr,pkgs)
 
-scratchCmd :: Bool -> Maybe String -> Maybe String -> (Maybe Branch,[String]) -> IO ()
-scratchCmd nofailfast march mtarget (mbr,pkgs) =
-  withPackageByBranches False NoGitRepo (scratchBuild nofailfast march mtarget) (maybeToList mbr,pkgs)
+mockCmd :: (Maybe Branch,[String]) -> IO ()
+mockCmd (mbr,pkgs) =
+  withPackageByBranches False NoGitRepo mockBuildPkg (maybeToList mbr,pkgs)
+
+mockBuildPkg :: Package -> Branch -> IO ()
+mockBuildPkg pkg br = do
+  spec <- localBranchSpecFile pkg br
+  pkggit <- isPkgGitDir
+  if pkggit
+    then do
+    gitSwitchBranch br
+    fedpkg_ "mockbuild" []
+    else do
+    void $ getSources spec
+    srpm <- generateSrpm (Just br) spec
+    let resultsdir = "results_" ++ unPackage pkg
+    cmd_ "mock" ["--root", mockConfig br, "--resultdir=" ++ resultsdir, srpm]
 
 -- FIXME --arches
 -- FIXME --[no-]rebuild-srpm for scratch
 -- FIXME --exclude-arch
+scratchCmd :: Bool -> Maybe String -> Maybe String -> (Maybe Branch,[String]) -> IO ()
+scratchCmd nofailfast march mtarget (mbr,pkgs) =
+  withPackageByBranches False NoGitRepo (scratchBuild nofailfast march mtarget) (maybeToList mbr,pkgs)
+
 scratchBuild :: Bool -> Maybe String -> Maybe String -> Package -> Branch -> IO ()
 scratchBuild nofailfast march mtarget pkg br = do
   spec <- localBranchSpecFile pkg br

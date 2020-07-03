@@ -6,7 +6,6 @@
 # commands
 - diff
   - diff without switching branch??
-- mock
 
 # multipackage
 - build sequence of packages by branch

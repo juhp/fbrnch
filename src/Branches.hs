@@ -3,6 +3,7 @@ module Branches (
   fedoraBranchesNoMaster,
   localBranches,
   pagurePkgBranches,
+  mockConfig,
   module Distribution.Fedora.Branch
 ) where
 
@@ -40,3 +41,8 @@ pagurePkgBranches pkg = do
   return $ either (error' . include project) id res
   where
     include p e = e ++ ": " ++ p
+
+mockConfig :: Branch -> String
+mockConfig Master = "fedora-rawhide-x86_64"
+mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
+mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"

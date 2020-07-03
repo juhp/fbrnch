@@ -78,8 +78,3 @@ requestPkgBranches mock request pkg = do
         putStrLn $ "Branch request already open for " ++ unPackage pkg ++ ":" ++ show br
         mapM_ printScmIssue pending
       return $ null pending
-
-    mockConfig :: Branch -> String
-    mockConfig Master = "fedora-rawhide-x86_64"
-    mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
-    mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"
