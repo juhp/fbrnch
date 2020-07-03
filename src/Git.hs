@@ -16,6 +16,7 @@ module Git (
   checkIsPkgGitDir,
   isPkgGitDir,
   checkWorkingDirClean,
+  isGitDirClean,
   module SimpleCmd.Git
   ) where
 
@@ -81,10 +82,14 @@ gitPushSilent = do
 
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
-  clean <- gitBool "diff-index" ["--quiet", "HEAD"]
+  clean <- isGitDirClean
   unless clean $ do
     dir <- getCurrentDirectory
     error' $ "Working dir is not clean: " ++ dir
+
+isGitDirClean :: IO Bool
+isGitDirClean =
+  gitBool "diff-index" ["--quiet", "HEAD"]
 
 checkIsPkgGitDir :: IO ()
 checkIsPkgGitDir = do

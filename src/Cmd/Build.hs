@@ -86,7 +86,7 @@ buildBranch opts pkg br = do
         else do
         krbTicket
         unpushed' <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
-        clean <- gitBool "diff-index" ["--quiet", "HEAD"]
+        clean <- isGitDirClean
         let march = case scratch of
                       Just (Arch arch) -> ["--arch-override=" ++ arch]
                       _ -> []
