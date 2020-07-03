@@ -4,6 +4,7 @@ module Koji (
   kojiBuildTags,
   kojiGetBuildID,
   kojiLatestNVR,
+  kojiScratchBuild,
   kojiScratchUrl,
   buildIDInfo,
   BuildState(..),
