@@ -6,7 +6,7 @@
 # commands
 - diff
   - diff without switching branch??
-- srpm
+- mock
 
 # multipackage
 - build sequence of packages by branch

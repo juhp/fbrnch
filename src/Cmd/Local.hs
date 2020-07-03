@@ -1,4 +1,11 @@
-module Cmd.Local (installCmd, localCmd, prepCmd, sortCmd, scratchCmd) where
+module Cmd.Local (
+  installCmd,
+  localCmd,
+  prepCmd,
+  sortCmd,
+  scratchCmd,
+  srpmCmd
+  ) where
 
 import Distribution.RPM.Build.Order
 
@@ -51,6 +58,16 @@ localBuildPkg pkg br = do
   installDeps spec
   void $ getSources spec
   buildRPMs False br spec
+
+srpmCmd :: (Maybe Branch,[String]) -> IO ()
+srpmCmd (mbr,pkgs) =
+  withPackageByBranches False NoGitRepo srpmBuildPkg (maybeToList mbr,pkgs)
+
+srpmBuildPkg :: Package -> Branch -> IO ()
+srpmBuildPkg pkg br = do
+  spec <- localBranchSpecFile pkg br
+  void $ getSources spec
+  void $ generateSrpm (Just br) spec
 
 sortCmd :: (Maybe Branch,[String]) -> IO ()
 sortCmd (_,[]) = return ()

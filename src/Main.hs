@@ -60,6 +60,8 @@ dispatchCmd gitdir activeBranches =
       prepCmd <$> localBranchPackages
     , Subcommand "local" "Build locally" $
       localCmd <$> localBranchPackages
+    , Subcommand "srpm" "Build srpm" $
+      srpmCmd <$> localBranchPackages
     , Subcommand "install" "Build locally and install package(s)" $
       installCmd <$> switchWith 'r' "reinstall" "use dnf reinstall" <*> localBranchPackages
     , Subcommand "bugs" "List package bugs" $
