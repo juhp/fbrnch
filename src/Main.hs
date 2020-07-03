@@ -51,7 +51,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s)" $
-      buildCmd <$> mergeOpt <*> optional scratchOpt <*> targetOpt <*> branchesPackages
+      buildCmd <$> buildOpts <*> branchesPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd <$> installBranchPackages
     , Subcommand "prep" "Prep sources" $
@@ -137,6 +137,14 @@ dispatchCmd gitdir activeBranches =
     branchesRequestOpt :: Parser BranchesRequest
     branchesRequestOpt = flagWith' AllReleases 'a' "all" "Request branches for all current releases [default latest 2]" <|> BranchesRequest <$> many branchArg
 
+    mockOpt = switchWith 'm' "mock" "Do mock build to test"
+
+    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> optional scratchOpt <*> targetOpt <*> overrideOpt
+
+    mergeOpt = switchWith 'm' "merge" "merge from newer branch"
+
+    noFailFastOpt = switchWith 'f' "no-fast-fail" "Do not --fast-fail"
+
     scratchOpt :: Parser Scratch
     scratchOpt = flagWith' AllArches 's' "scratch" "Koji scratch test build" <|>
                  Arch <$> strOptionWith 'a' "arch" "ARCH[,ARCH].." "Scratch build for arch(s)"
@@ -144,6 +152,4 @@ dispatchCmd gitdir activeBranches =
     targetOpt :: Parser (Maybe String)
     targetOpt = optional (strOptionWith 't' "target" "TARGET" "Koji target")
 
-    mergeOpt = switchWith 'm' "merge" "merge from newer branch"
-
-    mockOpt = switchWith 'm' "mock" "Do mock build to test"
+    overrideOpt = switchWith 'o' "override" "Create a buildroot override and wait-repo"

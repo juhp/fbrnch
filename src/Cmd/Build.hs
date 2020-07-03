@@ -1,6 +1,7 @@
 module Cmd.Build (
   buildCmd,
-  Scratch(..)
+  BuildOpts(..),
+  Scratch(..),
   ) where
 
 import Common
@@ -21,29 +22,39 @@ import Prompt
 
 data Scratch = AllArches | Arch String
 
+-- FIXME --override and --scratch incompatible
+data BuildOpts = BuildOpts
+  { buildoptMerge :: Bool
+  , buildoptNoFailFast :: Bool
+  , buildoptScratch :: Maybe Scratch
+  , buildoptTarget :: Maybe String
+  , buildoptOverride :: Bool
+  }
+
 -- FIXME vertical vs horizontal builds (ie by package or branch)
--- FIXME --no-fast-fail
 -- FIXME --rpmlint (only run for master?)
 -- FIXME --[no-]rebuild-srpm for scratch
 -- FIXME support --wait-build=NVR
--- FIXME add --override
-buildCmd :: Bool -> Maybe Scratch -> Maybe String -> ([Branch],[String]) -> IO ()
-buildCmd merge' scratch mtarget (brs,pkgs) = do
-  when (isJust mtarget && length brs > 1) $
+-- FIXME --dry-run
+-- FIXME --exclude-arch
+buildCmd :: BuildOpts -> ([Branch],[String]) -> IO ()
+buildCmd opts (brs,pkgs) = do
+  when (isJust (buildoptTarget opts) && length brs > 1) $
     error' "You can only specify target with one branch"
-  withPackageByBranches False LocalBranches (buildBranch merge' False scratch mtarget) (brs,pkgs)
+  withPackageByBranches False LocalBranches (buildBranch opts) (brs,pkgs)
 
-buildBranch :: Bool -> Bool -> Maybe Scratch -> Maybe String -> Package -> Branch -> IO ()
-buildBranch merge' override scratch mtarget pkg br = do
+buildBranch :: BuildOpts -> Package -> Branch -> IO ()
+buildBranch opts pkg br = do
   putPkgBrnchHdr pkg br
   gitSwitchBranch br
+  let scratch = buildoptScratch opts
   when (isNothing scratch) $ gitMergeOrigin br
   newrepo <- initialPkgRepo
   tty <- hIsTerminalDevice stdin
   unmerged <- mergeable br
   -- FIXME if already built or failed, also offer merge
   merged <-
-    if notNull unmerged && (merge' || newrepo || tty)
+    if notNull unmerged && (buildoptMerge opts || newrepo || tty)
       then mergeBranch True unmerged br >> return True
       else return False
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
@@ -67,7 +78,8 @@ buildBranch merge' override scratch mtarget pkg br = do
     Just BuildComplete | isNothing scratch -> putStrLn $ nvr ++ " is already built"
     Just BuildBuilding | isNothing scratch -> putStrLn $ nvr ++ " is already building"
     _ -> do
-      let tag = fromMaybe (branchDestTag br) mtarget
+      let mtarget = buildoptTarget opts
+          tag = fromMaybe (branchDestTag br) mtarget
       mlatest <- kojiLatestNVR tag $ unPackage pkg
       if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
         then error' $ nvr ++ " is already latest (modulo disttag)"
@@ -85,7 +97,7 @@ buildBranch merge' override scratch mtarget pkg br = do
         if srpm
           then do
           srpmfile <- generateSrpm (Just br) spec
-          void $ kojiBuild target $ march ++ ["--fail-fast", srpmfile]
+          void $ kojiBuild target $ march ++ ["--fail-fast" | not (buildoptNoFailFast opts)] ++ [ srpmfile]
           else kojiBuildBranch target (unPackage pkg) $ ["--fail-fast"] ++ ["--scratch" | isJust scratch] ++ march
         -- FIXME get bugs from changelog
         mBugSess <- if isNothing mlatest
@@ -103,9 +115,12 @@ buildBranch merge' override scratch mtarget pkg br = do
           -- FIXME diff previous changelog?
           changelog <- getChangeLog spec
           bodhiUpdate (fmap fst mBugSess) changelog nvr
-          -- FIXME override option or autochain
+          -- FIXME autochain
           -- FIXME prompt for override note
-          when (override && br /= Master) $ bodhiCreateOverride nvr
+          when (buildoptOverride opts) $ do
+            when (br /= Master) $
+              bodhiCreateOverride nvr
+            kojiWaitRepo br target nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do

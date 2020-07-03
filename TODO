@@ -13,7 +13,6 @@
 - chain builds
 - --parallel build
 - build: override if dep
-- --override
 - multipackage update
 - use sidetag
   - combines release updates into single bodhi update

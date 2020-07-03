@@ -8,13 +8,15 @@ module Koji (
   buildIDInfo,
   BuildState(..),
   kojiBuild,
-  kojiBuildBranch
+  kojiBuildBranch,
+  kojiWaitRepo
   ) where
 
 import Data.Char (isDigit)
 
 import Fedora.Koji
 
+import Branches
 import Common
 import Common.System
 import Git
@@ -77,5 +79,14 @@ kojiBuildBranch :: String -> String -> [String] -> IO ()
 kojiBuildBranch target pkg args = do
   commit <- git "rev-parse" ["HEAD"]
   let giturl = "git+https://src.fedoraproject.org/rpms" </> pkg ++ ".git#" ++ commit
-  -- FIXME --target
   void $ kojiBuild target $ args ++ ["--fail-fast", giturl]
+
+-- FIXME use koji-hs
+kojiWaitRepo :: Branch -> String -> String -> IO ()
+kojiWaitRepo br target nvr =
+  cmd_ "koji" ["wait-repo", targetTag, "--build=" ++ nvr]
+  where
+    targetTag =
+      if target == branchTarget br
+      then target ++ "-build"
+      else target

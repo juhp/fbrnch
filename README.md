@@ -154,7 +154,6 @@ $ fbrnch install package1 package2 package3 ...
 ```
 
 ## Known issues
-- no support yet for overrides (coming)
 - if you don't specify branches, fbrnch may try to build them all
 - only checks already built by NVR not githash
 - authentication is not implemented yet natively for Koji, Bodhi, Pagure
