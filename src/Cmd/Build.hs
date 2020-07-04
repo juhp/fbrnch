@@ -35,7 +35,7 @@ buildCmd :: BuildOpts -> ([Branch],[String]) -> IO ()
 buildCmd opts (brs,pkgs) = do
   when (isJust (buildoptTarget opts) && length brs > 1) $
     error' "You can only specify target with one branch"
-  withPackageByBranches False LocalBranches (buildBranch opts) (brs,pkgs)
+  withPackageByBranches False True LocalBranches (buildBranch opts) (brs,pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: BuildOpts -> Package -> Branch -> IO ()
@@ -167,7 +167,7 @@ buildBranch opts pkg br = do
 -- FIXME --exclude-arch
 scratchCmd :: Bool -> Maybe String -> Maybe String -> (Maybe Branch,[String]) -> IO ()
 scratchCmd nofailfast march mtarget (mbr,pkgs) =
-  withPackageByBranches False NoGitRepo (scratchBuild nofailfast march mtarget) (maybeToList mbr,pkgs)
+  withPackageByBranches False False NoGitRepo (scratchBuild nofailfast march mtarget) (maybeToList mbr,pkgs)
 
 scratchBuild :: Bool -> Maybe String -> Maybe String -> Package -> Branch -> IO ()
 scratchBuild nofailfast march mtarget pkg br = do

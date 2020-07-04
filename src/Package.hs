@@ -227,8 +227,8 @@ packageSpec :: Package -> FilePath
 packageSpec pkg = unPackage pkg <.> "spec"
 
 -- do package over branches
-withPackageByBranches :: Bool -> ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[String]) -> IO ()
-withPackageByBranches quiet constraint action (brs,pkgs) =
+withPackageByBranches :: Bool -> Bool -> ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[String]) -> IO ()
+withPackageByBranches quiet clean constraint action (brs,pkgs) =
   if null pkgs
   then do
     gitdir <- isPkgGitDir
@@ -241,7 +241,7 @@ withPackageByBranches quiet constraint action (brs,pkgs) =
     withPackageDir :: (FilePath, Package) -> IO ()
     withPackageDir (dir, pkg) =
       withExistingDirectory dir $ do
-      haveGit <- setupGit quiet pkg constraint
+      haveGit <- setupGit quiet pkg clean
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
       branches <- if null brs then
@@ -258,10 +258,10 @@ withPackageByBranches quiet constraint action (brs,pkgs) =
       when (length brs /= 1) $
         whenJust mcurrentbranch gitSwitchBranch
 
-setupGit :: Bool -> Package -> ConstrainBranches -> IO Bool
-setupGit quiet pkg constraint = do
+setupGit :: Bool -> Package -> Bool -> IO Bool
+setupGit quiet pkg clean = do
   haveGit <- isPkgGitDir
-  when (haveGit && constraint /= NoGitRepo) checkWorkingDirClean
+  when (haveGit && clean) checkWorkingDirClean
   unless quiet $ do
     putPkgHdr pkg
     when haveGit $ git_ "fetch" []

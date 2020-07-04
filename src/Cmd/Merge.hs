@@ -11,7 +11,7 @@ import Prompt
 
 mergeCmd :: ([Branch],[String]) -> IO ()
 mergeCmd =
-  withPackageByBranches False LocalBranches runMergeBranch
+  withPackageByBranches False True LocalBranches runMergeBranch
   where
     runMergeBranch :: Package -> Branch -> IO ()
     runMergeBranch pkg br = do

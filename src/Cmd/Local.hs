@@ -17,7 +17,7 @@ import Package
 
 installCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 installCmd reinstall (mbr,pkgs) = do
-  withPackageByBranches True NoGitRepo (installPkg reinstall) (maybeToList mbr,pkgs)
+  withPackageByBranches True False NoGitRepo (installPkg reinstall) (maybeToList mbr,pkgs)
 
 installPkg :: Bool -> Package -> Branch -> IO ()
 installPkg reinstall pkg br = do
@@ -49,7 +49,7 @@ installDeps spec = do
 
 localCmd :: (Maybe Branch,[String]) -> IO ()
 localCmd (mbr,pkgs) =
-  withPackageByBranches False NoGitRepo localBuildPkg (maybeToList mbr,pkgs)
+  withPackageByBranches False False NoGitRepo localBuildPkg (maybeToList mbr,pkgs)
 
 localBuildPkg :: Package -> Branch -> IO ()
 localBuildPkg pkg br = do
@@ -60,7 +60,7 @@ localBuildPkg pkg br = do
 
 srpmCmd :: (Maybe Branch,[String]) -> IO ()
 srpmCmd (mbr,pkgs) =
-  withPackageByBranches False NoGitRepo srpmBuildPkg (maybeToList mbr,pkgs)
+  withPackageByBranches False False NoGitRepo srpmBuildPkg (maybeToList mbr,pkgs)
 
 srpmBuildPkg :: Package -> Branch -> IO ()
 srpmBuildPkg pkg br = do
@@ -71,7 +71,7 @@ srpmBuildPkg pkg br = do
 sortCmd :: (Maybe Branch,[String]) -> IO ()
 sortCmd (_,[]) = return ()
 sortCmd (mbr,pkgs) = do
-  withPackageByBranches True NoGitRepo dummy (maybeToList mbr,pkgs)
+  withPackageByBranches True False NoGitRepo dummy (maybeToList mbr,pkgs)
   packages <- dependencySort $ reverse pkgs
   putStrLn $ unwords packages
   where
@@ -79,11 +79,11 @@ sortCmd (mbr,pkgs) = do
 
 prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd (mbr,pkgs) =
-  withPackageByBranches True NoGitRepo prepPackage (maybeToList mbr,pkgs)
+  withPackageByBranches True False NoGitRepo prepPackage (maybeToList mbr,pkgs)
 
 mockCmd :: (Maybe Branch,[String]) -> IO ()
 mockCmd (mbr,pkgs) =
-  withPackageByBranches False NoGitRepo mockBuildPkg (maybeToList mbr,pkgs)
+  withPackageByBranches False False NoGitRepo mockBuildPkg (maybeToList mbr,pkgs)
 
 mockBuildPkg :: Package -> Branch -> IO ()
 mockBuildPkg pkg br = do

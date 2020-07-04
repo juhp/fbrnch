@@ -26,9 +26,10 @@ statusCmd reviews (brs,pkgs) = do
   reviewpkgs <- if reviews then
     map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
     else return []
-  withPackageByBranches False (if null brs then RemoteBranches else LocalBranches)
+  withPackageByBranches False False (if null brs then RemoteBranches else LocalBranches)
     statusBranch (brs, reviewpkgs ++ pkgs)
 
+-- FIXME note dirty when local changes
 statusBranch :: Package -> Branch -> IO ()
 statusBranch pkg br = do
   gitSwitchBranch br
