@@ -4,7 +4,6 @@ module Cmd.Local (
   mockCmd,
   prepCmd,
   sortCmd,
-  scratchCmd,
   srpmCmd
   ) where
 
@@ -14,7 +13,6 @@ import Branches
 import Common
 import Common.System
 import Git
-import Koji
 import Package
 
 installCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
@@ -100,35 +98,3 @@ mockBuildPkg pkg br = do
     srpm <- generateSrpm (Just br) spec
     let resultsdir = "results_" ++ unPackage pkg
     cmd_ "mock" ["--root", mockConfig br, "--resultdir=" ++ resultsdir, srpm]
-
--- FIXME --arches
--- FIXME --[no-]rebuild-srpm for scratch
--- FIXME --exclude-arch
-scratchCmd :: Bool -> Maybe String -> Maybe String -> (Maybe Branch,[String]) -> IO ()
-scratchCmd nofailfast march mtarget (mbr,pkgs) =
-  withPackageByBranches False NoGitRepo (scratchBuild nofailfast march mtarget) (maybeToList mbr,pkgs)
-
-scratchBuild :: Bool -> Maybe String -> Maybe String -> Package -> Branch -> IO ()
-scratchBuild nofailfast march mtarget pkg br = do
-  spec <- localBranchSpecFile pkg br
-  let target = fromMaybe "rawhide" mtarget
-  let args = ["--arch-override=" ++ fromJust march | isJust march] ++ ["--fail-fast" | not nofailfast]
-  pkggit <- isPkgGitDir
-  if pkggit
-    then do
-    gitSwitchBranch br
-    pushed <- do
-      clean <- isGitDirClean
-      if clean then
-        null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
-        else return False
-    if pushed then do
-      void $ getSources spec
-      kojiBuildBranch target (unPackage pkg) $ ["--scratch"] ++ args
-      else srpmBuild target args spec
-    else srpmBuild target args spec
-  where
-    srpmBuild :: FilePath -> [String] -> String -> IO ()
-    srpmBuild target args spec = do
-      void $ getSources spec
-      void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
