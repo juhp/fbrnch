@@ -8,8 +8,8 @@ import Common
 import Common.System
 
 import Data.Char (isDigit)
-import System.IO (hIsTerminalDevice, stdin)
 import Fedora.Bodhi hiding (bodhiUpdate)
+import System.IO (hIsTerminalDevice, stdin)
 
 import Bugzilla
 import Branches
