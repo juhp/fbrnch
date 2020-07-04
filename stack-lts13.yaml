@@ -16,3 +16,5 @@ extra-deps:
     commit: 9ff1fe697c3d007e23373b4a5d8169bcc18e3e53
   - HaXml-1.25.5
   - haxr-3000.11.4
+  - git: https://github.com/juhp/rpmbuild-order.git
+    commit: 01f5290d116d535c0224ae25321c5180c35af37f
