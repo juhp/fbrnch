@@ -111,7 +111,6 @@ scratchCmd nofailfast march mtarget (mbr,pkgs) =
 scratchBuild :: Bool -> Maybe String -> Maybe String -> Package -> Branch -> IO ()
 scratchBuild nofailfast march mtarget pkg br = do
   spec <- localBranchSpecFile pkg br
-  void $ getSources spec
   let target = fromMaybe "rawhide" mtarget
   let args = ["--arch-override=" ++ fromJust march | isJust march] ++ ["--fail-fast" | not nofailfast]
   pkggit <- isPkgGitDir
@@ -123,11 +122,13 @@ scratchBuild nofailfast march mtarget pkg br = do
       if clean then
         null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
         else return False
-    if pushed then
+    if pushed then do
+      void $ getSources spec
       kojiBuildBranch target (unPackage pkg) $ ["--scratch"] ++ args
       else srpmBuild target args spec
     else srpmBuild target args spec
   where
     srpmBuild :: FilePath -> [String] -> String -> IO ()
-    srpmBuild target args spec =
+    srpmBuild target args spec = do
+      void $ getSources spec
       void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
