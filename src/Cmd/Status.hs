@@ -20,6 +20,7 @@ import Package
 -- FIXME add --no-pull?
 -- FIXME --pending
 -- FIXME handle not cloned (remote only)
+-- FIXME silence fetching of new branches? (for --reviews etc)
 statusCmd :: Bool -> ([Branch],[String]) -> IO ()
 statusCmd reviews (brs,pkgs) = do
   reviewpkgs <- if reviews then

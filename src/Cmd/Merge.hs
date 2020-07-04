@@ -21,6 +21,8 @@ mergeCmd =
       unmerged <- mergeable br
       mergeBranch False unmerged br
 
+-- FIXME newer branch might not exist (eg epel8):
+   -- restrict to local branches
 mergeable :: Branch -> IO [String]
 mergeable br = do
   newerBr <- newerBranch br <$> getFedoraBranches

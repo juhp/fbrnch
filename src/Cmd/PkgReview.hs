@@ -110,6 +110,7 @@ uploadPkgFiles pkg spec srpm = do
 mockRpmLint :: Bool -> String -> FilePath -> FilePath -> IO ()
 mockRpmLint mock pkg spec srpm = do
   rpms <- if mock then do
+    -- FIXME check that mock is installed
     let resultsdir = "results_" ++ pkg
     cmd_ "mock" ["--resultdir=" ++ resultsdir, srpm]
     map (resultsdir </>) . filter ((== ".rpm") . takeExtension) <$> listDirectory resultsdir
