@@ -112,7 +112,7 @@ mockRpmLint mock pkg spec srpm = do
   rpms <- if mock then do
     let resultsdir = "results_" ++ pkg
     cmd_ "mock" ["--resultdir=" ++ resultsdir, srpm]
-    map (resultsdir </>) <$> filter ((== ".rpm") . takeExtension) <$> listDirectory resultsdir
+    map (resultsdir </>) . filter ((== ".rpm") . takeExtension) <$> listDirectory resultsdir
     else do
     br <- systemBranch
     builtRpms br spec >>= filterM doesFileExist

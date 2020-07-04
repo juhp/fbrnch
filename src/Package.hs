@@ -151,7 +151,7 @@ buildRPMs quiet br spec = do
 prepPackage :: Package -> Branch -> IO ()
 prepPackage pkg br = do
   ifM (doesFileExist "dead.package")
-    (putStrLn $ "dead.package") $
+    (putStrLn "dead.package") $
     do
     spec <- localBranchSpecFile pkg br
     unlessM (doesFileExist spec) $

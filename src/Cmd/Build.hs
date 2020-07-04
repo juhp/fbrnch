@@ -82,10 +82,10 @@ buildBranch opts pkg br = do
         unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
           error' "Unpushed changes remain"
         unlessM isGitDirClean $
-          error' $ "local changes remain (dirty)"
+          error' "local changes remain (dirty)"
         let  target = fromMaybe (branchTarget br) mtarget
         -- FIXME parse build output
-        kojiBuildBranch target (unPackage pkg) $ ["--fail-fast"]
+        kojiBuildBranch target (unPackage pkg) ["--fail-fast"]
         -- FIXME get bugs from changelog
         mBugSess <- if isNothing mlatest
           then do
@@ -185,7 +185,7 @@ scratchBuild nofailfast march mtarget pkg br = do
         else return False
     if pushed then do
       void $ getSources spec
-      kojiBuildBranch target (unPackage pkg) $ ["--scratch"] ++ args
+      kojiBuildBranch target (unPackage pkg) $ "--scratch" : args
       else srpmBuild target args spec
     else srpmBuild target args spec
   where
