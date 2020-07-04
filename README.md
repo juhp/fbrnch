@@ -30,8 +30,8 @@ like:
 ```
 $ fbrnch create-review my-new-package.spec
 ```
-This will create (or update) an srpm, upload it to fedorapeople,
-perform a scratch build,
+This will create (or update) an srpm, run rpmlint,
+then upload it to fedorapeople, perform a scratch build,
 and open a Review Request in Bugzilla (similar to fedora-create-review).
 
 #### Update a package review
@@ -154,19 +154,22 @@ $ fbrnch install package1 package2 package3 ...
 ```
 
 ## Known issues
-- if you don't specify branches, fbrnch may try to build them all
+- if you don't specify branches, fbrnch build will try to do all pushed branches
 - only checks already built by NVR not githash
 - authentication is not implemented yet natively for Koji, Bodhi, Pagure
   (and source upload)
-  - so the python clients are used for "writing" to them
-    (specifcally koji, bodhi-client, fedpkg).
-    But all queries are done directly by Web RPC for speed and control.
+  - so python clients are used for "writing"
+    (specifically koji, bodhi-client, fedpkg),
+    but queries are done directly by Web RPC for speed and control.
 
 ## Installation
 Run `stack install` or `cabal new-install` in a git checkout.
 
 ## Contributing
 Bug reports, feedback, and fixes are welcome.
+
+See the TODO list and also scattered source FIXME comments.
+As usual better to ask before embarking on large changes.
 
 ## Usual disclaimer
 This is still in active development.
