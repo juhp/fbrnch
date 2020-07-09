@@ -77,7 +77,7 @@ Finally you can request branches with
 ```
 $ fbrnch request-branches
 ```
-which will confirm which branches you want, unless unless given.
+which will confirm which branches you want, unless given.
 
 Optionally a mock build can be done first.
 
@@ -101,7 +101,7 @@ $ fbrnch pull [package] ...
 ```
 $ fbrnch status [package]
 ```
-which output information about the status of each branch.
+outputs information about the status of each branch.
 The status command can also be used with `--reviews`
 to check the build status of new packages.
 
@@ -121,7 +121,7 @@ Merging can also be done together with building:
 ```
 $ fbrnch build package
 ```
-will offer to merge newer commits from newer branch.
+will offer to merge newer commits from the newer branch.
 Otherwise if a branch NVR is also ready pushed and built it will be skipped.
 Branch builds are pushed to Bodhi.
 
@@ -129,7 +129,11 @@ You can of course specify which branch(es) to build:
 ```
 $ fbrnch build -b f32 package
 ```
-Scratch builds can also be done.
+
+Scratch builds can also be done:
+```
+$ fbrnch scratch -b master
+```
 
 You can sort packages by build dependency order:
 ```
@@ -161,6 +165,13 @@ $ fbrnch install package1 package2 package3 ...
   - so python clients are used for "writing"
     (specifically koji, bodhi-client, fedpkg),
     but queries are done directly by Web RPC for speed and control.
+
+## Motivation and history
+This project started off (as "fedbrnch") basically as a simple tool to
+build a package across branches (ie for current releases).  Then bugzilla
+and Bodhi integration was added, and gradually more features, including
+some generic commands across packages which had already been done before
+in fedora-haskell-tools.
 
 ## Installation
 Run `stack install` or `cabal new-install` in a git checkout.
