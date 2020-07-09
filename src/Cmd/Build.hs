@@ -61,15 +61,21 @@ buildBranch opts pkg br = do
   -- FIXME offer merge if newer branch has commits
   unless (null unpushed) $ do
     checkSourcesMatch spec
-    -- FIXME offer partial push for master by ref input
-    -- FIXME print nvr
-    when (tty && (not merged || (newrepo && length unmerged == 1))) $ prompt_ "Press Enter to push and build"
-    gitPushSilent
+  -- FIXME print nvr
+  mpush <-
+    if null unpushed then return Nothing
+    else
+      -- see mergeBranch for: unmerged == 1 (774b5890)
+      if (tty && (not merged || (newrepo && length unmerged == 1)))
+      then refPrompt unpushed $ "Press Enter to push" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ "; or 'no' to skip pushing"
+      else return $ Just Nothing
+  whenJust mpush $ gitPushSilent
   nvr <- pkgNameVerRel' br spec
   -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr
   case buildstatus of
     Just BuildComplete -> putStrLn $ nvr ++ " is already built"
+    -- FIXME wait for build?
     Just BuildBuilding -> putStrLn $ nvr ++ " is already building"
     _ -> do
       let mtarget = buildoptTarget opts
@@ -79,13 +85,17 @@ buildBranch opts pkg br = do
         then error' $ nvr ++ " is already latest (modulo disttag)"
         else do
         krbTicket
-        unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
+        unlessM (null <$> gitShortLog ("origin" </> show br ++ "..HEAD")) $
+          when (mpush == Just Nothing) $
           error' "Unpushed changes remain"
         unlessM isGitDirClean $
           error' "local changes remain (dirty)"
         let  target = fromMaybe (branchTarget br) mtarget
+        mbuildref <- case mpush of
+          Nothing -> Just <$> git "show-ref" ["--hash", "origin" </> show br]
+          _ -> return $ join mpush
         -- FIXME parse build output
-        kojiBuildBranch target (unPackage pkg) ["--fail-fast"]
+        kojiBuildBranch target (unPackage pkg) mbuildref ["--fail-fast"]
         -- FIXME get bugs from changelog
         mBugSess <- if isNothing mlatest
           then do
@@ -185,7 +195,7 @@ scratchBuild rebuildSrpm nofailfast march mtarget pkg br = do
         else return False
     if pushed then do
       void $ getSources spec
-      kojiBuildBranch target (unPackage pkg) $ "--scratch" : args
+      kojiBuildBranch target (unPackage pkg) Nothing $ "--scratch" : args
       else srpmBuild target args spec
     else srpmBuild target args spec
   where

@@ -2,8 +2,6 @@ module Cmd.Merge (mergeCmd, mergeable, mergeBranch) where
 
 import Common
 
-import Data.Char
-
 import Branches
 import Git
 import Package
@@ -43,21 +41,11 @@ mergeBranch build unmerged br = do
     putStrLn "Local commits:"
     mapM_ (putStrLn . simplifyCommitLog) unpushed
   -- FIXME avoid Mass_Rebuild bumps
-  mhash <-
-    if newrepo && length unmerged == 1 then return $ Just ""
-    else mergePrompt $ "Press Enter to merge " ++ (if build then "and build " else "") ++ show newerBr ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
-  case mhash of
-    Nothing -> return ()
-    Just hash -> do
-      let ref = if null hash then show newerBr else hash
-      git_ "merge" ["--quiet", ref]
-  where
-    mergePrompt :: String -> IO (Maybe String)
-    mergePrompt txt = do
-      let commitrefs = map (head . words) unmerged
-      inp <- prompt txt
-      if null inp then return (Just "") else
-        if map toLower inp == "no" then return Nothing
-        else case find (inp `isPrefixOf`) commitrefs of
-          Just ref -> return $ Just ref
-          Nothing -> mergePrompt txt
+  mmerge <-
+    if newrepo && length unmerged == 1 then return $ Just Nothing
+    else refPrompt unmerged $ "Press Enter to merge " ++ (if build then "and build " else "") ++ show newerBr ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
+  whenJust mmerge $ \ mhash -> do
+    let ref = case mhash of
+                Nothing -> show newerBr
+                Just hash -> hash
+    git_ "merge" ["--quiet", ref]

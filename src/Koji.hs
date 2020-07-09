@@ -76,9 +76,9 @@ kojiBuild target args = do
           Just TaskFailed -> error "Task failed!"
           _ -> kojiWatchTask task
 
-kojiBuildBranch :: String -> String -> [String] -> IO ()
-kojiBuildBranch target pkg args = do
-  commit <- git "rev-parse" ["HEAD"]
+kojiBuildBranch :: String -> String -> Maybe String -> [String] -> IO ()
+kojiBuildBranch target pkg mref args = do
+  commit <- maybe (git "rev-parse" ["HEAD"]) return mref
   let giturl = "git+https://src.fedoraproject.org/rpms" </> pkg ++ ".git#" ++ commit
   void $ kojiBuild target $ args ++ [giturl]
 
