@@ -69,7 +69,8 @@ buildBranch opts pkg br = do
       if (tty && (not merged || (newrepo && length unmerged == 1)))
       then refPrompt unpushed $ "Press Enter to push" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ "; or 'no' to skip pushing"
       else return $ Just Nothing
-  whenJust mpush $ gitPushSilent
+  whenJust mpush $ \ mref ->
+    gitPushSilent $ fmap (++ ":" ++ show br) mref
   nvr <- pkgNameVerRel' br spec
   -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr

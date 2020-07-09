@@ -77,7 +77,7 @@ simplifyCommitLog = unwords . shortenHash . words
 gitPushSilent :: Maybe String -> IO ()
 gitPushSilent mref = do
   putStr "git pushing... "
-  out <- cmdQuiet "git" $ ["push", "--quiet"] ++ maybeToList mref
+  out <- cmdQuiet "git" $ ["push", "--quiet", "origin"] ++ maybeToList mref
   putStrLn $ if null out then "done\n" else "\n" ++ out
 
 checkWorkingDirClean :: IO ()
