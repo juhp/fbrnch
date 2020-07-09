@@ -80,7 +80,7 @@ kojiBuildBranch :: String -> String -> [String] -> IO ()
 kojiBuildBranch target pkg args = do
   commit <- git "rev-parse" ["HEAD"]
   let giturl = "git+https://src.fedoraproject.org/rpms" </> pkg ++ ".git#" ++ commit
-  void $ kojiBuild target $ args ++ ["--fail-fast", giturl]
+  void $ kojiBuild target $ args ++ [giturl]
 
 -- FIXME use koji-hs
 kojiWaitRepo :: Branch -> String -> String -> IO ()

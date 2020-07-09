@@ -163,17 +163,17 @@ buildBranch opts pkg br = do
           Just obj -> print obj
 
 -- FIXME --arches
--- FIXME --[no-]rebuild-srpm for scratch
 -- FIXME --exclude-arch
-scratchCmd :: Bool -> Maybe String -> Maybe String -> (Maybe Branch,[String]) -> IO ()
-scratchCmd nofailfast march mtarget (mbr,pkgs) =
-  withPackageByBranches False False NoGitRepo (scratchBuild nofailfast march mtarget) (maybeToList mbr,pkgs)
+-- FIXME build from a git ref
+scratchCmd :: Bool -> Bool -> Maybe String -> Maybe String -> (Maybe Branch,[String]) -> IO ()
+scratchCmd rebuildSrpm nofailfast march mtarget (mbr,pkgs) =
+  withPackageByBranches False False NoGitRepo (scratchBuild rebuildSrpm nofailfast march mtarget) (maybeToList mbr,pkgs)
 
-scratchBuild :: Bool -> Maybe String -> Maybe String -> Package -> Branch -> IO ()
-scratchBuild nofailfast march mtarget pkg br = do
+scratchBuild :: Bool -> Bool -> Maybe String -> Maybe String -> Package -> Branch -> IO ()
+scratchBuild rebuildSrpm nofailfast march mtarget pkg br = do
   spec <- localBranchSpecFile pkg br
   let target = fromMaybe "rawhide" mtarget
-  let args = ["--arch-override=" ++ fromJust march | isJust march] ++ ["--fail-fast" | not nofailfast]
+  let args = ["--arch-override=" ++ fromJust march | isJust march] ++ ["--fail-fast" | not nofailfast] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
   pkggit <- isPkgGitDir
   if pkggit
     then do

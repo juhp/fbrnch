@@ -53,7 +53,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "build" "Build package(s)" $
       buildCmd <$> buildOpts <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
-      scratchCmd <$> noFailFastOpt <*> optional archOpt <*> targetOpt <*> localBranchPackages
+      scratchCmd <$> rebuildSrpmOpt <*> noFailFastOpt <*> optional archOpt <*> targetOpt <*> localBranchPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd <$> localBranchPackages
     , Subcommand "prep" "Prep sources" $
@@ -148,6 +148,7 @@ dispatchCmd gitdir activeBranches =
     archOpt :: Parser String
     archOpt = strOptionWith 'a' "arch" "ARCH[,ARCH].." "Scratch build for arch(s)"
 
+    rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
 
     buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> targetOpt <*> overrideOpt
 
