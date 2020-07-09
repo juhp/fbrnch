@@ -268,8 +268,8 @@ setupGit quiet pkg clean = do
   return haveGit
 
 -- do branch over packages
-withBranchByPackages :: ConstrainBranches -> (Branch -> Package -> IO ()) -> ([Branch],[String]) -> IO ()
-withBranchByPackages constraint action (brs,pkgs) = do
+withBranchByPackages :: (Branch -> Package -> IO ()) -> ([Branch],[String]) -> IO ()
+withBranchByPackages action (brs,pkgs) = do
   when (null pkgs) $
     error' "Please give at least one package"
   when (null brs) $
@@ -277,7 +277,7 @@ withBranchByPackages constraint action (brs,pkgs) = do
   forM_ brs $ \ br ->
     forM_ (map packagePath pkgs) $ \ (dir,pkg) ->
     withExistingDirectory dir $ do
-    void $ setupGit False pkg constraint
+    void $ setupGit False pkg True
     action br pkg
 
 clonePkg :: Maybe Branch -> String -> IO ()
