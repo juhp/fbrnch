@@ -70,6 +70,8 @@ kojiBuild target args = do
       ifM (cmdBool "koji" ["watch-task", show task])
       (return True) $
       do
+        -- FIXME can error:
+        -- [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
         mst <- kojiGetTaskState (TaskId task)
         case mst of
           Just TaskClosed -> return True

@@ -2,12 +2,17 @@ module Cmd.Build (
   buildCmd,
   BuildOpts(..),
   scratchCmd,
+  chainBuildCmd
   ) where
 
 import Common
 import Common.System
 
+--import Control.Concurrent.Async.Pool
+import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
+import Data.Graph.Inductive.Graph
+import Distribution.RPM.Build.Graph (createGraph)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import System.IO (hIsTerminalDevice, stdin)
 
@@ -142,17 +147,6 @@ buildBranch opts pkg br = do
             Just uri -> putStrLn uri
           _ -> error' $ "impossible happened: more than one update found for " ++ nvr
 
-    checkSourcesMatch :: FilePath -> IO ()
-    checkSourcesMatch spec = do
-      -- "^[Ss]ource[0-9]*:"
-      source <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
-      sources <- lines <$> readFile "sources"
-      forM_ source $ \ src ->
-        when (isNothing (find (src `isInfixOf`) sources)) $
-        unlessM (doesFileExist (takeFileName src)) $
-        -- FIXME offer to add source
-        error' $ src ++ " not in sources"
-
     extractBugReference :: String -> Maybe String
     extractBugReference clog =
       let rest = dropWhile (/= '#') clog in
@@ -160,18 +154,29 @@ buildBranch opts pkg br = do
         else let bid = takeWhile isDigit $ tail rest in
           if null bid then Nothing else Just bid
 
-    bodhiCreateOverride :: String -> IO ()
-    bodhiCreateOverride nvr = do
-      putStrLn $ "Creating Bodhi Override for " ++ nvr ++ ":"
-      ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building", "--duration", "7", nvr]
-      unless ok $ do
-        moverride <- bodhiOverride nvr
-        case moverride of
-          Nothing -> do
-            putStrLn "bodhi override failed"
-            prompt_ "Press Enter to retry"
-            bodhiCreateOverride nvr
-          Just obj -> print obj
+checkSourcesMatch :: FilePath -> IO ()
+checkSourcesMatch spec = do
+  -- "^[Ss]ource[0-9]*:"
+  source <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
+  sources <- lines <$> readFile "sources"
+  forM_ source $ \ src ->
+    when (isNothing (find (src `isInfixOf`) sources)) $
+    unlessM (doesFileExist (takeFileName src)) $
+    -- FIXME offer to add source
+    error' $ src ++ " not in sources"
+
+bodhiCreateOverride :: String -> IO ()
+bodhiCreateOverride nvr = do
+  putStrLn $ "Creating Bodhi Override for " ++ nvr ++ ":"
+  ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building", "--duration", "7", nvr]
+  unless ok $ do
+    moverride <- bodhiOverride nvr
+    case moverride of
+      Nothing -> do
+        putStrLn "bodhi override failed"
+        prompt_ "Press Enter to retry"
+        bodhiCreateOverride nvr
+      Just obj -> print obj
 
 -- FIXME --arches
 -- FIXME --exclude-arch
@@ -204,3 +209,23 @@ scratchBuild rebuildSrpm nofailfast march mtarget pkg br = do
     srpmBuild target args spec = do
       void $ getSources spec
       void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
+
+-- FIXME koji --background option
+chainBuildCmd :: Maybe String -> ([Branch],[String]) -> IO ()
+chainBuildCmd mtarget (brs,pkgs) = do
+  when (isJust mtarget && length brs > 1) $
+    error' "You can only specify target with one branch"
+  withBranchByPackages {-LocalBranches-} chainBuildPkgs (brs,pkgs)
+  where
+    -- FIXME switch branch
+    chainBuildPkgs :: Branch -> [String] -> IO ()
+    chainBuildPkgs br pkgs =  do
+      graph <- createGraph False False Nothing (map B.pack pkgs)
+      let layers = graphLayers graph
+      mapM_ (print . length) layers
+      where
+        graphLayers graph =
+          if isEmpty graph then []
+          else
+            let layer = labNodes $ nfilter ((==0) . (indeg graph)) graph
+            in [map snd layer] ++ graphLayers (delNodes (map fst layer) graph)

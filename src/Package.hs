@@ -238,6 +238,7 @@ withPackageByBranches quiet clean constraint action (brs,pkgs) =
     withPackageDir (".", pkg)
   else mapM_ (withPackageDir . packagePath) pkgs
   where
+    -- FIXME support arbitrary (module) branches
     withPackageDir :: (FilePath, Package) -> IO ()
     withPackageDir (dir, pkg) =
       withExistingDirectory dir $ do
@@ -268,17 +269,17 @@ setupGit quiet pkg clean = do
   return haveGit
 
 -- do branch over packages
-withBranchByPackages :: (Branch -> Package -> IO ()) -> ([Branch],[String]) -> IO ()
+withBranchByPackages :: (Branch -> [String] -> IO ()) -> ([Branch],[String]) -> IO ()
 withBranchByPackages action (brs,pkgs) = do
-  when (null pkgs) $
-    error' "Please give at least one package"
   when (null brs) $
     error' "Please specify at least one branch"
+  when (null pkgs) $
+    error' "Please give at least one package"
   forM_ brs $ \ br ->
-    forM_ (map packagePath pkgs) $ \ (dir,pkg) ->
-    withExistingDirectory dir $ do
-    void $ setupGit False pkg True
-    action br pkg
+    -- forM_ (map packagePath pkgs) $ \ (dir,pkg) ->
+    -- withExistingDirectory dir $ do
+    -- void $ setupGit False pkg True
+    action br pkgs
 
 clonePkg :: Maybe Branch -> String -> IO ()
 clonePkg mbr pkg =

@@ -71,6 +71,7 @@ executable fbrnch
                      , email-validate
                      , extra
                      , fedora-dists > 2.0
+                     , fgl
                      , filepath
                      , http-conduit
                      , http-directory >= 0.1.5
