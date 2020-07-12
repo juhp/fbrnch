@@ -17,7 +17,7 @@ module Package (
   putPkgBrnchHdr,
   withExistingDirectory,
   initialPkgRepo,
-  withBranchByPackages,
+--  withBranchByPackages,
   withPackageByBranches,
   Package(..),
   packageSpec,
@@ -268,18 +268,18 @@ setupGit quiet pkg clean = do
     when haveGit $ git_ "fetch" []
   return haveGit
 
--- do branch over packages
-withBranchByPackages :: (Branch -> [String] -> IO ()) -> ([Branch],[String]) -> IO ()
-withBranchByPackages action (brs,pkgs) = do
-  when (null brs) $
-    error' "Please specify at least one branch"
-  when (null pkgs) $
-    error' "Please give at least one package"
-  forM_ brs $ \ br ->
-    -- forM_ (map packagePath pkgs) $ \ (dir,pkg) ->
-    -- withExistingDirectory dir $ do
-    -- void $ setupGit False pkg True
-    action br pkgs
+-- -- do branch over packages
+-- withBranchByPackages :: (Branch -> [String] -> IO ()) -> ([Branch],[String]) -> IO ()
+-- withBranchByPackages action (brs,pkgs) = do
+--   when (null brs) $
+--     error' "Please specify at least one branch"
+--   when (null pkgs) $
+--     error' "Please give at least one package"
+--   forM_ brs $ \ br ->
+--     -- forM_ (map packagePath pkgs) $ \ (dir,pkg) ->
+--     -- withExistingDirectory dir $ do
+--     -- void $ setupGit False pkg True
+--     action br pkgs
 
 clonePkg :: Maybe Branch -> String -> IO ()
 clonePkg mbr pkg =

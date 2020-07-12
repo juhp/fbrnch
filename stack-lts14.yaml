@@ -12,5 +12,5 @@ extra-deps:
   - git: https://github.com/juhp/koji-hs.git
     commit: 9ff1fe697c3d007e23373b4a5d8169bcc18e3e53
   - git: https://github.com/juhp/rpmbuild-order.git
-    commit: 01f5290d116d535c0224ae25321c5180c35af37f
+    commit: fcf25a82c6eb0a5bad35d6596ad3ba944a4ebb91
   - simple-cmd-args-0.1.6

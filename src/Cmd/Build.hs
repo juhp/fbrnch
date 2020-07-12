@@ -2,19 +2,18 @@ module Cmd.Build (
   buildCmd,
   BuildOpts(..),
   scratchCmd,
-  chainBuildCmd
+  parallelBuildCmd
   ) where
 
 import Common
 import Common.System
 
---import Control.Concurrent.Async.Pool
-import qualified Data.ByteString.Char8 as B
+import Control.Concurrent.Async
 import Data.Char (isDigit)
-import Data.Graph.Inductive.Graph
-import Distribution.RPM.Build.Graph (createGraph)
+import Distribution.RPM.Build.Order (dependencyLayers)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import System.IO (hIsTerminalDevice, stdin)
+import System.Time.Extra (sleep)
 
 import Bugzilla
 import Branches
@@ -210,22 +209,76 @@ scratchBuild rebuildSrpm nofailfast march mtarget pkg br = do
       void $ getSources spec
       void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
 
--- FIXME koji --background option
-chainBuildCmd :: Maybe String -> ([Branch],[String]) -> IO ()
-chainBuildCmd mtarget (brs,pkgs) = do
+parallelBuildCmd :: Maybe String -> ([Branch],[String]) -> IO ()
+parallelBuildCmd mtarget (brs,pkgs) = do
   when (isJust mtarget && length brs > 1) $
     error' "You can only specify target with one branch"
-  withBranchByPackages {-LocalBranches-} chainBuildPkgs (brs,pkgs)
+  when (null brs) $
+    error' "Please specify at least one branch"
+  when (null pkgs) $
+    error' "Please give at least one package"
+  forM_ brs $ \ br -> do
+    putStrLn $ "# " ++ show br
+    layers <- dependencyLayers pkgs
+    mapM_ (parallelBuild br) layers
   where
-    -- FIXME switch branch
-    chainBuildPkgs :: Branch -> [String] -> IO ()
-    chainBuildPkgs br pkgs =  do
-      graph <- createGraph False False Nothing (map B.pack pkgs)
-      let layers = graphLayers graph
-      mapM_ (print . length) layers
+    parallelBuild :: Branch -> [String] -> IO ()
+    parallelBuild br layer =  do
+      krbTicket
+      jobs <- mapM startBuild layer
+      watchJobs jobs
+      prompt_ "Press Enter to build next parallel layer"
       where
-        graphLayers graph =
-          if isEmpty graph then []
-          else
-            let layer = labNodes $ nfilter ((==0) . (indeg graph)) graph
-            in [map snd layer] ++ graphLayers (delNodes (map fst layer) graph)
+        startBuild :: String -> IO (String, Async String)
+        startBuild pkg = do
+          sleep 5
+          job <- async (asyncBuild br (Package pkg))
+          return (pkg, job)
+
+    watchJobs [] = return ()
+    watchJobs (job:jobs) = do
+      sleep 1
+      status <- poll (snd job)
+      case status of
+        Nothing -> watchJobs (jobs ++ [job])
+        Just (Right nvr) -> do
+          putStrLn $ nvr ++ " job completed"
+          watchJobs jobs
+        Just (Left _except) -> do
+          putStrLn $ "** " ++ fst job ++ " job FAILED! **"
+          watchJobs jobs
+
+    -- FIXME prefix output with package name
+    asyncBuild :: Branch -> Package -> IO String
+    asyncBuild br pkg = do
+      unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+      unless (null unpushed) $ do
+        mapM_ (putStrLn . simplifyCommitLog) unpushed
+      let spec = packageSpec pkg
+      checkForSpecFile spec
+      unless (null unpushed) $ do
+        checkSourcesMatch spec
+        gitPushSilent Nothing
+      nvr <- pkgNameVerRel' br spec
+      let  target = fromMaybe (branchTarget br) mtarget
+      -- FIXME should compare git refs
+      buildstatus <- kojiBuildStatus nvr
+      case buildstatus of
+        Just BuildComplete -> putStrLn $ nvr ++ " is already built"
+        Just BuildBuilding -> putStrLn $ nvr ++ " is already building"
+        _ -> do
+          let tag = fromMaybe (branchDestTag br) mtarget
+          mlatest <- kojiLatestNVR tag $ unPackage pkg
+          if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
+            then error' $ nvr ++ " is already latest (modulo disttag)"
+            else do
+            unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
+              error' "Unpushed changes remain"
+            unlessM isGitDirClean $
+              error' "local changes remain (dirty)"
+            -- FIXME parse build output
+            kojiBuildBranch target (unPackage pkg) Nothing ["--fail-fast", "--background"]
+            when (br /= Master) $
+              bodhiCreateOverride nvr
+      kojiWaitRepo br target nvr
+      return nvr
