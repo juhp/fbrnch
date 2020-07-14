@@ -52,8 +52,8 @@ dispatchCmd gitdir activeBranches =
       mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s)" $
       buildCmd <$> buildOpts <*> branchesPackages
-    , Subcommand "parallel" "Parallel build packages in Koji" $
-      parallelBuildCmd <$> targetOpt <*> branchesPackages
+    -- , Subcommand "parallel" "Parallel build packages in Koji" $
+    --   parallelBuildCmd <$> targetOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd <$> rebuildSrpmOpt <*> noFailFastOpt <*> optional archOpt <*> targetOpt <*> localBranchPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
