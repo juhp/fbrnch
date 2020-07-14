@@ -131,15 +131,16 @@ generateSrpm mbr spec = do
       return srpm
 
 -- FIXME pull sources
-buildRPMs :: Bool -> Branch -> FilePath -> IO ()
-buildRPMs quiet br spec = do
+buildRPMs :: Bool -> Bool -> Branch -> FilePath -> IO ()
+buildRPMs quiet shortcircuit br spec = do
   dist <- branchDist br
   cwd <- getCurrentDirectory
   gitDir <- isGitDir "."
-  let rpmdirs =
+  let buildopt = if shortcircuit then ["-bi", "--short-circuit"] else ["-bb"]
+      rpmdirs =
         [ "--define="++ mcr +-+ cwd | gitDir,
           mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
-      args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist, "-bb", spec]
+      args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++ buildopt ++ [spec]
   if not quiet then
     cmd_ "rpmbuild" args
     else do

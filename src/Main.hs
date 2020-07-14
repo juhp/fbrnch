@@ -61,7 +61,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "prep" "Prep sources" $
       prepCmd <$> localBranchPackages
     , Subcommand "local" "Build locally" $
-      localCmd <$> localBranchPackages
+      localCmd <$> shortcircuitOpt <*> localBranchPackages
     , Subcommand "srpm" "Build srpm" $
       srpmCmd <$> localBranchPackages
     , Subcommand "mock" "Local mock build" $
@@ -162,3 +162,5 @@ dispatchCmd gitdir activeBranches =
     targetOpt = optional (strOptionWith 't' "target" "TARGET" "Koji target")
 
     overrideOpt = switchWith 'o' "override" "Create a buildroot override and wait-repo"
+
+    shortcircuitOpt = switchWith 's' "short-circuit" "Do --short-circuit rpmbuild"

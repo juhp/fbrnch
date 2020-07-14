@@ -35,7 +35,7 @@ installPkg reinstall pkg br = do
       putStrLn $ (takeBaseName . head) rpms ++ "\n"
       installDeps spec
       void $ getSources spec
-      buildRPMs True br spec
+      buildRPMs True False br spec
       putStrLn ""
       sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : "-q" : "-y" : rpms
 
@@ -47,16 +47,16 @@ installDeps spec = do
     cmdSilent "sudo" $ "dnf":["builddep", "--assumeyes", spec]
     putStrLn "done"
 
-localCmd :: (Maybe Branch,[String]) -> IO ()
-localCmd (mbr,pkgs) =
+localCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
+localCmd shortcircuit (mbr,pkgs) =
   withPackageByBranches False False NoGitRepo localBuildPkg (maybeToList mbr,pkgs)
-
-localBuildPkg :: Package -> Branch -> IO ()
-localBuildPkg pkg br = do
-  spec <- localBranchSpecFile pkg br
-  installDeps spec
-  void $ getSources spec
-  buildRPMs False br spec
+  where
+    localBuildPkg :: Package -> Branch -> IO ()
+    localBuildPkg pkg br = do
+      spec <- localBranchSpecFile pkg br
+      installDeps spec
+      void $ getSources spec
+      buildRPMs False shortcircuit br spec
 
 srpmCmd :: (Maybe Branch,[String]) -> IO ()
 srpmCmd (mbr,pkgs) =
