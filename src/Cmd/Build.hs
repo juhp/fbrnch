@@ -70,7 +70,7 @@ buildBranch opts pkg br = do
     if null unpushed then return Nothing
     else
       -- see mergeBranch for: unmerged == 1 (774b5890)
-      if (tty && (not merged || (newrepo && length unmerged == 1)))
+      if tty && (not merged || (newrepo && length unmerged == 1))
       then refPrompt unpushed $ "Press Enter to push" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ "; or 'no' to skip pushing"
       else return $ Just Nothing
   whenJust mpush $ \ mref ->
@@ -245,6 +245,7 @@ parallelBuildCmd mtarget (brs,pkgs) = do
           putStrLn $ nvr ++ " job completed"
           watchJobs jobs
         Just (Left _except) -> do
+          -- FIXME use red text
           putStrLn $ "** " ++ fst job ++ " job FAILED! **"
           watchJobs jobs
 

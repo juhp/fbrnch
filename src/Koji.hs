@@ -62,7 +62,7 @@ kojiBuild target args = do
       task = read $ takeWhileEnd isDigit kojiurl
   ifM (kojiWatchTask task)
     (return kojiurl) $
-    error' "scratch build failed"
+    error' "build failed"
   where
     -- FIXME filter/simplify output
     kojiWatchTask :: Int -> IO Bool
