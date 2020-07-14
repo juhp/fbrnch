@@ -37,6 +37,7 @@ import SimpleCmd.Rpm
 
 import Branches
 import Git
+import InterleaveOutput
 import Krb
 import Prompt
 
@@ -145,10 +146,9 @@ buildRPMs quiet shortcircuit br spec = do
     cmd_ "rpmbuild" args
     else do
     putStr "Building locally: "
-    cmdSilent "rpmbuild" args
+    cmdSilent_ "rpmbuild" args
     putStrLn "done"
 
--- FIXME pull sources
 prepPackage :: Package -> Branch -> IO ()
 prepPackage pkg br = do
   ifM (doesFileExist "dead.package")
@@ -164,7 +164,7 @@ prepPackage pkg br = do
             mcr <- ["_builddir", "_sourcedir"]]
         args = rpmdirs ++ ["-bp", spec]
     putStr "Prepping: "
-    cmdSilent "rpmbuild" args
+    cmdSilent_ "rpmbuild" args
     putStrLn "done"
 
 getSources :: FilePath -> IO Bool

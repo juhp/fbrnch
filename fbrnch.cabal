@@ -52,6 +52,7 @@ executable fbrnch
                        Common.System
                        Common.Text
                        Git
+                       InterleaveOutput
                        Koji
                        Krb
                        ListReviews
@@ -79,11 +80,13 @@ executable fbrnch
                      , network-uri
                      , optparse-applicative
                      , pagure
+                     , process
                      , rpmbuild-order >= 0.3.1
                      , simple-cmd >= 0.2.0
                      , simple-cmd-args >= 0.1.6
                      , text
                      , time
+                     , typed-process >= 0.2.4.0
                      , xdg-basedir
   if impl(ghc<8.0)
        build-depends: semigroups
