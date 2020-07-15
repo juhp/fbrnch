@@ -64,6 +64,8 @@ dispatchCmd gitdir activeBranches =
       localCmd <$> shortcircuitOpt <*> localBranchPackages
     , Subcommand "srpm" "Build srpm" $
       srpmCmd <$> localBranchPackages
+    , Subcommand "diff" "Diff local changes" $
+      diffCmd <$> diffFormatOpt <*> (anyBranchOpt <|> anyBranchArg) <*> many (pkgArg "PACKAGE...")
     , Subcommand "mock" "Local mock build" $
       mockCmd <$> localBranchPackages
     , Subcommand "install" "Build locally and install package(s)" $
@@ -164,3 +166,8 @@ dispatchCmd gitdir activeBranches =
     overrideOpt = switchWith 'o' "override" "Create a buildroot override and wait-repo"
 
     shortcircuitOpt = switchWith 's' "short-circuit" "Do --short-circuit rpmbuild"
+
+    diffFormatOpt :: Parser DiffFormat
+    diffFormatOpt =
+      flagWith DiffDefault DiffShort 's' "short" "Just output package name" <|>
+      DiffContext <$> optionWith auto 'u' "unified" "CONTEXT" "Lines of context"

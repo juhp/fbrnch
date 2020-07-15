@@ -3,14 +3,8 @@
 
 - support containers/
 
-# commands
-- diff
-  - diff without switching branch??
-
 # multipackage
 - build sequence of packages by branch
-- chain builds
-- --parallel build
 - build: override if dep
 - multipackage update
 - use sidetag

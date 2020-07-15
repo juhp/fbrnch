@@ -1,4 +1,6 @@
 module Cmd.Local (
+  diffCmd,
+  DiffFormat(..),
   installCmd,
   localCmd,
   mockCmd,
@@ -98,3 +100,25 @@ mockBuildPkg pkg br = do
     srpm <- generateSrpm (Just br) spec
     let resultsdir = "results_" ++ unPackage pkg
     cmd_ "mock" ["--root", mockConfig br, "--resultdir=" ++ resultsdir, srpm]
+
+data DiffFormat =
+  DiffDefault | DiffShort | DiffContext Int
+  deriving (Eq)
+
+-- FIXME diff branch(es) without switching?
+diffCmd :: DiffFormat -> Branch -> [String] -> IO ()
+diffCmd fmt br pkgs =
+  withPackageByBranches True False LocalBranches diffPkg ([br],pkgs)
+  where
+    diffPkg :: Package -> Branch -> IO ()
+    diffPkg pkg _br = do
+      let contxt = case fmt of
+                     DiffContext n -> ["--unified=" ++ show n]
+                     _ -> []
+      diff <- git "diff" contxt
+      unless (null diff) $
+        case fmt of
+          DiffShort -> putStrLn $ unPackage pkg
+          _ -> do
+            putPkgBrnchHdr pkg br
+            putStrLn diff
