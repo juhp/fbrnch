@@ -3,6 +3,7 @@ module Koji (
   kojiBuildStatus,
   kojiBuildTags,
   kojiGetBuildID,
+  kojiGetBuildTaskID,
   kojiLatestNVR,
   kojiScratchBuild,
   kojiScratchUrl,
@@ -10,7 +11,8 @@ module Koji (
   BuildState(..),
   kojiBuild,
   kojiBuildBranch,
-  kojiWaitRepo
+  kojiWaitRepo,
+  kojiWatchTask
   ) where
 
 import Data.Char (isDigit)
@@ -59,24 +61,24 @@ kojiBuild target args = do
   out <- cmd "koji" $ ["build", "--nowait", target] ++ args
   putStrLn out
   let kojiurl = last $ words out
-      task = read $ takeWhileEnd isDigit kojiurl
-  ifM (kojiWatchTask task)
-    (return kojiurl) $
-    error' "build failed"
-  where
-    -- FIXME filter/simplify output
-    kojiWatchTask :: Int -> IO Bool
-    kojiWatchTask task =
-      ifM (cmdBool "koji" ["watch-task", show task])
-      (return True) $
-      do
-        -- FIXME can error:
-        -- [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
-        mst <- kojiGetTaskState (TaskId task)
-        case mst of
-          Just TaskClosed -> return True
-          Just TaskFailed -> error "Task failed!"
-          _ -> kojiWatchTask task
+      task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
+  kojiWatchTask task
+  return kojiurl
+
+-- FIXME filter/simplify output
+kojiWatchTask :: TaskID -> IO ()
+kojiWatchTask task =
+  ifM (cmdBool "koji" ["watch-task", displayID task])
+  (return ()) $
+  do
+    -- FIXME can error:
+    -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
+    -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
+    mst <- kojiGetTaskState task
+    case mst of
+      Just TaskClosed -> return ()
+      Just TaskFailed -> error "Task failed!"
+      _ -> kojiWatchTask task
 
 kojiBuildBranch :: String -> String -> Maybe String -> [String] -> IO ()
 kojiBuildBranch target pkg mref args = do

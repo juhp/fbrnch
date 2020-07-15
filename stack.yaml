@@ -10,6 +10,6 @@ extra-deps:
   - git: https://github.com/juhp/pagure-hs.git
     commit: 813010d6c1377232476f48321cd48808e0b356f2
   - git: https://github.com/juhp/koji-hs.git
-    commit: 9ff1fe697c3d007e23373b4a5d8169bcc18e3e53
+    commit: 809a12e30a129ac21763d6de950a60f6a751b45c
   - git: https://github.com/juhp/rpmbuild-order.git
     commit: fcf25a82c6eb0a5bad35d6596ad3ba944a4ebb91

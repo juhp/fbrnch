@@ -13,7 +13,7 @@ extra-deps:
   - git: https://github.com/juhp/pagure-hs.git
     commit: 813010d6c1377232476f48321cd48808e0b356f2
   - git: https://github.com/juhp/koji-hs.git
-    commit: 9ff1fe697c3d007e23373b4a5d8169bcc18e3e53
+    commit: 809a12e30a129ac21763d6de950a60f6a751b45c
   - HaXml-1.25.5
   - polyparse-1.12.1
   - haxr-3000.11.4

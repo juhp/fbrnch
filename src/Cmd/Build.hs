@@ -81,7 +81,9 @@ buildBranch morethan1 opts pkg br = do
   case buildstatus of
     Just BuildComplete -> putStrLn $ nvr ++ " is already built"
     -- FIXME wait for build?
-    Just BuildBuilding -> putStrLn $ nvr ++ " is already building"
+    Just BuildBuilding -> do
+      putStrLn $ nvr ++ " is already building"
+      whenJustM (kojiGetBuildTaskID nvr) kojiWatchTask
     _ -> do
       let mtarget = buildoptTarget opts
           tag = fromMaybe (branchDestTag br) mtarget
