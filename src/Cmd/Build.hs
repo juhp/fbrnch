@@ -110,9 +110,8 @@ buildBranch opts pkg br = do
             Nothing -> Nothing
           else return Nothing
         if br == Master
-          then case mBugSess of
-                 Just (bid,session) -> postBuildComment session nvr bid
-                 Nothing -> return ()
+          then whenJust mBugSess $
+               \ (bid,session) -> postBuildComment session nvr bid
           else do
           -- FIXME diff previous changelog?
           changelog <- getChangeLog spec
