@@ -39,11 +39,12 @@ buildCmd :: BuildOpts -> ([Branch],[String]) -> IO ()
 buildCmd opts (brs,pkgs) = do
   when (isJust (buildoptTarget opts) && length brs > 1) $
     error' "You can only specify target with one branch"
-  withPackageByBranches False True LocalBranches (buildBranch opts) (brs,pkgs)
+  let morethan1 = length pkgs > 1
+  withPackageByBranches False True LocalBranches (buildBranch morethan1 opts) (brs,pkgs)
 
 -- FIXME what if untracked files
-buildBranch :: BuildOpts -> Package -> Branch -> IO ()
-buildBranch opts pkg br = do
+buildBranch :: Bool -> BuildOpts -> Package -> Branch -> IO ()
+buildBranch morethan1 opts pkg br = do
   putPkgBrnchHdr pkg br
   gitSwitchBranch br
   gitMergeOrigin br
@@ -121,7 +122,7 @@ buildBranch opts pkg br = do
           when (buildoptOverride opts) $ do
             when (br /= Master) $
               bodhiCreateOverride nvr
-            kojiWaitRepo br target nvr
+        when morethan1 $ kojiWaitRepo br target nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do
