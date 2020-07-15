@@ -64,8 +64,7 @@ buildBranch morethan1 opts pkg br = do
   let spec = packageSpec pkg
   checkForSpecFile spec
   -- FIXME offer merge if newer branch has commits
-  unless (null unpushed) $ do
-    checkSourcesMatch spec
+  checkSourcesMatch spec
   -- FIXME print nvr
   mpush <-
     if null unpushed then return Nothing
@@ -156,11 +155,11 @@ buildBranch morethan1 opts pkg br = do
 checkSourcesMatch :: FilePath -> IO ()
 checkSourcesMatch spec = do
   -- "^[Ss]ource[0-9]*:"
-  source <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
+  specfiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
   sources <- lines <$> readFile "sources"
-  forM_ source $ \ src ->
-    when (isNothing (find (src `isInfixOf`) sources)) $
-    unlessM (doesFileExist (takeFileName src)) $
+  gitfiles <- gitLines "ls-files" []
+  forM_ specfiles $ \ src ->
+    unless (isJust (find (src `isInfixOf`) sources) || src `elem` gitfiles) $
     -- FIXME offer to add source
     error' $ src ++ " not in sources"
 

@@ -5,6 +5,7 @@ module Git (
   gitBool,
 #endif
   gitCurrentBranch,
+  gitLines,
   gitMergeable,
   gitMergeOrigin,
   gitPushSilent,
@@ -57,11 +58,11 @@ gitMergeOrigin br = do
 
 gitShortLog :: String -> IO [String]
 gitShortLog range =
-  lines <$> git "log" ["--pretty=oneline", range]
+  gitLines "log" ["--pretty=oneline", range]
 
 gitShortLogN :: Int -> Maybe String -> IO [String]
 gitShortLogN num mrange =
-  lines <$> git "log" (["--max-count=" ++ show num, "--pretty=oneline"] ++ maybeToList mrange)
+  gitLines "log" (["--max-count=" ++ show num, "--pretty=oneline"] ++ maybeToList mrange)
 
 gitShortLog1 :: Maybe String -> IO String
 gitShortLog1 mrange =
