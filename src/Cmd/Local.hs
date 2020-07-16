@@ -103,7 +103,7 @@ mockBuildPkg pkg br = do
     cmd_ "mock" ["--root", mockConfig br, "--resultdir=" ++ resultsdir, srpm]
 
 data DiffFormat =
-  DiffDefault | DiffShort | DiffContext Int
+  DiffDefault | DiffShort | DiffContext Int | DiffMinimal
   deriving (Eq)
 
 data DiffWork =
@@ -119,6 +119,7 @@ diffCmd work fmt br pkgs =
     diffPkg pkg _br = do
       let contxt = case fmt of
                      DiffContext n -> ["--unified=" ++ show n]
+                     DiffMinimal -> ["--unified=0"]
                      _ -> []
           workArgs = case work of
                        DiffWorkAll -> ["HEAD"]
@@ -128,6 +129,25 @@ diffCmd work fmt br pkgs =
       unless (null diff) $
         case fmt of
           DiffShort -> putStrLn $ unPackage pkg
+          DiffMinimal -> do
+            putPkgBrnchHdr pkg br
+            putStr $ minifyDiff diff
           _ -> do
             putPkgBrnchHdr pkg br
             putStrLn diff
+        where
+          minifyDiff =
+            unlines . maybeRemoveDiffGit . filterCommon . lines
+            where
+              filterCommon =
+                -- flist is from swish
+                let flist fs a = map ($ a) fs in
+                filter (not . or . flist (map isPrefixOf ["--- a/", "+++ b/", "index ", "@@ -"]))
+
+              maybeRemoveDiffGit ls =
+                let spec = unPackage pkg <.> "spec"
+                    specDiffGit = "diff --git a/" ++ spec ++ " b/" ++ spec
+                    gitDiffs = filter ("diff --git a/" `isPrefixOf`) ls in
+                  if gitDiffs == [specDiffGit]
+                  then delete specDiffGit ls
+                  else ls

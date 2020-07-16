@@ -169,8 +169,9 @@ dispatchCmd gitdir activeBranches =
 
     diffFormatOpt :: Parser DiffFormat
     diffFormatOpt =
-      flagWith DiffDefault DiffShort 's' "short" "Just output package name" <|>
-      DiffContext <$> optionWith auto 'u' "unified" "CONTEXT" "Lines of context"
+      DiffContext <$> optionWith auto 'u' "unified" "CONTEXT" "Lines of context" <|>
+      flagWith' DiffMinimal 'm' "minimal" "Minimize diff noise" <|>
+      flagWith DiffDefault DiffShort 's' "short" "Just output package name"
 
     diffWorkOpt :: Parser DiffWork
     diffWorkOpt =
