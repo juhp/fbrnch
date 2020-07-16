@@ -1,6 +1,7 @@
 module Cmd.Local (
   diffCmd,
   DiffFormat(..),
+  DiffWork(..),
   installCmd,
   localCmd,
   mockCmd,
@@ -105,9 +106,13 @@ data DiffFormat =
   DiffDefault | DiffShort | DiffContext Int
   deriving (Eq)
 
--- FIXME diff branch(es) without switching?
-diffCmd :: DiffFormat -> Branch -> [String] -> IO ()
-diffCmd fmt br pkgs =
+data DiffWork =
+  DiffWorkAll | DiffWorkUnstage | DiffWorkStaged
+  deriving (Eq)
+
+-- FIXME diff branch(es) (without switching?)
+diffCmd :: DiffWork -> DiffFormat -> Branch -> [String] -> IO ()
+diffCmd work fmt br pkgs =
   withPackageByBranches True False LocalBranches diffPkg ([br],pkgs)
   where
     diffPkg :: Package -> Branch -> IO ()
@@ -115,7 +120,11 @@ diffCmd fmt br pkgs =
       let contxt = case fmt of
                      DiffContext n -> ["--unified=" ++ show n]
                      _ -> []
-      diff <- git "diff" contxt
+          workArgs = case work of
+                       DiffWorkAll -> ["HEAD"]
+                       DiffWorkUnstage -> []
+                       DiffWorkStaged -> ["--cached"]
+      diff <- git "diff" $ contxt ++ workArgs
       unless (null diff) $
         case fmt of
           DiffShort -> putStrLn $ unPackage pkg

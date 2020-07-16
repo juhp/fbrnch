@@ -65,7 +65,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "srpm" "Build srpm" $
       srpmCmd <$> localBranchPackages
     , Subcommand "diff" "Diff local changes" $
-      diffCmd <$> diffFormatOpt <*> (anyBranchOpt <|> anyBranchArg) <*> many (pkgArg "PACKAGE...")
+      diffCmd <$> diffWorkOpt <*> diffFormatOpt <*> (anyBranchOpt <|> anyBranchArg) <*> many (pkgArg "PACKAGE...")
     , Subcommand "mock" "Local mock build" $
       mockCmd <$> localBranchPackages
     , Subcommand "install" "Build locally and install package(s)" $
@@ -171,3 +171,8 @@ dispatchCmd gitdir activeBranches =
     diffFormatOpt =
       flagWith DiffDefault DiffShort 's' "short" "Just output package name" <|>
       DiffContext <$> optionWith auto 'u' "unified" "CONTEXT" "Lines of context"
+
+    diffWorkOpt :: Parser DiffWork
+    diffWorkOpt =
+      flagWith' DiffWorkStaged 'S' "staged" "Diff staged changes (git diff --cached)" <|>
+      flagWith DiffWorkAll DiffWorkUnstage 'U' "unstaged" "Diff unstaged changes (git diff) [default is 'git diff HEAD']"
