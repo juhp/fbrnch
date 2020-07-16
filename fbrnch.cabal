@@ -38,6 +38,7 @@ executable fbrnch
                        Cmd.Bugs
                        Cmd.Build
                        Cmd.Clone
+                       Cmd.Diff
                        Cmd.Import
                        Cmd.Local
                        Cmd.Merge

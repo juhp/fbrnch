@@ -13,6 +13,7 @@ import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, std
 import Cmd.Bugs
 import Cmd.Build
 import Cmd.Clone
+import Cmd.Diff
 import Cmd.Import
 import Cmd.Local
 import Cmd.Merge
