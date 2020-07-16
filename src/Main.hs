@@ -13,6 +13,7 @@ import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, std
 import Cmd.Bugs
 import Cmd.Build
 import Cmd.Clone
+import Cmd.Commit
 import Cmd.Diff
 import Cmd.Import
 import Cmd.Local
@@ -73,6 +74,8 @@ dispatchCmd gitdir activeBranches =
       installCmd <$> switchWith 'r' "reinstall" "use dnf reinstall" <*> localBranchPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
+    , Subcommand "commit" "Git pull packages" $
+      commitPkgs <$> commitOpts <*> some (pkgArg "PACKAGE...")
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> some (pkgArg "PACKAGE...")
     , Subcommand "create-review" "Create a Package Review request" $
@@ -178,3 +181,8 @@ dispatchCmd gitdir activeBranches =
     diffWorkOpt =
       flagWith' DiffWorkStaged 'S' "staged" "Diff staged changes (git diff --cached)" <|>
       flagWith DiffWorkAll DiffWorkUnstage 'U' "unstaged" "Diff unstaged changes (git diff) [default is 'git diff HEAD']"
+
+    commitOpts :: Parser CommitOpt
+    commitOpts =
+      CommitMsg <$> strOptionWith 'm' "message" "COMMITMSG" "commit message" <|>
+      flagWith' CommitAmend 'a' "amend" "Amend commit"
