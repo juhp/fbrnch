@@ -163,7 +163,8 @@ prepPackage pkg br = do
           [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_sourcedir"]]
         args = rpmdirs ++ ["-bp", spec]
-    putStr "Prepping: "
+    nvr <- pkgNameVerRel' br spec
+    putStr $ "Prepping " ++ nvr ++ ": "
     cmdSilent_ "rpmbuild" args
     putStrLn "done"
 
