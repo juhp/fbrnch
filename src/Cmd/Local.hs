@@ -15,10 +15,12 @@ import Common.System
 import Git
 import Package
 
+-- FIXME package countdown
 installCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 installCmd reinstall (mbr,pkgs) = do
   withPackageByBranches True False NoGitRepo (installPkg reinstall) (maybeToList mbr,pkgs)
 
+-- FIXME skip build if rpms newer than spec and add --force
 installPkg :: Bool -> Package -> Branch -> IO ()
 installPkg reinstall pkg br = do
   spec <- localBranchSpecFile pkg br

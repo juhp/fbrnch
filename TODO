@@ -1,6 +1,9 @@
 # UI
 - ask about bodhi update type
 
+- arbitrary 'cmd'
+- unpushed command, etc
+
 - support containers/
 
 # multipackage
