@@ -26,6 +26,7 @@ module Package (
   ConstrainBranches(..),
   buildRequires,
   notInstalled,
+  pkgInstalled,
   systemBranch
   ) where
 
@@ -324,3 +325,7 @@ buildRequires spec =
 notInstalled :: String -> IO Bool
 notInstalled pkg =
   not <$> cmdBool "rpm" ["--quiet", "-q", "--whatprovides", pkg]
+
+pkgInstalled :: String -> IO Bool
+pkgInstalled pkg =
+  cmdBool "rpm" ["--quiet", "-q", pkg]

@@ -23,22 +23,28 @@ installPkg :: Bool -> Package -> Branch -> IO ()
 installPkg reinstall pkg br = do
   spec <- localBranchSpecFile pkg br
   rpms <- builtRpms br spec
-  minstalled <- cmdMaybe "rpm" ["-q", unPackage pkg]
-  case minstalled of
-    Just installed ->
-      if not reinstall && installed <.> "rpm" `elem` map takeFileName rpms
-      then putStrLn $ installed +-+ "already installed!\n"
-      else doInstallPkg spec rpms
-    Nothing -> doInstallPkg spec rpms
+  -- removing arch
+  let pkgs = map takeNVRName rpms
+  -- FIXME test all bin rpms not just base package
+  installed <- filterM pkgInstalled pkgs
+  if null installed || reinstall then
+    doInstallPkg spec rpms installed
+    else
+    putStrLn $ unwords installed +-+ "already installed!\n"
   where
-    doInstallPkg spec rpms = do
+    doInstallPkg spec rpms installed = do
       putStrLn $ (takeBaseName . head) rpms ++ "\n"
       installDeps spec
       void $ getSources spec
       buildRPMs True False br spec
       putStrLn ""
-      sudo_ "dnf" $ (if reinstall then "reinstall" else "install") : "-q" : "-y" : rpms
+      if reinstall then do
+        let reinstalls = filter (\ f -> takeNVRName f `elem` installed) rpms
+        sudo_ "dnf" $ "reinstall" : "-q" : "-y" : reinstalls
+        sudo_ "dnf" $ "install" : "-q" : "-y" : (rpms \\ reinstalls)
+        else sudo_ "dnf" $ "install" : "-q" : "-y" : rpms
 
+    takeNVRName = takeBaseName . takeBaseName
 installDeps :: FilePath -> IO ()
 installDeps spec = do
   missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
