@@ -12,7 +12,7 @@ module Bugzilla (
   approvedReviewBugSession,
   pkgBugs,
   pkgReviews,
-  testBZlogin,
+--  testBZlogin,
   -- search
   searchBugs,
   (.&&.),
@@ -328,9 +328,9 @@ removeLeadingNewline :: [T.Text] -> [T.Text]
 removeLeadingNewline ("":ts) = ts
 removeLeadingNewline ts = ts
 
-testBZlogin :: IO ()
-testBZlogin =
-  void bzLoginSession
+-- testBZlogin :: IO ()
+-- testBZlogin =
+--   void bzLoginSession
 
 -- | make a key-value
 makeTextItem :: String -> String -> (T.Text, Maybe T.Text)

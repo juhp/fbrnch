@@ -26,7 +26,7 @@ import Cmd.Reviews
 import Cmd.Status
 import Cmd.Switch
 
-import Bugzilla (testBZlogin)
+--import Bugzilla (testBZlogin)
 import ListReviews
 import Paths_fbrnch (version)
 
@@ -92,8 +92,8 @@ dispatchCmd gitdir activeBranches =
       requestBranches <$> mockOpt <*> branchesRequestOpt <*> many pkgOpt
     , Subcommand "find-review" "Find package review bug" $
       review <$> pkgArg "PACKAGE"
-    , Subcommand "test-bz-token" "Check bugzilla login status" $
-      pure testBZlogin
+--    , Subcommand "test-bz-token" "Check bugzilla login status" $
+--      pure testBZlogin
     ]
   where
     cloneRequest :: Parser CloneRequest
