@@ -16,20 +16,20 @@ import Git
 import Package
 
 -- FIXME package countdown
+-- FIXME --force to rebuild & install
 installCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 installCmd reinstall (mbr,pkgs) = do
   withPackageByBranches True False NoGitRepo (installPkg reinstall) (maybeToList mbr,pkgs)
 
--- FIXME skip build if rpms newer than spec and add --force
+-- FIXME skip build if rpms newer than spec
 installPkg :: Bool -> Package -> Branch -> IO ()
 installPkg reinstall pkg br = do
   spec <- localBranchSpecFile pkg br
   rpms <- builtRpms br spec
   -- removing arch
   let pkgs = map takeNVRName rpms
-  -- FIXME test all bin rpms not just base package
   installed <- filterM pkgInstalled pkgs
-  if null installed || reinstall then
+  if null installed || (reinstall && length installed /= length pkgs) then
     doInstallPkg spec rpms installed
     else
     putStrLn $ unwords installed +-+ "already installed!\n"
@@ -42,8 +42,11 @@ installPkg reinstall pkg br = do
       putStrLn ""
       if reinstall then do
         let reinstalls = filter (\ f -> takeNVRName f `elem` installed) rpms
-        sudo_ "dnf" $ "reinstall" : "-q" : "-y" : reinstalls
-        sudo_ "dnf" $ "install" : "-q" : "-y" : (rpms \\ reinstalls)
+        unless (null reinstalls) $
+          sudo_ "dnf" $ "reinstall" : "-q" : "-y" : reinstalls
+        let remaining = rpms \\ reinstalls
+        unless (null remaining) $
+          sudo_ "dnf" $ "install" : "-q" : "-y" : remaining
         else sudo_ "dnf" $ "install" : "-q" : "-y" : rpms
 
     takeNVRName = takeBaseName . takeBaseName
