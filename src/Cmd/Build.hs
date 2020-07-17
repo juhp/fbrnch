@@ -210,6 +210,9 @@ scratchBuild rebuildSrpm nofailfast march mtarget pkg br = do
       void $ getSources spec
       void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
 
+type Job = (String, Async String)
+
+-- FIXME option to build package branches in parallel
 parallelBuildCmd :: Maybe String -> ([Branch],[String]) -> IO ()
 parallelBuildCmd mtarget (brs,pkgs) = do
   when (isJust mtarget && length brs > 1) $
@@ -226,16 +229,16 @@ parallelBuildCmd mtarget (brs,pkgs) = do
     parallelBuild :: Branch -> [String] -> IO ()
     parallelBuild br layer =  do
       krbTicket
-      jobs <- mapM startBuild layer
+      jobs <- mapM setupBuild layer
       watchJobs jobs
       prompt_ "Press Enter to build next parallel layer"
       where
-        startBuild :: String -> IO (String, Async String)
-        startBuild pkg = do
-          sleep 5
-          job <- async (asyncBuild br (Package pkg))
-          return (pkg, job)
+        setupBuild :: String -> IO Job
+        setupBuild pkg = do
+          job <- startBuild br (Package pkg) >>= async
+          return (pkg,job)
 
+    watchJobs :: [Job] -> IO ()
     watchJobs [] = return ()
     watchJobs (job:jobs) = do
       sleep 1
@@ -245,14 +248,17 @@ parallelBuildCmd mtarget (brs,pkgs) = do
         Just (Right nvr) -> do
           putStrLn $ nvr ++ " job completed"
           watchJobs jobs
-        Just (Left _except) -> do
+        Just (Left except) -> do
           -- FIXME use red text
+          print except
           putStrLn $ "** " ++ fst job ++ " job FAILED! **"
           watchJobs jobs
 
     -- FIXME prefix output with package name
-    asyncBuild :: Branch -> Package -> IO String
-    asyncBuild br pkg = do
+    startBuild :: Branch -> Package -> IO (IO String)
+    startBuild br pkg =
+      withExistingDirectory (unPackage pkg) $ do
+      putPkgBrnchHdr pkg br
       unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $ do
         mapM_ (putStrLn . simplifyCommitLog) unpushed
@@ -266,21 +272,32 @@ parallelBuildCmd mtarget (brs,pkgs) = do
       -- FIXME should compare git refs
       buildstatus <- kojiBuildStatus nvr
       case buildstatus of
-        Just BuildComplete -> putStrLn $ nvr ++ " is already built"
-        Just BuildBuilding -> putStrLn $ nvr ++ " is already building"
+        Just BuildComplete -> do
+          putStrLn $ nvr ++ " is already built"
+          return $ do
+            kojiWaitRepo br target nvr
+            return nvr
+        Just BuildBuilding -> do
+          putStrLn $ nvr ++ " is already building"
+          return $ do
+            kojiWaitRepo br target nvr
+            return nvr
         _ -> do
           let tag = fromMaybe (branchDestTag br) mtarget
           mlatest <- kojiLatestNVR tag $ unPackage pkg
           if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
-            then error' $ nvr ++ " is already latest (modulo disttag)"
+            then return $ error' $ nvr ++ " is already latest (modulo disttag)"
             else do
             unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
               error' "Unpushed changes remain"
             unlessM isGitDirClean $
               error' "local changes remain (dirty)"
             -- FIXME parse build output
-            kojiBuildBranch target (unPackage pkg) Nothing ["--fail-fast", "--background"]
-            when (br /= Master) $
-              bodhiCreateOverride nvr
-      kojiWaitRepo br target nvr
-      return nvr
+            task <- kojiBuildBranchNoWait target (unPackage pkg) Nothing ["--fail-fast", "--background"]
+            return $ do
+              -- use --quiet ?
+              kojiWatchTask task
+              when (br /= Master) $
+                bodhiCreateOverride nvr
+              kojiWaitRepo br target nvr
+              return nvr

@@ -197,7 +197,7 @@ getSources spec = do
         then getCurrentDirectory
         else fromJust <$> rpmEval "%{_sourcedir}"
 
-withExistingDirectory :: FilePath -> IO () -> IO ()
+withExistingDirectory :: FilePath -> IO a -> IO a
 withExistingDirectory dir act =
   ifM (doesDirectoryExist dir)
     (withCurrentDirectory dir act)

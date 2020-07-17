@@ -11,8 +11,10 @@ module Koji (
   BuildState(..),
   kojiBuild,
   kojiBuildBranch,
+  kojiBuildBranchNoWait,
   kojiWaitRepo,
-  kojiWatchTask
+  kojiWatchTask,
+  TaskID
   ) where
 
 import Data.Char (isDigit)
@@ -50,11 +52,14 @@ kojiScratchUrl noscratch srpm =
     else Just <$> kojiScratchBuild "rawhide" [] srpm
 
 kojiScratchBuild :: String -> [String] -> FilePath -> IO String
-kojiScratchBuild target args srpm =
-  kojiBuild target $ args ++ ["--scratch", "--no-rebuild-srpm", srpm]
+kojiScratchBuild target args srpm = do
+  Right url <- kojiBuild' True target $ args ++ ["--scratch", "--no-rebuild-srpm", srpm]
+  return url
 
-kojiBuild :: String -> [String] -> IO String
-kojiBuild target args = do
+type KojiBuild = Either TaskID String
+
+kojiBuild' :: Bool -> String -> [String] -> IO KojiBuild
+kojiBuild' wait target args = do
   krbTicket
   cmd_ "date" []
   -- FIXME setTermTitle nvr
@@ -62,8 +67,13 @@ kojiBuild target args = do
   putStrLn out
   let kojiurl = last $ words out
       task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
-  kojiWatchTask task
-  return kojiurl
+  when wait $ kojiWatchTask task
+  return $ if wait then Right kojiurl else Left task
+
+kojiBuild :: String -> [String] -> IO String
+kojiBuild target args = do
+  Right url <- kojiBuild' True target args
+  return url
 
 -- FIXME filter/simplify output
 kojiWatchTask :: TaskID -> IO ()
@@ -80,11 +90,21 @@ kojiWatchTask task =
       Just TaskFailed -> error "Task failed!"
       _ -> kojiWatchTask task
 
-kojiBuildBranch :: String -> String -> Maybe String -> [String] -> IO ()
-kojiBuildBranch target pkg mref args = do
+kojiBuildBranch' :: Bool -> String -> String -> Maybe String -> [String]
+                 -> IO KojiBuild
+kojiBuildBranch' wait target pkg mref args = do
   commit <- maybe (git "rev-parse" ["HEAD"]) return mref
   let giturl = "git+https://src.fedoraproject.org/rpms" </> pkg ++ ".git#" ++ commit
-  void $ kojiBuild target $ args ++ [giturl]
+  kojiBuild' wait target $ args ++ [giturl]
+
+kojiBuildBranch :: String -> String -> Maybe String -> [String] -> IO ()
+kojiBuildBranch target pkg mref args =
+  void $ kojiBuildBranch' True target pkg mref args
+
+kojiBuildBranchNoWait ::String -> String -> Maybe String -> [String] -> IO TaskID
+kojiBuildBranchNoWait target pkg mref args = do
+  Left task <- kojiBuildBranch' False target pkg mref args
+  return task
 
 -- FIXME use koji-hs
 kojiWaitRepo :: Branch -> String -> String -> IO ()
