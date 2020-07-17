@@ -11,7 +11,7 @@ import Git
 import Package
 
 data DiffFormat =
-  DiffDefault | DiffShort | DiffContext Int | DiffMinimal
+  DiffDefault | DiffQuiet | DiffContext Int | DiffMinimal | DiffStats
   deriving (Eq)
 
 data DiffWork =
@@ -28,6 +28,8 @@ diffCmd work fmt br pkgs =
       let contxt = case fmt of
                      DiffContext n -> ["--unified=" ++ show n]
                      DiffMinimal -> ["--unified=0"]
+                     -- FIXME hide "files changed" and "insertions" summary
+                     DiffStats -> ["--compact-summary"]
                      _ -> []
           workArgs = case work of
                        DiffWorkAll -> ["HEAD"]
@@ -36,7 +38,7 @@ diffCmd work fmt br pkgs =
       diff <- git "diff" $ contxt ++ workArgs
       unless (null diff) $
         case fmt of
-          DiffShort -> putStrLn $ unPackage pkg
+          DiffQuiet -> putStrLn $ unPackage pkg
           DiffMinimal -> do
             putPkgBrnchHdr pkg br
             putStr $ minifyDiff diff
