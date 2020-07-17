@@ -31,8 +31,9 @@ fedoraBranchesNoMaster mthd = do
   activeBranches active <$> mthd
 
 localBranches :: IO [String]
-localBranches =
-  cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-1)"]
+localBranches = do
+  origins <- filter ("origin/" `isPrefixOf`) <$> cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-2)"]
+  return $ map (removePrefix "origin/") origins
 
 pagurePkgBranches :: String -> IO [String]
 pagurePkgBranches pkg = do
