@@ -19,4 +19,4 @@ commitPkgs opt = mapM_ commitPkg
       let opts = case opt of
                    CommitMsg msg -> ["-m", msg]
                    CommitAmend -> ["--amend", "--no-edit"]
-      git_ "commit" $ ["-a"] ++ opts
+      git_ "commit" $ "-a" : opts
