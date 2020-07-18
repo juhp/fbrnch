@@ -12,6 +12,7 @@ import Control.Concurrent.Async
 import Data.Char (isDigit)
 import Distribution.RPM.Build.Order (dependencyLayers)
 import Fedora.Bodhi hiding (bodhiUpdate)
+import System.Console.Pretty
 import System.IO (hIsTerminalDevice, stdin)
 import System.Time.Extra (sleep)
 
@@ -251,13 +252,12 @@ parallelBuildCmd mtarget (brs,pkgs) = do
       case status of
         Nothing -> watchJobs fails (jobs ++ [job])
         Just (Right nvr) -> do
-          putStrLn $ nvr ++ " job completed"
+          putStrLn $ color Green $ nvr ++ " job completed"
           watchJobs fails jobs
         Just (Left except) -> do
-          -- FIXME use red text
           print except
           let pkg = fst job
-          putStrLn $ "** " ++ pkg ++ " job FAILED! **"
+          putStrLn $ color Red $ "** " ++ pkg ++ " job FAILED! **"
           watchJobs (pkg : fails) jobs
 
     -- FIXME prefix output with package name
@@ -292,7 +292,7 @@ parallelBuildCmd mtarget (brs,pkgs) = do
           let tag = fromMaybe (branchDestTag br) mtarget
           mlatest <- kojiLatestNVR tag $ unPackage pkg
           if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
-            then return $ error' $ nvr ++ " is already latest (modulo disttag)"
+            then return $ error' $ color Red $ nvr ++ " is already latest (modulo disttag)"
             else do
             unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
               error' "Unpushed changes remain"

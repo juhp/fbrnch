@@ -20,3 +20,4 @@ extra-deps:
   - git: https://github.com/juhp/rpmbuild-order.git
     commit: fcf25a82c6eb0a5bad35d6596ad3ba944a4ebb91
   - typed-process-0.2.4.0
+  - pretty-terminal-0.1.0.0

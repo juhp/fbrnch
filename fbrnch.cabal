@@ -82,6 +82,7 @@ executable fbrnch
                      , network-uri
                      , optparse-applicative
                      , pagure
+                     , pretty-terminal
                      , process
                      , rpmbuild-order >= 0.3.1
                      , simple-cmd >= 0.2.0
