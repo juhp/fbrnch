@@ -58,6 +58,9 @@ kojiScratchBuild target args srpm = do
 
 type KojiBuild = Either TaskID String
 
+-- FIXME can fail like:
+-- [ERROR] koji: AuthError: unable to obtain a session
+-- readCreateProcess: koji "build" "--nowait" "f33-build-side-25385" "--fail-fast" "--background" ... (exit 1): failed
 kojiBuild' :: Bool -> String -> [String] -> IO KojiBuild
 kojiBuild' wait target args = do
   krbTicket
