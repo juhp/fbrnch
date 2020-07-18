@@ -294,10 +294,6 @@ parallelBuildCmd mtarget (brs,pkgs) = do
           if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
             then return $ error' $ color Red $ nvr ++ " is already latest (modulo disttag)"
             else do
-            unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
-              error' "Unpushed changes remain"
-            unlessM isGitDirClean $
-              error' "local changes remain (dirty)"
             -- FIXME parse build output
             task <- kojiBuildBranchNoWait target (unPackage pkg) Nothing ["--fail-fast", "--background"]
             return $ do
