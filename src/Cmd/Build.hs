@@ -251,12 +251,12 @@ parallelBuildCmd mtarget (brs,pkgs) = do
       case status of
         Nothing -> watchJobs fails (jobs ++ [job])
         Just (Right nvr) -> do
-          putStrLn $ color Green $ nvr ++ " job completed"
+          putStrLn $ color Green (nvr ++ " job completed") ++  " (" ++ show (length jobs) ++ " jobs left)"
           watchJobs fails jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
-          putStrLn $ color Red $ "** " ++ pkg ++ " job FAILED! **"
+          putStrLn $ color Red ("** " ++ pkg ++ " job failed **") ++  " (" ++ show (length jobs) ++ " jobs left)"
           watchJobs (pkg : fails) jobs
 
     -- FIXME prefix output with package name
