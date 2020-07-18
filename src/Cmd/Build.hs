@@ -286,6 +286,7 @@ parallelBuildCmd mtarget (brs,pkgs) = do
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
           return $ do
+            whenJustM (kojiGetBuildTaskID nvr) kojiWatchTask
             kojiWaitRepo br target nvr
             return nvr
         _ -> do
