@@ -229,30 +229,36 @@ parallelBuildCmd mtarget (brs,pkgs) = do
     parallelBuild :: Branch -> [String] -> IO ()
     parallelBuild br layer =  do
       krbTicket
+      putStrLn $ "Building parallel layer of " ++ show (length layer) ++ " packages:"
+      putStrLn $ unwords layer
       jobs <- mapM setupBuild layer
-      watchJobs jobs
+      failures <- watchJobs [] jobs
+      unless (null failures) $
+        error' $ "Build failures: " ++ unwords failures
       prompt_ "Press Enter to build next parallel layer"
       where
         setupBuild :: String -> IO Job
         setupBuild pkg = do
           job <- startBuild br (Package pkg) >>= async
+          sleep 5
           return (pkg,job)
 
-    watchJobs :: [Job] -> IO ()
-    watchJobs [] = return ()
-    watchJobs (job:jobs) = do
-      sleep 1
+    watchJobs :: [String] -> [Job] -> IO [String]
+    watchJobs fails [] = return fails
+    watchJobs fails (job:jobs) = do
+      sleep 2
       status <- poll (snd job)
       case status of
-        Nothing -> watchJobs (jobs ++ [job])
+        Nothing -> watchJobs fails (jobs ++ [job])
         Just (Right nvr) -> do
           putStrLn $ nvr ++ " job completed"
-          watchJobs jobs
+          watchJobs fails jobs
         Just (Left except) -> do
           -- FIXME use red text
           print except
-          putStrLn $ "** " ++ fst job ++ " job FAILED! **"
-          watchJobs jobs
+          let pkg = fst job
+          putStrLn $ "** " ++ pkg ++ " job FAILED! **"
+          watchJobs (pkg : fails) jobs
 
     -- FIXME prefix output with package name
     startBuild :: Branch -> Package -> IO (IO String)
