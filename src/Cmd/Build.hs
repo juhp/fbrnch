@@ -57,16 +57,16 @@ buildBranch morethan1 opts pkg br = do
     if notNull unmerged && (buildoptMerge opts || newrepo || tty)
       then mergeBranch True unmerged br >> return True
       else return False
-  unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
-  when (not merged || br == Master) $
-    unless (null unpushed) $ do
-      putStrLn "Local commits:"
-      mapM_ (putStrLn . simplifyCommitLog) unpushed
   let spec = packageSpec pkg
   checkForSpecFile spec
   -- FIXME offer merge if newer branch has commits
   checkSourcesMatch spec
   -- FIXME print nvr
+  unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+  when (not merged || br == Master) $
+    unless (null unpushed) $ do
+      putStrLn "Local commits:"
+      mapM_ (putStrLn . simplifyCommitLog) unpushed
   mpush <-
     if null unpushed then return Nothing
     else
@@ -158,13 +158,13 @@ buildBranch morethan1 opts pkg br = do
 checkSourcesMatch :: FilePath -> IO ()
 checkSourcesMatch spec = do
   -- "^[Ss]ource[0-9]*:"
-  specfiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
+  sourcefiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
   sources <- lines <$> readFile "sources"
   gitfiles <- gitLines "ls-files" []
-  forM_ specfiles $ \ src ->
-    unless (isJust (find (src `isInfixOf`) sources) || src `elem` gitfiles) $
-    -- FIXME offer to add source
-    error' $ src ++ " not in sources"
+  forM_ sourcefiles $ \ src ->
+    unless (isJust (find (src `isInfixOf`) sources) || src `elem` gitfiles) $ do
+    prompt_ $ color Red $ src ++ " not in sources, please fix"
+    checkSourcesMatch spec
 
 bodhiCreateOverride :: String -> IO ()
 bodhiCreateOverride nvr = do
