@@ -14,6 +14,7 @@ module Koji (
   kojiBuildBranchNoWait,
   kojiWaitRepo,
   kojiWatchTask,
+  kojiWatchTaskQuiet,
   TaskID
   ) where
 
@@ -92,6 +93,20 @@ kojiWatchTask task =
       Just TaskClosed -> return ()
       Just TaskFailed -> error "Task failed!"
       _ -> kojiWatchTask task
+
+kojiWatchTaskQuiet ::TaskID -> IO Bool
+kojiWatchTaskQuiet task =
+  ifM (cmdBool "koji" ["watch-task", "--quiet", displayID task])
+  (return True) $
+  do
+    -- FIXME can error:
+    -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
+    -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
+    mst <- kojiGetTaskState task
+    case mst of
+      Just TaskClosed -> return True
+      Just TaskFailed -> return False
+      _ -> kojiWatchTaskQuiet task
 
 kojiBuildBranch' :: Bool -> String -> String -> Maybe String -> [String]
                  -> IO KojiBuild

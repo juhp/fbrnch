@@ -286,8 +286,12 @@ parallelBuildCmd mtarget (brs,pkgs) = do
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
           return $ do
-            whenJustM (kojiGetBuildTaskID nvr) kojiWatchTask
-            kojiWaitRepo br target nvr
+            whenJustM (kojiGetBuildTaskID nvr) $ \ task -> do
+              finish <- kojiWatchTaskQuiet task
+              if finish
+                then putStrLn $ nvr ++ color Yellow " build finished"
+                else error' $ nvr ++ color Red " build failed"
+              kojiWaitRepo br target nvr
             return nvr
         _ -> do
           let tag = fromMaybe (branchDestTag br) mtarget
@@ -298,8 +302,10 @@ parallelBuildCmd mtarget (brs,pkgs) = do
             -- FIXME parse build output
             task <- kojiBuildBranchNoWait target (unPackage pkg) Nothing ["--fail-fast", "--background"]
             return $ do
-              -- use --quiet ?
-              kojiWatchTask task
+              finish <- kojiWatchTaskQuiet task
+              if finish
+                then putStrLn $ nvr ++ color Yellow " build finished"
+                else error' $ nvr ++ color Red " build failed"
               when (br /= Master) $
                 bodhiCreateOverride nvr
               kojiWaitRepo br target nvr
