@@ -236,7 +236,6 @@ parallelBuildCmd mtarget (brs,pkgs) = do
       failures <- watchJobs [] jobs
       unless (null failures) $
         error' $ "Build failures: " ++ unwords failures
-      prompt_ "Press Enter to build next parallel layer"
       where
         setupBuild :: String -> IO Job
         setupBuild pkg = do
