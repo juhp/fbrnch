@@ -230,7 +230,7 @@ parallelBuildCmd mtarget (brs,pkgs) = do
     parallelBuild :: Branch -> [String] -> IO ()
     parallelBuild br layer =  do
       krbTicket
-      putStrLn $ "Building parallel layer of " ++ show (length layer) ++ " packages:"
+      putStrLn $ "\nBuilding parallel layer of " ++ show (length layer) ++ " packages:"
       putStrLn $ unwords layer
       jobs <- mapM setupBuild layer
       failures <- watchJobs [] jobs
