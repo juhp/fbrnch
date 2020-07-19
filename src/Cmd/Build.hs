@@ -251,12 +251,12 @@ parallelBuildCmd mtarget (brs,pkgs) = do
       case status of
         Nothing -> watchJobs fails (jobs ++ [job])
         Just (Right nvr) -> do
-          putStrLn $ color Green (nvr ++ " job completed") ++  " (" ++ show (length jobs) ++ " jobs left)"
+          putStrLn $ nvr ++ " job " ++ color Yellow "completed" ++  " (" ++ show (length jobs) ++ " jobs left)"
           watchJobs fails jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
-          putStrLn $ color Red ("** " ++ pkg ++ " job failed **") ++  " (" ++ show (length jobs) ++ " jobs left)"
+          putStrLn $ "** " ++ pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " jobs left)"
           watchJobs (pkg : fails) jobs
 
     -- FIXME prefix output with package name
@@ -288,8 +288,8 @@ parallelBuildCmd mtarget (brs,pkgs) = do
             whenJustM (kojiGetBuildTaskID nvr) $ \ task -> do
               finish <- kojiWatchTaskQuiet task
               if finish
-                then putStrLn $ nvr ++ color Yellow " build finished"
-                else error' $ nvr ++ color Red " build failed"
+                then putStrLn $ color Green $ nvr ++ " build success"
+                else error' $ color Red $ nvr ++ " build failed"
               kojiWaitRepo br target nvr
             return nvr
         _ -> do
@@ -303,8 +303,8 @@ parallelBuildCmd mtarget (brs,pkgs) = do
             return $ do
               finish <- kojiWatchTaskQuiet task
               if finish
-                then putStrLn $ nvr ++ color Yellow " build finished"
-                else error' $ nvr ++ color Red " build failed"
+                then putStrLn $ color Green $ nvr ++ " build success"
+                else error' $ color Red $ nvr ++ " build failed"
               when (br /= Master) $
                 bodhiCreateOverride nvr
               kojiWaitRepo br target nvr
