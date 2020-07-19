@@ -1,10 +1,13 @@
 # UI
 - ask about bodhi update type
 
+# new commands
 - arbitrary 'cmd'
-- unpushed command, etc
+- 'unpushed' command, etc (from f-h-t)
+- 'bump'
+- 'check-sources'
 
-- support containers/
+- support containers/ and modules/
 
 # multipackage
 - build sequence of packages by branch
