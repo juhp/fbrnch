@@ -10,10 +10,7 @@ extra-deps:
   - git: https://github.com/juhp/pagure-hs.git
     commit: 813010d6c1377232476f48321cd48808e0b356f2
   - git: https://github.com/juhp/koji-hs.git
-    commit: 809a12e30a129ac21763d6de950a60f6a751b45c
+    commit: 63c6a017940d292cd04a831c088c83f41f127b6b
   - git: https://github.com/juhp/rpmbuild-order.git
     commit: fcf25a82c6eb0a5bad35d6596ad3ba944a4ebb91
-  - haxr-3000.11.4
   - pretty-terminal-0.1.0.0
-
-allow-newer: true

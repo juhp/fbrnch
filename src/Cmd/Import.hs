@@ -68,7 +68,7 @@ importPkg pkg = do
     nvr <- pkgNameVerRel' Master (pkg <.> "spec")
     prompt_ $ "Press Enter to push and build " ++ nvr
     gitPushSilent Nothing
-    kojiBuildBranch "rawhide" pkg Nothing ["--fail-fast"]
+    kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
     postBuildComment session nvr bid
     -- FIXME build branches too
   when (pkg /= takeFileName dir) $

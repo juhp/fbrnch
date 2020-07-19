@@ -5,6 +5,7 @@ module Koji (
   kojiGetBuildID,
   kojiGetBuildTaskID,
   kojiLatestNVR,
+  kojiOpenTasks,
   kojiScratchBuild,
   kojiScratchUrl,
   buildIDInfo,
@@ -12,6 +13,7 @@ module Koji (
   kojiBuild,
   kojiBuildBranch,
   kojiBuildBranchNoWait,
+  kojiSource,
   kojiWaitRepo,
   kojiWatchTask,
   kojiWatchTaskQuiet,
@@ -27,6 +29,7 @@ import Common
 import Common.System
 import Git
 import Krb
+import Package
 
 kojiNVRTags :: String -> IO (Maybe [String])
 kojiNVRTags nvr = do
@@ -46,6 +49,17 @@ kojiLatestNVR tag pkg = do
              Nothing -> Nothing
              Just bld -> lookupStruct "nvr" bld
 
+kojiOpenTasks :: Package -> Maybe String -> String -> IO [TaskID]
+kojiOpenTasks pkg mref target = do
+  user <- fasIdFromKrb
+  muserid <- kojiGetUserID user
+  let userid = fromMaybe (error' $ "Koji failed to return userid for '" ++ user ++ "'") muserid
+  commit <- maybe (git "rev-parse" ["HEAD"]) return mref
+  let source = kojiSource pkg commit
+  kojiUserBuildTasks userid (Just source) (Just target)
+
+-- * Koji building
+
 kojiScratchUrl :: Bool -> String -> IO (Maybe String)
 kojiScratchUrl noscratch srpm =
     if noscratch
@@ -57,12 +71,12 @@ kojiScratchBuild target args srpm = do
   Right url <- kojiBuild' True target $ args ++ ["--scratch", "--no-rebuild-srpm", srpm]
   return url
 
-type KojiBuild = Either TaskID String
+type KojiBuildTask = Either TaskID String
 
 -- FIXME can fail like:
 -- [ERROR] koji: AuthError: unable to obtain a session
 -- readCreateProcess: koji "build" "--nowait" "f33-build-side-25385" "--fail-fast" "--background" ... (exit 1): failed
-kojiBuild' :: Bool -> String -> [String] -> IO KojiBuild
+kojiBuild' :: Bool -> String -> [String] -> IO KojiBuildTask
 kojiBuild' wait target args = do
   krbTicket
   cmd_ "date" []
@@ -108,18 +122,21 @@ kojiWatchTaskQuiet task =
       Just TaskFailed -> return False
       _ -> kojiWatchTaskQuiet task
 
-kojiBuildBranch' :: Bool -> String -> String -> Maybe String -> [String]
-                 -> IO KojiBuild
+kojiSource :: Package -> String -> String
+kojiSource pkg ref =
+  "git+https://src.fedoraproject.org/rpms" </> unPackage pkg ++ ".git#" ++ ref
+
+kojiBuildBranch' :: Bool -> String -> Package -> Maybe String -> [String]
+                 -> IO KojiBuildTask
 kojiBuildBranch' wait target pkg mref args = do
   commit <- maybe (git "rev-parse" ["HEAD"]) return mref
-  let giturl = "git+https://src.fedoraproject.org/rpms" </> pkg ++ ".git#" ++ commit
-  kojiBuild' wait target $ args ++ [giturl]
+  kojiBuild' wait target $ args ++ [kojiSource pkg commit]
 
-kojiBuildBranch :: String -> String -> Maybe String -> [String] -> IO ()
+kojiBuildBranch :: String -> Package -> Maybe String -> [String] -> IO ()
 kojiBuildBranch target pkg mref args =
   void $ kojiBuildBranch' True target pkg mref args
 
-kojiBuildBranchNoWait ::String -> String -> Maybe String -> [String] -> IO TaskID
+kojiBuildBranchNoWait ::String -> Package -> Maybe String -> [String] -> IO TaskID
 kojiBuildBranchNoWait target pkg mref args = do
   Left task <- kojiBuildBranch' False target pkg mref args
   return task

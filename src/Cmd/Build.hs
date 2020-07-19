@@ -77,7 +77,6 @@ buildBranch morethan1 opts pkg br = do
   whenJust mpush $ \ mref ->
     gitPushSilent $ fmap (++ ":" ++ show br) mref
   nvr <- pkgNameVerRel' br spec
-  -- FIXME should compare git refs
   buildstatus <- kojiBuildStatus nvr
   case buildstatus of
     Just BuildComplete -> putStrLn $ nvr ++ " is already built"
@@ -86,45 +85,50 @@ buildBranch morethan1 opts pkg br = do
       putStrLn $ nvr ++ " is already building"
       whenJustM (kojiGetBuildTaskID nvr) kojiWatchTask
     _ -> do
+      mbuildref <- case mpush of
+        Nothing -> Just <$> git "show-ref" ["--hash", "origin" </> show br]
+        _ -> return $ join mpush
       let mtarget = buildoptTarget opts
-          tag = fromMaybe (branchDestTag br) mtarget
-      mlatest <- kojiLatestNVR tag $ unPackage pkg
-      if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
-        then error' $ nvr ++ " is already latest (modulo disttag)"
-        else do
-        krbTicket
-        unlessM (null <$> gitShortLog ("origin" </> show br ++ "..HEAD")) $
-          when (mpush == Just Nothing) $
-          error' "Unpushed changes remain"
-        unlessM isGitDirClean $
-          error' "local changes remain (dirty)"
-        let  target = fromMaybe (branchTarget br) mtarget
-        mbuildref <- case mpush of
-          Nothing -> Just <$> git "show-ref" ["--hash", "origin" </> show br]
-          _ -> return $ join mpush
-        -- FIXME parse build output
-        kojiBuildBranch target (unPackage pkg) mbuildref ["--fail-fast"]
-        -- FIXME get bugs from changelog
-        mBugSess <- if isNothing mlatest
-          then do
-          (mbid, session) <- bzReviewSession
-          return $ case mbid of
-            Just bid -> Just (bid,session)
-            Nothing -> Nothing
-          else return Nothing
-        if br == Master
-          then whenJust mBugSess $
-               \ (bid,session) -> postBuildComment session nvr bid
-          else do
-          -- FIXME diff previous changelog?
-          changelog <- getChangeLog spec
-          bodhiUpdate (fmap fst mBugSess) changelog nvr
-          -- FIXME autochain
-          -- FIXME prompt for override note
-          when (buildoptOverride opts) $ do
-            when (br /= Master) $
-              bodhiCreateOverride nvr
-        when morethan1 $ kojiWaitRepo br target nvr
+          target = fromMaybe (branchTarget br) mtarget
+      opentasks <- kojiOpenTasks pkg mbuildref target
+      case opentasks of
+        [task] -> kojiWatchTask task
+        (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
+        [] -> do
+          let tag = fromMaybe (branchDestTag br) mtarget
+          mlatest <- kojiLatestNVR tag $ unPackage pkg
+          if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
+            then error' $ nvr ++ " is already latest (modulo disttag)"
+            else do
+            krbTicket
+            unlessM (null <$> gitShortLog ("origin" </> show br ++ "..HEAD")) $
+              when (mpush == Just Nothing) $
+              error' "Unpushed changes remain"
+            unlessM isGitDirClean $
+              error' "local changes remain (dirty)"
+            -- FIXME parse build output
+            kojiBuildBranch target pkg mbuildref ["--fail-fast"]
+            -- FIXME get bugs from changelog
+            mBugSess <- if isNothing mlatest
+              then do
+              (mbid, session) <- bzReviewSession
+              return $ case mbid of
+                Just bid -> Just (bid,session)
+                Nothing -> Nothing
+              else return Nothing
+            if br == Master
+              then whenJust mBugSess $
+                   \ (bid,session) -> postBuildComment session nvr bid
+              else do
+              -- FIXME diff previous changelog?
+              changelog <- getChangeLog spec
+              bodhiUpdate (fmap fst mBugSess) changelog nvr
+              -- FIXME autochain
+              -- FIXME prompt for override note
+              when (buildoptOverride opts) $ do
+                when (br /= Master) $
+                  bodhiCreateOverride nvr
+            when morethan1 $ kojiWaitRepo br target nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do
@@ -202,7 +206,7 @@ scratchBuild rebuildSrpm nofailfast march mtarget pkg br = do
         else return False
     if pushed then do
       void $ getSources spec
-      kojiBuildBranch target (unPackage pkg) Nothing $ "--scratch" : args
+      kojiBuildBranch target pkg Nothing $ "--scratch" : args
       else srpmBuild target args spec
     else srpmBuild target args spec
   where
@@ -293,19 +297,33 @@ parallelBuildCmd mtarget (brs,pkgs) = do
               kojiWaitRepo br target nvr
             return nvr
         _ -> do
-          let tag = fromMaybe (branchDestTag br) mtarget
-          mlatest <- kojiLatestNVR tag $ unPackage pkg
-          if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
-            then return $ error' $ color Red $ nvr ++ " is already latest (modulo disttag)"
-            else do
-            -- FIXME parse build output
-            task <- kojiBuildBranchNoWait target (unPackage pkg) Nothing ["--fail-fast", "--background"]
-            return $ do
-              finish <- kojiWatchTaskQuiet task
-              if finish
-                then putStrLn $ color Green $ nvr ++ " build success"
-                else error' $ color Red $ nvr ++ " build failed"
-              when (br /= Master) $
-                bodhiCreateOverride nvr
-              kojiWaitRepo br target nvr
-              return nvr
+          buildref <- git "show-ref" ["--hash", "origin" </> show br]
+          opentasks <- kojiOpenTasks pkg (Just buildref) target
+          case opentasks of
+            [task] -> do
+              putStrLn $ nvr ++ " task is already open"
+              return $ do
+                finish <- kojiWatchTaskQuiet task
+                if finish
+                  then putStrLn $ color Green $ nvr ++ " build success"
+                  else error' $ color Red $ nvr ++ " build failed"
+                kojiWaitRepo br target nvr
+                return nvr
+            (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
+            [] -> do
+              let tag = fromMaybe (branchDestTag br) mtarget
+              mlatest <- kojiLatestNVR tag $ unPackage pkg
+              if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
+                then return $ error' $ color Red $ nvr ++ " is already latest (modulo disttag)"
+                else do
+                -- FIXME parse build output
+                task <- kojiBuildBranchNoWait target pkg Nothing ["--fail-fast", "--background"]
+                return $ do
+                  finish <- kojiWatchTaskQuiet task
+                  if finish
+                    then putStrLn $ color Green $ nvr ++ " build success"
+                    else error' $ color Red $ nvr ++ " build failed"
+                  when (br /= Master) $
+                    bodhiCreateOverride nvr
+                  kojiWaitRepo br target nvr
+                  return nvr
