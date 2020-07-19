@@ -246,7 +246,7 @@ parallelBuildCmd mtarget (brs,pkgs) = do
     watchJobs :: [String] -> [Job] -> IO [String]
     watchJobs fails [] = return fails
     watchJobs fails (job:jobs) = do
-      sleep 2
+      sleep 1
       status <- poll (snd job)
       case status of
         Nothing -> watchJobs fails (jobs ++ [job])
