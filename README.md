@@ -21,6 +21,7 @@ like:
 - listing approved package reviews
 - requesting repo and branches
 - importing new packages
+- automatic parallel builds of sets of packages in dependency order
 
 ## Usage
 
@@ -164,7 +165,7 @@ $ fbrnch install package1 package2 package3 ...
   (and source upload)
   - so python clients are used for "writing"
     (specifically koji, bodhi-client, fedpkg),
-    but queries are done directly by Web RPC for speed and control.
+    but all queries are done directly by Web RPC for speed and control.
 
 ## Motivation and history
 This project started off (as "fedbrnch") basically as a simple tool to
@@ -174,6 +175,8 @@ some generic commands across packages which had already been done before
 in fedora-haskell-tools.
 
 ## Installation
+On Fedora you can use my [copr repo](https://copr.fedorainfracloud.org/coprs/petersen/fbrnch/).
+
 Run `stack install` or `cabal new-install` in a git checkout.
 
 ## Contributing
