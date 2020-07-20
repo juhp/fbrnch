@@ -92,7 +92,9 @@ buildBranch morethan1 opts pkg br = do
           target = fromMaybe (branchTarget br) mtarget
       opentasks <- kojiOpenTasks pkg mbuildref target
       case opentasks of
-        [task] -> kojiWatchTask task
+        [task] -> do
+          putStrLn $ nvr ++ " task is already open"
+          kojiWatchTask task
         (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
         [] -> do
           let tag = fromMaybe (branchDestTag br) mtarget
