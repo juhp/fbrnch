@@ -158,8 +158,14 @@ Locally build and install:
 $ fbrnch install package1 package2 package3 ...
 ```
 
+### Parallel building
+```
+$ fbrnch parallel -t f33-build-side-xyz  -b master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
+```
+builds a list of packages in parallel ordered by build dependencies.
+
 ## Known issues
-- if you don't specify branches, fbrnch build will try to do all pushed branches
+- if you don't specify branches, `fbrnch build` will go ahead with all pushed branches
 - only checks already built by NVR not githash
 - authentication is not implemented yet natively for Koji, Bodhi, Pagure
   (and source upload)
