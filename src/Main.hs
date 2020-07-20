@@ -57,7 +57,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd <$> targetOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
-      scratchCmd <$> rebuildSrpmOpt <*> noFailFastOpt <*> optional archOpt <*> targetOpt <*> localBranchPackages
+      scratchCmd <$> rebuildSrpmOpt <*> noFailFastOpt <*> many archOpt <*> targetOpt <*> localBranchPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd <$> localBranchPackages
     , Subcommand "prep" "Prep sources" $

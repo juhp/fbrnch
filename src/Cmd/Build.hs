@@ -185,37 +185,36 @@ bodhiCreateOverride nvr = do
         bodhiCreateOverride nvr
       Just obj -> print obj
 
--- FIXME --arches
 -- FIXME --exclude-arch
 -- FIXME build from a git ref
-scratchCmd :: Bool -> Bool -> Maybe String -> Maybe String -> (Maybe Branch,[String]) -> IO ()
-scratchCmd rebuildSrpm nofailfast march mtarget (mbr,pkgs) =
-  withPackageByBranches False False NoGitRepo (scratchBuild rebuildSrpm nofailfast march mtarget) (maybeToList mbr,pkgs)
-
-scratchBuild :: Bool -> Bool -> Maybe String -> Maybe String -> Package -> Branch -> IO ()
-scratchBuild rebuildSrpm nofailfast march mtarget pkg br = do
-  spec <- localBranchSpecFile pkg br
-  let target = fromMaybe "rawhide" mtarget
-  let args = ["--arch-override=" ++ fromJust march | isJust march] ++ ["--fail-fast" | not nofailfast] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
-  pkggit <- isPkgGitDir
-  if pkggit
-    then do
-    gitSwitchBranch br
-    pushed <- do
-      clean <- isGitDirClean
-      if clean then
-        null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
-        else return False
-    if pushed then do
-      void $ getSources spec
-      kojiBuildBranch target pkg Nothing $ "--scratch" : args
-      else srpmBuild target args spec
-    else srpmBuild target args spec
+scratchCmd :: Bool -> Bool -> [String] -> Maybe String -> (Maybe Branch,[String]) -> IO ()
+scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
+  withPackageByBranches False False NoGitRepo scratchBuild (maybeToList mbr,pkgs)
   where
-    srpmBuild :: FilePath -> [String] -> String -> IO ()
-    srpmBuild target args spec = do
-      void $ getSources spec
-      void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
+    scratchBuild :: Package -> Branch -> IO ()
+    scratchBuild pkg br = do
+      spec <- localBranchSpecFile pkg br
+      let target = fromMaybe "rawhide" mtarget
+      let args = (if null archs then [] else ["--arch-override=" ++ intercalate "," archs]) ++ ["--fail-fast" | not nofailfast] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
+      pkggit <- isPkgGitDir
+      if pkggit
+        then do
+        gitSwitchBranch br
+        pushed <- do
+          clean <- isGitDirClean
+          if clean then
+            null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
+            else return False
+        if pushed then do
+          void $ getSources spec
+          kojiBuildBranch target pkg Nothing $ "--scratch" : args
+          else srpmBuild target args spec
+        else srpmBuild target args spec
+      where
+        srpmBuild :: FilePath -> [String] -> String -> IO ()
+        srpmBuild target args spec = do
+          void $ getSources spec
+          void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
 
 type Job = (String, Async String)
 
