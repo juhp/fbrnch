@@ -159,8 +159,9 @@ $ fbrnch install package1 package2 package3 ...
 ```
 
 ### Parallel building
-fbrnch can automatically sort packages and build them parallelly in Koji in dependency layers.
-It does low-priority background builds to avoid grabbing too many Koji resources.
+fbrnch can automatically sort packages and build them in parallel
+in Koji in dependency layers (using low-priority background builds
+to avoid grabbing too many Koji resources).
 
 ```
 $ fbrnch parallel -t f33-build-side-xyz -b master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
