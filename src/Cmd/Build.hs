@@ -36,6 +36,7 @@ data BuildOpts = BuildOpts
 -- FIXME --rpmlint (only run for master?)
 -- FIXME support --wait-build=NVR
 -- FIXME --dry-run
+-- FIXME provide direct link to failed task/build.log
 buildCmd :: BuildOpts -> ([Branch],[String]) -> IO ()
 buildCmd opts (brs,pkgs) = do
   when (isJust (buildoptTarget opts) && length brs > 1) $
