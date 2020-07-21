@@ -164,7 +164,7 @@ in Koji in dependency layers (using low-priority background builds
 to avoid grabbing too many Koji resources).
 
 ```
-$ fbrnch parallel -t f33-build-side-xyz -b master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
+$ fbrnch parallel -t f33-build-side-1234 -b master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
 ```
 builds a list of packages in parallel ordered by build dependencies.
 
@@ -185,9 +185,9 @@ some generic commands across packages which had already been done before
 in fedora-haskell-tools.
 
 ## Installation
-On Fedora you can use my [copr repo](https://copr.fedorainfracloud.org/coprs/petersen/fbrnch/).
+a) On Fedora you can use my [copr repo](https://copr.fedorainfracloud.org/coprs/petersen/fbrnch/).
 
-Run `stack install` or `cabal new-install` in a git checkout.
+b) Or run `stack install` or `cabal new-install` in a git checkout.
 
 ## Contributing
 Bug reports, feedback, and fixes are welcome.
