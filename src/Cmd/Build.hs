@@ -84,7 +84,7 @@ buildBranch morethan1 opts pkg br = do
     -- FIXME wait for build?
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
-      whenJustM (kojiGetBuildTaskID nvr) kojiWatchTask
+      whenJustM (kojiGetBuildTaskID fedoraHub nvr) kojiWatchTask
     _ -> do
       mbuildref <- case mpush of
         Nothing -> Just <$> git "show-ref" ["--hash", "origin" </> show br]
@@ -292,7 +292,7 @@ parallelBuildCmd mtarget (brs,pkgs) = do
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
           return $ do
-            whenJustM (kojiGetBuildTaskID nvr) $ \ task -> do
+            whenJustM (kojiGetBuildTaskID fedoraHub nvr) $ \ task -> do
               finish <- kojiWatchTaskQuiet task
               if finish
                 then putStrLn $ color Green $ nvr ++ " build success"

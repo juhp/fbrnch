@@ -17,7 +17,8 @@ module Koji (
   kojiWaitRepo,
   kojiWatchTask,
   kojiWatchTaskQuiet,
-  TaskID
+  TaskID,
+  fedoraHub
   ) where
 
 import Data.Char (isDigit)
@@ -31,20 +32,23 @@ import Git
 import Krb
 import Package
 
+fedoraHub :: String
+fedoraHub = fedoraKojiHub
+
 kojiNVRTags :: String -> IO (Maybe [String])
 kojiNVRTags nvr = do
-  mbldid <- kojiGetBuildID nvr
+  mbldid <- kojiGetBuildID fedoraHub nvr
   case mbldid of
     Nothing -> return Nothing
-    Just bldid -> Just <$> kojiBuildTags (buildIDInfo bldid)
+    Just bldid -> Just <$> kojiBuildTags fedoraHub (buildIDInfo bldid)
 
 kojiBuildStatus :: String -> IO (Maybe BuildState)
 kojiBuildStatus nvr =
-  kojiGetBuildState (BuildInfoNVR nvr)
+  kojiGetBuildState fedoraHub (BuildInfoNVR nvr)
 
 kojiLatestNVR :: String -> String -> IO (Maybe String)
 kojiLatestNVR tag pkg = do
-  mbld <- kojiLatestBuild tag pkg
+  mbld <- kojiLatestBuild fedoraHub tag pkg
   return $ case mbld of
              Nothing -> Nothing
              Just bld -> lookupStruct "nvr" bld
@@ -52,11 +56,11 @@ kojiLatestNVR tag pkg = do
 kojiOpenTasks :: Package -> Maybe String -> String -> IO [TaskID]
 kojiOpenTasks pkg mref target = do
   user <- fasIdFromKrb
-  muserid <- kojiGetUserID user
+  muserid <- kojiGetUserID fedoraHub user
   let userid = fromMaybe (error' $ "Koji failed to return userid for '" ++ user ++ "'") muserid
   commit <- maybe (git "rev-parse" ["HEAD"]) return mref
   let source = kojiSource pkg commit
-  kojiUserBuildTasks userid (Just source) (Just target)
+  kojiUserBuildTasks fedoraHub userid (Just source) (Just target)
 
 -- * Koji building
 
@@ -102,7 +106,7 @@ kojiWatchTask task =
     -- FIXME can error:
     -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
     -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
-    mst <- kojiGetTaskState task
+    mst <- kojiGetTaskState fedoraHub task
     case mst of
       Just TaskClosed -> return ()
       Just TaskFailed -> error "Task failed!"
@@ -116,7 +120,7 @@ kojiWatchTaskQuiet task =
     -- FIXME can error:
     -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
     -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
-    mst <- kojiGetTaskState task
+    mst <- kojiGetTaskState fedoraHub task
     case mst of
       Just TaskClosed -> return True
       Just TaskFailed -> return False

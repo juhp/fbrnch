@@ -56,7 +56,7 @@ statusBranch pkg br = do
         --       mapM_ (putStrLn . simplifyCommitLog) unmerged
         unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
         if null unpushed then do
-          mbuild <- kojiGetBuildID nvr
+          mbuild <- kojiGetBuildID fedoraHub nvr
           case mbuild of
             Nothing -> do
               mlatest <- kojiLatestNVR (branchDestTag br) (unPackage pkg)
@@ -65,7 +65,7 @@ statusBranch pkg br = do
                 Just latest ->
                   putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
             Just buildid -> do
-              tags <- kojiBuildTags (buildIDInfo buildid)
+              tags <- kojiBuildTags fedoraHub (buildIDInfo buildid)
               if null tags then do
                 status <- kojiBuildStatus nvr
                 -- FIXME show pending archs building
