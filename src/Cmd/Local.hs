@@ -92,20 +92,21 @@ prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd (mbr,pkgs) =
   withPackageByBranches True False NoGitRepo prepPackage (maybeToList mbr,pkgs)
 
-mockCmd :: (Maybe Branch,[String]) -> IO ()
-mockCmd (mbr,pkgs) =
+mockCmd :: Maybe Branch -> (Maybe Branch,[String]) -> IO ()
+mockCmd mroot (mbr,pkgs) =
   withPackageByBranches False False NoGitRepo mockBuildPkg (maybeToList mbr,pkgs)
-
-mockBuildPkg :: Package -> Branch -> IO ()
-mockBuildPkg pkg br = do
-  spec <- localBranchSpecFile pkg br
-  pkggit <- isPkgGitDir
-  if pkggit
-    then do
-    gitSwitchBranch br
-    fedpkg_ "mockbuild" []
-    else do
-    void $ getSources spec
-    srpm <- generateSrpm (Just br) spec
-    let resultsdir = "results_" ++ unPackage pkg
-    cmd_ "mock" ["--root", mockConfig br, "--resultdir=" ++ resultsdir, srpm]
+  where
+    mockBuildPkg :: Package -> Branch -> IO ()
+    mockBuildPkg pkg br = do
+      spec <- localBranchSpecFile pkg br
+      pkggit <- isPkgGitDir
+      if pkggit
+        then do
+        gitSwitchBranch br
+        fedpkg_ "mockbuild" []
+        else do
+        void $ getSources spec
+        srpm <- generateSrpm (Just br) spec
+        let resultsdir = "results_" ++ unPackage pkg
+            rootBr = fromMaybe br mroot
+        cmd_ "mock" ["--root", mockConfig rootBr, "--resultdir=" ++ resultsdir, srpm]

@@ -69,7 +69,7 @@ dispatchCmd gitdir activeBranches =
     , Subcommand "diff" "Diff local changes" $
       diffCmd <$> diffWorkOpt <*> diffFormatOpt <*> (anyBranchOpt <|> anyBranchArg) <*> many (pkgArg "PACKAGE...")
     , Subcommand "mock" "Local mock build" $
-      mockCmd <$> localBranchPackages
+      mockCmd <$> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use (branch)") <*> localBranchPackages
     , Subcommand "install" "Build locally and install package(s)" $
       installCmd <$> switchWith 'r' "reinstall" "use dnf reinstall" <*> localBranchPackages
     , Subcommand "bugs" "List package bugs" $
