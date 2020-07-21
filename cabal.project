@@ -28,4 +28,4 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/juhp/rpmbuild-order.git
-    tag: fcf25a82c6eb0a5bad35d6596ad3ba944a4ebb91
+    tag: 6bf164c295779128ce483a7a6a1cf7ce6847419d

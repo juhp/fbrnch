@@ -244,7 +244,7 @@ parallelBuildCmd mtarget (brs,pkgs) = do
       where
         setupBuild :: String -> IO Job
         setupBuild pkg = do
-          job <- startBuild br (Package pkg) >>= async
+          job <- startBuild br pkg >>= async
           sleep 5
           return (pkg,job)
 
@@ -265,9 +265,10 @@ parallelBuildCmd mtarget (brs,pkgs) = do
           watchJobs (pkg : fails) jobs
 
     -- FIXME prefix output with package name
-    startBuild :: Branch -> Package -> IO (IO String)
-    startBuild br pkg =
-      withExistingDirectory (unPackage pkg) $ do
+    startBuild :: Branch -> String -> IO (IO String)
+    startBuild br pkgdir =
+      withExistingDirectory pkgdir $ do
+      let pkg = getPackageName pkgdir
       putPkgBrnchHdr pkg br
       unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $ do
