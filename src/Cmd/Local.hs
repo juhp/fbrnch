@@ -99,14 +99,9 @@ mockCmd mroot (mbr,pkgs) =
     mockBuildPkg :: Package -> Branch -> IO ()
     mockBuildPkg pkg br = do
       spec <- localBranchSpecFile pkg br
-      pkggit <- isPkgGitDir
-      if pkggit
-        then do
-        gitSwitchBranch br
-        fedpkg_ "mockbuild" []
-        else do
-        void $ getSources spec
-        srpm <- generateSrpm (Just br) spec
-        let resultsdir = "results_" ++ unPackage pkg
-            rootBr = fromMaybe br mroot
-        cmd_ "mock" ["--root", mockConfig rootBr, "--resultdir=" ++ resultsdir, srpm]
+      whenM isPkgGitDir $ gitSwitchBranch br
+      void $ getSources spec
+      srpm <- generateSrpm (Just br) spec
+      let resultsdir = "results_" ++ unPackage pkg
+          rootBr = fromMaybe br mroot
+      cmd_ "mock" ["--root", mockConfig rootBr, "--resultdir=" ++ resultsdir, srpm]
