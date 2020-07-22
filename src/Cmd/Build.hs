@@ -200,7 +200,7 @@ scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
     scratchBuild pkg br = do
       spec <- localBranchSpecFile pkg br
       let target = fromMaybe "rawhide" mtarget
-      let args = (if null archs then [] else ["--arch-override=" ++ intercalate "," archs]) ++ ["--fail-fast" | not nofailfast] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
+      let args = ["--arch-override=" ++ intercalate "," archs | notNull archs] ++ ["--fail-fast" | not nofailfast] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
       pkggit <- isPkgGitDir
       if pkggit
         then do
