@@ -228,9 +228,9 @@ type Job = (String, Async String)
 -- FIXME check sources asap
 parallelBuildCmd :: Maybe String -> (Branches,[String]) -> IO ()
 parallelBuildCmd mtarget (brnchs,pkgs) = do
-  branches <- listOfBranches True brnchs
-  when (length branches == 0) $
+  when (brnchs == BranchList []) $
     error' "Please specify at least one branch"
+  branches <- listOfBranches True brnchs
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   when (null pkgs) $
