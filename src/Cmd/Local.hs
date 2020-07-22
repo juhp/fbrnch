@@ -19,7 +19,7 @@ import Package
 -- FIXME --force to rebuild & install
 installCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 installCmd reinstall (mbr,pkgs) = do
-  withPackageByBranches True False NoGitRepo (installPkg reinstall) (maybeToList mbr,pkgs)
+  withPackageByBranches True False False (installPkg reinstall) (maybeBranches mbr,pkgs)
 
 -- FIXME skip build if rpms newer than spec
 installPkg :: Bool -> Package -> Branch -> IO ()
@@ -60,7 +60,7 @@ installDeps spec = do
 
 localCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 localCmd shortcircuit (mbr,pkgs) =
-  withPackageByBranches False False NoGitRepo localBuildPkg (maybeToList mbr,pkgs)
+  withPackageByBranches False False False localBuildPkg (maybeBranches mbr,pkgs)
   where
     localBuildPkg :: Package -> Branch -> IO ()
     localBuildPkg pkg br = do
@@ -71,7 +71,7 @@ localCmd shortcircuit (mbr,pkgs) =
 
 srpmCmd :: (Maybe Branch,[String]) -> IO ()
 srpmCmd (mbr,pkgs) =
-  withPackageByBranches False False NoGitRepo srpmBuildPkg (maybeToList mbr,pkgs)
+  withPackageByBranches False False False srpmBuildPkg (maybeBranches mbr,pkgs)
 
 srpmBuildPkg :: Package -> Branch -> IO ()
 srpmBuildPkg pkg br = do
@@ -82,7 +82,7 @@ srpmBuildPkg pkg br = do
 sortCmd :: (Maybe Branch,[String]) -> IO ()
 sortCmd (_,[]) = return ()
 sortCmd (mbr,pkgs) = do
-  withPackageByBranches True False NoGitRepo dummy (maybeToList mbr,pkgs)
+  withPackageByBranches True False False dummy (maybeBranches mbr,pkgs)
   packages <- dependencySort $ reverse pkgs
   putStrLn $ unwords packages
   where
@@ -90,11 +90,11 @@ sortCmd (mbr,pkgs) = do
 
 prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd (mbr,pkgs) =
-  withPackageByBranches True False NoGitRepo prepPackage (maybeToList mbr,pkgs)
+  withPackageByBranches True False False prepPackage (maybeBranches mbr,pkgs)
 
 mockCmd :: Maybe Branch -> (Maybe Branch,[String]) -> IO ()
 mockCmd mroot (mbr,pkgs) =
-  withPackageByBranches False False NoGitRepo mockBuildPkg (maybeToList mbr,pkgs)
+  withPackageByBranches False False False mockBuildPkg (maybeBranches mbr,pkgs)
   where
     mockBuildPkg :: Package -> Branch -> IO ()
     mockBuildPkg pkg br = do

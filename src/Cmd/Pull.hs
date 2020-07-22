@@ -1,5 +1,6 @@
 module Cmd.Pull (pullPkgs) where
 
+import Branches
 import Git
 import Package
 

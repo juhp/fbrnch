@@ -4,13 +4,19 @@ module Branches (
   localBranches,
   pagurePkgBranches,
   mockConfig,
-  module Distribution.Fedora.Branch
+  module Distribution.Fedora.Branch,
+  Branches(..),
+  maybeBranches,
+  listOfBranches,
+  gitCurrentBranch,
+  systemBranch
 ) where
 
 import Common
 
 import Distribution.Fedora.Branch
 import SimpleCmd
+import SimpleCmd.Git
 
 import Pagure
 
@@ -47,3 +53,34 @@ mockConfig :: Branch -> String
 mockConfig Master = "fedora-rawhide-x86_64"
 mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
 mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"
+
+------
+
+data Branches = AllBranches | BranchList [Branch]
+  deriving Eq
+
+maybeBranches :: Maybe Branch -> Branches
+maybeBranches = BranchList . maybeToList
+
+systemBranch :: IO Branch
+systemBranch =
+  readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
+
+listOfBranches :: Bool -> Branches -> IO [Branch]
+listOfBranches distgit AllBranches =
+  -- FIXME for status had: RemoteBranches -> fedoraBranches $ pagurePkgBranches (unPackage pkg)
+  if distgit
+  then fedoraBranches localBranches
+  else let singleton a = [a]
+       in singleton <$> systemBranch
+listOfBranches distgit (BranchList brs) =
+  if null brs
+  then maybeToList <$> if distgit
+                       then Just <$> gitCurrentBranch
+                       else return Nothing
+  else return brs
+
+gitCurrentBranch :: IO Branch
+gitCurrentBranch = do
+  active <- getFedoraBranches
+  readActiveBranch' active <$> git "rev-parse" ["--abbrev-ref", "HEAD"]

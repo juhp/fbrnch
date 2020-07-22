@@ -21,7 +21,7 @@ data DiffWork =
 -- FIXME diff branch(es) (without switching?)
 diffCmd :: DiffWork -> DiffFormat -> Branch -> [String] -> IO ()
 diffCmd work fmt br pkgs =
-  withPackageByBranches True False LocalBranches diffPkg ([br],pkgs)
+  withPackageByBranches True False True diffPkg (BranchList [br],pkgs)
   where
     diffPkg :: Package -> Branch -> IO ()
     diffPkg pkg _br = do

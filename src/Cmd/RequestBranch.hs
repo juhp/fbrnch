@@ -1,5 +1,4 @@
 module Cmd.RequestBranch (
-  BranchesRequest(..),
   requestBranches
   ) where
 
@@ -15,9 +14,7 @@ import Package
 import Pagure
 import Prompt
 
-data BranchesRequest = AllReleases | BranchesRequest [Branch]
-
-requestBranches :: Bool -> BranchesRequest -> [String] -> IO ()
+requestBranches :: Bool -> Branches -> [String] -> IO ()
 requestBranches mock request ps =
   if null ps then
     ifM isPkgGitDir
@@ -28,16 +25,16 @@ requestBranches mock request ps =
     mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request (Package p)) ps
 
 -- FIXME add --yes, or skip prompt when args given
-requestPkgBranches :: Bool -> BranchesRequest -> Package -> IO ()
+requestPkgBranches :: Bool -> Branches -> Package -> IO ()
 requestPkgBranches mock request pkg = do
   putPkgHdr pkg
   git_ "fetch" []
   active <- getFedoraBranched
   branches <- do
     let requested = case request of
-                      AllReleases -> active
-                      BranchesRequest [] -> take 2 active
-                      BranchesRequest brs -> brs
+                      AllBranches -> active
+                      BranchList [] -> take 2 active
+                      BranchList brs -> brs
     inp <- prompt $ "Confirm branches [" ++ unwords (map show requested) ++ "]"
     return $ if null inp
              then requested

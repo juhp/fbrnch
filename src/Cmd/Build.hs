@@ -37,12 +37,16 @@ data BuildOpts = BuildOpts
 -- FIXME support --wait-build=NVR
 -- FIXME --dry-run
 -- FIXME provide direct link to failed task/build.log
-buildCmd :: BuildOpts -> ([Branch],[String]) -> IO ()
-buildCmd opts (brs,pkgs) = do
-  when (isJust (buildoptTarget opts) && length brs > 1) $
+-- FIXME default behaviour for build in pkg dir: all branches or current?
+buildCmd :: BuildOpts -> (Branches,[String]) -> IO ()
+buildCmd opts (brnchs,pkgs) = do
+  let somebrnchs = case brnchs of
+        AllBranches -> True
+        BranchList brs -> length brs > 1 in
+    when (isJust (buildoptTarget opts) && somebrnchs) $
     error' "You can only specify target with one branch"
   let morethan1 = length pkgs > 1
-  withPackageByBranches False True LocalBranches (buildBranch morethan1 opts) (brs,pkgs)
+  withPackageByBranches False True True (buildBranch morethan1 opts) (brnchs,pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: Bool -> BuildOpts -> Package -> Branch -> IO ()
@@ -190,7 +194,7 @@ bodhiCreateOverride nvr = do
 -- FIXME build from a git ref
 scratchCmd :: Bool -> Bool -> [String] -> Maybe String -> (Maybe Branch,[String]) -> IO ()
 scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
-  withPackageByBranches False False NoGitRepo scratchBuild (maybeToList mbr,pkgs)
+  withPackageByBranches False False False scratchBuild (maybeBranches mbr,pkgs)
   where
     scratchBuild :: Package -> Branch -> IO ()
     scratchBuild pkg br = do
@@ -220,15 +224,18 @@ scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
 type Job = (String, Async String)
 
 -- FIXME option to build package branches in parallel
-parallelBuildCmd :: Maybe String -> ([Branch],[String]) -> IO ()
-parallelBuildCmd mtarget (brs,pkgs) = do
-  when (isJust mtarget && length brs > 1) $
-    error' "You can only specify target with one branch"
-  when (null brs) $
+-- FIXME add --with-side-tag
+-- FIXME check sources asap
+parallelBuildCmd :: Maybe String -> (Branches,[String]) -> IO ()
+parallelBuildCmd mtarget (brnchs,pkgs) = do
+  branches <- listOfBranches True brnchs
+  when (length branches == 0) $
     error' "Please specify at least one branch"
+  when (isJust mtarget && length branches > 1) $
+    error' "You can only specify target with one branch"
   when (null pkgs) $
     error' "Please give at least one package"
-  forM_ brs $ \ br -> do
+  forM_ branches $ \ br -> do
     putStrLn $ "# " ++ show br
     layers <- dependencyLayers pkgs
     mapM_ (parallelBuild br) layers

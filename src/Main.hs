@@ -26,7 +26,7 @@ import Cmd.Reviews
 import Cmd.Status
 import Cmd.Switch
 
---import Bugzilla (testBZlogin)
+import Branches
 import ListReviews
 import Paths_fbrnch (version)
 
@@ -134,13 +134,14 @@ dispatchCmd gitdir activeBranches =
     pkgOpt :: Parser String
     pkgOpt = removeSuffix "/" <$> strOptionWith 'p' "package" "PKG" "package"
 
-    branchesPackages :: Parser ([Branch],[String])
-    branchesPackages = if gitdir then
-      pairSort <$> (many branchOpt <|> many branchArg) <*> pure []
-      else pairSort <$> many branchOpt <*> many (pkgArg "PACKAGE..") <|>
-           pairSort <$> many branchArg <*> some pkgOpt
+    branchesOpt :: Parser Branches
+    branchesOpt =
+      BranchList . reverse . sort  <$> many branchOpt <|>
+      flagWith' AllBranches 'B' "all-branches" "All active branches"
 
-    pairSort a b = ((reverse . sort) a, b)
+    branchesPackages :: Parser (Branches,[String])
+    branchesPackages =
+      (,) <$> branchesOpt <*> if gitdir then pure [] else  many (pkgArg "PACKAGE..")
 
     localBranchPackages :: Parser (Maybe Branch,[String])
     localBranchPackages = if gitdir
@@ -148,8 +149,8 @@ dispatchCmd gitdir activeBranches =
       else (,) <$> optional branchOpt <*> many (pkgArg "PACKAGE..") <|>
            (,) <$> optional branchArg <*> some pkgOpt
 
-    branchesRequestOpt :: Parser BranchesRequest
-    branchesRequestOpt = flagWith' AllReleases 'a' "all" "Request branches for all current releases [default latest 2]" <|> BranchesRequest <$> many branchArg
+    branchesRequestOpt :: Parser Branches
+    branchesRequestOpt = flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|> BranchList <$> many branchArg
 
     mockOpt = switchWith 'm' "mock" "Do mock build to test"
 

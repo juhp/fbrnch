@@ -4,7 +4,6 @@ module Git (
 #if !MIN_VERSION_simple_cmd(0,2,2)
   gitBool,
 #endif
-  gitCurrentBranch,
   gitLines,
   gitMergeable,
   gitMergeOrigin,
@@ -36,11 +35,6 @@ gitBool :: String -- ^ git command
 gitBool c args =
   cmdBool "git" (c:args)
 #endif
-
-gitCurrentBranch :: IO Branch
-gitCurrentBranch = do
-  active <- getFedoraBranches
-  readActiveBranch' active <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
 
 gitMergeable :: String -> IO [String]
 gitMergeable ref = do

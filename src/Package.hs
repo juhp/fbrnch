@@ -23,7 +23,6 @@ module Package (
   packageSpec,
   pkgNameVerRel,
   pkgNameVerRel',
-  ConstrainBranches(..),
   buildRequires,
   notInstalled,
   pkgInstalled,
@@ -173,11 +172,11 @@ getSources :: FilePath -> IO Bool
 getSources spec = do
     gitDir <- isGitDir "."
     srcdir <- getSourceDir gitDir
-    sources <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
+    srcs <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
     unless gitDir $
       unlessM (doesDirectoryExist srcdir) $
       createDirectoryIfMissing True srcdir
-    forM_ sources $ \ src -> do
+    forM_ srcs $ \ src -> do
       unlessM (doesFileExist (srcdir </> src)) $ do
         uploaded <- if gitDir then grep_ src "sources" else return False
         if uploaded then cmd_ "fedpkg" ["sources"]
@@ -209,9 +208,6 @@ initialPkgRepo = do
   commits <- length <$> gitShortLogN 2 Nothing
   return $ commits <= 1
 
-data ConstrainBranches = LocalBranches | RemoteBranches | NoGitRepo
-  deriving Eq
-
 newtype Package = Package {unPackage :: String}
 
 putPkgHdr :: Package -> IO ()
@@ -230,49 +226,38 @@ packageSpec :: Package -> FilePath
 packageSpec pkg = unPackage pkg <.> "spec"
 
 -- do package over branches
-withPackageByBranches :: Bool -> Bool -> ConstrainBranches -> (Package -> Branch -> IO ()) -> ([Branch],[String]) -> IO ()
-withPackageByBranches quiet clean constraint action (brs,pkgs) =
+withPackageByBranches :: Bool -> Bool -> Bool -> (Package -> Branch -> IO ()) -> (Branches,[String]) -> IO ()
+withPackageByBranches quiet clean needDistgit action (brnchs,pkgs) = do
   if null pkgs
-  then do
-    gitdir <- isPkgGitDir
-    when (not gitdir && constraint /= NoGitRepo) $
+    then do
+    distgit <- isPkgGitDir
+    when (not distgit && needDistgit) $
       error' "Not a pkg git dir"
     pkg <- Package <$> getDirectoryName
     withPackageDir (".", pkg)
-  else mapM_ (withPackageDir . packagePath) pkgs
+    else mapM_ (withPackageDir . packagePath) pkgs
   where
     -- FIXME support arbitrary (module) branches
     withPackageDir :: (FilePath, Package) -> IO ()
     withPackageDir (dir, pkg) =
       withExistingDirectory dir $ do
-      haveGit <- setupGit quiet pkg clean
+      haveGit <- isPkgGitDir
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
-      branches <- if null brs then
-                    case constraint of
-                      RemoteBranches -> fedoraBranches $ pagurePkgBranches (unPackage pkg)
-                      LocalBranches -> fedoraBranches localBranches
-                      NoGitRepo -> if haveGit then return $ maybeToList mcurrentbranch
-                                   else let singleton a = [a] in
-                                          singleton <$> systemBranch
-                  else return brs
-      when (null brs && constraint /= NoGitRepo) $
+      branches <- listOfBranches haveGit brnchs
+      unless (quiet || dir == "." || length branches == 1) $
+        putPkgHdr pkg
+      when haveGit $ do
+        when clean checkWorkingDirClean
+        unless quiet $ git_ "fetch" []
+      when (brnchs == AllBranches) $
         putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
       mapM_ (action pkg) branches
-      when (length brs /= 1) $
+      when (length branches /= 1) $
         whenJust mcurrentbranch gitSwitchBranch
 
-setupGit :: Bool -> Package -> Bool -> IO Bool
-setupGit quiet pkg clean = do
-  haveGit <- isPkgGitDir
-  when (haveGit && clean) checkWorkingDirClean
-  unless quiet $ do
-    putPkgHdr pkg
-    when haveGit $ git_ "fetch" []
-  return haveGit
-
 -- -- do branch over packages
--- withBranchByPackages :: (Branch -> [String] -> IO ()) -> ([Branch],[String]) -> IO ()
+-- withBranchByPackages :: (Branch -> [String] -> IO ()) -> (Branches,[String]) -> IO ()
 -- withBranchByPackages action (brs,pkgs) = do
 --   when (null brs) $
 --     error' "Please specify at least one branch"
@@ -311,10 +296,6 @@ builtRpms :: Branch -> FilePath -> IO [FilePath]
 builtRpms br spec = do
   dist <- branchDist br
   rpmspec ["--builtrpms", "--define", "dist " ++ rpmDistTag dist] (Just "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") spec
-
-systemBranch :: IO Branch
-systemBranch =
-  readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
 
 -- from fedora-haskell-tools
 buildRequires :: FilePath -> IO [String]
