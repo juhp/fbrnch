@@ -169,8 +169,6 @@ $ fbrnch parallel -t f33-build-side-1234 -b master pkg-x pkg-y pkg-z pkg-xy pkg-
 builds a list of packages in parallel ordered by build dependencies.
 
 ## Known issues
-- `fbrnch build pkg1 pkg2 ...` should error with "Please specify branch"
-  (not "invalid argument `pkg2'")
 - only checks if already built by NVR not githash
 - authentication is not implemented yet natively for Koji, Bodhi, Pagure
   (and source upload)

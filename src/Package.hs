@@ -242,7 +242,10 @@ withPackageByBranches quiet clean needDistgit action (brnchs,pkgs) = do
         error' "Not a pkg git dir"
     pkg <- Package <$> getDirectoryName
     withPackageDir (".", pkg)
-    else mapM_ (withPackageDir . packagePath) pkgs
+    else do
+    when (length pkgs > 1 && brnchs == BranchList []) $
+      error' "At least one branch must be specified when there are multiple packages"
+    mapM_ (withPackageDir . packagePath) pkgs
   where
     -- FIXME support arbitrary (module) branches
     withPackageDir :: (FilePath, Package) -> IO ()
