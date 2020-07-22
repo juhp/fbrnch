@@ -189,7 +189,9 @@ in fedora-haskell-tools.
 On Fedora the easiest way to install is using my [copr repo](https://copr.fedorainfracloud.org/coprs/petersen/fbrnch/).
 
 ## Build from source
-Clone the git repo and either:
+1. Install openssl-devel
+
+2. Clone the git repo and either:
 
 a) Using stack >= 2.1, in the source dir run: `stack install`
 
