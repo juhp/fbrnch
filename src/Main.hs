@@ -134,19 +134,22 @@ dispatchCmd gitdir activeBranches =
     pkgOpt :: Parser String
     pkgOpt = removeSuffix "/" <$> strOptionWith 'p' "package" "PKG" "package"
 
-    branchesOpt :: Parser Branches
-    branchesOpt =
-      BranchList . reverse . sort  <$> many branchOpt <|>
+    branchesOpt :: Bool -> Parser Branches
+    branchesOpt oneormore =
+      BranchList . reverse . sort  <$> (if oneormore then some else many) branchOpt <|>
       flagWith' AllBranches 'B' "all-branches" "All active branches"
 
     branchesPackages :: Parser (Branches,[String])
     branchesPackages =
-      (,) <$> branchesOpt <*> if gitdir then pure [] else some (pkgArg "PACKAGE..")
+      if gitdir
+      then (,) <$> branchesOpt False <*> pure []
+      else (,) <$> pure (BranchList []) <*> pure <$> pkgArg "PACKAGE" <|>
+      (,) <$> branchesOpt True <*> some (pkgArg "PACKAGE...")
 
     localBranchPackages :: Parser (Maybe Branch,[String])
     localBranchPackages = if gitdir
       then (,) <$> optional (branchOpt <|> branchArg) <*> pure []
-      else (,) <$> optional branchOpt <*> many (pkgArg "PACKAGE..") <|>
+      else (,) <$> optional branchOpt <*> many (pkgArg "PACKAGE...") <|>
            (,) <$> optional branchArg <*> some pkgOpt
 
     branchesRequestOpt :: Parser Branches
