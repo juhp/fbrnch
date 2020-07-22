@@ -6,12 +6,13 @@
 - 'unpushed' command, etc (from f-h-t)
 - 'bump'
 - 'check-sources'
+- 'update' version
 
 - support containers/ and modules/
 
 # multipackage
 - build sequence of packages by branch
-- build: override if dep
+- build: auto override if dep
 - multipackage update
 - use sidetag
   - combines release updates into single bodhi update
@@ -36,7 +37,7 @@
 - pagure
 - bodhi
 - bugzilla-redhat
-- (use hs-git)
+- rpmbuild-order
 
 # external clients
 - fedpkg
@@ -44,6 +45,7 @@
 - koji
 
 - (future feature) rpminspect
+- (use hs-git)
 
 # required tools
 - curl
