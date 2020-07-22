@@ -169,7 +169,7 @@ $ fbrnch parallel -t f33-build-side-1234 -b master pkg-x pkg-y pkg-z pkg-xy pkg-
 builds a list of packages in parallel ordered by build dependencies.
 
 ## Known issues
-- only checks already built by NVR not githash
+- only checks if already built by NVR not githash
 - authentication is not implemented yet natively for Koji, Bodhi, Pagure
   (and source upload)
   - so python clients are used for "writing"
@@ -184,9 +184,21 @@ some generic commands across packages which had already been done before
 in fedora-haskell-tools.
 
 ## Installation
-a) On Fedora you can use my [copr repo](https://copr.fedorainfracloud.org/coprs/petersen/fbrnch/).
+On Fedora the easiest way to install is using my [copr repo](https://copr.fedorainfracloud.org/coprs/petersen/fbrnch/).
 
-b) Or run `stack install` or `cabal new-install` in a git checkout.
+## Build from source
+Clone the git repo and either:
+
+a) Using stack >= 2.1, in the source dir run: `stack install`
+
+or
+
+b) With cabal-install (probably 2.4 or later) and cabal-rpm, in the source dir run:
+
+```
+$ cabal-rpm builddep
+$ cabal new-install
+```
 
 ## Contributing
 Bug reports, feedback, and fixes are welcome.
