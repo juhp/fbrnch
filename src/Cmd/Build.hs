@@ -135,7 +135,7 @@ buildBranch morethan1 opts pkg br = do
               when (buildoptOverride opts) $ do
                 when (br /= Master) $
                   bodhiCreateOverride nvr
-            when morethan1 $ kojiWaitRepo br target nvr
+            when morethan1 $ kojiWaitRepo target nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do
@@ -289,36 +289,27 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
       nvr <- pkgNameVerRel' br spec
       let  target = fromMaybe (branchTarget br) mtarget
       -- FIXME should compare git refs
+      -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
       case buildstatus of
         Just BuildComplete -> do
           putStrLn $ nvr ++ " is already built"
           return $ do
-            kojiWaitRepo br target nvr
+            kojiWaitRepo target nvr
             return nvr
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
-          return $ do
-            whenJustM (kojiGetBuildTaskID fedoraHub nvr) $ \ task -> do
-              finish <- kojiWatchTaskQuiet task
-              if finish
-                then putStrLn $ color Green $ nvr ++ " build success"
-                else error' $ color Red $ nvr ++ " build failed"
-              kojiWaitRepo br target nvr
-            return nvr
+          return $
+            kojiGetBuildTaskID fedoraHub nvr >>=
+            maybe (error' $ "Task for " ++ nvr ++ " not found")
+            (kojiWaitTaskAndRepo nvr target)
         _ -> do
           buildref <- git "show-ref" ["--hash", "origin" </> show br]
           opentasks <- kojiOpenTasks pkg (Just buildref) target
           case opentasks of
             [task] -> do
               putStrLn $ nvr ++ " task is already open"
-              return $ do
-                finish <- kojiWatchTaskQuiet task
-                if finish
-                  then putStrLn $ color Green $ nvr ++ " build success"
-                  else error' $ color Red $ nvr ++ " build failed"
-                kojiWaitRepo br target nvr
-                return nvr
+              return $ kojiWaitTaskAndRepo nvr target task
             (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
             [] -> do
               let tag = fromMaybe (branchDestTag br) mtarget
@@ -328,12 +319,15 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
                 else do
                 -- FIXME parse build output
                 task <- kojiBuildBranchNoWait target pkg Nothing ["--fail-fast", "--background"]
-                return $ do
-                  finish <- kojiWatchTaskQuiet task
-                  if finish
-                    then putStrLn $ color Green $ nvr ++ " build success"
-                    else error' $ color Red $ nvr ++ " build failed"
-                  when (br /= Master) $
-                    bodhiCreateOverride nvr
-                  kojiWaitRepo br target nvr
-                  return nvr
+                return $ kojiWaitTaskAndRepo nvr target task
+      where
+        kojiWaitTaskAndRepo :: String -> String -> TaskID -> IO String
+        kojiWaitTaskAndRepo nvr target task = do
+          finish <- kojiWatchTaskQuiet task
+          if finish
+            then putStrLn $ color Green $ nvr ++ " build success"
+            else error' $ color Red $ nvr ++ " build failed"
+          when (br /= Master) $
+            bodhiCreateOverride nvr
+          kojiWaitRepo target nvr
+          return nvr

@@ -25,7 +25,6 @@ import Data.Char (isDigit)
 
 import Fedora.Koji
 
-import Branches
 import Common
 import Common.System
 import Git
@@ -146,11 +145,7 @@ kojiBuildBranchNoWait target pkg mref args = do
   return task
 
 -- FIXME use koji-hs
-kojiWaitRepo :: Branch -> String -> String -> IO ()
-kojiWaitRepo br target nvr =
-  cmd_ "koji" ["wait-repo", targetTag, "--build=" ++ nvr]
-  where
-    targetTag =
-      if target == branchTarget br
-      then target ++ "-build"
-      else target
+kojiWaitRepo :: String -> String -> IO ()
+kojiWaitRepo target nvr = do
+  (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
+  cmd_ "koji" ["wait-repo", buildtag, "--build=" ++ nvr]
