@@ -71,13 +71,12 @@ listOfBranches distgit AllBranches =
   -- FIXME for status had: RemoteBranches -> fedoraBranches $ pagurePkgBranches (unPackage pkg)
   if distgit
   then fedoraBranches localBranches
-  else let singleton a = [a]
-       in singleton <$> systemBranch
+  else error' "--all-branches only allowed for dist-git packages"
 listOfBranches distgit (BranchList brs) =
   if null brs
-  then maybeToList <$> if distgit
-                       then Just <$> gitCurrentBranch
-                       else return Nothing
+  then pure <$> if distgit
+                then gitCurrentBranch
+                else systemBranch
   else return brs
 
 gitCurrentBranch :: IO Branch
