@@ -237,9 +237,9 @@ withPackageByBranches :: Bool -> Bool -> Bool -> (Package -> Branch -> IO ()) ->
 withPackageByBranches quiet clean needDistgit action (brnchs,pkgs) = do
   if null pkgs
     then do
-    distgit <- isPkgGitDir
-    when (not distgit && needDistgit) $
-      error' "Not a pkg git dir"
+    when needDistgit $ do
+      unlessM isPkgGitDir $
+        error' "Not a pkg git dir"
     pkg <- Package <$> getDirectoryName
     withPackageDir (".", pkg)
     else mapM_ (withPackageDir . packagePath) pkgs
