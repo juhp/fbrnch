@@ -226,6 +226,7 @@ type Job = (String, Async String)
 -- FIXME option to build package branches in parallel
 -- FIXME add --with-side-tag
 -- FIXME check sources asap
+-- FIXME check not in pkg git dir
 parallelBuildCmd :: Maybe String -> (Branches,[String]) -> IO ()
 parallelBuildCmd mtarget (brnchs,pkgs) = do
   when (brnchs == BranchList []) $
@@ -234,7 +235,7 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   when (null pkgs) $
-    error' "Please give at least one package"
+    error' "Please specify at least one package"
   forM_ branches $ \ br -> do
     putStrLn $ "# " ++ show br
     layers <- dependencyLayers pkgs

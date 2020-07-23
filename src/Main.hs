@@ -5,7 +5,6 @@ import Common
 import Distribution.Fedora.Branch
 import Options.Applicative (eitherReader, ReadM)
 import SimpleCmd
-import SimpleCmd.Git
 import SimpleCmdArgs
 import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
 
@@ -35,12 +34,10 @@ main = do
   tty <- hIsTerminalDevice stdin
   when tty $ hSetBuffering stdout NoBuffering
   -- FIXME? some commands do not use branches
-  activeBranches <- getFedoraBranches
-  gitdir <- isGitDir "."
-  dispatchCmd gitdir activeBranches
+  getFedoraBranches >>= dispatchCmd
 
-dispatchCmd :: Bool -> [Branch] -> IO ()
-dispatchCmd gitdir activeBranches =
+dispatchCmd :: [Branch] -> IO ()
+dispatchCmd activeBranches =
   simpleCmdArgs (Just version) "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
@@ -141,15 +138,12 @@ dispatchCmd gitdir activeBranches =
 
     branchesPackages :: Parser (Branches,[String])
     branchesPackages =
-      if gitdir
-      then (,) <$> branchesOpt <*> pure []
-      else (,) <$> branchesOpt <*> some (pkgArg "PACKAGE...")
+      (,) <$> branchesOpt <*> many (pkgArg "PACKAGE...")
 
     localBranchPackages :: Parser (Maybe Branch,[String])
-    localBranchPackages = if gitdir
-      then (,) <$> optional (branchOpt <|> branchArg) <*> pure []
-      else (,) <$> optional branchOpt <*> many (pkgArg "PACKAGE...") <|>
-           (,) <$> optional branchArg <*> some pkgOpt
+    localBranchPackages =
+      (,) <$> optional branchOpt <*> many (pkgArg "PACKAGE...") <|>
+      (,) <$> optional branchArg <*> some pkgOpt
 
     branchesRequestOpt :: Parser Branches
     branchesRequestOpt = flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|> BranchList <$> many branchArg
