@@ -10,7 +10,7 @@ extra-deps:
   - git: https://github.com/juhp/pagure-hs.git
     commit: 813010d6c1377232476f48321cd48808e0b356f2
   - git: https://github.com/juhp/koji-hs.git
-    commit: d1d2366420d585efdd735c12da3c86bd101977ac
+    commit: 84873619d266d31b4be2c1dc6eb24c0128e389dc
   - git: https://github.com/juhp/rpmbuild-order.git
     commit: 6bf164c295779128ce483a7a6a1cf7ce6847419d
   - simple-cmd-args-0.1.6
