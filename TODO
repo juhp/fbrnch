@@ -1,14 +1,25 @@
-# UI
-- ask about bodhi update type
 
 # new commands
 - arbitrary 'cmd'
 - 'unpushed' command, etc (from f-h-t)
+- 'push'
 - 'bump'
 - 'check-sources'
 - 'update' version
 
+# release deps
+- koji (new)
+- pagure (new)
+- bodhi (new)
+- bugzilla-redhat (new)
+- rpmbuild-order (update)
+- fedora-dists (update)
+
+# other namespaces
 - support containers/ and modules/
+
+# UI
+- ask about bodhi update type
 
 # multipackage
 - build sequence of packages by branch
@@ -31,13 +42,6 @@
 - list pending new package builds
 - list builds not pushed to bodhi
 - status when no local dir/checkout
-
-# libs
-- koji
-- pagure
-- bodhi
-- bugzilla-redhat
-- rpmbuild-order
 
 # external clients
 - fedpkg
