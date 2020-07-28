@@ -69,10 +69,13 @@ statusBranch pkg br = do
             Just buildid -> do
               tags <- kojiBuildTags fedoraHub (buildIDInfo buildid)
               if null tags then do
-                status <- kojiBuildStatus nvr
+                mstatus <- kojiBuildStatus nvr
                 -- FIXME show pending archs building
-                putStrLn $ nvr ++ " (" ++ show status ++ ")"
+                whenJust mstatus $ \ status ->
+                  -- FIXME better Show BuildStatus
+                  putStr $ nvr ++ " (" ++ show status ++ ")"
               else do
+                -- FIXME hide testing if ga/stable
                 putStr $ nvr ++ " (" ++ unwords tags ++ ")"
                 unless (isStable tags) $ do
                   updates <- bodhiUpdates

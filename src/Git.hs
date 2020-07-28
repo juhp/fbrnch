@@ -49,7 +49,7 @@ gitMergeOrigin br = do
   unless (null commits) $ do
     rebase <- git "rebase" []
     unless ("Already up to date." `isPrefixOf` rebase) $
-      putStrLn rebase
+      putStr rebase
 
 gitShortLog :: String -> IO [String]
 gitShortLog range =

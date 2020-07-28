@@ -49,7 +49,7 @@ dispatchCmd activeBranches =
       statusCmd <$> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd <$> branchesPackages
-    , Subcommand "build" "Build package(s)" $
+    , Subcommand "build" "Build package(s) in Koji" $
       buildCmd <$> buildOpts <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd <$> targetOpt <*> branchesPackages
@@ -71,7 +71,7 @@ dispatchCmd activeBranches =
       installCmd <$> switchWith 'r' "reinstall" "use dnf reinstall" <*> localBranchPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
-    , Subcommand "commit" "Git pull packages" $
+    , Subcommand "commit" "Git commit packages" $
       commitPkgs <$> commitOpts <*> some (pkgArg "PACKAGE...")
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> localBranchPackages
