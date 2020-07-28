@@ -91,7 +91,7 @@ checkWorkingDirClean = do
 
 isGitDirClean :: IO Bool
 isGitDirClean =
-  gitBool "diff-index" ["--quiet", "HEAD"]
+  gitBool "diff" ["--quiet", "--exit-code", "HEAD"]
 
 checkIsPkgGitDir :: IO ()
 checkIsPkgGitDir = do
