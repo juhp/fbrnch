@@ -7,7 +7,7 @@ module Cmd.Local (
   srpmCmd
   ) where
 
-import Distribution.RPM.Build.Order
+import Distribution.RPM.Build.Order (dependencySort)
 
 import Branches
 import Common
