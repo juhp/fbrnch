@@ -295,6 +295,13 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
       case buildstatus of
         Just BuildComplete -> do
           putStrLn $ nvr ++ " is already built"
+          when (br /= Master) $ do
+            mtags <- kojiNVRTags nvr
+            case mtags of
+              Nothing -> error' $ nvr ++ " is untagged"
+              Just tags -> do
+                unless (any ("-override" `isSuffixOf`) tags) $
+                  bodhiCreateOverride nvr
           return $ do
             kojiWaitRepo target nvr
             return nvr
