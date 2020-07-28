@@ -176,6 +176,7 @@ builds a list of packages in parallel ordered by build dependencies.
   - so python clients are used for "writing"
     (specifically koji, bodhi-client, fedpkg),
     but all queries are done directly by Web RPC for speed and control.
+- does not take package.cfg into account, eg for epel8-playground
 
 ## Motivation and history
 This project started off (as "fedbrnch") basically as a simple tool to
