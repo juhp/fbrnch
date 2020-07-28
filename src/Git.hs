@@ -7,6 +7,7 @@ module Git (
   gitLines,
   gitMergeable,
   gitMergeOrigin,
+  gitFetchSilent,
   gitPushSilent,
   gitShortLog,
   gitShortLogN,
@@ -74,6 +75,12 @@ gitPushSilent mref = do
   putStr "git pushing... "
   out <- cmdQuiet "git" $ ["push", "--quiet", "origin"] ++ maybeToList mref
   putStrLn $ if null out then "done\n" else "\n" ++ out
+
+gitFetchSilent :: IO ()
+gitFetchSilent = do
+  putStr "git fetching... "
+  out <- cmdQuiet "git" ["fetch", "--quiet"]
+  putStrLn $ if null out then "done" else "\n" ++ out
 
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do

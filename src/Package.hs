@@ -19,6 +19,10 @@ module Package (
   initialPkgRepo,
 --  withBranchByPackages,
   withPackageByBranches,
+  cleanGit,
+  cleanGitFetch,
+  dirtyGit,
+  dirtyGitFetch,
   Package(..),
   packageSpec,
   pkgNameVerRel,
@@ -232,14 +236,23 @@ packagePath path =
 packageSpec :: Package -> FilePath
 packageSpec pkg = unPackage pkg <.> "spec"
 
+data GitOpts =
+  GitOpts
+  { gitOptClean :: Bool
+  , gitOptFetch :: Bool
+  }
+
+cleanGit, cleanGitFetch, dirtyGit, dirtyGitFetch :: Maybe GitOpts
+cleanGit = Just $ GitOpts True False
+cleanGitFetch = Just $ GitOpts True True
+dirtyGit = Just $ GitOpts False False
+dirtyGitFetch = Just $ GitOpts False True
+
 -- do package over branches
-withPackageByBranches :: Bool -> Bool -> Bool -> (Package -> Branch -> IO ()) -> (Branches,[String]) -> IO ()
-withPackageByBranches quiet clean needDistgit action (brnchs,pkgs) = do
+withPackageByBranches :: Bool -> Maybe GitOpts -> (Package -> Branch -> IO ()) -> (Branches,[String]) -> IO ()
+withPackageByBranches header mgitopts action (brnchs,pkgs) = do
   if null pkgs
     then do
-    when needDistgit $ do
-      unlessM isPkgGitDir $
-        error' "Not a pkg git dir"
     pkg <- Package <$> getDirectoryName
     withPackageDir (".", pkg)
     else do
@@ -252,19 +265,25 @@ withPackageByBranches quiet clean needDistgit action (brnchs,pkgs) = do
     withPackageDir (dir, pkg) =
       withExistingDirectory dir $ do
       haveGit <- isPkgGitDir
+      when (isJust mgitopts && not haveGit) $ do
+        error' $ "Not a pkg git dir: " ++ unPackage pkg
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
       branches <- listOfBranches haveGit brnchs
-      unless (quiet || dir == "." || length branches == 1) $
+      let fetch = have gitOptFetch
+      when ((header && length branches /= 1 || fetch) && dir /= ".") $
         putPkgHdr pkg
       when haveGit $ do
-        when clean checkWorkingDirClean
-        unless quiet $ git_ "fetch" []
+        when (have gitOptClean) checkWorkingDirClean
+      when fetch gitFetchSilent
       when (brnchs == AllBranches) $
         putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
       mapM_ (action pkg) branches
       when (length branches /= 1) $
         whenJust mcurrentbranch gitSwitchBranch
+
+    have :: (GitOpts -> Bool) -> Bool
+    have opt = maybe False opt mgitopts
 
 -- -- do branch over packages
 -- withBranchByPackages :: (Branch -> [String] -> IO ()) -> (Branches,[String]) -> IO ()

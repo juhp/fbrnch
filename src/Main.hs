@@ -74,7 +74,7 @@ dispatchCmd activeBranches =
     , Subcommand "commit" "Git pull packages" $
       commitPkgs <$> commitOpts <*> some (pkgArg "PACKAGE...")
     , Subcommand "pull" "Git pull packages" $
-      pullPkgs <$> some (pkgArg "PACKAGE...")
+      pullPkgs <$> localBranchPackages
     , Subcommand "create-review" "Create a Package Review request" $
       createReview <$> noScratchBuild <*> mockOpt <*> optional (strArg "SPECFILE")
     , Subcommand "update-review" "Update a Package Review" $

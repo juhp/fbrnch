@@ -21,13 +21,14 @@ import Package
 -- FIXME --pending
 -- FIXME handle not cloned (remote only)
 -- FIXME silence fetching of new branches? (for --reviews etc)
+-- FIXME status of old branches
 statusCmd :: Bool -> (Branches,[String]) -> IO ()
 statusCmd reviews (brnchs,pkgs) = do
   reviewpkgs <- if reviews then
     map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
     else return []
   -- FIXME bring back pulling RemoteBranches
-  withPackageByBranches False False True statusBranch
+  withPackageByBranches True dirtyGitFetch statusBranch
     (brnchs, reviewpkgs ++ pkgs)
 
 -- FIXME note dirty when local changes

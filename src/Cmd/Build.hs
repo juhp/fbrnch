@@ -46,7 +46,7 @@ buildCmd opts (brnchs,pkgs) = do
     when (isJust (buildoptTarget opts) && somebrnchs) $
     error' "You can only specify target with one branch"
   let morethan1 = length pkgs > 1
-  withPackageByBranches False True True (buildBranch morethan1 opts) (brnchs,pkgs)
+  withPackageByBranches True cleanGit (buildBranch morethan1 opts) (brnchs,pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: Bool -> BuildOpts -> Package -> Branch -> IO ()
@@ -194,7 +194,7 @@ bodhiCreateOverride nvr = do
 -- FIXME build from a git ref
 scratchCmd :: Bool -> Bool -> [String] -> Maybe String -> (Maybe Branch,[String]) -> IO ()
 scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
-  withPackageByBranches False False False scratchBuild (maybeBranches mbr,pkgs)
+  withPackageByBranches True Nothing scratchBuild (maybeBranches mbr,pkgs)
   where
     scratchBuild :: Package -> Branch -> IO ()
     scratchBuild pkg br = do
