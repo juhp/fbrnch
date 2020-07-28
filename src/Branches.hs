@@ -23,7 +23,6 @@ import Pagure
 activeBranches :: [Branch] -> [String] -> [Branch]
 activeBranches active =
   -- newest branch first
-  {- HLINT ignore "Avoid reverse"-} -- no longer as of hlint-3.0
   reverse . sort . mapMaybe (readActiveBranch active)
 
 fedoraBranches :: IO [String] -> IO [Branch]
@@ -80,6 +79,5 @@ listOfBranches distgit (BranchList brs) =
   else return brs
 
 gitCurrentBranch :: IO Branch
-gitCurrentBranch = do
-  active <- getFedoraBranches
-  readActiveBranch' active <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
+gitCurrentBranch =
+  readBranch' <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
