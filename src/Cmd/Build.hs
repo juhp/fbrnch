@@ -133,7 +133,7 @@ buildBranch morethan1 opts pkg br = do
               -- FIXME autochain
               -- FIXME prompt for override note
               when (buildoptOverride opts) $ do
-                when (br /= Master) $
+                when (br /= Master && isNothing mtarget) $
                   bodhiCreateOverride nvr
             when morethan1 $ kojiWaitRepo target nvr
   where
@@ -301,7 +301,7 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
             case mtags of
               Nothing -> error' $ nvr ++ " is untagged"
               Just tags -> do
-                unless (any ("-override" `isSuffixOf`) tags) $
+                unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
                   bodhiCreateOverride nvr
           return $ do
             kojiWaitRepo target nvr
