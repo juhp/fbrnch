@@ -277,6 +277,7 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
     startBuild :: Branch -> String -> IO (IO String)
     startBuild br pkgdir =
       withExistingDirectory pkgdir $ do
+      gitSwitchBranch br
       let pkg = getPackageName pkgdir
       putPkgBrnchHdr pkg br
       unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
