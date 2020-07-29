@@ -25,7 +25,7 @@ source-repository-package
     location: https://github.com/juhp/koji-hs.git
     tag: 84873619d266d31b4be2c1dc6eb24c0128e389dc
 
-source-repository-package
-    type: git
-    location: https://github.com/juhp/rpmbuild-order.git
-    tag: 885f01e8c986c8d06bd0534bf7ead708be69c404
+--source-repository-package
+--    type: git
+--    location: https://github.com/juhp/rpmbuild-order.git
+--    tag: 885f01e8c986c8d06bd0534bf7ead708be69c404

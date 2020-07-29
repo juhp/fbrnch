@@ -12,7 +12,6 @@
 - pagure (new)
 - bodhi (new)
 - bugzilla-redhat (new)
-- rpmbuild-order (update)
 - fedora-dists (update)
 
 # other namespaces
