@@ -29,9 +29,9 @@ importPkg pkg = do
   putPkgHdr (Package pkg)
   dir <- getCurrentDirectory
   when (pkg /= takeFileName dir) $ do
-    direxists <- doesDirectoryExist pkg
-    -- FIXME check repo exists
-    unless direxists $ clonePkg Nothing pkg
+    -- FIXME check git repo exists
+    clonePkg Nothing pkg
+    putStrLn ""
     setCurrentDirectory pkg
     -- FIXME: check branch is master
   isGit <- doesDirectoryExist ".git"

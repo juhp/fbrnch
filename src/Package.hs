@@ -301,12 +301,13 @@ withPackageByBranches header mgitopts action (brnchs,pkgs) = do
 clonePkg :: Maybe Branch -> String -> IO ()
 clonePkg mbr pkg =
   ifM (doesDirectoryExist pkg)
-    {-then-} (putStrLn $ pkg ++ "/ already exists\n") $
+    {-then-} (putStrLn $ pkg ++ "/ already exists") $
     {-else-} do
       let mbranch = case mbr of
             Nothing -> []
             Just br -> ["--branch", show br]
       fasid <- fasIdFromKrb
+      putStr $ pkg ++ " "
       git_ "clone" $ ["--quiet"] ++ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg]
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
