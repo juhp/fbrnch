@@ -17,7 +17,6 @@ extra-deps:
   - HaXml-1.25.5
   - polyparse-1.12.1
   - haxr-3000.11.4
-  - git: https://github.com/juhp/rpmbuild-order.git
-    commit: 885f01e8c986c8d06bd0534bf7ead708be69c404
+  - rpmbuild-order-0.4.0
   - typed-process-0.2.4.0
   - pretty-terminal-0.1.0.0
