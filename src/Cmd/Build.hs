@@ -46,7 +46,7 @@ buildCmd opts (brnchs,pkgs) = do
     when (isJust (buildoptTarget opts) && somebrnchs) $
     error' "You can only specify target with one branch"
   let morethan1 = length pkgs > 1
-  withPackageByBranches True cleanGit (buildBranch morethan1 opts) (brnchs,pkgs)
+  withPackageByBranches True cleanGitFetch (buildBranch morethan1 opts) (brnchs,pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: Bool -> BuildOpts -> Package -> Branch -> IO ()
