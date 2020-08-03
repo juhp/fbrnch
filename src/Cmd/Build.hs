@@ -83,9 +83,19 @@ buildBranch morethan1 opts pkg br = do
     gitPushSilent $ fmap (++ ":" ++ show br) mref
   nvr <- pkgNameVerRel' br spec
   buildstatus <- kojiBuildStatus nvr
+  let mtarget = buildoptTarget opts
+      target = fromMaybe (branchTarget br) mtarget
   case buildstatus of
-    Just BuildComplete -> putStrLn $ nvr ++ " is already built"
-    -- FIXME wait for build?
+    Just BuildComplete -> do
+      putStrLn $ nvr ++ " is already built"
+      when (br /= Master && isNothing mtarget) $ do
+        mtags <- kojiNVRTags nvr
+        case mtags of
+          Nothing -> error' $ nvr ++ " is untagged"
+          Just tags -> do
+            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+              bodhiCreateOverride nvr
+      kojiWaitRepo target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
       whenJustM (kojiGetBuildTaskID fedoraHub nvr) kojiWatchTask
@@ -93,8 +103,6 @@ buildBranch morethan1 opts pkg br = do
       mbuildref <- case mpush of
         Nothing -> Just <$> git "show-ref" ["--hash", "origin" </> show br]
         _ -> return $ join mpush
-      let mtarget = buildoptTarget opts
-          target = fromMaybe (branchTarget br) mtarget
       opentasks <- kojiOpenTasks pkg mbuildref target
       case opentasks of
         [task] -> do
