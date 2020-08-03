@@ -148,4 +148,5 @@ kojiBuildBranchNoWait target pkg mref args = do
 kojiWaitRepo :: String -> String -> IO ()
 kojiWaitRepo target nvr = do
   Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
+  cmd_ "date" []
   cmd_ "koji" ["wait-repo", buildtag, "--build=" ++ nvr]
