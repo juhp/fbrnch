@@ -84,7 +84,7 @@ executable fbrnch
                      , pagure
                      , pretty-terminal
                      , process
-                     , rpmbuild-order >= 0.4.0
+                     , rpmbuild-order >= 0.4.1
                      , simple-cmd >= 0.2.0
                      , simple-cmd-args >= 0.1.6
                      , text

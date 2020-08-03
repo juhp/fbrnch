@@ -17,6 +17,6 @@ extra-deps:
   - HaXml-1.25.5
   - polyparse-1.12.1
   - haxr-3000.11.4
-  - rpmbuild-order-0.4.0
+  - rpmbuild-order-0.4.1
   - typed-process-0.2.4.0
   - pretty-terminal-0.1.0.0

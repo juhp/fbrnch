@@ -11,6 +11,6 @@ extra-deps:
     commit: 813010d6c1377232476f48321cd48808e0b356f2
   - git: https://github.com/juhp/koji-hs.git
     commit: 84873619d266d31b4be2c1dc6eb24c0128e389dc
-  - rpmbuild-order-0.4.0
+  - rpmbuild-order-0.4.1
   - simple-cmd-args-0.1.6
   - pretty-terminal-0.1.0.0
