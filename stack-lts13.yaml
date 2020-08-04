@@ -16,5 +16,5 @@ extra-deps:
     commit: 84873619d266d31b4be2c1dc6eb24c0128e389dc
   - HaXml-1.25.5
   - haxr-3000.11.4
-  - rpmbuild-order-0.4.1
+  - rpmbuild-order-0.4.2
   - pretty-terminal-0.1.0.0
