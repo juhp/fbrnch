@@ -4,10 +4,11 @@ module Cmd.Local (
   mockCmd,
   prepCmd,
   sortCmd,
+  RpmWith(..),
   srpmCmd
   ) where
 
-import Distribution.RPM.Build.Order (dependencySort)
+import Distribution.RPM.Build.Order (dependencySortRpmOpts)
 
 import Branches
 import Common
@@ -81,14 +82,21 @@ srpmBuildPkg pkg br = do
   void $ getSources spec
   void $ generateSrpm (Just br) spec
 
-sortCmd :: (Maybe Branch,[String]) -> IO ()
-sortCmd (_,[]) = return ()
-sortCmd (mbr,pkgs) = do
+data RpmWith = RpmWith String | RpmWithout String
+
+sortCmd :: Maybe RpmWith -> (Maybe Branch,[String]) -> IO ()
+sortCmd _ (_,[]) = return ()
+sortCmd mrpmwith (mbr,pkgs) = do
   withPackageByBranches False Nothing dummy (maybeBranches mbr,pkgs)
-  packages <- dependencySort $ reverse pkgs
+  let rpmopts = maybe [] toRpmOption mrpmwith
+  packages <- dependencySortRpmOpts rpmopts $ reverse pkgs
   putStrLn $ unwords packages
   where
     dummy _ br = gitSwitchBranch br
+
+    toRpmOption :: RpmWith -> [String]
+    toRpmOption (RpmWith opt) = ["--with=" ++ opt]
+    toRpmOption (RpmWithout opt) = ["--without=" ++ opt]
 
 prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd (mbr,pkgs) =

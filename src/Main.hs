@@ -56,7 +56,7 @@ dispatchCmd activeBranches =
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd <$> rebuildSrpmOpt <*> noFailFastOpt <*> many archOpt <*> targetOpt <*> localBranchPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
-      sortCmd <$> localBranchPackages
+      sortCmd <$> optional rpmWithOpt <*> localBranchPackages
     , Subcommand "prep" "Prep sources" $
       prepCmd <$> localBranchPackages
     , Subcommand "local" "Build locally" $
@@ -147,6 +147,11 @@ dispatchCmd activeBranches =
 
     branchesRequestOpt :: Parser Branches
     branchesRequestOpt = flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|> BranchList <$> many branchArg
+
+    rpmWithOpt :: Parser RpmWith
+    rpmWithOpt =
+      RpmWith <$> strOptionWith 'w' "with" "BCOND" "rpmspec --with option" <|>
+      RpmWithout <$> strOptionWith 'W' "without" "BCOND" "rpmspec --without option"
 
     mockOpt = switchWith 'm' "mock" "Do mock build to test"
 
