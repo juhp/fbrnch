@@ -1,6 +1,7 @@
 module Cmd.Build (
   buildCmd,
   BuildOpts(..),
+  UpdateType(..),
   scratchCmd,
   parallelBuildCmd
   ) where
@@ -9,12 +10,16 @@ import Common
 import Common.System
 
 import Control.Concurrent.Async
-import Data.Char (isDigit)
+import Data.Char (isDigit, toLower)
 import Distribution.RPM.Build.Order (dependencyLayers)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import System.Console.Pretty
 import System.IO (hIsTerminalDevice, stdin)
 import System.Time.Extra (sleep)
+
+import Text.Read
+import qualified Text.ParserCombinators.ReadP as R
+import qualified Text.ParserCombinators.ReadPrec as RP
 
 import Bugzilla
 import Branches
@@ -25,12 +30,32 @@ import Koji
 import Package
 import Prompt
 
+data UpdateType =
+  SecurityUpdate | BugfixUpdate | EnhancementUpdate | NewPackageUpdate
+
+instance Show UpdateType where
+  show SecurityUpdate = "security"
+  show BugfixUpdate = "bugfix"
+  show EnhancementUpdate = "enhancement"
+  show NewPackageUpdate = "newpackage"
+
+instance Read UpdateType where
+  readPrec = do
+    s <- look
+    case map toLower s of
+      "security" -> RP.lift (R.string s) >> return SecurityUpdate
+      "bugfix" -> RP.lift (R.string s) >> return BugfixUpdate
+      "enhancement" -> RP.lift (R.string s) >> return EnhancementUpdate
+      "newpackage" -> RP.lift (R.string s) >> return NewPackageUpdate
+      _ -> error' "unknown bodhi update type" >> RP.pfail
+
 data BuildOpts = BuildOpts
   { buildoptMerge :: Bool
   , buildoptNoFailFast :: Bool
   , buildoptTarget :: Maybe String
   , buildoptOverride :: Bool
   , buildoptDryrun :: Bool
+  , buildoptUpdateType :: UpdateType
   }
 
 -- FIXME vertical vs horizontal builds (ie by package or branch)
@@ -159,7 +184,8 @@ buildBranch morethan1 opts pkg br = do
       -- FIXME also query for open existing bugs
       -- FIXME extract bug no(s) from changelog
       putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
-      updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else "enhancement", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+      let updateType = show $ buildoptUpdateType opts
+      updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else updateType , "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
       unless updateOK $ do
         updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
         case updatequery of

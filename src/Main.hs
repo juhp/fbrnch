@@ -160,7 +160,7 @@ dispatchCmd activeBranches =
 
     rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
 
-    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> targetOpt <*> overrideOpt <*> dryrunOpt
+    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> targetOpt <*> overrideOpt <*> dryrunOpt <*> updatetypeOpt
 
 --    yesOpt = switchWith 'y' "yes" "Assume yes for questions"
 
@@ -174,6 +174,8 @@ dispatchCmd activeBranches =
     overrideOpt = switchWith 'o' "override" "Create a buildroot override and wait-repo"
 
     dryrunOpt = switchWith 'n' "dry-run" "Do not write (push, build, post, override)"
+
+    updatetypeOpt = optionalWith auto 'u' "update-type" "TYPE" "security, bugfix, enhancement (default), or newpackage" EnhancementUpdate
 
     shortcircuitOpt = switchWith 's' "short-circuit" "Do --short-circuit rpmbuild"
 
