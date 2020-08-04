@@ -14,7 +14,7 @@ module Git (
   gitShortLog1,
   gitSwitchBranch,
   simplifyCommitLog,
-  checkIsPkgGitDir,
+--  checkIsPkgGitDir,
   isPkgGitDir,
   checkWorkingDirClean,
   isGitDirClean,
@@ -93,13 +93,25 @@ isGitDirClean :: IO Bool
 isGitDirClean =
   gitBool "diff" ["--quiet", "--exit-code", "HEAD"]
 
-checkIsPkgGitDir :: IO ()
-checkIsPkgGitDir = do
-  pkgGit <- isPkgGitDir
-  unless pkgGit $ error' "Not a pkg git dir"
+-- checkIsPkgGitDir :: IO ()
+-- checkIsPkgGitDir = do
+--   pkgGit <- isPkgGitDir
+--   unless pkgGit $ error' "Not a pkg git dir"
 
 isPkgGitDir :: IO Bool
-isPkgGitDir = grepGitConfig "@\\(pkgs\\|src\\)\\."
+isPkgGitDir = grepGitConfig' "@\\(pkgs\\|src\\)\\."
+  where
+    -- adapted from SimpleCmd.Git
+    grepGitConfig' :: String -> IO Bool
+    grepGitConfig' key =
+      ifM (isGitDir ".")
+      (egrep_ key ".git/config") $
+      -- could be an absorbed submodule (#8)
+      ifM (not <$> doesFileExist ".git")
+      (return False) $ do
+      -- "gitdir: ../.git/modules/R-bit"
+      gitdir <- last . words <$> readFile ".git"
+      egrep_ key $ gitdir </> "config"
 
 gitLines :: String -> [String] -> IO [String]
 gitLines c args = lines <$> git c args
