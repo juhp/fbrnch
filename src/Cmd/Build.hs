@@ -30,6 +30,7 @@ data BuildOpts = BuildOpts
   , buildoptNoFailFast :: Bool
   , buildoptTarget :: Maybe String
   , buildoptOverride :: Bool
+  , buildoptDryrun :: Bool
   }
 
 -- FIXME vertical vs horizontal builds (ie by package or branch)
@@ -79,7 +80,9 @@ buildBranch morethan1 opts pkg br = do
       if tty && (not merged || (newrepo && length unmerged == 1))
       then refPrompt unpushed $ "Press Enter to push" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ "; or 'no' to skip pushing"
       else return $ Just Nothing
+  let dryrun = buildoptDryrun opts
   whenJust mpush $ \ mref ->
+    unless dryrun $
     gitPushSilent $ fmap (++ ":" ++ show br) mref
   nvr <- pkgNameVerRel' br spec
   buildstatus <- kojiBuildStatus nvr
@@ -88,7 +91,7 @@ buildBranch morethan1 opts pkg br = do
   case buildstatus of
     Just BuildComplete -> do
       putStrLn $ nvr ++ " is already built"
-      when (br /= Master && isNothing mtarget) $ do
+      when (br /= Master && isNothing mtarget && not dryrun) $ do
         mtags <- kojiNVRTags nvr
         case mtags of
           Nothing -> error' $ nvr ++ " is untagged"
@@ -99,6 +102,7 @@ buildBranch morethan1 opts pkg br = do
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
       whenJustM (kojiGetBuildTaskID fedoraHub nvr) kojiWatchTask
+      -- FIXME do override
     _ -> do
       mbuildref <- case mpush of
         Nothing -> Just <$> git "show-ref" ["--hash", "origin" </> show br]
@@ -112,38 +116,39 @@ buildBranch morethan1 opts pkg br = do
         [] -> do
           let tag = fromMaybe (branchDestTag br) mtarget
           mlatest <- kojiLatestNVR tag $ unPackage pkg
+          -- FIXME this fails to detect sub-disttag release
           if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
-            then error' $ nvr ++ " is already latest (modulo disttag)"
+            then error' $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
             else do
-            krbTicket
+            unless dryrun krbTicket
             unlessM (null <$> gitShortLog ("origin" </> show br ++ "..HEAD")) $
               when (mpush == Just Nothing) $
               error' "Unpushed changes remain"
             unlessM isGitDirClean $
               error' "local changes remain (dirty)"
             -- FIXME parse build output
-            kojiBuildBranch target pkg mbuildref ["--fail-fast"]
-            -- FIXME get bugs from changelog
-            mBugSess <- if isNothing mlatest
-              then do
-              (mbid, session) <- bzReviewSession
-              return $ case mbid of
-                Just bid -> Just (bid,session)
-                Nothing -> Nothing
-              else return Nothing
-            if br == Master
-              then whenJust mBugSess $
-                   \ (bid,session) -> postBuildComment session nvr bid
-              else do
-              -- FIXME diff previous changelog?
-              changelog <- getChangeLog spec
-              bodhiUpdate (fmap fst mBugSess) changelog nvr
-              -- FIXME autochain
-              -- FIXME prompt for override note
-              when (buildoptOverride opts) $ do
-                when (br /= Master && isNothing mtarget) $
-                  bodhiCreateOverride nvr
-            when morethan1 $ kojiWaitRepo target nvr
+            unless dryrun $ do
+              kojiBuildBranch target pkg mbuildref ["--fail-fast"]
+              mBugSess <- if isNothing mlatest
+                then do
+                (mbid, session) <- bzReviewSession
+                return $ case mbid of
+                  Just bid -> Just (bid,session)
+                  Nothing -> Nothing
+                else return Nothing
+              if br == Master
+                then whenJust mBugSess $
+                     \ (bid,session) -> postBuildComment session nvr bid
+                else do
+                -- FIXME diff previous changelog?
+                changelog <- getChangeLog spec
+                bodhiUpdate (fmap fst mBugSess) changelog nvr
+                -- FIXME autochain
+                -- FIXME prompt for override note
+                when (buildoptOverride opts) $ do
+                  when (br /= Master && isNothing mtarget) $
+                    bodhiCreateOverride nvr
+              when morethan1 $ kojiWaitRepo target nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do
