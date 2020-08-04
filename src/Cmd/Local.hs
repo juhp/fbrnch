@@ -55,6 +55,7 @@ installDeps :: FilePath -> IO ()
 installDeps spec = do
   missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
   unless (null missingdeps) $ do
+    putStrLn $ "Need: " ++ unwords missingdeps
     putStr "Running dnf builddep... "
     cmdSilent "sudo" $ "dnf":["builddep", "--assumeyes", spec]
     putStrLn "done"
