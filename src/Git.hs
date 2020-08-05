@@ -16,6 +16,7 @@ module Git (
   simplifyCommitLog,
 --  checkIsPkgGitDir,
   isPkgGitDir,
+  isGitRepo,
   checkWorkingDirClean,
   isGitDirClean,
   module SimpleCmd.Git
@@ -100,6 +101,9 @@ isGitDirClean =
 
 isPkgGitDir :: IO Bool
 isPkgGitDir = grepGitConfig' "@\\(pkgs\\|src\\)\\."
+isGitRepo :: IO Bool
+isGitRepo = isGitDir "." ||^ doesFileExist ".git"
+
   where
     -- adapted from SimpleCmd.Git
     grepGitConfig' :: String -> IO Bool

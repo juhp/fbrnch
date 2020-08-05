@@ -146,7 +146,7 @@ buildRPMs :: Bool -> Bool -> Branch -> FilePath -> IO ()
 buildRPMs quiet shortcircuit br spec = do
   dist <- branchDist br
   cwd <- getCurrentDirectory
-  gitDir <- isGitDir "."
+  gitDir <- isGitRepo
   let buildopt = if shortcircuit then ["-bi", "--short-circuit"] else ["-bb"]
       rpmdirs =
         [ "--define="++ mcr +-+ cwd | gitDir,
@@ -180,7 +180,7 @@ prepPackage pkg br = do
 
 getSources :: FilePath -> IO Bool
 getSources spec = do
-    gitDir <- isGitDir "."
+    gitDir <- isGitRepo
     srcdir <- getSourceDir gitDir
     srcs <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
     unless gitDir $

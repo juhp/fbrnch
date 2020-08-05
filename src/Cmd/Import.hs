@@ -34,8 +34,7 @@ importPkg pkg = do
     putStrLn ""
     setCurrentDirectory pkg
     -- FIXME: check branch is master
-  isGit <- doesDirectoryExist ".git"
-  unless isGit $ error' "Not a git repo"
+  unlessM isGitRepo $ error' "Not a git repo"
   newrepo <- initialPkgRepo
   if not newrepo
     then putStrLn "Skipping: already imported"
