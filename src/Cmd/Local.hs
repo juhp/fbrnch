@@ -112,6 +112,9 @@ mockCmd mroot (mbr,pkgs) =
       whenM isPkgGitRepo $ gitSwitchBranch br
       void $ getSources spec
       srpm <- generateSrpm (Just br) spec
-      let resultsdir = "results_" ++ unPackage pkg
+      let pkgname = unPackage pkg
+          mverrel = stripInfix "-" $ removePrefix (pkgname ++ "-") $ takeBaseName (takeBaseName srpm)
+          verrel = maybe "" (uncurry (</>)) mverrel
+      let resultsdir = "results_" ++ pkgname </> verrel
           rootBr = fromMaybe br mroot
       cmd_ "mock" ["--root", mockConfig rootBr, "--resultdir=" ++ resultsdir, srpm]
