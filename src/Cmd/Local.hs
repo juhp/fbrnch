@@ -109,7 +109,7 @@ mockCmd mroot (mbr,pkgs) =
     mockBuildPkg :: Package -> Branch -> IO ()
     mockBuildPkg pkg br = do
       spec <- localBranchSpecFile pkg br
-      whenM isPkgGitDir $ gitSwitchBranch br
+      whenM isPkgGitRepo $ gitSwitchBranch br
       void $ getSources spec
       srpm <- generateSrpm (Just br) spec
       let resultsdir = "results_" ++ unPackage pkg

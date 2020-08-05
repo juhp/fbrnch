@@ -15,8 +15,8 @@ module Git (
   gitSwitchBranch,
   simplifyCommitLog,
 --  checkIsPkgGitDir,
-  isPkgGitDir,
   isGitRepo,
+  isPkgGitRepo,
   checkWorkingDirClean,
   isGitDirClean,
   module SimpleCmd.Git
@@ -96,14 +96,14 @@ isGitDirClean =
 
 -- checkIsPkgGitDir :: IO ()
 -- checkIsPkgGitDir = do
---   pkgGit <- isPkgGitDir
+--   pkgGit <- isPkgGitRepo
 --   unless pkgGit $ error' "Not a pkg git dir"
 
-isPkgGitDir :: IO Bool
-isPkgGitDir = grepGitConfig' "@\\(pkgs\\|src\\)\\."
 isGitRepo :: IO Bool
 isGitRepo = isGitDir "." ||^ doesFileExist ".git"
 
+isPkgGitRepo :: IO Bool
+isPkgGitRepo = grepGitConfig' "@\\(pkgs\\|src\\)\\."
   where
     -- adapted from SimpleCmd.Git
     grepGitConfig' :: String -> IO Bool

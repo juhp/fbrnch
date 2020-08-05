@@ -90,7 +90,7 @@ findSpecfile = fileWithExtension ".spec"
 
 localBranchSpecFile :: Package -> Branch -> IO FilePath
 localBranchSpecFile pkg br = do
-  gitdir <- isPkgGitDir
+  gitdir <- isPkgGitRepo
   when gitdir $ do
     putPkgBrnchHdr pkg br
     gitSwitchBranch br
@@ -112,14 +112,14 @@ generateSrpm mbr spec = do
                  return ["--define", "dist " ++ rpmDistTag dist]
   srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", "%{name}-%{version}-%{release}.src.rpm", spec]
   srcrpmdir <-
-    ifM isPkgGitDir
+    ifM isPkgGitRepo
       (return ".") $
       rpmEval "%{_srcrpmdir}" >>= maybe (error' "%_srcrpmdir undefined!") return
   let srpm = srcrpmdir </> srpmfile
       srpmdiropt = if null srcrpmdir then []
                    else ["--define", "_srcrpmdir " ++ srcrpmdir]
   sourcedir <-
-    ifM isPkgGitDir
+    ifM isPkgGitRepo
       (return ".") $
       rpmEval "%{_sourcedir}" >>= maybe (error' "%_sourcedir undefined!") return
   let sourcediropt = if null sourcedir then []
@@ -270,7 +270,7 @@ withPackageByBranches header mgitopts action (brnchs,pkgs) = do
     withPackageDir :: (FilePath, Package) -> IO ()
     withPackageDir (dir, pkg) =
       withExistingDirectory dir $ do
-      haveGit <- isPkgGitDir
+      haveGit <- isPkgGitRepo
       when (isJust mgitopts && not haveGit) $ do
         error' $ "Not a pkg git dir: " ++ unPackage pkg
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch

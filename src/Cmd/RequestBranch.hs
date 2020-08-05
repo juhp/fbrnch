@@ -17,7 +17,7 @@ import Prompt
 requestBranches :: Bool -> Branches -> [String] -> IO ()
 requestBranches mock request ps =
   if null ps then
-    ifM isPkgGitDir
+    ifM isPkgGitRepo
     (getDirectoryName >>= requestPkgBranches mock request . Package) $
     do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
        mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request (Package p)) pkgs
