@@ -118,8 +118,14 @@ generateSrpm mbr spec = do
   let srpm = srcrpmdir </> srpmfile
       srpmdiropt = if null srcrpmdir then []
                    else ["--define", "_srcrpmdir " ++ srcrpmdir]
+  sourcedir <-
+    ifM isPkgGitDir
+      (return ".") $
+      rpmEval "%{_sourcedir}" >>= maybe (error' "%_sourcedir undefined!") return
+  let sourcediropt = if null sourcedir then []
+                     else ["--define", "_sourcedir " ++ sourcedir]
   ifM (notM $ doesFileExist srpm)
-    (buildSrpm (distopt ++ srpmdiropt)) $
+    (buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)) $
     do
     specTime <- getModificationTime spec
     srpmTime <- getModificationTime srpm
@@ -128,7 +134,7 @@ generateSrpm mbr spec = do
       -- pretty print with ~/
       putStrLn $ srpm ++ " is up to date"
       return srpm
-      else buildSrpm (distopt ++ srpmdiropt)
+      else buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
   where
     buildSrpm opts = do
       srpm <- last . words <$> cmd "rpmbuild" (opts ++ ["-bs", spec])
