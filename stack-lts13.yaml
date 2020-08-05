@@ -2,8 +2,7 @@ resolver: lts-13.30
 
 extra-deps:
   - config-ini-0.2.4.0
-  - git: https://github.com/juhp/hsbugzilla.git
-    commit: a01bc593c56ec164554e4874df78e7d026f3a978
+  - bugzilla-redhat-0.3.0
   - git: https://github.com/juhp/fedora-dists.git
     commit: c6d51f56869065505fc0b8ee453246dd2bb5252f
   - simple-cmd-0.2.0

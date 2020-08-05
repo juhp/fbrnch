@@ -2,11 +2,6 @@ packages: .
 
 source-repository-package
     type: git
-    location: https://github.com/juhp/hsbugzilla.git
-    tag: bd4d90d3696e079fd095b75e23e7a4429635e93a
-
-source-repository-package
-    type: git
     location: https://github.com/juhp/fedora-dists.git
     tag: c6d51f56869065505fc0b8ee453246dd2bb5252f
 
@@ -24,6 +19,11 @@ source-repository-package
     type: git
     location: https://github.com/juhp/koji-hs.git
     tag: 84873619d266d31b4be2c1dc6eb24c0128e389dc
+
+-- source-repository-package
+--     type: git
+--     location: https://github.com/juhp/hsbugzilla.git
+--     tag: b3cc51c12c4c5925f07d8bb0abf9047ef5842bf6
 
 --source-repository-package
 --    type: git

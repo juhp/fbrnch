@@ -1,8 +1,7 @@
 resolver: lts-12.27
 
 extra-deps:
-  - git: https://github.com/juhp/hsbugzilla.git
-    commit: a01bc593c56ec164554e4874df78e7d026f3a978
+  - bugzilla-redhat-0.3.0
   - git: https://github.com/juhp/fedora-dists.git
     commit: c6d51f56869065505fc0b8ee453246dd2bb5252f
   - http-directory-0.1.5

@@ -58,8 +58,8 @@ import System.Environment
 import System.Environment.XDG.BaseDir
 import System.IO (hSetEcho, stdin)
 import qualified Text.Email.Validate as Email
-import Web.Bugzilla
-import Web.Bugzilla.Search
+import Web.Bugzilla.RedHat
+import Web.Bugzilla.RedHat.Search
 -- local
 import Bugzilla.Login
 import Bugzilla.NewId

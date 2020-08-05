@@ -68,7 +68,7 @@ executable fbrnch
                      , async
                      , base < 5
                      , bodhi
-                     , bugzilla >= 0.2.1.2
+                     , bugzilla-redhat >= 0.3
                      , bytestring
                      , config-ini
                      , directory >= 1.2.3
