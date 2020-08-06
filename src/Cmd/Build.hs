@@ -257,7 +257,6 @@ scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
       where
         srpmBuild :: FilePath -> [String] -> String -> IO ()
         srpmBuild target args spec = do
-          void $ getSources spec
           void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
 
 type Job = (String, Async String)

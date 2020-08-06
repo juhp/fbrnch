@@ -69,7 +69,6 @@ srpmCmd (mbr,pkgs) =
 srpmBuildPkg :: Package -> Branch -> IO ()
 srpmBuildPkg pkg br = do
   spec <- localBranchSpecFile pkg br
-  void $ getSources spec
   void $ generateSrpm (Just br) spec
 
 data RpmWith = RpmWith String | RpmWithout String
@@ -100,7 +99,6 @@ mockCmd mroot (mbr,pkgs) =
     mockBuildPkg pkg br = do
       spec <- localBranchSpecFile pkg br
       whenM isPkgGitRepo $ gitSwitchBranch br
-      void $ getSources spec
       srpm <- generateSrpm (Just br) spec
       let pkgname = unPackage pkg
           mverrel = stripInfix "-" $ removePrefix (pkgname ++ "-") $ takeNVRName srpm

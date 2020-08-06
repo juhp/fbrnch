@@ -106,6 +106,7 @@ rpmEval s = do
 
 generateSrpm :: Maybe Branch -> FilePath -> IO FilePath
 generateSrpm mbr spec = do
+  getSources spec
   distopt <- case mbr of
                Nothing -> return []
                Just br -> do
@@ -194,8 +195,9 @@ prepPackage pkg br = do
     spec <- localBranchSpecFile pkg br
     unlessM (doesFileExist spec) $
       error' $ spec ++ " not found"
-    gitDir <- getSources spec
     cwd <- getCurrentDirectory
+    getSources spec
+    gitDir <- isGitRepo
     let rpmdirs =
           [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_sourcedir"]]
@@ -205,7 +207,7 @@ prepPackage pkg br = do
     cmdSilent_ "rpmbuild" args
     putStrLn "done"
 
-getSources :: FilePath -> IO Bool
+getSources :: FilePath -> IO ()
 getSources spec = do
     gitDir <- isGitRepo
     srcdir <- getSourceDir gitDir
@@ -225,7 +227,6 @@ getSources spec = do
         if uploaded
           then cmd_ "fedpkg" ["sources"]
           else cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
-    return gitDir
   where
     sourceFieldFile :: String -> FilePath
     sourceFieldFile field =
