@@ -46,11 +46,11 @@ installCmd force reinstall (mbr,pkgs) = do
           if reinstall then do
             let reinstalls = filter (\ f -> takeNVRName f `elem` installed) rpms
             unless (null reinstalls) $
-              sudo_ "dnf" $ "reinstall" : "-q" : "-y" : reinstalls
+              sudo_ "/usr/bin/dnf" $ "reinstall" : "-q" : "-y" : reinstalls
             let remaining = filterDebug $ rpms \\ reinstalls
             unless (null remaining) $
-              sudo_ "dnf" $ "install" : "-q" : "-y" : remaining
-            else sudo_ "dnf" $ "install" : "-q" : "-y" : filterDebug rpms
+              sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
+            else sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : filterDebug rpms
 
         takeNVRName = takeBaseName . takeBaseName
 
@@ -62,7 +62,7 @@ installDeps spec = do
   unless (null missingdeps) $ do
     putStrLn $ "Need: " ++ unwords missingdeps
     putStr "Running dnf builddep... "
-    cmdSilent "sudo" $ "dnf":["builddep", "--assumeyes", spec]
+    cmdSilent "/usr/bin/sudo" $ "/usr/bin/dnf":["builddep", "--assumeyes", spec]
     putStrLn "done"
 
 localCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
