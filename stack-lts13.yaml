@@ -17,3 +17,5 @@ extra-deps:
   - haxr-3000.11.4
   - rpmbuild-order-0.4.2
   - pretty-terminal-0.1.0.0
+  - git: https://github.com/juhp/copr-hs.git
+    commit: fa3d1b7f0550f88c82b025fe46300a8a9cb50275

@@ -13,6 +13,7 @@ import Cmd.Bugs
 import Cmd.Build
 import Cmd.Clone
 import Cmd.Commit
+import Cmd.Copr
 import Cmd.Diff
 import Cmd.Import
 import Cmd.Local
@@ -93,6 +94,8 @@ dispatchCmd activeBranches =
       review <$> pkgArg "PACKAGE"
 --    , Subcommand "test-bz-token" "Check bugzilla login status" $
 --      pure testBZlogin
+    , Subcommand "copr" "Build package(s) in Fedora Copr" $
+      coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> strArg "PROJECT" <*> branchesPackages
     ]
   where
     cloneRequest :: Parser CloneRequest
@@ -199,3 +202,5 @@ dispatchCmd activeBranches =
     commitOpts =
       CommitMsg <$> strOptionWith 'm' "message" "COMMITMSG" "commit message" <|>
       flagWith' CommitAmend 'a' "amend" "Amend commit"
+
+    buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"

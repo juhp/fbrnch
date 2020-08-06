@@ -39,6 +39,7 @@ executable fbrnch
                        Cmd.Build
                        Cmd.Clone
                        Cmd.Commit
+                       Cmd.Copr
                        Cmd.Diff
                        Cmd.Import
                        Cmd.Local
@@ -71,6 +72,7 @@ executable fbrnch
                      , bugzilla-redhat >= 0.3
                      , bytestring
                      , config-ini
+                     , copr
                      , directory >= 1.2.3
                      , email-validate
                      , extra
