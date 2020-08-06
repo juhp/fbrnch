@@ -26,6 +26,8 @@ installCmd force reinstall (mbr,pkgs) = do
     installPkg pkg br = do
       spec <- localBranchSpecFile pkg br
       rpms <- builtRpms br spec
+      when (null rpms) $
+        error' $ spec ++ " does not seem to create any rpms"
       -- removing arch
       let packages = map takeNVRName rpms
       installed <- filterM pkgInstalled packages
