@@ -10,6 +10,7 @@ module Package (
   findSpecfile,
   localBranchSpecFile,
   generateSrpm,
+  ForceShort(..),
   buildRPMs,
   prepPackage,
   getSources,
@@ -141,24 +142,40 @@ generateSrpm mbr spec = do
       putStrLn $ "Created " ++ takeFileName srpm
       return srpm
 
-buildRPMs :: Bool -> Bool -> Branch -> FilePath -> IO ()
-buildRPMs quiet shortcircuit br spec = do
-  installDeps
-  void $ getSources spec
-  dist <- branchDist br
-  cwd <- getCurrentDirectory
-  gitDir <- isGitRepo
-  let buildopt = if shortcircuit then ["-bi", "--short-circuit"] else ["-bb"]
-      rpmdirs =
-        [ "--define="++ mcr +-+ cwd | gitDir,
-          mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
-      args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++ buildopt ++ [spec]
-  if not quiet then
-    cmd_ "rpmbuild" args
+data ForceShort = ForceBuild | ShortCircuit
+  deriving Eq
+
+buildRPMs :: Bool -> Maybe ForceShort -> [FilePath] -> Branch -> FilePath -> IO ()
+buildRPMs quiet mforceshort rpms br spec = do
+  needBuild <-
+    if isJust mforceshort
+    then return True
+    else
+    ifM (not . and <$> mapM doesFileExist rpms)
+    (return True) $
+    do specTime <- getModificationTime spec
+       rpmTimes <- sort <$> mapM getModificationTime rpms
+       return $ specTime > head rpmTimes
+  if not needBuild then
+    putStrLn "Existing rpms are newer than spec file (use --force to rebuild)"
     else do
-    putStr "Building locally: "
-    cmdSilent_ "rpmbuild" args
-    putStrLn "done"
+    installDeps
+    void $ getSources spec
+    dist <- branchDist br
+    cwd <- getCurrentDirectory
+    gitDir <- isGitRepo
+    let shortcircuit = mforceshort == Just ShortCircuit
+    let buildopt = if shortcircuit then ["-bi", "--short-circuit"] else ["-bb"]
+        rpmdirs =
+          [ "--define="++ mcr +-+ cwd | gitDir,
+            mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
+        args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++ buildopt ++ [spec]
+    if not quiet || shortcircuit then
+      cmd_ "rpmbuild" args
+      else do
+      putStr "Building locally: "
+      cmdSilent_ "rpmbuild" args
+      putStrLn "done"
   where
     installDeps :: IO ()
     installDeps = do
@@ -341,7 +358,10 @@ pkgNameVerRel' br spec = do
 builtRpms :: Branch -> FilePath -> IO [FilePath]
 builtRpms br spec = do
   dist <- branchDist br
-  rpmspec ["--builtrpms", "--define", "dist " ++ rpmDistTag dist] (Just "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") spec
+  rpms <- rpmspec ["--builtrpms", "--define", "dist " ++ rpmDistTag dist] (Just "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") spec
+  if null rpms
+    then error' $ spec ++ " does not seem to create any rpms"
+    else return rpms
 
 -- from fedora-haskell-tools
 buildRequires :: FilePath -> IO [String]

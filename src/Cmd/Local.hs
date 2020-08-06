@@ -18,57 +18,49 @@ import Package
 
 -- FIXME package countdown
 -- FIXME --ignore-uninstalled subpackages
-installCmd :: Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
-installCmd force reinstall (mbr,pkgs) = do
+installCmd :: Maybe ForceShort -> Bool -> (Maybe Branch,[String]) -> IO ()
+installCmd mforceshort reinstall (mbr,pkgs) = do
   withPackageByBranches False Nothing installPkg (maybeBranches mbr,pkgs)
   where
     installPkg :: Package -> Branch -> IO ()
     installPkg pkg br = do
       spec <- localBranchSpecFile pkg br
       rpms <- builtRpms br spec
-      when (null rpms) $
-        error' $ spec ++ " does not seem to create any rpms"
       -- removing arch
       let packages = map takeNVRName rpms
       installed <- filterM pkgInstalled packages
-      if force || null installed || (reinstall && length installed /= length packages)
+      if isJust mforceshort || null installed || reinstall
         then doInstallPkg spec rpms installed
         else putStrLn $ unwords installed +-+ "already installed!\n"
       where
         doInstallPkg spec rpms installed = do
-          let baserpm = head rpms
-          putStrLn $ takeBaseName baserpm ++ "\n"
-          specNewer <-
-            ifM (notM (doesFileExist baserpm))
-            (return True) $
-            do specTime <- getModificationTime spec
-               rpmTime <- getModificationTime $ head rpms
-               return $ specTime > rpmTime
-          allrpmsbuilt <- and <$> mapM doesFileExist rpms
-          when (force || specNewer || not allrpmsbuilt) $ do
-            buildRPMs True False br spec
-            putStrLn ""
-          if reinstall then do
-            let reinstalls = filter (\ f -> takeNVRName f `elem` installed) rpms
-            unless (null reinstalls) $
-              sudo_ "/usr/bin/dnf" $ "reinstall" : "-q" : "-y" : reinstalls
-            let remaining = filterDebug $ rpms \\ reinstalls
-            unless (null remaining) $
-              sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
-            else sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : filterDebug rpms
-
-        takeNVRName = takeBaseName . takeBaseName
+          putStrLn $ takeBaseName (head rpms) ++ "\n"
+          buildRPMs True mforceshort rpms br spec
+          putStrLn ""
+          unless (mforceshort == Just ShortCircuit) $
+            if reinstall then do
+              let reinstalls = filter (\ f -> takeNVRName f `elem` installed) rpms
+              unless (null reinstalls) $
+                sudo_ "/usr/bin/dnf" $ "reinstall" : "-q" : "-y" : reinstalls
+              let remaining = filterDebug $ rpms \\ reinstalls
+              unless (null remaining) $
+                sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
+              else sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : filterDebug rpms
 
         filterDebug = filter (\p -> not (any (`isInfixOf` p) ["-debuginfo-", "-debugsource-"]))
 
-localCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
-localCmd shortcircuit (mbr,pkgs) =
+takeNVRName :: FilePath -> String
+takeNVRName = takeBaseName . takeBaseName
+
+localCmd :: Maybe ForceShort -> (Maybe Branch,[String]) -> IO ()
+localCmd mforceshort (mbr,pkgs) =
   withPackageByBranches False Nothing localBuildPkg (maybeBranches mbr,pkgs)
   where
     localBuildPkg :: Package -> Branch -> IO ()
-    localBuildPkg pkg br =
-      localBranchSpecFile pkg br >>=
-      buildRPMs False shortcircuit br
+    localBuildPkg pkg br = do
+      spec <- localBranchSpecFile pkg br
+      rpms <- builtRpms br spec
+      buildRPMs False mforceshort rpms br spec
 
 srpmCmd :: (Maybe Branch,[String]) -> IO ()
 srpmCmd (mbr,pkgs) =
@@ -111,7 +103,7 @@ mockCmd mroot (mbr,pkgs) =
       void $ getSources spec
       srpm <- generateSrpm (Just br) spec
       let pkgname = unPackage pkg
-          mverrel = stripInfix "-" $ removePrefix (pkgname ++ "-") $ takeBaseName (takeBaseName srpm)
+          mverrel = stripInfix "-" $ removePrefix (pkgname ++ "-") $ takeNVRName srpm
           verrel = maybe "" (uncurry (</>)) mverrel
       let resultsdir = "results_" ++ pkgname </> verrel
           rootBr = fromMaybe br mroot

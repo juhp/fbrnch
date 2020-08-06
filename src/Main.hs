@@ -27,6 +27,7 @@ import Cmd.Switch
 
 import Branches
 import ListReviews
+import Package (ForceShort(..))
 import Paths_fbrnch (version)
 
 main :: IO ()
@@ -60,7 +61,7 @@ dispatchCmd activeBranches =
     , Subcommand "prep" "Prep sources" $
       prepCmd <$> localBranchPackages
     , Subcommand "local" "Build locally" $
-      localCmd <$> shortcircuitOpt <*> localBranchPackages
+      localCmd <$> optional forceshortOpt <*> localBranchPackages
     , Subcommand "srpm" "Build srpm" $
       srpmCmd <$> localBranchPackages
     , Subcommand "diff" "Diff local changes" $
@@ -68,7 +69,8 @@ dispatchCmd activeBranches =
     , Subcommand "mock" "Local mock build" $
       mockCmd <$> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> localBranchPackages
     , Subcommand "install" "Build locally and install package(s)" $
-      installCmd <$> switchWith 'f' "force-rebuild" "Rebuild even if already built" <*> switchWith 'r' "reinstall" "use dnf reinstall" <*> localBranchPackages
+      -- FIXME drop --shortcircuit from install?
+      installCmd <$> optional forceshortOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> localBranchPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
     , Subcommand "commit" "Git commit packages" $
@@ -177,7 +179,9 @@ dispatchCmd activeBranches =
 
     updatetypeOpt = optionalWith auto 'u' "update-type" "TYPE" "security, bugfix, enhancement (default), or newpackage" EnhancementUpdate
 
-    shortcircuitOpt = switchWith 's' "short-circuit" "Do --short-circuit rpmbuild"
+    forceshortOpt =
+      flagWith' ForceBuild 'f' "rebuild" "Rebuild even if already built" <|>
+      flagWith' ShortCircuit 's' "short-circuit" "Do --short-circuit rpmbuild"
 
     diffFormatOpt :: Parser DiffFormat
     diffFormatOpt =
