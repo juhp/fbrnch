@@ -54,7 +54,7 @@ installCmd force reinstall (mbr,pkgs) = do
 
         takeNVRName = takeBaseName . takeBaseName
 
-        filterDebug = filter (\p -> (not . or) $ map (`isInfixOf` p) ["-debuginfo-", "-debugsource-"])
+        filterDebug = filter (\p -> not (any (`isInfixOf` p) ["-debuginfo-", "-debugsource-"]))
 
 installDeps :: FilePath -> IO ()
 installDeps spec = do
