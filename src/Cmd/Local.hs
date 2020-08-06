@@ -39,8 +39,6 @@ installCmd force reinstall (mbr,pkgs) = do
           rpmTime <- getModificationTime $ head rpms
           allrpmsbuilt <- and <$> mapM doesFileExist rpms
           when (force || specTime > rpmTime || not allrpmsbuilt) $ do
-            installDeps spec
-            void $ getSources spec
             buildRPMs True False br spec
             putStrLn ""
           if reinstall then do
@@ -56,25 +54,14 @@ installCmd force reinstall (mbr,pkgs) = do
 
         filterDebug = filter (\p -> not (any (`isInfixOf` p) ["-debuginfo-", "-debugsource-"]))
 
-installDeps :: FilePath -> IO ()
-installDeps spec = do
-  missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
-  unless (null missingdeps) $ do
-    putStrLn $ "Need: " ++ unwords missingdeps
-    putStr "Running dnf builddep... "
-    cmdSilent "/usr/bin/sudo" $ "/usr/bin/dnf":["builddep", "--assumeyes", spec]
-    putStrLn "done"
-
 localCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 localCmd shortcircuit (mbr,pkgs) =
   withPackageByBranches False Nothing localBuildPkg (maybeBranches mbr,pkgs)
   where
     localBuildPkg :: Package -> Branch -> IO ()
-    localBuildPkg pkg br = do
-      spec <- localBranchSpecFile pkg br
-      installDeps spec
-      void $ getSources spec
-      buildRPMs False shortcircuit br spec
+    localBuildPkg pkg br =
+      localBranchSpecFile pkg br >>=
+      buildRPMs False shortcircuit br
 
 srpmCmd :: (Maybe Branch,[String]) -> IO ()
 srpmCmd (mbr,pkgs) =

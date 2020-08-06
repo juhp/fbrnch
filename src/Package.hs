@@ -141,9 +141,10 @@ generateSrpm mbr spec = do
       putStrLn $ "Created " ++ takeFileName srpm
       return srpm
 
--- FIXME pull sources
 buildRPMs :: Bool -> Bool -> Branch -> FilePath -> IO ()
 buildRPMs quiet shortcircuit br spec = do
+  installDeps
+  void $ getSources spec
   dist <- branchDist br
   cwd <- getCurrentDirectory
   gitDir <- isGitRepo
@@ -158,6 +159,15 @@ buildRPMs quiet shortcircuit br spec = do
     putStr "Building locally: "
     cmdSilent_ "rpmbuild" args
     putStrLn "done"
+  where
+    installDeps :: IO ()
+    installDeps = do
+      missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
+      unless (null missingdeps) $ do
+        putStrLn $ "Need: " ++ unwords missingdeps
+        putStr "Running dnf builddep... "
+        cmdSilent "/usr/bin/sudo" $ "/usr/bin/dnf":["builddep", "--assumeyes", spec]
+        putStrLn "done"
 
 prepPackage :: Package -> Branch -> IO ()
 prepPackage pkg br = do
