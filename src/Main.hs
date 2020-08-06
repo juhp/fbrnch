@@ -68,7 +68,7 @@ dispatchCmd activeBranches =
     , Subcommand "mock" "Local mock build" $
       mockCmd <$> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> localBranchPackages
     , Subcommand "install" "Build locally and install package(s)" $
-      installCmd <$> switchWith 'r' "reinstall" "use dnf reinstall" <*> localBranchPackages
+      installCmd <$> switchWith 'f' "force-rebuild" "Rebuild even if already built" <*> switchWith 'r' "reinstall" "use dnf reinstall" <*> localBranchPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
     , Subcommand "commit" "Git commit packages" $
