@@ -36,8 +36,7 @@ createReview noscratch mock mspec = do
     prompt_ "Press Enter to continue"
   srpm <- generateSrpm Nothing spec
   mockRpmLint mock pkg spec srpm
-  mkojiurl <- kojiScratchUrl noscratch srpm
-  specSrpmUrls <- uploadPkgFiles pkg spec srpm
+  (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
   bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
   putStrLn "Review request posted:"
   putBugId bugid
@@ -67,6 +66,13 @@ getSpecFile =
       if takeFileName f == f then return f
         else error' "Please run in the directory of the spec file"
 
+buildAndUpload :: Bool -> String -> String -> FilePath
+               -> IO (Maybe String, String)
+buildAndUpload noscratch srpm pkg spec = do
+  mkojiurl <- kojiScratchUrl noscratch srpm
+  specSrpmUrls <- uploadPkgFiles pkg spec srpm
+  return (mkojiurl, specSrpmUrls)
+
 updateReview :: Bool -> Bool -> Maybe FilePath -> IO ()
 updateReview noscratch mock mspec = do
   spec <- getSpecFile mspec
@@ -78,8 +84,7 @@ updateReview noscratch mock mspec = do
   when submitted $
     error' "This NVR was already posted on the review bug: please bump"
   mockRpmLint mock pkg spec srpm
-  mkojiurl <- kojiScratchUrl noscratch srpm
-  specSrpmUrls <- uploadPkgFiles pkg spec srpm
+  (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
   changelog <- getChangeLog spec
   postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
   -- putStrLn "Review bug updated"
