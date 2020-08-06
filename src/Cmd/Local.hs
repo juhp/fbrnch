@@ -31,7 +31,7 @@ installCmd mforceshort reinstall (mbr,pkgs) = do
       installed <- filterM pkgInstalled packages
       if isJust mforceshort || null installed || reinstall
         then doInstallPkg spec rpms installed
-        else putStrLn $ unwords installed +-+ "already installed!\n"
+        else putStrLn $ unwords installed ++ " already installed!\n"
       where
         doInstallPkg spec rpms installed = do
           putStrLn $ takeBaseName (head rpms) ++ "\n"
