@@ -22,7 +22,7 @@ installCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 installCmd reinstall (mbr,pkgs) = do
   withPackageByBranches False Nothing (installPkg reinstall) (maybeBranches mbr,pkgs)
 
--- FIXME skip build if rpms newer than spec
+-- FIXME --ignore-uninstalled subpackages
 installPkg :: Bool -> Package -> Branch -> IO ()
 installPkg reinstall pkg br = do
   spec <- localBranchSpecFile pkg br
@@ -37,21 +37,26 @@ installPkg reinstall pkg br = do
   where
     doInstallPkg spec rpms installed = do
       putStrLn $ (takeBaseName . head) rpms ++ "\n"
-      installDeps spec
-      void $ getSources spec
-      buildRPMs True False br spec
-      putStrLn ""
+      specTime <- getModificationTime spec
+      rpmTime <- getModificationTime $ head rpms
+      allrpmsbuilt <- and <$> mapM doesFileExist rpms
+      when (specTime > rpmTime || not allrpmsbuilt) $ do
+        installDeps spec
+        void $ getSources spec
+        buildRPMs True False br spec
+        putStrLn ""
       if reinstall then do
         let reinstalls = filter (\ f -> takeNVRName f `elem` installed) rpms
         unless (null reinstalls) $
           sudo_ "dnf" $ "reinstall" : "-q" : "-y" : reinstalls
-        let remaining = rpms \\ reinstalls
+        let remaining = filterDebug $ rpms \\ reinstalls
         unless (null remaining) $
           sudo_ "dnf" $ "install" : "-q" : "-y" : remaining
-        else sudo_ "dnf" $ "install" : "-q" : "-y" : rpms
+        else sudo_ "dnf" $ "install" : "-q" : "-y" : filterDebug rpms
 
     takeNVRName = takeBaseName . takeBaseName
 
+    filterDebug = filter (\p -> (not . or) $ map (`isInfixOf` p) ["-debuginfo-", "-debugsource-"])
 installDeps :: FilePath -> IO ()
 installDeps spec = do
   missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
