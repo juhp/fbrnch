@@ -1,6 +1,6 @@
 cabal-version:       2.0
 name:                fbrnch
-version:             0.2
+version:             0.3
 synopsis:            Build and create Fedora package repos and branches
 description:
             Fed Brnch is a convenient packaging tool for Fedora Packagers,
@@ -22,7 +22,7 @@ build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
 tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
-                     GHC == 8.6.5,  GHC == 8.8.3
+                     GHC == 8.6.5,  GHC == 8.8.3, GHC == 8.10.1
 
 source-repository head
   type:                git

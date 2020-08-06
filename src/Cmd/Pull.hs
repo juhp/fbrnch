@@ -5,6 +5,7 @@ import Git
 import Package
 
 -- FIXME pulling more than one branch
+-- FIXME print nvr after pulling or old -> new
 pullPkgs :: (Maybe Branch,[String]) -> IO ()
 pullPkgs (mbr,pkgs) =
   withPackageByBranches True cleanGitFetch pullPkg (maybeBranches mbr,pkgs)

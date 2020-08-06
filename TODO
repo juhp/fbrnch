@@ -6,6 +6,7 @@
 - 'bump'
 - 'check-sources'
 - 'update' version
+- worktree support
 
 # release deps
 - koji (new)
