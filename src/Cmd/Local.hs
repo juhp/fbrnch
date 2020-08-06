@@ -34,11 +34,16 @@ installCmd force reinstall (mbr,pkgs) = do
         else putStrLn $ unwords installed +-+ "already installed!\n"
       where
         doInstallPkg spec rpms installed = do
-          putStrLn $ (takeBaseName . head) rpms ++ "\n"
-          specTime <- getModificationTime spec
-          rpmTime <- getModificationTime $ head rpms
+          let baserpm = head rpms
+          putStrLn $ takeBaseName baserpm ++ "\n"
+          specNewer <-
+            ifM (notM (doesFileExist baserpm))
+            (return True) $
+            do specTime <- getModificationTime spec
+               rpmTime <- getModificationTime $ head rpms
+               return $ specTime > rpmTime
           allrpmsbuilt <- and <$> mapM doesFileExist rpms
-          when (force || specTime > rpmTime || not allrpmsbuilt) $ do
+          when (force || specNewer || not allrpmsbuilt) $ do
             buildRPMs True False br spec
             putStrLn ""
           if reinstall then do
