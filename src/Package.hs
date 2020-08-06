@@ -163,11 +163,12 @@ buildRPMs quiet mforceshort rpms br spec = do
     installDeps
     void $ getSources spec
     dist <- branchDist br
+    cwd <- getCurrentDirectory
     gitDir <- isGitRepo
     let shortcircuit = mforceshort == Just ShortCircuit
     let buildopt = if shortcircuit then ["-bi", "--short-circuit"] else ["-bb"]
         rpmdirs =
-          [ "--define="++ mcr ++ " ." | gitDir,
+          [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
         args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++ buildopt ++ [spec]
     if not quiet || shortcircuit then
@@ -194,10 +195,11 @@ prepPackage pkg br = do
     spec <- localBranchSpecFile pkg br
     unlessM (doesFileExist spec) $
       error' $ spec ++ " not found"
+    cwd <- getCurrentDirectory
     getSources spec
     gitDir <- isGitRepo
     let rpmdirs =
-          [ "--define="++ mcr ++ " ." | gitDir,
+          [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_sourcedir"]]
         args = rpmdirs ++ ["-bp", spec]
     nvr <- pkgNameVerRel' br spec
