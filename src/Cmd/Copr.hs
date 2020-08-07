@@ -16,16 +16,15 @@ import Data.Ini.Config
 import System.Environment.XDG.BaseDir (getUserConfigDir)
 import Web.Fedora.Copr (coprChroots)
 
---import Package (Package)
-
 data BuildBy = SingleBuild | ValidateByRelease | ValidateByArch | BuildByRelease
   deriving (Eq)
 
 coprServer :: String
 coprServer = "copr.fedorainfracloud.org"
 
--- FIXME make project optional ?
+-- FIXME make project optional (if same as pkg??) or configurable ?
 -- FIXME repo config with a setup command?
+-- FIXME interact with copr dist-git
 coprCmd :: Bool -> BuildBy -> [String] -> String -> (Branches,[FilePath]) -> IO ()
 coprCmd dryrun buildBy archs project (brnchs,pkgs) = do
   chroots <- coprGetChroots
@@ -54,7 +53,7 @@ coprCmd dryrun buildBy archs project (brnchs,pkgs) = do
       -- FIXME check is pkg.spec
       spec <- findSpecfile
       -- pkg <- takeFileName <$> getCurrentDirectory
-      -- FIXME hack to avoid generating srpm for dryrun
+      -- hack to avoid generating srpm for dryrun
       srpm <- if not dryrun
               then generateSrpm Nothing spec -- FIXME: let distopt = ["--undefine", "dist"]
               else return spec
@@ -110,12 +109,12 @@ getUsername = do
       section "copr-cli" $
       fieldOf "username" string
 
--- changed from fbrnch/Bugzilla.hs
+-- changed from Bugzilla.hs
 readIniConfig :: FilePath -> IniParser a -> (a -> b) -> IO b
 readIniConfig inifile iniparser record = do
   havefile <- doesFileExist inifile
   if not havefile
-    then error' $ inifile ++ " not found: maybe GET /api from copr"
+    then error' $ inifile ++ " not found: try https://" ++ coprServer ++ "/api"
     else do
     ini <- T.readFile inifile
     let config = parseIniFile ini iniparser
