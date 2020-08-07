@@ -12,6 +12,7 @@ module Package (
   generateSrpm,
   ForceShort(..),
   buildRPMs,
+  installDeps,
   prepPackage,
   getSources,
   putPkgHdr,
@@ -160,7 +161,7 @@ buildRPMs quiet mforceshort rpms br spec = do
   if not needBuild then
     putStrLn "Existing rpms are newer than spec file (use --force to rebuild)"
     else do
-    installDeps
+    installDeps spec
     void $ getSources spec
     dist <- branchDist br
     cwd <- getCurrentDirectory
@@ -177,15 +178,15 @@ buildRPMs quiet mforceshort rpms br spec = do
       putStr "Building locally: "
       cmdSilent_ "rpmbuild" args
       putStrLn "done"
-  where
-    installDeps :: IO ()
-    installDeps = do
-      missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
-      unless (null missingdeps) $ do
-        putStrLn $ "Need: " ++ unwords missingdeps
-        putStr "Running dnf builddep... "
-        cmdSilent "/usr/bin/sudo" $ "/usr/bin/dnf":["builddep", "--assumeyes", spec]
-        putStrLn "done"
+
+installDeps :: FilePath -> IO ()
+installDeps spec = do
+  missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
+  unless (null missingdeps) $ do
+    putStrLn $ "Need: " ++ unwords missingdeps
+    putStr "Running dnf builddep... "
+    cmdSilent "/usr/bin/sudo" $ "/usr/bin/dnf":["builddep", "--assumeyes", spec]
+    putStrLn "done"
 
 prepPackage :: Package -> Branch -> IO ()
 prepPackage pkg br = do

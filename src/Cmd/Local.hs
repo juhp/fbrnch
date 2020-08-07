@@ -1,5 +1,6 @@
 module Cmd.Local (
   installCmd,
+  installDepsCmd,
   localCmd,
   mockCmd,
   prepCmd,
@@ -61,6 +62,14 @@ localCmd mforceshort (mbr,pkgs) =
       spec <- localBranchSpecFile pkg br
       rpms <- builtRpms br spec
       buildRPMs False mforceshort rpms br spec
+
+installDepsCmd :: (Maybe Branch,[String]) -> IO ()
+installDepsCmd (mbr,pkgs) =
+  withPackageByBranches False Nothing installDepsPkg (maybeBranches mbr,pkgs)
+  where
+    installDepsPkg :: Package -> Branch -> IO ()
+    installDepsPkg pkg br =
+      localBranchSpecFile pkg br >>= installDeps
 
 srpmCmd :: (Maybe Branch,[String]) -> IO ()
 srpmCmd (mbr,pkgs) =
