@@ -68,7 +68,9 @@ buildCmd :: BuildOpts -> (Branches,[String]) -> IO ()
 buildCmd opts (brnchs,pkgs) = do
   let somebrnchs = case brnchs of
         AllBranches -> True
-        BranchList brs -> length brs > 1 in
+        BranchList brs -> length brs > 1
+        ExcludeBranches _ -> True
+    in
     when (isJust (buildoptTarget opts) && somebrnchs) $
     error' "You can only specify target with one branch"
   let morethan1 = length pkgs > 1

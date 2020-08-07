@@ -55,7 +55,7 @@ mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"
 
 ------
 
-data Branches = AllBranches | BranchList [Branch]
+data Branches = AllBranches | BranchList [Branch] | ExcludeBranches [Branch]
   deriving Eq
 
 maybeBranches :: Maybe Branch -> Branches
@@ -77,6 +77,11 @@ listOfBranches distgit (BranchList brs) =
                 then gitCurrentBranch
                 else systemBranch
   else return brs
+listOfBranches distgit (ExcludeBranches brs) = do
+  branches <- if distgit
+              then fedoraBranches localBranches
+              else getFedoraBranches
+  return $ branches \\ brs
 
 gitCurrentBranch :: IO Branch
 gitCurrentBranch =

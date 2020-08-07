@@ -35,6 +35,7 @@ requestPkgBranches mock request pkg = do
                       AllBranches -> active
                       BranchList [] -> take 2 active
                       BranchList brs -> brs
+                      ExcludeBranches brs -> active \\ brs
     inp <- prompt $ "Confirm branches [" ++ unwords (map show requested) ++ "]"
     return $ if null inp
              then requested

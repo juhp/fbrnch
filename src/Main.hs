@@ -141,7 +141,11 @@ dispatchCmd activeBranches =
     branchesOpt :: Parser Branches
     branchesOpt =
       BranchList . reverse . sort  <$> many branchOpt <|>
-      flagWith' AllBranches 'B' "all-branches" "All active branches"
+      flagWith' AllBranches 'B' "all-branches" "All active branches" <|>
+      ExcludeBranches <$> many excludeBranchOpt
+
+    excludeBranchOpt :: Parser Branch
+    excludeBranchOpt = optionWith branchM 'x' "exclude-branch" "BRANCH" "branch"
 
     branchesPackages :: Parser (Branches,[String])
     branchesPackages =
@@ -153,7 +157,7 @@ dispatchCmd activeBranches =
       (,) <$> optional branchArg <*> some pkgOpt
 
     branchesRequestOpt :: Parser Branches
-    branchesRequestOpt = flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|> BranchList <$> many branchArg
+    branchesRequestOpt = flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|> BranchList <$> many branchArg <|> ExcludeBranches <$> many branchArg
 
     rpmWithOpt :: Parser RpmWith
     rpmWithOpt =
