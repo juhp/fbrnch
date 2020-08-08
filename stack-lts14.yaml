@@ -1,17 +1,19 @@
-resolver: lts-15.16
+resolver: lts-14.27
 
 extra-deps:
   - bugzilla-redhat-0.3.0
   - git: https://github.com/juhp/fedora-dists.git
     commit: c6d51f56869065505fc0b8ee453246dd2bb5252f
   - git: https://github.com/juhp/bodhi-hs.git
-    commit: 279a37b91aa15a54aeda1daa0ad79e4da71c0874
+    commit: 7a9fdbb2afac08631bdf03222515376814c3e105
   - git: https://github.com/juhp/pagure-hs.git
-    commit: 813010d6c1377232476f48321cd48808e0b356f2
+    commit: 04766fca164045162a1aa479c6ca178dfc10f57a
   - git: https://github.com/juhp/koji-hs.git
     commit: 84873619d266d31b4be2c1dc6eb24c0128e389dc
   - rpmbuild-order-0.4.2
   - simple-cmd-args-0.1.6
   - pretty-terminal-0.1.0.0
   - git: https://github.com/juhp/copr-hs.git
-    commit: fa3d1b7f0550f88c82b025fe46300a8a9cb50275
+    commit: fcf2c68ab842bd03b8c9718df014174a7ba7472b
+  - git: https://github.com/juhp/http-query.git
+    commit: c23eadb370e5341facd4716044e3ae70a0a4ceab

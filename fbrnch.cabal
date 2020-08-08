@@ -32,9 +32,6 @@ executable fbrnch
   main-is:             Main.hs
   other-modules:       Branches
                        Bugzilla
-                       Bugzilla.Login
-                       Bugzilla.NewId
-                       Bugzilla.ValidLogin
                        Cmd.Bugs
                        Cmd.Build
                        Cmd.Clone
@@ -80,6 +77,7 @@ executable fbrnch
                      , filepath
                      , http-conduit
                      , http-directory >= 0.1.5
+                     , http-query
                      , koji
                      , network-uri
                      , optparse-applicative

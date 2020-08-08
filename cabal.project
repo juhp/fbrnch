@@ -8,12 +8,12 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/juhp/bodhi-hs.git
-    tag: 279a37b91aa15a54aeda1daa0ad79e4da71c0874
+    tag: 7a9fdbb2afac08631bdf03222515376814c3e105
 
 source-repository-package
     type: git
     location: https://github.com/juhp/pagure-hs.git
-    tag: 813010d6c1377232476f48321cd48808e0b356f2
+    tag: 04766fca164045162a1aa479c6ca178dfc10f57a
 
 source-repository-package
     type: git
@@ -23,7 +23,12 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/juhp/copr-hs.git
-    tag: fa3d1b7f0550f88c82b025fe46300a8a9cb50275
+    tag: fcf2c68ab842bd03b8c9718df014174a7ba7472b
+
+source-repository-package
+    type: git
+    location: https://github.com/juhp/http-query.git
+    tag: c23eadb370e5341facd4716044e3ae70a0a4ceab
 
 -- source-repository-package
 --     type: git

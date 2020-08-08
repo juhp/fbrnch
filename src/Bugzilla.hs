@@ -53,6 +53,7 @@ import qualified Common.Text as T
 import Control.Exception (finally)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini.Config
+import Network.HTTP.Query
 import Network.HTTP.Simple
 import System.Environment
 import System.Environment.XDG.BaseDir
@@ -61,9 +62,6 @@ import qualified Text.Email.Validate as Email
 import Web.Bugzilla.RedHat
 import Web.Bugzilla.RedHat.Search
 -- local
-import Bugzilla.Login
-import Bugzilla.NewId
-import Bugzilla.ValidLogin
 import Package (getDirectoryName)
 import Prompt
 
@@ -84,8 +82,9 @@ postComment session bid comment = do
   let req = setRequestMethod "POST" $
             setRequestCheckStatus $
             newBzRequest session ["bug", intAsText bid, "comment"] [makeTextItem "comment" comment]
-  void $ newId . getResponseBody <$> httpJSON req
-  putStrLn "Comment added:"
+  res <- lookupKey' "id" . getResponseBody <$> httpJSON req
+  -- FIXME probably don't want commentid here
+  putStrLn $ "Comment (" ++ res ++ ") added:"
   putStrLn comment
 
 bzReviewSession :: IO (Maybe BugId,BugzillaSession)
@@ -140,7 +139,7 @@ bzLoginSession = do
         let session = LoginSession ctx $ BugzillaToken token
         let validreq = setRequestCheckStatus $
                        newBzRequest session ["valid_login"] [("login",Just user)]
-        valid <- validToken . getResponseBody <$> httpJSON validreq
+        valid <- lookupKey' "result" . getResponseBody <$> httpJSON validreq
         return $ if valid then ValidToken session else InvalidToken token
       case tokenstatus of
         ValidToken session -> return session
@@ -170,7 +169,10 @@ bzLoginSession = do
                            newBzRequest anonsession ["login"]
                            [("login", Just user),
                             makeTextItem "password" passwd]
-            loginToken . getResponseBody <$> httpJSON tokenReq
+            res <- getResponseBody <$> httpJSON tokenReq
+            case lookupKey "token" res of
+              Nothing -> T.putStrLn (lookupKey' "message" res) >> bzLogin
+              Just token -> return token
 
         withoutEcho :: IO a -> IO a
         withoutEcho action =

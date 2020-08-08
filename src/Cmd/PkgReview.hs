@@ -9,10 +9,10 @@ import qualified Common.Text as T
 
 import Data.Char
 import Network.HTTP.Directory
+import Network.HTTP.Query
 import Network.HTTP.Simple
 
 import Bugzilla
-import Bugzilla.NewId
 import Koji
 import Krb
 import Package
@@ -54,7 +54,7 @@ createReview noscratch mock mspec = do
               , makeTextItem "summary" $ "Review Request: " <> pkg <> " - " <> summary
               , makeTextItem "description" $ specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl
               ]
-      newId . getResponseBody <$> httpJSON req
+      lookupKey' "id" . getResponseBody <$> httpJSON req
 
 getSpecFile :: Maybe FilePath -> IO String
 getSpecFile =
