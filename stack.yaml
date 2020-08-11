@@ -5,20 +5,21 @@ extra-deps:
   #  commit: b3cc51c12c4c5925f07d8bb0abf9047ef5842bf6
   - bugzilla-redhat-0.3.0
   - git: https://github.com/juhp/fedora-dists.git
-    commit: a2e8f5a81b9a7c63d186031a382982783d79c5f8
+    commit: 636a255518fcaa3db2f07368b5f3f5111b9530b2
   - git: https://github.com/juhp/bodhi-hs.git
-    commit: 7a9fdbb2afac08631bdf03222515376814c3e105
+    commit: 299bb8827c8d44a3da694520a0e200e6433c1f34
   - git: https://github.com/juhp/pagure-hs.git
-    commit: 04766fca164045162a1aa479c6ca178dfc10f57a
+    commit: 262c9945b917766c2ca4d25cef6790f4cd79ef08
   - git: https://github.com/juhp/koji-hs.git
     commit: 84873619d266d31b4be2c1dc6eb24c0128e389dc
   - rpmbuild-order-0.4.2
-  - pretty-terminal-0.1.0.0
   # - git: https://github.com/juhp/rpmbuild-order.git
   #   commit: c05a0ab10e13ff258bff37eae017f896e7369460
+  # in lts16:
+  - pretty-terminal-0.1.0.0
   - git: https://github.com/juhp/copr-hs.git
-    commit: fcf2c68ab842bd03b8c9718df014174a7ba7472b
+    commit: 92f249caa06f2d738d2de510a238f0da3a454b20
   - git: https://github.com/juhp/http-query.git
-    commit: c23eadb370e5341facd4716044e3ae70a0a4ceab
+    commit: 95bfbbfde4c1ea1862fc4ed03bd5f0635253486e
   - git: https://github.com/juhp/pdc-hs.git
-    commit: dd11d4f55da4d56d3e6f1467af891ace40014d05
+    commit: c8747e722616407a987322bef9a299328a3fde55
