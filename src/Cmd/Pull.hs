@@ -10,6 +10,6 @@ pullPkgs :: (Maybe Branch,[String]) -> IO ()
 pullPkgs (mbr,pkgs) =
   withPackageByBranches True cleanGitFetch pullPkg (maybeBranches mbr,pkgs)
   where
-    pullPkg :: Package -> Branch -> IO ()
+    pullPkg :: Package -> AnyBranch -> IO ()
     pullPkg _pkg _br =
       gitCurrentBranch >>= gitMergeOrigin

@@ -36,6 +36,9 @@ requestPkgBranches mock request pkg = do
                       BranchList [] -> take 2 active
                       BranchList brs -> brs
                       ExcludeBranches brs -> active \\ brs
+                      -- FIXME
+                      AnotherBranch _ ->
+                        error' "Non-release branches not supported"
     inp <- prompt $ "Confirm branches [" ++ unwords (map show requested) ++ "]"
     return $ if null inp
              then requested

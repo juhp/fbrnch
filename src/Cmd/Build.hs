@@ -70,6 +70,7 @@ buildCmd opts (brnchs,pkgs) = do
         AllBranches -> True
         BranchList brs -> length brs > 1
         ExcludeBranches _ -> True
+        AnotherBranch _ -> False
     in
     when (isJust (buildoptTarget opts) && somebrnchs) $
     error' "You can only specify target with one branch"
@@ -77,11 +78,13 @@ buildCmd opts (brnchs,pkgs) = do
   withPackageByBranches True cleanGitFetch (buildBranch morethan1 opts) (brnchs,pkgs)
 
 -- FIXME what if untracked files
-buildBranch :: Bool -> BuildOpts -> Package -> Branch -> IO ()
-buildBranch morethan1 opts pkg br = do
-  putPkgBrnchHdr pkg br
-  gitSwitchBranch br
-  gitMergeOrigin br
+buildBranch :: Bool -> BuildOpts -> Package -> AnyBranch -> IO ()
+buildBranch _ _ _ (OtherBranch _) =
+  error' "build only defined for release branches"
+buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
+  putPkgAnyBrnchHdr pkg rbr
+  gitSwitchBranch rbr
+  gitMergeOrigin rbr
   newrepo <- initialPkgRepo
   tty <- hIsTerminalDevice stdin
   unmerged <- mergeable br
@@ -237,7 +240,7 @@ scratchCmd :: Bool -> Bool -> [String] -> Maybe String -> (Maybe Branch,[String]
 scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
   withPackageByBranches True Nothing scratchBuild (maybeBranches mbr,pkgs)
   where
-    scratchBuild :: Package -> Branch -> IO ()
+    scratchBuild :: Package -> AnyBranch -> IO ()
     scratchBuild pkg br = do
       spec <- localBranchSpecFile pkg br
       let target = fromMaybe "rawhide" mtarget
@@ -277,9 +280,13 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
   when (null pkgs) $
     error' "Please specify at least one package"
   forM_ branches $ \ br -> do
-    putStrLn $ "# " ++ show br
-    layers <- dependencyLayers pkgs
-    mapM_ (parallelBuild br) layers
+    case br of
+      (RelBranch rbr) -> do
+        putStrLn $ "# " ++ show rbr
+        layers <- dependencyLayers pkgs
+        mapM_ (parallelBuild rbr) layers
+      (OtherBranch _) ->
+        error' "parallel builds only defined for release branches"
   where
     parallelBuild :: Branch -> [String] -> IO ()
     parallelBuild br layer =  do
@@ -317,7 +324,7 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
     startBuild :: Branch -> String -> IO (IO String)
     startBuild br pkgdir =
       withExistingDirectory pkgdir $ do
-      gitSwitchBranch br
+      gitSwitchBranch (RelBranch br)
       let pkg = getPackageName pkgdir
       putPkgBrnchHdr pkg br
       unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"

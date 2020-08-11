@@ -39,7 +39,12 @@ coprCmd dryrun buildBy archs project (brnchs,pkgs) = do
       branches <-
         if brnchs == BranchList []
         then return $ (map (releaseBranch . T.pack) . nub . map removeArch) chroots
-        else listOfBranches False brnchs
+        else do
+          brs <- listOfBranches False brnchs
+          forM brs $ \ br ->
+            case br of
+              OtherBranch obr -> error' $ "unknown copr target: " ++ obr
+              RelBranch rbr -> return rbr
       let buildroots =
             reverseSort $
             if null archs

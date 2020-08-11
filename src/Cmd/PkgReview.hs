@@ -12,6 +12,7 @@ import Network.HTTP.Directory
 import Network.HTTP.Query
 import Network.HTTP.Simple
 
+import Branches
 import Bugzilla
 import Koji
 import Krb
@@ -114,14 +115,14 @@ uploadPkgFiles pkg spec srpm = do
 
 mockRpmLint :: Bool -> String -> FilePath -> FilePath -> IO ()
 mockRpmLint mock pkg spec srpm = do
-  rpms <- if mock then do
-    -- FIXME check that mock is installed
-    let resultsdir = "results_" ++ pkg
-    cmd_ "mock" ["--resultdir=" ++ resultsdir, srpm]
-    map (resultsdir </>) . filter ((== ".rpm") . takeExtension) <$> listDirectory resultsdir
+  rpms <-
+    if mock then do
+      -- FIXME check that mock is installed
+      let resultsdir = "results_" ++ pkg
+      cmd_ "mock" ["--root", mockConfig Master, "--resultdir=" ++ resultsdir, srpm]
+      map (resultsdir </>) . filter ((== ".rpm") . takeExtension) <$> listDirectory resultsdir
     else do
-    br <- systemBranch
-    builtRpms br spec >>= filterM doesFileExist
+      builtRpms (RelBranch Master) spec >>= filterM doesFileExist
   -- FIXME run rpmlint on spec too??
   void $ cmdBool "rpmlint" $ srpm:rpms
   prompt_ "Press Enter to submit"

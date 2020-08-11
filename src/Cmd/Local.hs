@@ -23,7 +23,7 @@ installCmd :: Maybe ForceShort -> Bool -> (Maybe Branch,[String]) -> IO ()
 installCmd mforceshort reinstall (mbr,pkgs) = do
   withPackageByBranches False Nothing installPkg (maybeBranches mbr,pkgs)
   where
-    installPkg :: Package -> Branch -> IO ()
+    installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
       spec <- localBranchSpecFile pkg br
       rpms <- builtRpms br spec
@@ -57,7 +57,7 @@ localCmd :: Maybe ForceShort -> (Maybe Branch,[String]) -> IO ()
 localCmd mforceshort (mbr,pkgs) =
   withPackageByBranches False Nothing localBuildPkg (maybeBranches mbr,pkgs)
   where
-    localBuildPkg :: Package -> Branch -> IO ()
+    localBuildPkg :: Package -> AnyBranch -> IO ()
     localBuildPkg pkg br = do
       spec <- localBranchSpecFile pkg br
       rpms <- builtRpms br spec
@@ -67,7 +67,7 @@ installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd (mbr,pkgs) =
   withPackageByBranches False Nothing installDepsPkg (maybeBranches mbr,pkgs)
   where
-    installDepsPkg :: Package -> Branch -> IO ()
+    installDepsPkg :: Package -> AnyBranch -> IO ()
     installDepsPkg pkg br =
       localBranchSpecFile pkg br >>= installDeps
 
@@ -75,7 +75,7 @@ srpmCmd :: (Maybe Branch,[String]) -> IO ()
 srpmCmd (mbr,pkgs) =
   withPackageByBranches False Nothing srpmBuildPkg (maybeBranches mbr,pkgs)
 
-srpmBuildPkg :: Package -> Branch -> IO ()
+srpmBuildPkg :: Package -> AnyBranch -> IO ()
 srpmBuildPkg pkg br = do
   spec <- localBranchSpecFile pkg br
   void $ generateSrpm (Just br) spec
@@ -104,7 +104,7 @@ mockCmd :: Maybe Branch -> (Maybe Branch,[String]) -> IO ()
 mockCmd mroot (mbr,pkgs) =
   withPackageByBranches True Nothing mockBuildPkg (maybeBranches mbr,pkgs)
   where
-    mockBuildPkg :: Package -> Branch -> IO ()
+    mockBuildPkg :: Package -> AnyBranch -> IO ()
     mockBuildPkg pkg br = do
       spec <- localBranchSpecFile pkg br
       whenM isPkgGitRepo $ gitSwitchBranch br
@@ -113,5 +113,5 @@ mockCmd mroot (mbr,pkgs) =
           mverrel = stripInfix "-" $ removePrefix (pkgname ++ "-") $ takeNVRName srpm
           verrel = maybe "" (uncurry (</>)) mverrel
       let resultsdir = "results_" ++ pkgname </> verrel
-          rootBr = fromMaybe br mroot
+      rootBr <- maybe getReleaseBranch return mroot
       cmd_ "mock" ["--root", mockConfig rootBr, "--resultdir=" ++ resultsdir, srpm]

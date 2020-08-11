@@ -1,6 +1,7 @@
 module Cmd.Merge (mergeCmd, mergeable, mergeBranch) where
 
 import Common
+import Common.System
 
 import Branches
 import Git
@@ -11,11 +12,13 @@ mergeCmd :: (Branches,[String]) -> IO ()
 mergeCmd =
   withPackageByBranches True cleanGitFetch runMergeBranch
   where
-    runMergeBranch :: Package -> Branch -> IO ()
-    runMergeBranch pkg br = do
-      gitMergeOrigin br
+    runMergeBranch :: Package -> AnyBranch -> IO ()
+    runMergeBranch _ (OtherBranch _) =
+      error' "merge only defined for release branches"
+    runMergeBranch pkg rbr@(RelBranch br) = do
       putPkgBrnchHdr pkg br
-      gitSwitchBranch br
+      gitSwitchBranch rbr
+      gitMergeOrigin rbr
       unmerged <- mergeable br
       mergeBranch False unmerged br
 

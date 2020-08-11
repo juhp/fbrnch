@@ -44,7 +44,7 @@ gitMergeable ref = do
   if ancestor then gitShortLog $ "HEAD.." ++ ref
     else return []
 
-gitMergeOrigin :: Branch -> IO ()
+gitMergeOrigin :: AnyBranch -> IO ()
 gitMergeOrigin br = do
   commits <- gitMergeable $ "origin" </> show br
   unless (null commits) $ do
@@ -120,18 +120,18 @@ isPkgGitRepo = grepGitConfig' "@\\(pkgs\\|src\\)\\."
 gitLines :: String -> [String] -> IO [String]
 gitLines c args = lines <$> git c args
 
-gitSwitchBranch :: Branch -> IO ()
-gitSwitchBranch br = do
+gitSwitchBranch :: AnyBranch -> IO ()
+gitSwitchBranch abr = do
   localbranches <- gitLines "branch" ["--format=%(refname:short)"]
-  if show br `elem` localbranches then do
+  if show abr `elem` localbranches then do
     current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
-    when (current /= show br) $
+    when (current /= show abr) $
       -- cmdSilent
-      git_ "checkout" ["-q", show br]
+      git_ "checkout" ["-q", show abr]
     else do
     -- check remote branch exists
-    remotebranch <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+    remotebranch <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show abr]
     if not remotebranch
-      then error' $ show br ++ " branch does not exist!"
+      then error' $ show abr ++ " branch does not exist!"
       else
-      git_ "checkout" ["-q", "-b", show br, "--track", "origin" </> show br]
+      git_ "checkout" ["-q", "-b", show abr, "--track", "origin" </> show abr]

@@ -5,11 +5,15 @@ module Branches (
   pagurePkgBranches,
   mockConfig,
   module Distribution.Fedora.Branch,
+  AnyBranch(..),
+  anyBranch,
   Branches(..),
   maybeBranches,
+  anyBranches,
   listOfBranches,
   gitCurrentBranch,
-  systemBranch
+  systemBranch,
+  getReleaseBranch
 ) where
 
 import Common
@@ -19,6 +23,20 @@ import SimpleCmd
 import SimpleCmd.Git
 
 import Pagure
+
+data AnyBranch = RelBranch Branch | OtherBranch String
+  deriving Eq
+
+anyBranch :: String -> AnyBranch
+anyBranch = either OtherBranch RelBranch . eitherBranch
+
+-- isRelBranch :: AnyBranch -> Bool
+-- isRelBranch (RelBranch _) = True
+-- isRelBranch _ = False
+
+instance Show AnyBranch where
+  show (RelBranch br) = show br
+  show (OtherBranch obr) = obr
 
 activeBranches :: [Branch] -> [String] -> [Branch]
 activeBranches active =
@@ -56,33 +74,48 @@ mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"
 ------
 
 data Branches = AllBranches | BranchList [Branch] | ExcludeBranches [Branch]
+              | AnotherBranch String
   deriving Eq
 
 maybeBranches :: Maybe Branch -> Branches
 maybeBranches = BranchList . maybeToList
 
+anyBranches :: AnyBranch -> Branches
+anyBranches (RelBranch br) = BranchList [br]
+anyBranches (OtherBranch obr) = AnotherBranch obr
+
 systemBranch :: IO Branch
 systemBranch =
   readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
 
-listOfBranches :: Bool -> Branches -> IO [Branch]
+listOfBranches :: Bool -> Branches -> IO [AnyBranch]
 listOfBranches distgit AllBranches =
   -- FIXME for status had: RemoteBranches -> fedoraBranches $ pagurePkgBranches (unPackage pkg)
   if distgit
-  then fedoraBranches localBranches
+  then map RelBranch <$> fedoraBranches localBranches
   else error' "--all-branches only allowed for dist-git packages"
 listOfBranches distgit (BranchList brs) =
   if null brs
-  then pure <$> if distgit
-                then gitCurrentBranch
-                else systemBranch
-  else return brs
+  then
+    pure <$> if distgit
+             then gitCurrentBranch
+             else RelBranch <$> systemBranch
+  else return $ map RelBranch brs
 listOfBranches distgit (ExcludeBranches brs) = do
   branches <- if distgit
               then fedoraBranches localBranches
               else getFedoraBranches
-  return $ branches \\ brs
+  return $ map RelBranch (branches \\ brs)
+listOfBranches _distgit (AnotherBranch obr) =
+  return [OtherBranch obr]
 
-gitCurrentBranch :: IO Branch
+getReleaseBranch :: IO Branch
+getReleaseBranch = do
+  mcurrent <- gitCurrentBranch
+  case mcurrent of
+    RelBranch br -> return br
+    _ -> systemBranch
+
+gitCurrentBranch :: IO AnyBranch
 gitCurrentBranch =
-  readBranch' <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
+  anyBranch <$> git "rev-parse" ["--abbrev-ref", "HEAD"]

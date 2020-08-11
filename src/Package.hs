@@ -17,6 +17,7 @@ module Package (
   getSources,
   putPkgHdr,
   putPkgBrnchHdr,
+  putPkgAnyBrnchHdr,
   withExistingDirectory,
   initialPkgRepo,
 --  withBranchByPackages,
@@ -90,12 +91,12 @@ findSpecfile = fileWithExtension ".spec"
       files <- filter ((== ext) . takeExtension) <$> listDirectory "."
       maybe (error' ("No unique " ++ ext ++ " file found")) return $ listToMaybe files
 
-localBranchSpecFile :: Package -> Branch -> IO FilePath
-localBranchSpecFile pkg br = do
+localBranchSpecFile :: Package -> AnyBranch -> IO FilePath
+localBranchSpecFile pkg abr = do
   gitdir <- isPkgGitRepo
   when gitdir $ do
-    putPkgBrnchHdr pkg br
-    gitSwitchBranch br
+    putPkgAnyBrnchHdr pkg abr
+    gitSwitchBranch abr
   if gitdir
     then return $ packageSpec pkg
     else findSpecfile
@@ -105,13 +106,13 @@ rpmEval s = do
   res <- cmd "rpm" ["--eval", s]
   return $ if null res || res == s then Nothing else Just res
 
-generateSrpm :: Maybe Branch -> FilePath -> IO FilePath
+generateSrpm :: Maybe AnyBranch -> FilePath -> IO FilePath
 generateSrpm mbr spec = do
   getSources spec
   distopt <- case mbr of
                Nothing -> return []
                Just br -> do
-                 dist <- branchDist br
+                 dist <- getBranchDist br
                  return ["--define", "dist " ++ rpmDistTag dist]
   srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", "%{name}-%{version}-%{release}.src.rpm", spec]
   srcrpmdir <-
@@ -147,7 +148,8 @@ generateSrpm mbr spec = do
 data ForceShort = ForceBuild | ShortCircuit
   deriving Eq
 
-buildRPMs :: Bool -> Maybe ForceShort -> [FilePath] -> Branch -> FilePath -> IO ()
+buildRPMs :: Bool -> Maybe ForceShort -> [FilePath] -> AnyBranch -> FilePath
+          -> IO ()
 buildRPMs quiet mforceshort rpms br spec = do
   needBuild <-
     if isJust mforceshort
@@ -163,7 +165,7 @@ buildRPMs quiet mforceshort rpms br spec = do
     else do
     installDeps spec
     void $ getSources spec
-    dist <- branchDist br
+    dist <- getBranchDist br
     cwd <- getCurrentDirectory
     gitDir <- isGitRepo
     let shortcircuit = mforceshort == Just ShortCircuit
@@ -188,12 +190,12 @@ installDeps spec = do
     cmdSilent "/usr/bin/sudo" $ "/usr/bin/dnf":["builddep", "--assumeyes", spec]
     putStrLn "done"
 
-prepPackage :: Package -> Branch -> IO ()
-prepPackage pkg br = do
+prepPackage :: Package -> AnyBranch -> IO ()
+prepPackage pkg abr = do
   ifM (doesFileExist "dead.package")
     (putStrLn "dead.package") $
     do
-    spec <- localBranchSpecFile pkg br
+    spec <- localBranchSpecFile pkg abr
     unlessM (doesFileExist spec) $
       error' $ spec ++ " not found"
     cwd <- getCurrentDirectory
@@ -203,8 +205,11 @@ prepPackage pkg br = do
           [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_sourcedir"]]
         args = rpmdirs ++ ["-bp", spec]
-    nvr <- pkgNameVerRel' br spec
-    putStr $ "Prepping " ++ nvr ++ ": "
+    case abr of
+      RelBranch br -> do
+        nvr <- pkgNameVerRel' br spec
+        putStr $ "Prepping " ++ nvr ++ ": "
+      _ -> return ()
     cmdSilent_ "rpmbuild" args
     putStrLn "done"
 
@@ -264,6 +269,10 @@ putPkgBrnchHdr :: Package -> Branch -> IO ()
 putPkgBrnchHdr pkg br =
   putStrLn $ "\n== " ++ unPackage pkg ++ " " ++ show br ++ " =="
 
+putPkgAnyBrnchHdr :: Package -> AnyBranch -> IO ()
+putPkgAnyBrnchHdr pkg abr =
+  putStrLn $ "\n== " ++ unPackage pkg ++ " " ++ show abr ++ " =="
+
 packagePath :: String -> (FilePath, Package)
 packagePath path =
   (path, Package (takeFileName path))
@@ -284,7 +293,7 @@ dirtyGit = Just $ GitOpts False False
 dirtyGitFetch = Just $ GitOpts False True
 
 -- do package over branches
-withPackageByBranches :: Bool -> Maybe GitOpts -> (Package -> Branch -> IO ()) -> (Branches,[String]) -> IO ()
+withPackageByBranches :: Bool -> Maybe GitOpts -> (Package -> AnyBranch -> IO ()) -> (Branches,[String]) -> IO ()
 withPackageByBranches header mgitopts action (brnchs,pkgs) = do
   if null pkgs
     then do
@@ -357,13 +366,17 @@ pkgNameVerRel' br spec = do
     Nothing -> error' $ "rpmspec failed to parse " ++ spec
     Just nvr -> return nvr
 
-builtRpms :: Branch -> FilePath -> IO [FilePath]
+builtRpms :: AnyBranch -> FilePath -> IO [FilePath]
 builtRpms br spec = do
-  dist <- branchDist br
+  dist <- getBranchDist br
   rpms <- rpmspec ["--builtrpms", "--define", "dist " ++ rpmDistTag dist] (Just "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") spec
   if null rpms
     then error' $ spec ++ " does not seem to create any rpms"
     else return rpms
+
+getBranchDist :: AnyBranch -> IO Dist
+getBranchDist (RelBranch br) = branchDist br
+getBranchDist (OtherBranch _) = systemBranch >>= branchDist
 
 -- from fedora-haskell-tools
 buildRequires :: FilePath -> IO [String]

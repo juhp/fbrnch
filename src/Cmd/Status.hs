@@ -32,9 +32,11 @@ statusCmd reviews (brnchs,pkgs) = do
     (brnchs, reviewpkgs ++ pkgs)
 
 -- FIXME note dirty when local changes
-statusBranch :: Package -> Branch -> IO ()
-statusBranch pkg br = do
-  gitSwitchBranch br
+statusBranch :: Package -> AnyBranch -> IO ()
+statusBranch _ (OtherBranch _) =
+  error' "status currently only defined for release branches"
+statusBranch pkg rbr@(RelBranch br) = do
+  gitSwitchBranch rbr
   let spec = packageSpec pkg
   ifM (notM (doesFileExist spec))
     (ifM initialPkgRepo

@@ -123,14 +123,14 @@ dispatchCmd activeBranches =
     branchM :: ReadM Branch
     branchM = eitherReader (eitherActiveBranch activeBranches)
 
-    anyBranchOpt :: Parser Branch
+    anyBranchOpt :: Parser AnyBranch
     anyBranchOpt = optionWith anyBranchM 'b' "branch" "BRANCH" "branch"
 
-    anyBranchArg :: Parser Branch
+    anyBranchArg :: Parser AnyBranch
     anyBranchArg = argumentWith anyBranchM "BRANCH.."
 
-    anyBranchM :: ReadM Branch
-    anyBranchM = eitherReader eitherBranch
+    anyBranchM :: ReadM AnyBranch
+    anyBranchM = anyBranch <$> str
 
     pkgArg :: String -> Parser String
     pkgArg lbl = removeSuffix "/" <$> strArg lbl
