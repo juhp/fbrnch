@@ -109,6 +109,7 @@ kojiWatchTask task =
     case mst of
       Just TaskClosed -> return ()
       Just TaskFailed -> error "Task failed!"
+      Just TaskCanceled -> return ()
       _ -> kojiWatchTask task
 
 kojiWatchTaskQuiet ::TaskID -> IO Bool
