@@ -148,6 +148,7 @@ generateSrpm mbr spec = do
 data ForceShort = ForceBuild | ShortCircuit
   deriving Eq
 
+-- FIXME create build.log
 buildRPMs :: Bool -> Maybe ForceShort -> [FilePath] -> AnyBranch -> FilePath
           -> IO ()
 buildRPMs quiet mforceshort rpms br spec = do

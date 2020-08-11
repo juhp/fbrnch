@@ -1,4 +1,3 @@
-
 # new commands
 - arbitrary 'cmd'
 - 'unpushed' command, etc (from f-h-t)
@@ -7,6 +6,7 @@
 - 'check-sources'
 - 'update' version
 - worktree support
+- 'update-sources'
 
 # release deps
 - koji (new)
@@ -14,6 +14,7 @@
 - bodhi (new)
 - copr (new)
 - fedora-dists (update)
+  - pdc
 
 # other namespaces
 - support containers/ and modules/
@@ -54,5 +55,6 @@
 - ssh & scp
 - copr-cli
 
-# longterm
-- "fbrnch todo" list - local state caching
+# longterm ideas
+- "fbrnch todo" list
+- local state caching
