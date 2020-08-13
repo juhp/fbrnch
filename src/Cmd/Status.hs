@@ -100,7 +100,7 @@ statusBranch pkg rbr@(RelBranch br) = do
           else putStrLn $ show br ++ ": " ++ simplifyCommitLog unpushed
   where
     isStable :: [String] -> Bool
-    isStable = not . all ("updates-testing" `isSuffixOf`)
+    isStable = not . all ("-testing" `isSuffixOf`)
 
     putAge :: NominalDiffTime -> IO ()
     putAge diff = do
