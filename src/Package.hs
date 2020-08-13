@@ -92,11 +92,11 @@ findSpecfile = fileWithExtension ".spec"
       maybe (error' ("No unique " ++ ext ++ " file found")) return $ listToMaybe files
 
 localBranchSpecFile :: Package -> AnyBranch -> IO FilePath
-localBranchSpecFile pkg abr = do
+localBranchSpecFile pkg br = do
   gitdir <- isPkgGitRepo
   when gitdir $ do
-    putPkgAnyBrnchHdr pkg abr
-    gitSwitchBranch abr
+    putPkgAnyBrnchHdr pkg br
+    gitSwitchBranch br
   if gitdir
     then return $ packageSpec pkg
     else findSpecfile
@@ -192,11 +192,11 @@ installDeps spec = do
     putStrLn "done"
 
 prepPackage :: Package -> AnyBranch -> IO ()
-prepPackage pkg abr = do
+prepPackage pkg br = do
   ifM (doesFileExist "dead.package")
     (putStrLn "dead.package") $
     do
-    spec <- localBranchSpecFile pkg abr
+    spec <- localBranchSpecFile pkg br
     unlessM (doesFileExist spec) $
       error' $ spec ++ " not found"
     cwd <- getCurrentDirectory
@@ -206,9 +206,9 @@ prepPackage pkg abr = do
           [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_sourcedir"]]
         args = rpmdirs ++ ["-bp", spec]
-    case abr of
-      RelBranch br -> do
-        nvr <- pkgNameVerRel' br spec
+    case br of
+      RelBranch rbr -> do
+        nvr <- pkgNameVerRel' rbr spec
         putStr $ "Prepping " ++ nvr ++ ": "
       _ -> return ()
     cmdSilent_ "rpmbuild" args
@@ -271,8 +271,8 @@ putPkgBrnchHdr pkg br =
   putStrLn $ "\n== " ++ unPackage pkg ++ " " ++ show br ++ " =="
 
 putPkgAnyBrnchHdr :: Package -> AnyBranch -> IO ()
-putPkgAnyBrnchHdr pkg abr =
-  putStrLn $ "\n== " ++ unPackage pkg ++ " " ++ show abr ++ " =="
+putPkgAnyBrnchHdr pkg br =
+  putStrLn $ "\n== " ++ unPackage pkg ++ " " ++ show br ++ " =="
 
 packagePath :: String -> (FilePath, Package)
 packagePath path =

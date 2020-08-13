@@ -121,17 +121,17 @@ gitLines :: String -> [String] -> IO [String]
 gitLines c args = lines <$> git c args
 
 gitSwitchBranch :: AnyBranch -> IO ()
-gitSwitchBranch abr = do
+gitSwitchBranch br = do
   localbranches <- gitLines "branch" ["--format=%(refname:short)"]
-  if show abr `elem` localbranches then do
+  if show br `elem` localbranches then do
     current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
-    when (current /= show abr) $
+    when (current /= show br) $
       -- cmdSilent
-      git_ "checkout" ["-q", show abr]
+      git_ "checkout" ["-q", show br]
     else do
     -- check remote branch exists
-    remotebranch <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show abr]
+    remotebranch <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
     if not remotebranch
-      then error' $ show abr ++ " branch does not exist!"
+      then error' $ show br ++ " branch does not exist!"
       else
-      git_ "checkout" ["-q", "-b", show abr, "--track", "origin" </> show abr]
+      git_ "checkout" ["-q", "-b", show br, "--track", "origin" </> show br]
