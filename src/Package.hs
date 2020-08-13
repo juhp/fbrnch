@@ -98,7 +98,13 @@ localBranchSpecFile pkg br = do
     putPkgAnyBrnchHdr pkg br
     gitSwitchBranch br
   if gitdir
-    then return $ packageSpec pkg
+    then do
+    let spec = packageSpec pkg
+    ifM (doesFileExist spec)
+      (return spec) $
+      do
+        putStrLn $ "spec file is not " ++ spec ++ "\n"
+        findSpecfile
     else findSpecfile
 
 rpmEval :: String -> IO (Maybe String)
