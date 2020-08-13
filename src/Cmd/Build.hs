@@ -243,7 +243,7 @@ scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
     scratchBuild :: Package -> AnyBranch -> IO ()
     scratchBuild pkg br = do
       spec <- localBranchSpecFile pkg br
-      let target = fromMaybe "rawhide" mtarget
+      let target = fromMaybe (anyTarget br) mtarget
       let args = ["--arch-override=" ++ intercalate "," archs | notNull archs] ++ ["--fail-fast" | not nofailfast] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
       pkggit <- isPkgGitRepo
       if pkggit
@@ -263,6 +263,9 @@ scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
         srpmBuild :: FilePath -> [String] -> String -> IO ()
         srpmBuild target args spec = do
           void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
+
+        anyTarget (RelBranch b) = branchTarget b
+        anyTarget _ = "rawhide"
 
 type Job = (String, Async String)
 
