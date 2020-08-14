@@ -146,8 +146,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
         [] -> do
           let tag = fromMaybe (branchDestTag br) mtarget
           mlatest <- kojiLatestNVR tag $ unPackage pkg
-          -- FIXME this fails to detect sub-disttag release
-          if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
+          if equivNVR nvr (fromMaybe "" mlatest)
             then error' $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
             else do
             unless dryrun krbTicket
@@ -380,7 +379,7 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
             [] -> do
               let tag = fromMaybe (branchDestTag br) mtarget
               mlatest <- kojiLatestNVR tag $ unPackage pkg
-              if dropExtension nvr == dropExtension (fromMaybe "" mlatest)
+              if equivNVR nvr (fromMaybe "" mlatest)
                 then return $ error' $ color Red $ nvr ++ " is already latest (modulo disttag)"
                 else do
                 -- FIXME parse build output
@@ -397,3 +396,21 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
             bodhiCreateOverride nvr
           kojiWaitRepo target nvr
           return nvr
+
+-- FIXME could be more strict about dist tag (eg .fcNN only)
+equivNVR :: String -> String -> Bool
+equivNVR nvr1 nvr2 =
+  if nvr1 == nvr2 then True
+  else
+    if length nvr1 /= length nvr2 then False
+    else
+      -- (name-ver-rel,.dist)
+      let (nvr, r) = splitExtension nvr1
+          (nvr', r') = splitExtension nvr2
+      in if nvr /= nvr' then False
+         else
+           -- (dist,.more)
+           let (r1,r1') = splitExtension $ tail r
+               (r2,r2') = splitExtension $ tail r'
+           -- allow differing dist
+           in length r1 == length r2 && r1' == r2'
