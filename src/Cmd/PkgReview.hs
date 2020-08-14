@@ -70,7 +70,8 @@ getSpecFile =
 buildAndUpload :: Bool -> String -> String -> FilePath
                -> IO (Maybe String, String)
 buildAndUpload noscratch srpm pkg spec = do
-  mkojiurl <- kojiScratchUrl noscratch srpm
+  mkojiurl <- if noscratch then return Nothing
+    else Just <$> kojiScratchBuild "rawhide" [] srpm
   specSrpmUrls <- uploadPkgFiles pkg spec srpm
   return (mkojiurl, specSrpmUrls)
 

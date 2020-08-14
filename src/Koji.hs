@@ -7,7 +7,6 @@ module Koji (
   kojiLatestNVR,
   kojiOpenTasks,
   kojiScratchBuild,
-  kojiScratchUrl,
   buildIDInfo,
   BuildState(..),
   kojiBuild,
@@ -62,12 +61,6 @@ kojiOpenTasks pkg mref target = do
   kojiUserBuildTasks fedoraHub userid (Just source) (Just target)
 
 -- * Koji building
-
-kojiScratchUrl :: Bool -> String -> IO (Maybe String)
-kojiScratchUrl noscratch srpm =
-    if noscratch
-    then return Nothing
-    else Just <$> kojiScratchBuild "rawhide" [] srpm
 
 kojiScratchBuild :: String -> [String] -> FilePath -> IO String
 kojiScratchBuild target args srpm = do
