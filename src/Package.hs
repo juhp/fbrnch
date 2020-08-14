@@ -364,7 +364,9 @@ clonePkg mbr pkg =
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
 pkgNameVerRel br spec = do
   dist <- branchDist br
-  listToMaybe <$> rpmspec ["--define", "dist " ++ rpmDistTag dist, "--srpm"] (Just "%{name}-%{version}-%{release}") spec
+  -- workaround dist with bootstrap
+  hostdist <- cmd "rpm" ["--eval", "%{dist}"]
+  fmap (replace hostdist (rpmDistTag dist)) . listToMaybe <$> rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
 
 pkgNameVerRel' :: Branch -> FilePath -> IO String
 pkgNameVerRel' br spec = do
