@@ -286,7 +286,7 @@ parallelBuildCmd dryrun mtarget (brnchs,pkgs) = do
   branches <- listOfBranches True brnchs
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
-  if (null pkgs)
+  if null pkgs
     then do
     unlessM isPkgGitRepo $
       error' "Please specify at least one package"
@@ -380,7 +380,7 @@ parallelBuildCmd dryrun mtarget (brnchs,pkgs) = do
             case mtags of
               Nothing -> error' $ nvr ++ " is untagged"
               Just tags -> do
-                unless (dryrun || (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"])) $
+                unless (dryrun || any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
                   bodhiCreateOverride nvr
           return $ do
             unless dryrun $
@@ -427,16 +427,14 @@ parallelBuildCmd dryrun mtarget (brnchs,pkgs) = do
 
 -- FIXME could be more strict about dist tag (eg .fcNN only)
 equivNVR :: String -> String -> Bool
-equivNVR nvr1 nvr2 =
-  if nvr1 == nvr2 then True
-  else
-    if length nvr1 /= length nvr2 then False
-    else
+equivNVR nvr1 nvr2
+  | nvr1 == nvr2 = True
+  | length nvr1 /= length nvr2 = False
+  | otherwise =
       -- (name-ver-rel,.dist)
       let (nvr, r) = splitExtension nvr1
           (nvr', r') = splitExtension nvr2
-      in if nvr /= nvr' then False
-         else
+      in nvr == nvr' &&
            -- (dist,.more)
            let (r1,r1') = splitExtension $ tail r
                (r2,r2') = splitExtension $ tail r'

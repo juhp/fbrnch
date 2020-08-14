@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Cmd.Copr (
   BuildBy(..),
@@ -41,10 +42,9 @@ coprCmd dryrun buildBy archs project (brnchs,pkgs) = do
         then return $ (map (releaseBranch . T.pack) . nub . map removeArch) chroots
         else do
           brs <- listOfBranches False brnchs
-          forM brs $ \ br ->
-            case br of
-              OtherBranch obr -> error' $ "unknown copr target: " ++ obr
-              RelBranch rbr -> return rbr
+          forM brs $ \ case
+            OtherBranch obr -> error' $ "unknown copr target: " ++ obr
+            RelBranch rbr -> return rbr
       let buildroots =
             reverseSort $
             if null archs
