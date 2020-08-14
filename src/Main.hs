@@ -54,7 +54,7 @@ dispatchCmd activeBranches =
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd <$> buildOpts <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
-      parallelBuildCmd <$> targetOpt <*> branchesPackages
+      parallelBuildCmd <$> dryrunOpt <*> targetOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd <$> rebuildSrpmOpt <*> noFailFastOpt <*> many archOpt <*> targetOpt <*> localBranchPackages
     , Subcommand "sort" "Sort packages in build dependency order" $

@@ -279,8 +279,8 @@ type Job = (String, Async String)
 -- FIXME add --with-side-tag
 -- FIXME check sources asap
 -- FIXME check not in pkg git dir
-parallelBuildCmd :: Maybe String -> (Branches,[String]) -> IO ()
-parallelBuildCmd mtarget (brnchs,pkgs) = do
+parallelBuildCmd :: Bool -> Maybe String -> (Branches,[String]) -> IO ()
+parallelBuildCmd dryrun mtarget (brnchs,pkgs) = do
   when (brnchs == BranchList []) $
     error' "Please specify at least one branch"
   branches <- listOfBranches True brnchs
@@ -343,7 +343,8 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
       checkForSpecFile spec
       unless (null unpushed) $ do
         checkSourcesMatch spec
-        gitPushSilent Nothing
+        unless dryrun $
+          gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
       let  target = fromMaybe (branchTarget br) mtarget
       -- FIXME should compare git refs
@@ -357,10 +358,11 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
             case mtags of
               Nothing -> error' $ nvr ++ " is untagged"
               Just tags -> do
-                unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+                unless (dryrun || (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"])) $
                   bodhiCreateOverride nvr
           return $ do
-            kojiWaitRepo target nvr
+            unless dryrun $
+              kojiWaitRepo target nvr
             return nvr
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
@@ -383,8 +385,11 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
                 then return $ error' $ color Red $ nvr ++ " is already latest (modulo disttag)"
                 else do
                 -- FIXME parse build output
-                task <- kojiBuildBranchNoWait target pkg Nothing ["--fail-fast", "--background"]
-                return $ kojiWaitTaskAndRepo nvr target task
+                if dryrun
+                  then return (return nvr)
+                  else do
+                  task <- kojiBuildBranchNoWait target pkg Nothing ["--fail-fast", "--background"]
+                  return $ kojiWaitTaskAndRepo nvr target task
       where
         kojiWaitTaskAndRepo :: String -> String -> TaskID -> IO String
         kojiWaitTaskAndRepo nvr target task = do
@@ -392,9 +397,10 @@ parallelBuildCmd mtarget (brnchs,pkgs) = do
           if finish
             then putStrLn $ color Green $ nvr ++ " build success"
             else error' $ color Red $ nvr ++ " build failed"
-          when (br /= Master && isNothing mtarget) $
-            bodhiCreateOverride nvr
-          kojiWaitRepo target nvr
+          unless dryrun $ do
+            when (br /= Master && isNothing mtarget) $
+              bodhiCreateOverride nvr
+            kojiWaitRepo target nvr
           return nvr
 
 -- FIXME could be more strict about dist tag (eg .fcNN only)
