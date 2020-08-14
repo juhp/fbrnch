@@ -172,7 +172,9 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                 else do
                 -- FIXME diff previous changelog?
                 changelog <- getChangeLog spec
-                bodhiUpdate (fmap fst mBugSess) changelog nvr
+                autoupdate <- checkAutoBodhiUpdate
+                unless autoupdate $
+                  bodhiUpdate (fmap fst mBugSess) changelog nvr
                 -- FIXME autochain
                 -- FIXME prompt for override note
                 when (buildoptOverride opts) $ do
@@ -180,6 +182,10 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                     bodhiCreateOverride nvr
               when morethan1 $ kojiWaitRepo target nvr
   where
+    checkAutoBodhiUpdate :: IO Bool
+    checkAutoBodhiUpdate =
+      lookupKey' "create_automatic_updates" <$> bodhiRelease (show br)
+
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do
       let cbugs = mapMaybe extractBugReference $ lines changelog
