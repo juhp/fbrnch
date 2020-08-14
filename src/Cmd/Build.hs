@@ -241,7 +241,8 @@ bodhiCreateOverride nvr = do
       Just obj -> print obj
 
 -- FIXME --exclude-arch
--- FIXME build from a git ref
+-- FIXME build from a specific git ref
+-- FIXME print message about uploading srpm
 scratchCmd :: Bool -> Bool -> [String] -> Maybe String -> (Maybe Branch,[String]) -> IO ()
 scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
   withPackageByBranches True Nothing scratchBuild (maybeBranches mbr,pkgs)

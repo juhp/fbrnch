@@ -77,6 +77,7 @@ kojiBuild' wait target args = do
   krbTicket
   cmd_ "date" []
   -- FIXME setTermTitle nvr
+  -- FIXME tee functionality
   out <- cmd "koji" $ ["build", "--nowait", target] ++ args
   putStrLn out
   let kojiurl = last $ words out
