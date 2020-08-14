@@ -91,19 +91,19 @@ kojiBuild target args = do
 
 -- FIXME filter/simplify output
 kojiWatchTask :: TaskID -> IO ()
-kojiWatchTask task =
-  ifM (cmdBool "koji" ["watch-task", displayID task])
-  (return ()) $
-  do
-    -- FIXME can error:
-    -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
-    -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
-    mst <- kojiGetTaskState fedoraHub task
-    case mst of
-      Just TaskClosed -> return ()
-      Just TaskFailed -> error "Task failed!"
-      Just TaskCanceled -> return ()
-      _ -> kojiWatchTask task
+kojiWatchTask task = do
+  -- FIXME can error:
+  -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
+  -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
+  -- eg3 [ERROR] koji: ReadTimeout: HTTPSConnectionPool(host='koji.fedoraproject.org', port=443): Read timed out. (read timeout=43200)
+  -- This might error with exit 0 occasionally so we check the taskstate always
+  void $ cmdBool "koji" ["watch-task", displayID task]
+  mst <- kojiGetTaskState fedoraHub task
+  case mst of
+    Just TaskClosed -> return ()
+    Just TaskFailed -> error "Task failed!"
+    Just TaskCanceled -> return ()
+    _ -> kojiWatchTask task
 
 kojiWatchTaskQuiet ::TaskID -> IO Bool
 kojiWatchTaskQuiet task =
