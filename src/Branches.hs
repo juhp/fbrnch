@@ -7,6 +7,7 @@ module Branches (
   module Distribution.Fedora.Branch,
   AnyBranch(..),
   anyBranch,
+  onlyRelBranch,
   Branches(..),
   maybeBranches,
   anyBranches,
@@ -83,6 +84,10 @@ maybeBranches = BranchList . maybeToList
 anyBranches :: AnyBranch -> Branches
 anyBranches (RelBranch br) = BranchList [br]
 anyBranches (OtherBranch obr) = AnotherBranch obr
+
+onlyRelBranch :: AnyBranch -> Branch
+onlyRelBranch (RelBranch br) = br
+onlyRelBranch (OtherBranch br) = error' $ "Non-release branch not allowed: " ++ br
 
 systemBranch :: IO Branch
 systemBranch =

@@ -286,17 +286,37 @@ parallelBuildCmd dryrun mtarget (brnchs,pkgs) = do
   branches <- listOfBranches True brnchs
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
-  when (null pkgs) $
-    error' "Please specify at least one package"
-  forM_ branches $ \ br -> do
-    case br of
-      (RelBranch rbr) -> do
-        putStrLn $ "# " ++ show rbr
-        layers <- dependencyLayers pkgs
-        mapM_ (parallelBuild rbr) layers
-      (OtherBranch _) ->
-        error' "parallel builds only defined for release branches"
+  if (null pkgs)
+    then do
+    unlessM isPkgGitRepo $
+      error' "Please specify at least one package"
+    parallelBranches $ map onlyRelBranch branches
+    else do
+    forM_ branches $ \ br -> do
+      case br of
+        (RelBranch rbr) -> do
+          putStrLn $ "# " ++ show rbr
+          layers <- dependencyLayers pkgs
+          mapM_ (parallelBuild rbr) layers
+        (OtherBranch _) ->
+          error' "parallel builds only defined for release branches"
   where
+    parallelBranches :: [Branch] -> IO ()
+    parallelBranches brs = do
+      krbTicket
+      putStrLn $ "Building parallel " ++ show (length brs) ++ " branches:"
+      putStrLn $ unwords $ map show brs
+      jobs <- mapM setupBranch brs
+      failures <- watchJobs [] jobs
+      unless (null failures) $
+        error' $ "Build failures: " ++ unwords failures
+      where
+        setupBranch :: Branch -> IO Job
+        setupBranch br = do
+          job <- startBuild br "." >>= async
+          sleep 5
+          return (show br,job)
+
     parallelBuild :: Branch -> [String] -> IO ()
     parallelBuild br layer =  do
       krbTicket
@@ -334,7 +354,9 @@ parallelBuildCmd dryrun mtarget (brnchs,pkgs) = do
     startBuild br pkgdir =
       withExistingDirectory pkgdir $ do
       gitSwitchBranch (RelBranch br)
-      let pkg = getPackageName pkgdir
+      pkg <- if pkgdir == "."
+             then Package <$> getDirectoryName
+             else return $ getPackageName pkgdir
       putPkgBrnchHdr pkg br
       unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $ do
