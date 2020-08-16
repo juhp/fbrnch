@@ -93,25 +93,31 @@ systemBranch :: IO Branch
 systemBranch =
   readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
 
-listOfBranches :: Bool -> Branches -> IO [AnyBranch]
-listOfBranches distgit AllBranches =
+listOfBranches :: Bool -> Bool -> Branches -> IO [AnyBranch]
+listOfBranches distgit _active AllBranches =
   -- FIXME for status had: RemoteBranches -> fedoraBranches $ pagurePkgBranches (unPackage pkg)
   if distgit
   then map RelBranch <$> fedoraBranches localBranches
   else error' "--all-branches only allowed for dist-git packages"
-listOfBranches distgit (BranchList brs) =
+listOfBranches distgit active (BranchList brs) =
   if null brs
   then
     pure <$> if distgit
              then gitCurrentBranch
              else RelBranch <$> systemBranch
-  else return $ map RelBranch brs
-listOfBranches distgit (ExcludeBranches brs) = do
+  else do
+    when active $ do
+      activeBrs <- getFedoraBranches
+      forM_ brs $ \ br ->
+        unless (br `elem` activeBrs) $
+        error' $ show br ++ " is not an active branch"
+    return $ map RelBranch brs
+listOfBranches distgit _ (ExcludeBranches brs) = do
   branches <- if distgit
               then fedoraBranches localBranches
               else getFedoraBranches
   return $ map RelBranch (branches \\ brs)
-listOfBranches _distgit (AnotherBranch obr) =
+listOfBranches _distgit _ (AnotherBranch obr) =
   return [OtherBranch obr]
 
 getReleaseBranch :: IO Branch

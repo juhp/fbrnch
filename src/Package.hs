@@ -24,6 +24,7 @@ module Package (
   withPackageByBranches,
   cleanGit,
   cleanGitFetch,
+  cleanGitFetchActive,
   dirtyGit,
   dirtyGitFetch,
   Package(..),
@@ -291,13 +292,15 @@ data GitOpts =
   GitOpts
   { gitOptClean :: Bool
   , gitOptFetch :: Bool
+  , gitOptActive :: Bool
   }
 
-cleanGit, cleanGitFetch, dirtyGit, dirtyGitFetch :: Maybe GitOpts
-cleanGit = Just $ GitOpts True False
-cleanGitFetch = Just $ GitOpts True True
-dirtyGit = Just $ GitOpts False False
-dirtyGitFetch = Just $ GitOpts False True
+cleanGit, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitFetch :: Maybe GitOpts
+cleanGit = Just $ GitOpts True False False
+cleanGitFetch = Just $ GitOpts True True False
+cleanGitFetchActive = Just $ GitOpts True True True
+dirtyGit = Just $ GitOpts False False False
+dirtyGitFetch = Just $ GitOpts False True False
 
 -- do package over branches
 withPackageByBranches :: Bool -> Maybe GitOpts -> (Package -> AnyBranch -> IO ()) -> (Branches,[String]) -> IO ()
@@ -320,7 +323,7 @@ withPackageByBranches header mgitopts action (brnchs,pkgs) = do
         error' $ "Not a pkg git dir: " ++ unPackage pkg
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
-      branches <- listOfBranches haveGit brnchs
+      branches <- listOfBranches haveGit (have gitOptActive) brnchs
       let fetch = have gitOptFetch
       when ((header && length branches /= 1 || fetch) && dir /= ".") $
         putPkgHdr pkg

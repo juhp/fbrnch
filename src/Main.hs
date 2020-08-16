@@ -36,10 +36,6 @@ main = do
   tty <- hIsTerminalDevice stdin
   when tty $ hSetBuffering stdout NoBuffering
   -- FIXME? some commands do not use branches
-  getFedoraBranches >>= dispatchCmd
-
-dispatchCmd :: [Branch] -> IO ()
-dispatchCmd activeBranches =
   simpleCmdArgs (Just version) "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
@@ -121,7 +117,7 @@ dispatchCmd activeBranches =
     branchArg = argumentWith branchM "BRANCH.."
 
     branchM :: ReadM Branch
-    branchM = eitherReader (eitherActiveBranch activeBranches)
+    branchM = eitherReader eitherBranch'
 
     anyBranchOpt :: Parser AnyBranch
     anyBranchOpt = optionWith anyBranchM 'b' "branch" "BRANCH" "branch"

@@ -41,7 +41,7 @@ coprCmd dryrun buildBy archs project (brnchs,pkgs) = do
         if brnchs == BranchList []
         then return $ (map (releaseBranch . T.pack) . nub . map removeArch) chroots
         else do
-          brs <- listOfBranches False brnchs
+          brs <- listOfBranches False False brnchs
           forM brs $ \ case
             OtherBranch obr -> error' $ "unknown copr target: " ++ obr
             RelBranch rbr -> return rbr

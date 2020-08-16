@@ -75,7 +75,7 @@ buildCmd opts (brnchs,pkgs) = do
     when (isJust (buildoptTarget opts) && somebrnchs) $
     error' "You can only specify target with one branch"
   let morethan1 = length pkgs > 1
-  withPackageByBranches True cleanGitFetch (buildBranch morethan1 opts) (brnchs,pkgs)
+  withPackageByBranches True cleanGitFetchActive (buildBranch morethan1 opts) (brnchs,pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: Bool -> BuildOpts -> Package -> AnyBranch -> IO ()
@@ -283,7 +283,7 @@ parallelBuildCmd :: Bool -> Maybe String -> (Branches,[String]) -> IO ()
 parallelBuildCmd dryrun mtarget (brnchs,pkgs) = do
   when (brnchs == BranchList []) $
     error' "Please specify at least one branch"
-  branches <- listOfBranches True brnchs
+  branches <- listOfBranches True True brnchs
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   if null pkgs
