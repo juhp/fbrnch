@@ -28,6 +28,7 @@ listReviews' allopen status = do
       query = case status of
         ReviewAllOpen -> reviews .&&. statusOpen
         ReviewUnApproved -> reviews .&&. statusOpen .&&. not' reviewApproved
+        ReviewApproved -> reviews .&&. statusNewPost .&&. reviewApproved
         ReviewUnbranched -> reviews .&&. statusNewModified .&&. reviewApproved
         _ -> reviews .&&. open .&&. reviewApproved
   -- FIXME sort by status, bid (default?) / pkg?
