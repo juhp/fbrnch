@@ -34,7 +34,8 @@ module Package (
   buildRequires,
   notInstalled,
   pkgInstalled,
-  systemBranch
+  systemBranch,
+  equivNVR
   ) where
 
 import Common
@@ -404,3 +405,20 @@ notInstalled pkg =
 pkgInstalled :: String -> IO Bool
 pkgInstalled pkg =
   cmdBool "rpm" ["--quiet", "-q", pkg]
+
+
+-- FIXME could be more strict about dist tag (eg .fcNN only)
+equivNVR :: String -> String -> Bool
+equivNVR nvr1 nvr2
+  | nvr1 == nvr2 = True
+  | length nvr1 /= length nvr2 = False
+  | otherwise =
+      -- (name-ver-rel,.dist)
+      let (nvr, r) = splitExtension nvr1
+          (nvr', r') = splitExtension nvr2
+      in nvr == nvr' &&
+           -- (dist,.more)
+           let (r1,r1') = splitExtension $ tail r
+               (r2,r2') = splitExtension $ tail r'
+           -- allow differing dist
+           in length r1 == length r2 && r1' == r2'

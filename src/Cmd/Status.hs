@@ -21,13 +21,12 @@ import Package
 -- FIXME --pending
 -- FIXME handle not cloned (remote only)
 -- FIXME silence fetching of new branches? (for --reviews etc)
--- FIXME status of old branches
 statusCmd :: Bool -> (Branches,[String]) -> IO ()
 statusCmd reviews (brnchs,pkgs) = do
   reviewpkgs <- if reviews then
     map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
     else return []
-  -- FIXME bring back pulling RemoteBranches
+  -- FIXME is dirty okay for some branches?
   withPackageByBranches True dirtyGitFetch statusBranch
     (brnchs, reviewpkgs ++ pkgs)
 
@@ -67,7 +66,7 @@ statusBranch pkg rbr@(RelBranch br) = do
               case mlatest of
                 Nothing -> putStrLn $ "new " ++ nvr
                 Just latest ->
-                  putStrLn $ if dropExtension nvr == dropExtension latest then nvr ++ " is already latest" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
+                  putStrLn $ if equivNVR nvr latest then latest ++ " is latest modulo disttag" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
             Just buildid -> do
               tags <- kojiBuildTags fedoraHub (buildIDInfo buildid)
               if null tags then do
