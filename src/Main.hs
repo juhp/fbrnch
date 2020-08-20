@@ -89,7 +89,7 @@ main = do
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranches <$> mockOpt <*> branchesRequestOpt <*> many pkgOpt
     , Subcommand "find-review" "Find package review bug" $
-      review <$> pkgArg "PACKAGE"
+      findReview <$> pkgArg "PACKAGE"
 --    , Subcommand "test-bz-token" "Check bugzilla login status" $
 --      pure testBZlogin
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
