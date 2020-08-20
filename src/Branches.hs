@@ -9,6 +9,7 @@ module Branches (
   anyBranch,
   onlyRelBranch,
   Branches(..),
+  someBranches,
   maybeBranches,
   anyBranches,
   listOfBranches,
@@ -80,6 +81,12 @@ data Branches = AllBranches | BranchList [Branch] | ExcludeBranches [Branch]
 
 maybeBranches :: Maybe Branch -> Branches
 maybeBranches = BranchList . maybeToList
+
+someBranches :: Branches -> Bool
+someBranches AllBranches = True
+someBranches (BranchList brs) = length brs > 1
+someBranches (ExcludeBranches _) = True
+someBranches (AnotherBranch _) = False
 
 anyBranches :: AnyBranch -> Branches
 anyBranches (RelBranch br) = BranchList [br]

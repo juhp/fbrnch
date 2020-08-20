@@ -323,13 +323,14 @@ withPackageByBranches header mgitopts action (brnchs,pkgs) = do
         error' $ "Not a pkg git dir: " ++ unPackage pkg
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
-      branches <- listOfBranches haveGit (have gitOptActive) brnchs
       let fetch = have gitOptFetch
-      when ((header && length branches /= 1 || fetch) && dir /= ".") $
+          singleBranch = not (someBranches brnchs) || brnchs == BranchList []
+      when ((header && not singleBranch || fetch) && dir /= ".") $
         putPkgHdr pkg
       when haveGit $ do
         when (have gitOptClean) checkWorkingDirClean
       when fetch gitFetchSilent
+      branches <- listOfBranches haveGit (have gitOptActive) brnchs
       when (brnchs == AllBranches) $
         putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
       mapM_ (action pkg) branches
