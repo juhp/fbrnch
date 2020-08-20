@@ -297,11 +297,12 @@ data GitOpts =
   }
 
 cleanGit, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitFetch :: Maybe GitOpts
-cleanGit = Just $ GitOpts True False False
-cleanGitFetch = Just $ GitOpts True True False
-cleanGitFetchActive = Just $ GitOpts True True True
-dirtyGit = Just $ GitOpts False False False
-dirtyGitFetch = Just $ GitOpts False True False
+--                                   clean fetch active
+cleanGit =            Just $ GitOpts True  False False
+cleanGitFetch =       Just $ GitOpts True  True  False
+cleanGitFetchActive = Just $ GitOpts True  True  True
+dirtyGit =            Just $ GitOpts False False False
+dirtyGitFetch =       Just $ GitOpts False True  False
 
 -- do package over branches
 withPackageByBranches :: Bool -> Maybe GitOpts -> (Package -> AnyBranch -> IO ()) -> (Branches,[String]) -> IO ()
