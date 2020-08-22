@@ -3,6 +3,7 @@ module Cmd.Local (
   installDepsCmd,
   localCmd,
   mockCmd,
+  nvrCmd,
   prepCmd,
   sortCmd,
   RpmWith(..),
@@ -115,3 +116,18 @@ mockCmd mroot (mbr,pkgs) =
       let resultsdir = "results_" ++ pkgname </> verrel
       rootBr <- maybe getReleaseBranch return mroot
       cmd_ "mock" ["--root", mockConfig rootBr, "--resultdir=" ++ resultsdir, srpm]
+
+nvrCmd :: (Branches,[String]) -> IO ()
+nvrCmd (brnchs,pkgs) =
+  withPackageByBranches False Nothing nvrBranch (brnchs,pkgs)
+  where
+    nvrBranch :: Package -> AnyBranch -> IO ()
+    nvrBranch pkg br = do
+      spec <- localBranchSpecFile pkg br
+      case br of
+        RelBranch rbr ->
+          pkgNameVerRel' rbr spec
+        OtherBranch _obr -> do
+          sbr <- systemBranch
+          pkgNameVerRel' sbr spec
+        >>= putStrLn

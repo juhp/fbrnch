@@ -43,6 +43,8 @@ main = do
       cloneCmd <$> optional branchOpt <*> cloneRequest
     , Subcommand "switch" "Switch branch" $
       switchCmd <$> (anyBranchOpt <|> anyBranchArg) <*> many (pkgArg "PACKAGE...")
+    , Subcommand "nvr" "Print name-version-release" $
+      nvrCmd <$> branchesPackages
     , Subcommand "status" "Status package/branch status" $
       statusCmd <$> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
