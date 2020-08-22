@@ -138,8 +138,9 @@ main = do
 
     branchesOpt :: Parser Branches
     branchesOpt =
-      BranchList . reverse . sort  <$> many branchOpt <|>
-      flagWith' AllBranches 'B' "all-branches" "All active branches" <|>
+      -- FIXME was: reverse . sort
+      BranchList <$> many anyBranchOpt <|>
+      flagWith' AllBranches 'B' "all-branches" "All active release branches" <|>
       ExcludeBranches <$> many excludeBranchOpt
 
     excludeBranchOpt :: Parser Branch
@@ -155,7 +156,10 @@ main = do
       (,) <$> optional branchArg <*> some pkgOpt
 
     branchesRequestOpt :: Parser Branches
-    branchesRequestOpt = flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|> BranchList <$> many branchArg <|> ExcludeBranches <$> many branchArg
+    branchesRequestOpt =
+      flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|>
+      BranchList . fmap RelBranch <$> many branchArg <|>
+      ExcludeBranches <$> many branchArg
 
     rpmWithOpt :: Parser RpmWith
     rpmWithOpt =

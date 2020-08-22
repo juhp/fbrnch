@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Branches (
   fedoraBranches,
   fedoraBranchesNoMaster,
@@ -75,22 +77,19 @@ mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"
 
 ------
 
-data Branches = AllBranches | BranchList [Branch] | ExcludeBranches [Branch]
-              | AnotherBranch String
+data Branches = AllBranches | BranchList [AnyBranch] | ExcludeBranches [Branch]
   deriving Eq
 
 maybeBranches :: Maybe Branch -> Branches
-maybeBranches = BranchList . maybeToList
+maybeBranches = BranchList . fmap RelBranch . maybeToList
 
 someBranches :: Branches -> Bool
 someBranches AllBranches = True
 someBranches (BranchList brs) = length brs > 1
 someBranches (ExcludeBranches _) = True
-someBranches (AnotherBranch _) = False
 
 anyBranches :: AnyBranch -> Branches
-anyBranches (RelBranch br) = BranchList [br]
-anyBranches (OtherBranch obr) = AnotherBranch obr
+anyBranches br = BranchList [br]
 
 onlyRelBranch :: AnyBranch -> Branch
 onlyRelBranch (RelBranch br) = br
@@ -115,17 +114,17 @@ listOfBranches distgit active (BranchList brs) =
   else do
     when active $ do
       activeBrs <- getFedoraBranches
-      forM_ brs $ \ br ->
-        unless (br `elem` activeBrs) $
-        error' $ show br ++ " is not an active branch"
-    return $ map RelBranch brs
+      forM_ brs $ \ case
+        RelBranch br ->
+          unless (br `elem` activeBrs) $
+          error' $ show br ++ " is not an active branch"
+        _ -> return ()
+    return brs
 listOfBranches distgit _ (ExcludeBranches brs) = do
   branches <- if distgit
               then fedoraBranches localBranches
               else getFedoraBranches
   return $ map RelBranch (branches \\ brs)
-listOfBranches _distgit _ (AnotherBranch obr) =
-  return [OtherBranch obr]
 
 getReleaseBranch :: IO Branch
 getReleaseBranch = do
