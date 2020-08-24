@@ -21,41 +21,45 @@ import Prompt
 
 -- FIXME add --mock option
 -- FIXME add --dependent pkgreview
-createReview :: Bool -> Bool -> Maybe FilePath -> IO ()
-createReview noscratch mock mspec = do
-  spec <- getSpecFile mspec
-  pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
-  unless (spec == pkg <.> "spec") $
-    putStrLn "Warning: package name and spec filename differ!"
-  unless (all isAscii pkg) $
-    putStrLn "Warning: package name is not ASCII!"
-  putStrLn "checking for existing reviews..."
-  (bugs,session) <- bugsSession $ pkgReviews pkg
-  unless (null bugs) $ do
-    putStrLn "Existing review(s):"
-    mapM_ putBug bugs
-    prompt_ "Press Enter to continue"
-  srpm <- generateSrpm Nothing spec
-  mockRpmLint mock pkg spec srpm
-  (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
-  bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
-  putStrLn "Review request posted:"
-  putBugId bugid
+createReview :: Bool -> Bool -> [FilePath] -> IO ()
+createReview noscratch mock pkgs =
+  withPackageByBranches (Just True) Nothing createPkgReview (BranchList [RelBranch Master],pkgs)
   where
-    postReviewReq :: BugzillaSession -> FilePath -> String -> Maybe String -> String -> IO BugId
-    postReviewReq session spec specSrpmUrls mkojiurl pkg = do
-      summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
-      description <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
-      let req = setRequestMethod "POST" $
-              setRequestCheckStatus $
-              newBzRequest session ["bug"]
-              [ makeTextItem "product" "Fedora"
-              , makeTextItem "component" "Package Review"
-              , makeTextItem "version" "rawhide"
-              , makeTextItem "summary" $ "Review Request: " <> pkg <> " - " <> summary
-              , makeTextItem "description" $ specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl
-              ]
-      lookupKey' "id" . getResponseBody <$> httpJSON req
+    createPkgReview :: Package -> AnyBranch -> IO ()
+    createPkgReview _pkg _br = do
+      spec <- getSpecFile Nothing
+      pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+      unless (spec == pkg <.> "spec") $
+        putStrLn "Warning: package name and spec filename differ!"
+      unless (all isAscii pkg) $
+        putStrLn "Warning: package name is not ASCII!"
+      putStrLn "checking for existing reviews..."
+      (bugs,session) <- bugsSession $ pkgReviews pkg
+      unless (null bugs) $ do
+        putStrLn "Existing review(s):"
+        mapM_ putBug bugs
+        prompt_ "Press Enter to continue"
+      srpm <- generateSrpm Nothing spec
+      mockRpmLint mock pkg spec srpm
+      (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
+      bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
+      putStrLn "Review request posted:"
+      putBugId bugid
+      where
+        postReviewReq :: BugzillaSession -> FilePath -> String -> Maybe String -> String -> IO BugId
+        postReviewReq session spec specSrpmUrls mkojiurl pkg = do
+          summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
+          description <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
+          let req = setRequestMethod "POST" $
+                  setRequestCheckStatus $
+                  newBzRequest session ["bug"]
+                  [ makeTextItem "product" "Fedora"
+                  , makeTextItem "component" "Package Review"
+                  , makeTextItem "version" "rawhide"
+                  , makeTextItem "summary" $ "Review Request: " <> pkg <> " - " <> summary
+                  , makeTextItem "description" $ specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl
+                  ]
+          lookupKey' "id" . getResponseBody <$> httpJSON req
 
 getSpecFile :: Maybe FilePath -> IO String
 getSpecFile =

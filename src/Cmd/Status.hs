@@ -27,7 +27,7 @@ statusCmd reviews (brnchs,pkgs) = do
     map reviewBugToPackage <$> listReviews' True ReviewRepoCreated
     else return []
   -- FIXME is dirty okay for some branches?
-  withPackageByBranches True dirtyGitFetch statusBranch
+  withPackageByBranches (Just False) dirtyGitFetch statusBranch
     (brnchs, reviewpkgs ++ pkgs)
 
 -- FIXME note dirty when local changes

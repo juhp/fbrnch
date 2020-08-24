@@ -22,7 +22,7 @@ data DiffWork =
 -- FIXME --no-fetch
 diffCmd :: DiffWork -> DiffFormat -> AnyBranch -> [String] -> IO ()
 diffCmd work fmt br pkgs =
-  withPackageByBranches False dirtyGit diffPkg (anyBranches br,pkgs)
+  withPackageByBranches Nothing dirtyGit diffPkg (anyBranches br,pkgs)
   where
     diffPkg :: Package -> AnyBranch -> IO ()
     diffPkg pkg _br = do

@@ -22,7 +22,7 @@ import Package
 -- FIXME --ignore-uninstalled subpackages
 installCmd :: Maybe ForceShort -> Bool -> (Maybe Branch,[String]) -> IO ()
 installCmd mforceshort reinstall (mbr,pkgs) = do
-  withPackageByBranches False Nothing installPkg (maybeBranches mbr,pkgs)
+  withPackageByBranches Nothing Nothing installPkg (maybeBranches mbr,pkgs)
   where
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
@@ -56,7 +56,7 @@ takeNVRName = takeBaseName . takeBaseName
 
 localCmd :: Maybe ForceShort -> (Maybe Branch,[String]) -> IO ()
 localCmd mforceshort (mbr,pkgs) =
-  withPackageByBranches False Nothing localBuildPkg (maybeBranches mbr,pkgs)
+  withPackageByBranches Nothing Nothing localBuildPkg (maybeBranches mbr,pkgs)
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
     localBuildPkg pkg br = do
@@ -66,7 +66,7 @@ localCmd mforceshort (mbr,pkgs) =
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd (mbr,pkgs) =
-  withPackageByBranches False Nothing installDepsPkg (maybeBranches mbr,pkgs)
+  withPackageByBranches Nothing Nothing installDepsPkg (maybeBranches mbr,pkgs)
   where
     installDepsPkg :: Package -> AnyBranch -> IO ()
     installDepsPkg pkg br =
@@ -74,7 +74,7 @@ installDepsCmd (mbr,pkgs) =
 
 srpmCmd :: (Maybe Branch,[String]) -> IO ()
 srpmCmd (mbr,pkgs) =
-  withPackageByBranches False Nothing srpmBuildPkg (maybeBranches mbr,pkgs)
+  withPackageByBranches Nothing Nothing srpmBuildPkg (maybeBranches mbr,pkgs)
 
 srpmBuildPkg :: Package -> AnyBranch -> IO ()
 srpmBuildPkg pkg br = do
@@ -86,7 +86,7 @@ data RpmWith = RpmWith String | RpmWithout String
 sortCmd :: Maybe RpmWith -> (Maybe Branch,[String]) -> IO ()
 sortCmd _ (_,[]) = return ()
 sortCmd mrpmwith (mbr,pkgs) = do
-  withPackageByBranches False Nothing dummy (maybeBranches mbr,pkgs)
+  withPackageByBranches Nothing Nothing dummy (maybeBranches mbr,pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
   packages <- dependencySortRpmOpts rpmopts $ reverse pkgs
   putStrLn $ unwords packages
@@ -99,11 +99,11 @@ sortCmd mrpmwith (mbr,pkgs) = do
 
 prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd (mbr,pkgs) =
-  withPackageByBranches False Nothing prepPackage (maybeBranches mbr,pkgs)
+  withPackageByBranches Nothing Nothing prepPackage (maybeBranches mbr,pkgs)
 
 mockCmd :: Maybe Branch -> (Maybe Branch,[String]) -> IO ()
 mockCmd mroot (mbr,pkgs) =
-  withPackageByBranches True Nothing mockBuildPkg (maybeBranches mbr,pkgs)
+  withPackageByBranches (Just True) Nothing mockBuildPkg (maybeBranches mbr,pkgs)
   where
     mockBuildPkg :: Package -> AnyBranch -> IO ()
     mockBuildPkg pkg br = do
@@ -119,7 +119,7 @@ mockCmd mroot (mbr,pkgs) =
 
 nvrCmd :: (Branches,[String]) -> IO ()
 nvrCmd (brnchs,pkgs) =
-  withPackageByBranches False Nothing nvrBranch (brnchs,pkgs)
+  withPackageByBranches Nothing Nothing nvrBranch (brnchs,pkgs)
   where
     nvrBranch :: Package -> AnyBranch -> IO ()
     nvrBranch pkg br = do

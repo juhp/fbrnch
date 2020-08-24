@@ -305,8 +305,8 @@ dirtyGit =            Just $ GitOpts False False False
 dirtyGitFetch =       Just $ GitOpts False True  False
 
 -- do package over branches
-withPackageByBranches :: Bool -> Maybe GitOpts -> (Package -> AnyBranch -> IO ()) -> (Branches,[String]) -> IO ()
-withPackageByBranches header mgitopts action (brnchs,pkgs) = do
+withPackageByBranches :: Maybe Bool -> Maybe GitOpts -> (Package -> AnyBranch -> IO ()) -> (Branches,[String]) -> IO ()
+withPackageByBranches mheader mgitopts action (brnchs,pkgs) = do
   if null pkgs
     then do
     pkg <- Package <$> getDirectoryName
@@ -327,7 +327,7 @@ withPackageByBranches header mgitopts action (brnchs,pkgs) = do
                         else return Nothing
       let fetch = have gitOptFetch
           singleBranch = not (someBranches brnchs) || brnchs == BranchList []
-      when ((header && not singleBranch || fetch) && dir /= ".") $
+      when ((mheader == Just True || isJust mheader && not singleBranch || fetch) && dir /= ".") $
         putPkgHdr pkg
       when haveGit $ do
         when (have gitOptClean) checkWorkingDirClean

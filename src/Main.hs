@@ -79,7 +79,7 @@ main = do
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> localBranchPackages
     , Subcommand "create-review" "Create a Package Review request" $
-      createReview <$> noScratchBuild <*> mockOpt <*> optional (strArg "SPECFILE")
+      createReview <$> noScratchBuild <*> mockOpt <*> many (pkgArg "PACKAGE...")
     , Subcommand "update-review" "Update a Package Review" $
       updateReview <$> noScratchBuild <*> mockOpt <*> optional (strArg "SPECFILE")
     , Subcommand "reviews" "List package reviews" $

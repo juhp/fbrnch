@@ -10,7 +10,7 @@ import Prompt
 
 mergeCmd :: (Branches,[String]) -> IO ()
 mergeCmd =
-  withPackageByBranches True cleanGitFetchActive runMergeBranch
+  withPackageByBranches (Just False) cleanGitFetchActive runMergeBranch
   where
     runMergeBranch :: Package -> AnyBranch -> IO ()
     runMergeBranch _ (OtherBranch _) =
