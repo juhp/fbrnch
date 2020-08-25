@@ -66,7 +66,7 @@ data BuildOpts = BuildOpts
 -- FIXME default behaviour for build in pkg dir: all branches or current?
 buildCmd :: BuildOpts -> (Branches,[String]) -> IO ()
 buildCmd opts (brnchs,pkgs) = do
-  when (isJust (buildoptTarget opts) && someBranches brnchs) $
+  when (isJust (buildoptTarget opts) && multipleBranches brnchs) $
     error' "You can only specify target with one branch"
   let morethan1 = length pkgs > 1
   withPackageByBranches (Just False) cleanGitFetchActive (buildBranch morethan1 opts) (brnchs,pkgs)

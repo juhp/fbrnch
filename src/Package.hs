@@ -326,7 +326,7 @@ withPackageByBranches mheader mgitopts action (brnchs,pkgs) = do
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
       let fetch = have gitOptFetch
-          singleBranch = not (someBranches brnchs) || brnchs == BranchList []
+          singleBranch = not (multipleBranches brnchs) || brnchs == BranchList []
       when ((mheader == Just True || isJust mheader && not singleBranch || fetch) && dir /= ".") $
         putPkgHdr pkg
       when haveGit $ do

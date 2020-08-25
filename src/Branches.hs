@@ -11,7 +11,7 @@ module Branches (
   anyBranch,
   onlyRelBranch,
   Branches(..),
-  someBranches,
+  multipleBranches,
   maybeBranches,
   anyBranches,
   listOfBranches,
@@ -83,10 +83,10 @@ data Branches = AllBranches | BranchList [AnyBranch] | ExcludeBranches [Branch]
 maybeBranches :: Maybe Branch -> Branches
 maybeBranches = BranchList . fmap RelBranch . maybeToList
 
-someBranches :: Branches -> Bool
-someBranches AllBranches = True
-someBranches (BranchList brs) = length brs > 1
-someBranches (ExcludeBranches _) = True
+multipleBranches :: Branches -> Bool
+multipleBranches AllBranches = True
+multipleBranches (BranchList brs) = length brs > 1
+multipleBranches (ExcludeBranches _) = True
 
 anyBranches :: AnyBranch -> Branches
 anyBranches br = BranchList [br]
