@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Branches (
   fedoraBranches,
   fedoraBranchesNoMaster,
@@ -10,10 +8,7 @@ module Branches (
   AnyBranch(..),
   anyBranch,
   onlyRelBranch,
-  Branches(..),
-  multipleBranches,
-  maybeBranches,
-  anyBranches,
+  BranchOpts(..),
   listOfBranches,
   gitCurrentBranch,
   systemBranch,
@@ -33,6 +28,9 @@ data AnyBranch = RelBranch Branch | OtherBranch String
 
 anyBranch :: String -> AnyBranch
 anyBranch = either OtherBranch RelBranch . eitherBranch
+
+-- allRelBranches :: [AnyBranch] -> Bool
+-- allRelBranches = all isRelBranch
 
 -- isRelBranch :: AnyBranch -> Bool
 -- isRelBranch (RelBranch _) = True
@@ -77,19 +75,8 @@ mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"
 
 ------
 
-data Branches = AllBranches | BranchList [AnyBranch] | ExcludeBranches [Branch]
+data BranchOpts = AllBranches | ExcludeBranches [Branch]
   deriving Eq
-
-maybeBranches :: Maybe Branch -> Branches
-maybeBranches = BranchList . fmap RelBranch . maybeToList
-
-multipleBranches :: Branches -> Bool
-multipleBranches AllBranches = True
-multipleBranches (BranchList brs) = length brs > 1
-multipleBranches (ExcludeBranches _) = True
-
-anyBranches :: AnyBranch -> Branches
-anyBranches br = BranchList [br]
 
 onlyRelBranch :: AnyBranch -> Branch
 onlyRelBranch (RelBranch br) = br
@@ -99,13 +86,14 @@ systemBranch :: IO Branch
 systemBranch =
   readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
 
-listOfBranches :: Bool -> Bool -> Branches -> IO [AnyBranch]
-listOfBranches distgit _active AllBranches =
-  -- FIXME for status had: RemoteBranches -> fedoraBranches $ pagurePkgBranches (unPackage pkg)
+listOfBranches :: Bool -> Bool -> Maybe BranchOpts -> [Branch] -> IO [AnyBranch]
+listOfBranches _ _active (Just AllBranches) (_:_) =
+  error' "cannot specify branches with all-branches"
+listOfBranches distgit _active (Just AllBranches) [] =
   if distgit
   then map RelBranch <$> fedoraBranches localBranches
   else error' "--all-branches only allowed for dist-git packages"
-listOfBranches distgit active (BranchList brs) =
+listOfBranches distgit active Nothing brs =
   if null brs
   then
     pure <$> if distgit
@@ -114,13 +102,13 @@ listOfBranches distgit active (BranchList brs) =
   else do
     when active $ do
       activeBrs <- getFedoraBranches
-      forM_ brs $ \ case
-        RelBranch br ->
-          unless (br `elem` activeBrs) $
-          error' $ show br ++ " is not an active branch"
-        _ -> return ()
-    return brs
-listOfBranches distgit _ (ExcludeBranches brs) = do
+      forM_ brs $ \ br ->
+        unless (br `elem` activeBrs) $
+        error' $ show br ++ " is not an active branch"
+    return $ map RelBranch brs
+listOfBranches _ _ (Just (ExcludeBranches _)) (_:_) =
+  error' "cannot specify branches with exclude-branch"
+listOfBranches distgit _ (Just (ExcludeBranches brs)) [] = do
   branches <- if distgit
               then fedoraBranches localBranches
               else getFedoraBranches

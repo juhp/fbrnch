@@ -20,12 +20,12 @@ data DiffWork =
 
 -- FIXME diff branch(es) (without switching?)
 -- FIXME --no-fetch
-diffCmd :: DiffWork -> DiffFormat -> AnyBranch -> [String] -> IO ()
-diffCmd work fmt br pkgs =
-  withPackageByBranches Nothing dirtyGit diffPkg (anyBranches br,pkgs)
+diffCmd :: DiffWork -> DiffFormat -> [String] -> IO ()
+diffCmd work fmt args =
+  withPackageByBranches Nothing dirtyGit Nothing zeroOneBranches diffPkg args
   where
     diffPkg :: Package -> AnyBranch -> IO ()
-    diffPkg pkg _br = do
+    diffPkg pkg br = do
       let contxt = case fmt of
                      DiffContext n -> ["--unified=" ++ show n]
                      DiffMinimal -> ["--unified=0"]

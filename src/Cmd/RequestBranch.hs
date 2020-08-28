@@ -14,44 +14,47 @@ import Package
 import Pagure
 import Prompt
 
-requestBranches :: Bool -> Branches -> [String] -> IO ()
-requestBranches mock request ps =
+requestBranches :: Bool -> Maybe BranchOpts -> [String] -> IO ()
+requestBranches mock mbrnchopts args = do
+  let (brs,ps) = splitBranchesPkgs mbrnchopts args
   if null ps then
     ifM isPkgGitRepo
-    (getDirectoryName >>= requestPkgBranches mock request . Package) $
+    (getDirectoryName >>= requestPkgBranches mock mbrnchopts brs . Package) $
     do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
-       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request (Package p)) pkgs
+       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock mbrnchopts brs (Package p)) pkgs
   else
-    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock request (Package p)) ps
+    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock mbrnchopts brs (Package p)) ps
 
 -- FIXME add --yes, or skip prompt when args given
-requestPkgBranches :: Bool -> Branches -> Package -> IO ()
-requestPkgBranches mock request pkg = do
+requestPkgBranches :: Bool -> Maybe BranchOpts -> [Branch] -> Package -> IO ()
+requestPkgBranches mock mbrnchopts brs pkg = do
   putPkgHdr pkg
   git_ "fetch" []
   active <- getFedoraBranched
-  branches <- do
-    let requested = case request of
-                      AllBranches -> active
-                      BranchList [] -> take 2 active
-                      BranchList brs -> map onlyRelBranch brs
-                      ExcludeBranches brs -> active \\ brs
-    inp <- prompt $ "Confirm branches [" ++ unwords (map show requested) ++ "]"
-    return $ if null inp
-             then requested
-             else map (readActiveBranch' active) $ words inp
+  branches <- case mbrnchopts of
+    Nothing -> if null brs
+               then return $ take 2 active
+               else return brs
+    Just request -> do
+      let requested = case request of
+                        AllBranches -> active
+                        ExcludeBranches xbrs -> active \\ xbrs
+      inp <- prompt $ "Confirm branches [" ++ unwords (map show requested) ++ "]"
+      return $ if null inp
+               then requested
+               else map (readActiveBranch' active) $ words inp
   newbranches <- filterExistingBranchRequests branches
   forM_ newbranches $ \ br -> do
     when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
     fedpkg_ "request-branch" [show br]
   where
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
-    filterExistingBranchRequests brs = do
+    filterExistingBranchRequests branches = do
       existing <- fedoraBranchesNoMaster localBranches
-      forM_ brs $ \ br ->
+      forM_ branches $ \ br ->
         when (br `elem` existing) $
         putStrLn $ show br ++ " branch already exists"
-      let brs' = brs \\ existing
+      let brs' = branches \\ existing
       if null brs' then return []
         else do
         current <- fedoraBranchesNoMaster $ pagurePkgBranches (unPackage pkg)

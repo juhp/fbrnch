@@ -58,18 +58,20 @@ data BuildOpts = BuildOpts
   , buildoptUpdateType :: UpdateType
   }
 
+-- FIXME --add-to-update nvr
 -- FIXME vertical vs horizontal builds (ie by package or branch)
 -- FIXME --rpmlint (only run for master?)
 -- FIXME support --wait-build=NVR
--- FIXME --dry-run
 -- FIXME provide direct link to failed task/build.log
 -- FIXME default behaviour for build in pkg dir: all branches or current?
-buildCmd :: BuildOpts -> (Branches,[String]) -> IO ()
-buildCmd opts (brnchs,pkgs) = do
-  when (isJust (buildoptTarget opts) && multipleBranches brnchs) $
-    error' "You can only specify target with one branch"
-  let morethan1 = length pkgs > 1
-  withPackageByBranches (Just False) cleanGitFetchActive (buildBranch morethan1 opts) (brnchs,pkgs)
+buildCmd :: BuildOpts -> Maybe BranchOpts -> [String] -> IO ()
+buildCmd opts mbrnchopts args = do
+  let singleBrnch = if isJust (buildoptTarget opts)
+                    then oneBranch
+                    else Nothing
+  -- FIXME!! was: pkgs > 1
+  let morethan1 = length args > 1
+  withPackageByBranches (Just False) cleanGitFetchActive mbrnchopts singleBrnch (buildBranch morethan1 opts) args
 
 -- FIXME what if untracked files
 buildBranch :: Bool -> BuildOpts -> Package -> AnyBranch -> IO ()
@@ -236,15 +238,15 @@ bodhiCreateOverride nvr = do
 -- FIXME --exclude-arch
 -- FIXME build from a specific git ref
 -- FIXME print message about uploading srpm
-scratchCmd :: Bool -> Bool -> [String] -> Maybe String -> (Maybe Branch,[String]) -> IO ()
-scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
-  withPackageByBranches (Just False) Nothing scratchBuild (maybeBranches mbr,pkgs)
+scratchCmd :: Bool -> Bool -> [String] -> Maybe String -> [String] -> IO ()
+scratchCmd rebuildSrpm nofailfast archs mtarget args =
+  withPackageByBranches (Just False) Nothing Nothing Nothing scratchBuild args
   where
     scratchBuild :: Package -> AnyBranch -> IO ()
     scratchBuild pkg br = do
       spec <- localBranchSpecFile pkg br
       let target = fromMaybe (anyTarget br) mtarget
-      let args = ["--arch-override=" ++ intercalate "," archs | notNull archs] ++ ["--fail-fast" | not nofailfast] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
+      let kojiargs = ["--arch-override=" ++ intercalate "," archs | notNull archs] ++ ["--fail-fast" | not nofailfast] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
       pkggit <- isPkgGitRepo
       if pkggit
         then do
@@ -256,13 +258,13 @@ scratchCmd rebuildSrpm nofailfast archs mtarget (mbr,pkgs) =
             else return False
         if pushed then do
           void $ getSources spec
-          kojiBuildBranch target pkg Nothing $ "--scratch" : args
-          else srpmBuild target args spec
-        else srpmBuild target args spec
+          kojiBuildBranch target pkg Nothing $ "--scratch" : kojiargs
+          else srpmBuild target kojiargs spec
+        else srpmBuild target kojiargs spec
       where
         srpmBuild :: FilePath -> [String] -> String -> IO ()
-        srpmBuild target args spec = do
-          void $ generateSrpm (Just br) spec >>= kojiScratchBuild target args
+        srpmBuild target kojiargs spec = do
+          void $ generateSrpm (Just br) spec >>= kojiScratchBuild target kojiargs
 
         anyTarget (RelBranch b) = branchTarget b
         anyTarget _ = "rawhide"
@@ -273,11 +275,12 @@ type Job = (String, Async String)
 -- FIXME add --with-side-tag
 -- FIXME check sources asap
 -- FIXME check not in pkg git dir
-parallelBuildCmd :: Bool -> Maybe String -> (Branches,[String]) -> IO ()
-parallelBuildCmd dryrun mtarget (brnchs,pkgs) = do
-  when (brnchs == BranchList []) $
+parallelBuildCmd :: Bool -> Maybe String -> Maybe BranchOpts -> [String] -> IO ()
+parallelBuildCmd dryrun mtarget mbrnchopts args = do
+  let (brs,pkgs) = splitBranchesPkgs mbrnchopts args
+  when (null brs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
-  branches <- listOfBranches True True brnchs
+  branches <- listOfBranches True True mbrnchopts brs
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   if null pkgs

@@ -42,42 +42,42 @@ main = do
     [ Subcommand "clone" "clone packages" $
       cloneCmd <$> optional branchOpt <*> cloneRequest
     , Subcommand "switch" "Switch branch" $
-      switchCmd <$> (anyBranchOpt <|> anyBranchArg) <*> many (pkgArg "PACKAGE...")
+      switchCmd <$> branchesPackages
     , Subcommand "nvr" "Print name-version-release" $
-      nvrCmd <$> branchesPackages
+      nvrCmd <$> branchesOpt <*> branchesPackages
     , Subcommand "status" "Status package/branch status" $
-      statusCmd <$> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesPackages
+      statusCmd <$> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesOpt <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
-      buildCmd <$> buildOpts <*> branchesPackages
+      buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
-      parallelBuildCmd <$> dryrunOpt <*> targetOpt <*> branchesPackages
+      parallelBuildCmd <$> dryrunOpt <*> targetOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
-      scratchCmd <$> rebuildSrpmOpt <*> noFailFastOpt <*> many archOpt <*> targetOpt <*> localBranchPackages
+      scratchCmd <$> rebuildSrpmOpt <*> noFailFastOpt <*> many archOpt <*> targetOpt <*> branchesPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
-      sortCmd <$> optional rpmWithOpt <*> localBranchPackages
+      sortCmd <$> optional rpmWithOpt <*> branchesPackages
     , Subcommand "prep" "Prep sources" $
-      prepCmd <$> localBranchPackages
+      prepCmd <$> branchesPackages
     , Subcommand "local" "Build locally" $
-      localCmd <$> optional forceshortOpt <*> localBranchPackages
+      localCmd <$> optional forceshortOpt <*> branchesPackages
     , Subcommand "srpm" "Build srpm" $
-      srpmCmd <$> localBranchPackages
+      srpmCmd <$> branchesPackages
     , Subcommand "diff" "Diff local changes" $
-      diffCmd <$> diffWorkOpt <*> diffFormatOpt <*> (anyBranchOpt <|> anyBranchArg) <*> many (pkgArg "PACKAGE...")
+      diffCmd <$> diffWorkOpt <*> diffFormatOpt <*> branchesPackages
     , Subcommand "mock" "Local mock build" $
-      mockCmd <$> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> localBranchPackages
+      mockCmd <$> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> branchesPackages
     , Subcommand "install-deps" "Install package build dependencies" $
-      installDepsCmd <$> localBranchPackages
+      installDepsCmd <$> branchesPackages
     , Subcommand "install" "Build locally and install package(s)" $
       -- FIXME drop --shortcircuit from install?
-      installCmd <$> optional forceshortOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> localBranchPackages
+      installCmd <$> optional forceshortOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> branchesPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
     , Subcommand "commit" "Git commit packages" $
       commitPkgs <$> commitOpts <*> some (pkgArg "PACKAGE...")
     , Subcommand "pull" "Git pull packages" $
-      pullPkgs <$> localBranchPackages
+      pullPkgs <$> branchesPackages
     , Subcommand "create-review" "Create a Package Review request" $
       createReview <$> noScratchBuild <*> mockOpt <*> many (pkgArg "PACKAGE...")
     , Subcommand "update-review" "Update a Package Review" $
@@ -89,13 +89,13 @@ main = do
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importCmd <$> many (pkgArg "NEWPACKAGE...")
     , Subcommand "request-branches" "Request branches for approved created packages" $
-      requestBranches <$> mockOpt <*> branchesRequestOpt <*> many pkgOpt
+      requestBranches <$> mockOpt <*> optional branchesRequestOpt <*> many pkgOpt
     , Subcommand "find-review" "Find package review bug" $
       findReview <$> pkgArg "PACKAGE"
 --    , Subcommand "test-bz-token" "Check bugzilla login status" $
 --      pure testBZlogin
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
-      coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> strArg "PROJECT" <*> branchesPackages
+      coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> strArg "PROJECT" <*> branchesOpt <*> branchesPackages
     ]
   where
     cloneRequest :: Parser CloneRequest
@@ -121,14 +121,14 @@ main = do
     branchM :: ReadM Branch
     branchM = eitherReader eitherBranch'
 
-    anyBranchOpt :: Parser AnyBranch
-    anyBranchOpt = optionWith anyBranchM 'b' "branch" "BRANCH" "branch"
+    -- anyBranchOpt :: Parser AnyBranch
+    -- anyBranchOpt = optionWith anyBranchM 'b' "branch" "BRANCH" "branch"
 
-    anyBranchArg :: Parser AnyBranch
-    anyBranchArg = argumentWith anyBranchM "BRANCH.."
+    -- anyBranchArg :: Parser AnyBranch
+    -- anyBranchArg = argumentWith anyBranchM "BRANCH.."
 
-    anyBranchM :: ReadM AnyBranch
-    anyBranchM = anyBranch <$> str
+    -- anyBranchM :: ReadM AnyBranch
+    -- anyBranchM = anyBranch <$> str
 
     pkgArg :: String -> Parser String
     pkgArg lbl = removeSuffix "/" <$> strArg lbl
@@ -136,29 +136,20 @@ main = do
     pkgOpt :: Parser String
     pkgOpt = removeSuffix "/" <$> strOptionWith 'p' "package" "PKG" "package"
 
-    branchesOpt :: Parser Branches
+    branchesOpt :: Parser (Maybe BranchOpts)
     branchesOpt =
-      -- FIXME was: reverse . sort
-      BranchList <$> many anyBranchOpt <|>
-      flagWith' AllBranches 'B' "all-branches" "All active release branches" <|>
-      ExcludeBranches <$> many excludeBranchOpt
+      optional (flagWith' AllBranches 'B' "all-branches" "All active release branches" <|>
+                ExcludeBranches <$> some excludeBranchOpt)
 
     excludeBranchOpt :: Parser Branch
     excludeBranchOpt = optionWith branchM 'x' "exclude-branch" "BRANCH" "branch"
 
-    branchesPackages :: Parser (Branches,[String])
-    branchesPackages =
-      (,) <$> branchesOpt <*> many (pkgArg "PACKAGE...")
+    branchesPackages :: Parser [String]
+    branchesPackages = many (pkgArg "[BRANCH]... [PACKAGE]...")
 
-    localBranchPackages :: Parser (Maybe Branch,[String])
-    localBranchPackages =
-      (,) <$> optional branchOpt <*> many (pkgArg "PACKAGE...") <|>
-      (,) <$> optional branchArg <*> some pkgOpt
-
-    branchesRequestOpt :: Parser Branches
+    branchesRequestOpt :: Parser BranchOpts
     branchesRequestOpt =
       flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|>
-      BranchList . fmap RelBranch <$> many branchArg <|>
       ExcludeBranches <$> many branchArg
 
     rpmWithOpt :: Parser RpmWith

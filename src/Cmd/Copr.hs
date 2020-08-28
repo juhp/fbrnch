@@ -26,23 +26,25 @@ coprServer = "copr.fedorainfracloud.org"
 -- FIXME make project optional (if same as pkg??) or configurable ?
 -- FIXME repo config with a setup command?
 -- FIXME interact with copr dist-git
-coprCmd :: Bool -> BuildBy -> [String] -> String -> (Branches,[FilePath]) -> IO ()
-coprCmd dryrun buildBy archs project (brnchs,pkgs) = do
-  chroots <- coprGetChroots
+coprCmd ::
+  Bool -> BuildBy -> [String] -> String -> Maybe BranchOpts -> [FilePath] -> IO ()
+coprCmd dryrun buildBy archs project mbrnchopts args = do
+  let (brs,pkgs) = splitBranchesPkgs mbrnchopts args
+  chroots <- coprGetChroots brs
   if null pkgs then
     getDirectoryName >>= coprBuildPkg chroots
     else
     mapM_ (\ p -> withExistingDirectory p $ coprBuildPkg chroots p) pkgs
   where
-    coprGetChroots = do
+    coprGetChroots brs = do
       username <- getUsername
       chroots <- map T.unpack <$> coprChroots coprServer username project
       branches <-
-        if brnchs == BranchList []
+        if isNothing mbrnchopts && null brs
         then return $ (map (releaseBranch . T.pack) . nub . map removeArch) chroots
         else do
-          brs <- listOfBranches False False brnchs
-          forM brs $ \ case
+          brs' <- listOfBranches False False mbrnchopts brs
+          forM brs' $ \ case
             OtherBranch obr -> error' $ "unknown copr target: " ++ obr
             RelBranch rbr -> return rbr
       let buildroots =

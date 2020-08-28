@@ -1,12 +1,12 @@
 module Cmd.Switch (switchCmd) where
 
-import Branches
+--import Branches
 import Git
 import Package
 
-switchCmd :: AnyBranch -> [String] -> IO ()
-switchCmd br pkgs =
+switchCmd :: [String] -> IO ()
+switchCmd args =
   -- FIXME use withBranchByPackages ?
-  withPackageByBranches Nothing cleanGit dummy (anyBranches br,pkgs)
+  withPackageByBranches Nothing cleanGit Nothing oneBranch dummy args
   where
-    dummy _ _ = gitSwitchBranch br
+    dummy _ br = gitSwitchBranch br
