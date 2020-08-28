@@ -123,6 +123,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
           Nothing -> error' $ nvr ++ " is untagged"
           Just tags -> do
             unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+              unlessM (checkAutoBodhiUpdate br) $
               bodhiCreateOverride nvr
       kojiWaitRepo target nvr
     Just BuildBuilding -> do
@@ -167,20 +168,16 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                 else do
                 -- FIXME diff previous changelog?
                 changelog <- getChangeLog spec
-                autoupdate <- checkAutoBodhiUpdate
+                autoupdate <- checkAutoBodhiUpdate br
                 unless autoupdate $
                   bodhiUpdate (fmap fst mBugSess) changelog nvr
                 -- FIXME autochain
                 -- FIXME prompt for override note
-                when (buildoptOverride opts) $ do
-                  when (br /= Master && isNothing mtarget) $
+                when (not autoupdate && buildoptOverride opts) $ do
+                  when (isNothing mtarget) $
                     bodhiCreateOverride nvr
               when morethan1 $ kojiWaitRepo target nvr
   where
-    checkAutoBodhiUpdate :: IO Bool
-    checkAutoBodhiUpdate =
-      lookupKey' "create_automatic_updates" <$> bodhiRelease (show br)
-
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do
       let cbugs = mapMaybe extractBugReference $ lines changelog
@@ -221,6 +218,10 @@ checkSourcesMatch spec = do
     unless (isJust (find (src `isInfixOf`) sources) || src `elem` gitfiles) $ do
     prompt_ $ color Red $ src ++ " not in sources, please fix"
     checkSourcesMatch spec
+
+checkAutoBodhiUpdate :: Branch -> IO Bool
+checkAutoBodhiUpdate br =
+  lookupKey' "create_automatic_updates" <$> bodhiRelease (show br)
 
 bodhiCreateOverride :: String -> IO ()
 bodhiCreateOverride nvr = do
@@ -378,6 +379,7 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
               Nothing -> error' $ nvr ++ " is untagged"
               Just tags -> do
                 unless (dryrun || any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+                  unlessM (checkAutoBodhiUpdate br) $
                   bodhiCreateOverride nvr
           return $ do
             unless dryrun $
@@ -418,6 +420,7 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
             else error' $ color Red $ nvr ++ " build failed"
           unless dryrun $ do
             when (br /= Master && isNothing mtarget) $
+              unlessM (checkAutoBodhiUpdate br) $
               bodhiCreateOverride nvr
             kojiWaitRepo target nvr
           return nvr
