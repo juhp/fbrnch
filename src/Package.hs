@@ -44,7 +44,6 @@ module Package (
 import Common
 import Common.System
 
-import Data.Either (partitionEithers)
 import Distribution.Fedora
 import SimpleCmd.Rpm
 
@@ -293,10 +292,25 @@ packagePath path =
 packageSpec :: Package -> FilePath
 packageSpec pkg = unPackage pkg <.> "spec"
 
-splitBranchesPkgs :: Maybe BranchOpts -> [String] -> ([Branch], [String])
-splitBranchesPkgs mbrnchopts args =
-  let (pkgs,brs) = (partitionEithers . map eitherBranch) args
-  in case mbrnchopts of
+-- taken from monadlist-0.0.2 (BSD)
+spanM :: (Monad m, MonadPlus p) => (a -> m Bool) -> [a] -> m (p a, [a])
+spanM _ [] = return (mzero, [])
+spanM p (x:xs) = do
+  bool <- p x
+  if bool
+    then do
+      (ys, zs) <- spanM p xs
+      return (x!ys, zs)
+    else return (mzero, x:xs)
+  where
+    (!) :: (MonadPlus p) => a -> p a -> p a
+    x' ! y = return x' `mplus` y
+
+splitBranchesPkgs :: Maybe BranchOpts -> [String] -> IO ([AnyBranch], [String])
+splitBranchesPkgs mbrnchopts args = do
+  (abrs,pkgs) <- spanM (notM . doesDirectoryExist) args
+  let brs = map anyBranch abrs
+  return $ case mbrnchopts of
     Nothing -> (brs,pkgs)
     Just _ | null brs -> (brs,pkgs)
            | otherwise -> error' "cannot specify branches with branch options"
@@ -316,7 +330,7 @@ cleanGitFetchActive = Just $ GitOpts True  True  True
 dirtyGit =            Just $ GitOpts False False False
 dirtyGitFetch =       Just $ GitOpts False True  False
 
-zeroOneBranches, oneBranch :: Maybe ([Branch] -> Bool, String)
+zeroOneBranches, oneBranch :: Maybe ([AnyBranch] -> Bool, String)
 zeroOneBranches = Just ((< 2) . length, "cannot specify more than one branch")
 oneBranch = Just ((== 1) . length, "must specify one branch")
 
@@ -324,12 +338,12 @@ oneBranch = Just ((== 1) . length, "must specify one branch")
 withPackageByBranches :: Maybe Bool
                       -> Maybe GitOpts
                       -> Maybe BranchOpts
-                      -> Maybe ([Branch] -> Bool, String)
+                      -> Maybe ([AnyBranch] -> Bool, String)
                       -> (Package -> AnyBranch -> IO ())
                       -> [String]
                       -> IO ()
 withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args = do
-  let (brs,pkgs) = splitBranchesPkgs mbrnchopts args
+  (brs,pkgs) <- splitBranchesPkgs mbrnchopts args
   case mbrnchopts of
     Just _ ->
       when (length brs > 0) $
@@ -349,7 +363,7 @@ withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args = do
     mapM_ (withPackageDir brs . packagePath) pkgs
   where
     -- FIXME support arbitrary (module) branches
-    withPackageDir :: [Branch] -> (FilePath, Package) -> IO ()
+    withPackageDir :: [AnyBranch] -> (FilePath, Package) -> IO ()
     withPackageDir brs (dir, pkg) =
       withExistingDirectory dir $ do
       haveGit <- isPkgGitRepo

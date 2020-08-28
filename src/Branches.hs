@@ -86,7 +86,7 @@ systemBranch :: IO Branch
 systemBranch =
   readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
 
-listOfBranches :: Bool -> Bool -> Maybe BranchOpts -> [Branch] -> IO [AnyBranch]
+listOfBranches :: Bool -> Bool -> Maybe BranchOpts -> [AnyBranch] -> IO [AnyBranch]
 listOfBranches _ _active (Just AllBranches) (_:_) =
   error' "cannot specify branches with all-branches"
 listOfBranches distgit _active (Just AllBranches) [] =
@@ -103,9 +103,12 @@ listOfBranches distgit active Nothing brs =
     when active $ do
       activeBrs <- getFedoraBranches
       forM_ brs $ \ br ->
-        unless (br `elem` activeBrs) $
-        error' $ show br ++ " is not an active branch"
-    return $ map RelBranch brs
+        case br of
+          RelBranch rbr ->
+            unless (rbr `elem` activeBrs) $
+            error' $ show br ++ " is not an active branch"
+          _ -> return ()
+    return brs
 listOfBranches _ _ (Just (ExcludeBranches _)) (_:_) =
   error' "cannot specify branches with exclude-branch"
 listOfBranches distgit _ (Just (ExcludeBranches brs)) [] = do

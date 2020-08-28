@@ -278,7 +278,7 @@ type Job = (String, Async String)
 -- FIXME check not in pkg git dir
 parallelBuildCmd :: Bool -> Maybe String -> Maybe BranchOpts -> [String] -> IO ()
 parallelBuildCmd dryrun mtarget mbrnchopts args = do
-  let (brs,pkgs) = splitBranchesPkgs mbrnchopts args
+  (brs,pkgs) <- splitBranchesPkgs mbrnchopts args
   when (null brs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
   branches <- listOfBranches True True mbrnchopts brs
