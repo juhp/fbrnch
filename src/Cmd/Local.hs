@@ -21,8 +21,8 @@ import Package
 -- FIXME package countdown
 -- FIXME --ignore-uninstalled subpackages
 installCmd :: Maybe ForceShort -> Bool -> [String] -> IO ()
-installCmd mforceshort reinstall args = do
-  withPackageByBranches Nothing Nothing Nothing oneBranch installPkg args
+installCmd mforceshort reinstall = do
+  withPackageByBranches Nothing Nothing Nothing oneBranch installPkg
   where
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
@@ -55,8 +55,8 @@ takeNVRName :: FilePath -> String
 takeNVRName = takeBaseName . takeBaseName
 
 localCmd :: Maybe ForceShort -> [String] -> IO ()
-localCmd mforceshort args =
-  withPackageByBranches Nothing Nothing Nothing zeroOneBranches localBuildPkg args
+localCmd mforceshort =
+  withPackageByBranches Nothing Nothing Nothing zeroOneBranches localBuildPkg
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
     localBuildPkg pkg br = do
@@ -66,8 +66,8 @@ localCmd mforceshort args =
 
 -- FIXME single branch
 installDepsCmd :: [String] -> IO ()
-installDepsCmd args =
-  withPackageByBranches Nothing Nothing Nothing zeroOneBranches installDepsPkg args
+installDepsCmd =
+  withPackageByBranches Nothing Nothing Nothing zeroOneBranches installDepsPkg
   where
     installDepsPkg :: Package -> AnyBranch -> IO ()
     installDepsPkg pkg br =
@@ -75,13 +75,13 @@ installDepsCmd args =
 
 -- FIXME single branch
 srpmCmd :: [String] -> IO ()
-srpmCmd args =
-  withPackageByBranches Nothing Nothing Nothing zeroOneBranches srpmBuildPkg args
-
-srpmBuildPkg :: Package -> AnyBranch -> IO ()
-srpmBuildPkg pkg br = do
-  spec <- localBranchSpecFile pkg br
-  void $ generateSrpm (Just br) spec
+srpmCmd =
+  withPackageByBranches Nothing Nothing Nothing zeroOneBranches srpmBuildPkg
+  where
+    srpmBuildPkg :: Package -> AnyBranch -> IO ()
+    srpmBuildPkg pkg br = do
+      spec <- localBranchSpecFile pkg br
+      void $ generateSrpm (Just br) spec
 
 data RpmWith = RpmWith String | RpmWithout String
 
@@ -100,12 +100,12 @@ sortCmd mrpmwith args = do
     toRpmOption (RpmWithout opt) = ["--without=" ++ opt]
 
 prepCmd :: [String] -> IO ()
-prepCmd args =
-  withPackageByBranches Nothing Nothing Nothing zeroOneBranches prepPackage args
+prepCmd =
+  withPackageByBranches Nothing Nothing Nothing zeroOneBranches prepPackage
 
 mockCmd :: Maybe Branch -> [String] -> IO ()
-mockCmd mroot args =
-  withPackageByBranches (Just True) Nothing Nothing zeroOneBranches mockBuildPkg args
+mockCmd mroot =
+  withPackageByBranches (Just True) Nothing Nothing zeroOneBranches mockBuildPkg
   where
     mockBuildPkg :: Package -> AnyBranch -> IO ()
     mockBuildPkg pkg br = do
@@ -120,8 +120,8 @@ mockCmd mroot args =
       cmd_ "mock" ["--root", mockConfig rootBr, "--resultdir=" ++ resultsdir, srpm]
 
 nvrCmd :: Maybe BranchOpts -> [String] -> IO ()
-nvrCmd mbrnchopts args =
-  withPackageByBranches Nothing Nothing mbrnchopts Nothing nvrBranch args
+nvrCmd mbrnchopts =
+  withPackageByBranches Nothing Nothing mbrnchopts Nothing nvrBranch
   where
     nvrBranch :: Package -> AnyBranch -> IO ()
     nvrBranch pkg br = do

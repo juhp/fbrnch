@@ -5,8 +5,8 @@ import Git
 import Package
 
 switchCmd :: [String] -> IO ()
-switchCmd args =
+switchCmd =
   -- FIXME use withBranchByPackages ?
-  withPackageByBranches Nothing cleanGit Nothing oneBranch dummy args
+  withPackageByBranches Nothing cleanGit Nothing oneBranch dummy
   where
     dummy _ br = gitSwitchBranch br

@@ -346,8 +346,8 @@ withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args = do
   (brs,pkgs) <- splitBranchesPkgs mbrnchopts args
   case mbrnchopts of
     Just _ ->
-      when (length brs > 0) $
-      error' "cannot specify branches and branch options together"
+      unless (null brs) $
+      error' "cannot specify branches and branch option together"
     Nothing ->
       case mreqbr of
         Just (required,brerr) ->

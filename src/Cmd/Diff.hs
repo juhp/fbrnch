@@ -21,8 +21,8 @@ data DiffWork =
 -- FIXME diff branch(es) (without switching?)
 -- FIXME --no-fetch
 diffCmd :: DiffWork -> DiffFormat -> [String] -> IO ()
-diffCmd work fmt args =
-  withPackageByBranches Nothing dirtyGit Nothing zeroOneBranches diffPkg args
+diffCmd work fmt =
+  withPackageByBranches Nothing dirtyGit Nothing zeroOneBranches diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
     diffPkg pkg br = do
