@@ -100,14 +100,22 @@ listOfBranches distgit active Nothing brs =
              then gitCurrentBranch
              else RelBranch <$> systemBranch
   else do
-    when active $ do
-      activeBrs <- getFedoraBranches
-      forM_ brs $ \ br ->
-        case br of
-          RelBranch rbr ->
-            unless (rbr `elem` activeBrs) $
-            error' $ show br ++ " is not an active branch"
-          _ -> return ()
+    activeBrs <- getFedoraBranches
+    forM_ brs $ \ br ->
+      case br of
+        RelBranch rbr -> do
+          if active
+            then when (rbr `notElem` activeBrs) $
+                 error' $ show br ++ " is not an active branch"
+            else
+            case rbr of
+              Fedora _ -> do
+                let latest = maximum (delete Master activeBrs)
+                when (rbr > latest) $
+                  error' $ show rbr ++ " is newer than latest branch"
+              -- FIXME also check for too new EPEL
+              _ -> return ()
+        _ -> return ()
     return brs
 listOfBranches _ _ (Just (ExcludeBranches _)) (_:_) =
   error' "cannot specify branches with exclude-branch"
