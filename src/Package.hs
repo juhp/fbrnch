@@ -400,8 +400,8 @@ withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args = do
 --     -- void $ setupGit False pkg True
 --     action br pkgs
 
-clonePkg :: Maybe Branch -> String -> IO ()
-clonePkg mbr pkg =
+clonePkg :: Bool -> Maybe Branch -> String -> IO ()
+clonePkg quiet mbr pkg =
   ifM (doesDirectoryExist pkg)
     {-then-} (putStrLn $ pkg ++ "/ already exists") $
     {-else-} do
@@ -409,7 +409,8 @@ clonePkg mbr pkg =
             Nothing -> []
             Just br -> ["--branch", show br]
       fasid <- fasIdFromKrb
-      putStr $ pkg ++ " "
+      unless quiet $
+        putStr $ pkg ++ " "
       git_ "clone" $ ["--quiet"] ++ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg]
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)

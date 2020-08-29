@@ -21,5 +21,5 @@ cloneCmd mbr request = do
             -- FIXME detect/prevent "path/dir"
             ClonePkgs ps -> return ps
   putStr "Cloning: "
-  mapM_ (clonePkg mbr) pkgs
+  mapM_ (clonePkg False mbr) pkgs
   putStrLn ""

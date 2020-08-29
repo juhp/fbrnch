@@ -30,7 +30,7 @@ importPkg pkg = do
   dir <- getCurrentDirectory
   when (pkg /= takeFileName dir) $ do
     -- FIXME check git repo exists
-    clonePkg Nothing pkg
+    clonePkg True Nothing pkg
     putStrLn ""
     setCurrentDirectory pkg
     -- FIXME: check branch is master
