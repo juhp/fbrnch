@@ -130,8 +130,14 @@ gitSwitchBranch br = do
       git_ "checkout" ["-q", show br]
     else do
     -- check remote branch exists
-    remotebranch <- gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+    remotebranch <- do
+      ifM checkIfRemoteBranchExists
+       (return True) $
+        gitFetchSilent >> checkIfRemoteBranchExists
     if not remotebranch
       then error' $ show br ++ " branch does not exist!"
       else
       git_ "checkout" ["-q", "-b", show br, "--track", "origin" </> show br]
+  where
+    checkIfRemoteBranchExists =
+      gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
