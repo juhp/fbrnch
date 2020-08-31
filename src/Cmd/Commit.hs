@@ -8,6 +8,7 @@ import Package
 
 data CommitOpt = CommitMsg String | CommitAmend
 
+-- FIXME take commit msg from changelog
 commitPkgs :: CommitOpt -> [String] -> IO ()
 commitPkgs opt = mapM_ commitPkg
   where

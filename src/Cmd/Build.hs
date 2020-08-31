@@ -239,6 +239,8 @@ bodhiCreateOverride nvr = do
         bodhiCreateOverride nvr
       Just obj -> print obj
 
+-- FIXME --dry-run
+-- FIXME default to rawhide/master?
 -- FIXME --exclude-arch
 -- FIXME build from a specific git ref
 -- FIXME print message about uploading srpm
