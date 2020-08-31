@@ -71,9 +71,9 @@ buildCmd opts mbrnchopts args = do
   let singleBrnch = if isJust (buildoptTarget opts)
                     then oneBranch
                     else Nothing
-  -- FIXME!! was: pkgs > 1
-  let morethan1 = length args > 1
-  withPackageByBranches (Just False) cleanGitFetchActive mbrnchopts singleBrnch (buildBranch morethan1 opts) args
+  (brs,pkgs) <- splitBranchesPkgs mbrnchopts args
+  let morethan1 = length pkgs > 1
+  withPackageByBranches' (Just False) cleanGitFetchActive mbrnchopts singleBrnch (buildBranch morethan1 opts) (brs,pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: Bool -> BuildOpts -> Package -> AnyBranch -> IO ()
@@ -119,15 +119,16 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
   case buildstatus of
     Just BuildComplete -> do
       putStrLn $ nvr ++ " is already built"
-      when (br /= Master && isNothing mtarget && not dryrun) $ do
-        mtags <- kojiNVRTags nvr
-        case mtags of
-          Nothing -> error' $ nvr ++ " is untagged"
-          Just tags -> do
-            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-              unlessM (checkAutoBodhiUpdate br) $
-              bodhiCreateOverride nvr
-      kojiWaitRepo target nvr
+      when morethan1 $ do
+        when (br /= Master && isNothing mtarget && not dryrun) $ do
+          mtags <- kojiNVRTags nvr
+          case mtags of
+            Nothing -> error' $ nvr ++ " is untagged"
+            Just tags -> do
+              unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+                unlessM (checkAutoBodhiUpdate br) $
+                bodhiCreateOverride nvr
+        kojiWaitRepo target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
       whenJustM (kojiGetBuildTaskID fedoraHub nvr) kojiWatchTask

@@ -23,6 +23,7 @@ module Package (
   splitBranchesPkgs,
 --  withBranchByPackages,
   withPackageByBranches,
+  withPackageByBranches',
   zeroOneBranches,
   oneBranch,
   cleanGit,
@@ -343,7 +344,17 @@ withPackageByBranches :: Maybe Bool
                       -> [String]
                       -> IO ()
 withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args = do
-  (brs,pkgs) <- splitBranchesPkgs mbrnchopts args
+  splitBranchesPkgs mbrnchopts args >>=
+    withPackageByBranches' mheader mgitopts mbrnchopts mreqbr action
+
+withPackageByBranches' :: Maybe Bool
+                       -> Maybe GitOpts
+                       -> Maybe BranchOpts
+                       -> Maybe ([AnyBranch] -> Bool, String)
+                       -> (Package -> AnyBranch -> IO ())
+                       -> ([AnyBranch], [String])
+                       -> IO ()
+withPackageByBranches' mheader mgitopts mbrnchopts mreqbr action (brs,pkgs) = do
   case mbrnchopts of
     Just _ ->
       unless (null brs) $
@@ -356,15 +367,15 @@ withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args = do
   if null pkgs
     then do
     pkg <- Package <$> getDirectoryName
-    withPackageDir brs (".", pkg)
+    withPackageDir (".", pkg)
     else do
     when (length pkgs > 1 && null brs) $
       error' "At least one branch must be specified when there are multiple packages"
-    mapM_ (withPackageDir brs . packagePath) pkgs
+    mapM_ (withPackageDir . packagePath) pkgs
   where
     -- FIXME support arbitrary (module) branches
-    withPackageDir :: [AnyBranch] -> (FilePath, Package) -> IO ()
-    withPackageDir brs (dir, pkg) =
+    withPackageDir :: (FilePath, Package) -> IO ()
+    withPackageDir (dir, pkg) =
       withExistingDirectory dir $ do
       haveGit <- isPkgGitRepo
       when (isJust mgitopts && not haveGit) $ do
