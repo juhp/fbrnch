@@ -21,7 +21,7 @@ import Package
 -- FIXME package countdown
 -- FIXME --ignore-uninstalled subpackages
 installCmd :: Maybe ForceShort -> Bool -> [String] -> IO ()
-installCmd mforceshort reinstall = do
+installCmd mforceshort reinstall =
   withPackageByBranches Nothing Nothing Nothing oneBranch installPkg
   where
     installPkg :: Package -> AnyBranch -> IO ()

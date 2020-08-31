@@ -124,7 +124,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
           mtags <- kojiNVRTags nvr
           case mtags of
             Nothing -> error' $ nvr ++ " is untagged"
-            Just tags -> do
+            Just tags ->
               unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
                 unlessM (checkAutoBodhiUpdate br) $
                 bodhiCreateOverride nvr
@@ -176,7 +176,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                   bodhiUpdate (fmap fst mBugSess) changelog nvr
                 -- FIXME autochain
                 -- FIXME prompt for override note
-                when (not autoupdate && buildoptOverride opts) $ do
+                when (not autoupdate && buildoptOverride opts) $
                   when (isNothing mtarget) $
                     bodhiCreateOverride nvr
               when morethan1 $ kojiWaitRepo target nvr
@@ -269,7 +269,7 @@ scratchCmd rebuildSrpm nofailfast archs mtarget =
         else srpmBuild target kojiargs spec
       where
         srpmBuild :: FilePath -> [String] -> String -> IO ()
-        srpmBuild target kojiargs spec = do
+        srpmBuild target kojiargs spec =
           void $ generateSrpm (Just br) spec >>= kojiScratchBuild target kojiargs
 
         anyTarget (RelBranch b) = branchTarget b
@@ -294,7 +294,7 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
     unlessM isPkgGitRepo $
       error' "Please specify at least one package"
     parallelBranches $ map onlyRelBranch branches
-    else do
+    else
     forM_ branches $ \ br -> do
       case br of
         (RelBranch rbr) -> do
@@ -362,7 +362,7 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
              else return $ getPackageName pkgdir
       putPkgBrnchHdr pkg br
       unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
-      unless (null unpushed) $ do
+      unless (null unpushed) $
         mapM_ (putStrLn . simplifyCommitLog) unpushed
       let spec = packageSpec pkg
       checkForSpecFile spec
@@ -382,7 +382,7 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
             mtags <- kojiNVRTags nvr
             case mtags of
               Nothing -> error' $ nvr ++ " is untagged"
-              Just tags -> do
+              Just tags ->
                 unless (dryrun || any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
                   unlessM (checkAutoBodhiUpdate br) $
                   bodhiCreateOverride nvr

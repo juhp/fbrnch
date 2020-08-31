@@ -128,7 +128,7 @@ mockRpmLint mock pkg spec srpm = do
       let resultsdir = "results_" ++ pkg
       cmd_ "mock" ["--root", mockConfig Master, "--resultdir=" ++ resultsdir, srpm]
       map (resultsdir </>) . filter ((== ".rpm") . takeExtension) <$> listDirectory resultsdir
-    else do
+    else
       builtRpms (RelBranch Master) spec >>= filterM doesFileExist
   -- FIXME run rpmlint on spec too??
   void $ cmdBool "rpmlint" $ srpm:rpms

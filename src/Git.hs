@@ -130,7 +130,7 @@ gitSwitchBranch br = do
       git_ "checkout" ["-q", show br]
     else do
     -- check remote branch exists
-    remotebranch <- do
+    remotebranch <-
       ifM checkIfRemoteBranchExists
        (return True) $
         gitFetchSilent >> checkIfRemoteBranchExists

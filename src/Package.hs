@@ -204,7 +204,7 @@ installDeps spec = do
     putStrLn "done"
 
 prepPackage :: Package -> AnyBranch -> IO ()
-prepPackage pkg br = do
+prepPackage pkg br =
   ifM (doesFileExist "dead.package")
     (putStrLn "dead.package") $
     do
@@ -234,7 +234,7 @@ getSources spec = do
     unless gitDir $
       unlessM (doesDirectoryExist srcdir) $
       createDirectoryIfMissing True srcdir
-    forM_ srcs $ \ src -> do
+    forM_ srcs $ \ src ->
       unlessM (doesFileExist (srcdir </> src)) $ do
         uploaded <-
           if gitDir then do
@@ -255,7 +255,7 @@ getSources spec = do
       else (takeFileName . last . words) field
 
     getSourceDir :: Bool -> IO FilePath
-    getSourceDir gitDir = do
+    getSourceDir gitDir =
       if gitDir
         then getCurrentDirectory
         else fromJust <$> rpmEval "%{_sourcedir}"
@@ -343,7 +343,7 @@ withPackageByBranches :: Maybe Bool
                       -> (Package -> AnyBranch -> IO ())
                       -> [String]
                       -> IO ()
-withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args = do
+withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args =
   splitBranchesPkgs mbrnchopts args >>=
     withPackageByBranches' mheader mgitopts mbrnchopts mreqbr action
 
@@ -378,14 +378,14 @@ withPackageByBranches' mheader mgitopts mbrnchopts mreqbr action (brs,pkgs) = do
     withPackageDir (dir, pkg) =
       withExistingDirectory dir $ do
       haveGit <- isPkgGitRepo
-      when (isJust mgitopts && not haveGit) $ do
+      when (isJust mgitopts && not haveGit) $
         error' $ "Not a pkg git dir: " ++ unPackage pkg
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
       let fetch = have gitOptFetch
       when ((mheader == Just True || isJust mheader && length brs > 1 || fetch) && dir /= ".") $
         putPkgHdr pkg
-      when haveGit $ do
+      when haveGit $
         when (have gitOptClean) checkWorkingDirClean
       when fetch gitFetchSilent
       branches <- listOfBranches haveGit (have gitOptActive) mbrnchopts brs
