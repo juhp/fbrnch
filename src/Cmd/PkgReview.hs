@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Cmd.PkgReview (
   createReview,
   updateReview

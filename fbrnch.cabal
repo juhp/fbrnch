@@ -109,4 +109,3 @@ executable fbrnch
                        -Wpartial-fields
 
   default-language:    Haskell2010
-  default-extensions:  OverloadedStrings

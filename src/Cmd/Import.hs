@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Cmd.Import (importCmd) where
 
 import Common

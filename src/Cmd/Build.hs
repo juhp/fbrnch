@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Cmd.Build (
   buildCmd,
   BuildOpts(..),

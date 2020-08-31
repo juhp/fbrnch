@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Bugzilla (
   Bug(..),
   BugId,
