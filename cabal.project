@@ -3,27 +3,27 @@ packages: .
 source-repository-package
     type: git
     location: https://github.com/juhp/fedora-dists.git
-    tag: 386d5141ecdca706114d27174a86606d80e6c685
+    tag: a4f6f690e50c6c2e69cc81afb13b7e4581079907
 
 source-repository-package
     type: git
     location: https://github.com/juhp/bodhi-hs.git
-    tag: 299bb8827c8d44a3da694520a0e200e6433c1f34
+    tag: c7d8f0728e7e34ec872755f1081dca1e32fa2f80
 
 source-repository-package
     type: git
     location: https://github.com/juhp/pagure-hs.git
-    tag: 262c9945b917766c2ca4d25cef6790f4cd79ef08
+    tag: 5ad5f162fb60e8cba72d7cde0257496bbb309481
 
 source-repository-package
     type: git
     location: https://github.com/juhp/koji-hs.git
-    tag: 84873619d266d31b4be2c1dc6eb24c0128e389dc
+    tag: 6c51d1bcc64d40bd4d7d1a3dab19ddebcb2a61cd
 
 source-repository-package
     type: git
     location: https://github.com/juhp/copr-hs.git
-    tag: 92f249caa06f2d738d2de510a238f0da3a454b20
+    tag: a554a95e508dd1b2344f73ed4b2f71e86ff84704
 
 -- source-repository-package
 --     type: git
@@ -33,7 +33,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/juhp/pdc-hs.git
-    tag: c8747e722616407a987322bef9a299328a3fde55
+    tag: d7e59cedf72f4253b10b1c723dd0b9e27fa11688
 
 -- source-repository-package
 --     type: git
