@@ -70,7 +70,7 @@ buildCmd opts mbrnchopts args = do
   let singleBrnch = if isJust (buildoptTarget opts)
                     then oneBranch
                     else Nothing
-  (brs,pkgs) <- splitBranchesPkgs mbrnchopts args
+  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
   let morethan1 = length pkgs > 1
   withPackageByBranches' (Just False) cleanGitFetchActive mbrnchopts singleBrnch (buildBranch morethan1 opts) (brs,pkgs)
 
@@ -282,7 +282,7 @@ type Job = (String, Async String)
 -- FIXME check not in pkg git dir
 parallelBuildCmd :: Bool -> Maybe String -> Maybe BranchOpts -> [String] -> IO ()
 parallelBuildCmd dryrun mtarget mbrnchopts args = do
-  (brs,pkgs) <- splitBranchesPkgs mbrnchopts args
+  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
   when (null brs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
   branches <- listOfBranches True True mbrnchopts brs

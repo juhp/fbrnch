@@ -85,7 +85,7 @@ main = do
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importCmd <$> many (pkgArg "NEWPACKAGE...")
     , Subcommand "request-branches" "Request branches for approved created packages" $
-      requestBranches <$> mockOpt <*> optional branchesRequestOpt <*> many pkgOpt
+      requestBranches <$> mockOpt <*> optional branchesRequestOpt <*> branchesPackages
     , Subcommand "find-review" "Find package review bug" $
       findReview <$> pkgArg "PACKAGE"
 --    , Subcommand "test-bz-token" "Check bugzilla login status" $
@@ -111,9 +111,6 @@ main = do
     branchOpt :: Parser Branch
     branchOpt = optionWith branchM 'b' "branch" "BRANCH" "branch"
 
-    branchArg :: Parser Branch
-    branchArg = argumentWith branchM "BRANCH.."
-
     branchM :: ReadM Branch
     branchM = eitherReader eitherBranch'
 
@@ -129,9 +126,6 @@ main = do
     pkgArg :: String -> Parser String
     pkgArg lbl = removeSuffix "/" <$> strArg lbl
 
-    pkgOpt :: Parser String
-    pkgOpt = removeSuffix "/" <$> strOptionWith 'p' "package" "PKG" "package"
-
     branchesOpt :: Parser (Maybe BranchOpts)
     branchesOpt =
       optional (flagWith' AllBranches 'B' "all-branches" "All active release branches" <|>
@@ -146,7 +140,7 @@ main = do
     branchesRequestOpt :: Parser BranchOpts
     branchesRequestOpt =
       flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|>
-      ExcludeBranches <$> many branchArg
+      ExcludeBranches <$> some excludeBranchOpt
 
     rpmWithOpt :: Parser RpmWith
     rpmWithOpt =

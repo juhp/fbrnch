@@ -7,6 +7,7 @@ module Branches (
   module Distribution.Fedora.Branch,
   AnyBranch(..),
   anyBranch,
+  isRelBranch,
   onlyRelBranch,
   BranchOpts(..),
   listOfBranches,
@@ -32,9 +33,9 @@ anyBranch = either OtherBranch RelBranch . eitherBranch
 -- allRelBranches :: [AnyBranch] -> Bool
 -- allRelBranches = all isRelBranch
 
--- isRelBranch :: AnyBranch -> Bool
--- isRelBranch (RelBranch _) = True
--- isRelBranch _ = False
+isRelBranch :: AnyBranch -> Bool
+isRelBranch (RelBranch _) = True
+isRelBranch _ = False
 
 instance Show AnyBranch where
   show (RelBranch br) = show br

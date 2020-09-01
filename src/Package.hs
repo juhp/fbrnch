@@ -313,9 +313,12 @@ spanM p (x:xs) = do
     (!) :: (MonadPlus p) => a -> p a -> p a
     x' ! y = return x' `mplus` y
 
-splitBranchesPkgs :: Maybe BranchOpts -> [String] -> IO ([AnyBranch], [String])
-splitBranchesPkgs mbrnchopts args = do
-  (abrs,pkgs) <- spanM (notM . doesDirectoryExist) args
+splitBranchesPkgs :: Bool -> Maybe BranchOpts -> [String]
+                  -> IO ([AnyBranch], [String])
+splitBranchesPkgs existing mbrnchopts args = do
+  (abrs,pkgs) <- if existing
+    then return $ span (isRelBranch . anyBranch) args
+    else spanM (notM . doesDirectoryExist) args
   let brs = map anyBranch abrs
   return $ case mbrnchopts of
     Nothing -> (brs,pkgs)
@@ -350,7 +353,7 @@ withPackageByBranches :: Maybe Bool
                       -> [String]
                       -> IO ()
 withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args =
-  splitBranchesPkgs mbrnchopts args >>=
+  splitBranchesPkgs True mbrnchopts args >>=
     withPackageByBranches' mheader mgitopts mbrnchopts mreqbr action
 
 withPackageByBranches' :: Maybe Bool
