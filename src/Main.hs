@@ -106,7 +106,8 @@ main = do
       flagWith' ReviewWithoutRepoReq 'w' "without-request" "Approved package reviews without a repo request" <|>
       flagWith' ReviewRepoRequested 'r' "requested" "Approved package reviews with a pending repo request" <|>
       flagWith' ReviewRepoCreated 'c' "created" "Approved package reviews with a created repo" <|>
-      flagWith ReviewAllOpen ReviewUnbranched 'b' "unbranched" "Approved created package reviews not yet branched"
+      flagWith' ReviewUnbranched 'B' "unbranched" "Approved created package reviews not yet branched" <|>
+      flagWith ReviewAllOpen ReviewBranched 'b' "branched" "Approved created package reviews already branched"
 
     branchOpt :: Parser Branch
     branchOpt = optionWith branchM 'b' "branch" "BRANCH" "branch"

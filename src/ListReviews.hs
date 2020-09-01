@@ -18,6 +18,7 @@ data ReviewStatus = ReviewAllOpen
                   | ReviewRepoRequested
                   | ReviewRepoCreated
                   | ReviewUnbranched
+                  | ReviewBranched
 
 listReviews :: ReviewStatus -> IO [Bug]
 listReviews = listReviews' False
@@ -46,12 +47,18 @@ listReviews' allopen status = do
     ReviewUnbranched ->
       filterM (checkRepoCreatedComment session . bugId) bugs >>=
       filterM (notBranched . reviewBugToPackage)
+    ReviewBranched ->
+      filterM (checkRepoCreatedComment session . bugId) bugs >>=
+      filterM (branched . reviewBugToPackage)
     _ -> return bugs
   where
     checkRepoRequestedComment :: BugzillaSession -> BugId -> IO Bool
     checkRepoRequestedComment session bid =
         checkForComment session bid
           "https://pagure.io/releng/fedora-scm-requests/issue/"
+
+    branched :: String -> IO Bool
+    branched pkg = not <$> notBranched pkg
 
     notBranched :: String -> IO Bool
     notBranched pkg = null <$> fedoraBranchesNoMaster (pagurePkgBranches pkg)
