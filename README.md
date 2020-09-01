@@ -91,7 +91,7 @@ $ fbrnch clone [package] ...
 (one can also clone all one's packages or another user's packages).
 
 ```
-$ fbrnch switch -b master [package] ...
+$ fbrnch switch master [package] ...
 ```
 
 You can also git pull:
@@ -114,7 +114,7 @@ $ fbrnch bugs [package]
 #### Merging and Building in Koji
 You can merge branches with:
 ```
-$ fbrnch merge -b f31 package
+$ fbrnch merge f32 package
 ```
 which will offer to merge f32 (or some of it) into f31.
 
@@ -128,22 +128,22 @@ Branch builds are pushed to Bodhi.
 
 You can of course specify which branch(es) to build:
 ```
-$ fbrnch build -b f32 package
+$ fbrnch build f33 package
 ```
 
 Scratch builds can also be done:
 ```
-$ fbrnch scratch -b master
+$ fbrnch scratch master
 ```
 
 You can sort packages by build dependency order:
 ```
-$ fbrnch sort -b master package1 package2 package3 package4 ...
+$ fbrnch sort master package1 package2 package3 package4 ...
 ```
 
 ### Local commands
 ```
-$ fbrnch prep -b master package
+$ fbrnch prep master package
 ```
 
 Build locally:
@@ -164,7 +164,7 @@ in Koji in dependency layers (using low-priority background builds
 to avoid grabbing too many Koji resources).
 
 ```
-$ fbrnch parallel -t f33-build-side-1234 -b master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
+$ fbrnch parallel -t f33-build-side-1234 master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
 ```
 builds a list of packages in parallel ordered by build dependencies.
 
