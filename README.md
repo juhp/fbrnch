@@ -29,7 +29,7 @@ like:
 
 #### Creating a new package
 ```
-$ fbrnch create-review my-new-package.spec
+$ fbrnch create-review [my-new-package]
 ```
 This will create (or update) an srpm, run rpmlint,
 then upload it to fedorapeople, perform a scratch build,
@@ -37,14 +37,14 @@ and open a Review Request in Bugzilla (similar to fedora-create-review).
 
 #### Update a package review
 ```
-$ fbrnch update-review my-new-package.spec
+$ fbrnch update-review [my-new-package]
 ```
 Similar to create-review: uploads to fedorapeople and posts
 updated package links to the open package review.
 
 #### List open package reviews
 ```
-$ fbrnch reviews --help
+$ fbrnch reviews
 ```
 This lists one's open package reviews.
 Various options like `--approved` or `--created` allow filtering by status.
@@ -111,12 +111,18 @@ List package bugs:
 $ fbrnch bugs [package]
 ```
 
-#### Merging and Building in Koji
+#### Commit, Merging and Building in Koji
+You can commit to the current branch:
+```
+$ fbrnch commit
+```
+if there is a changelog, or you can pass `-m "..."` or amend with `-a`.
+
 You can merge branches with:
 ```
 $ fbrnch merge f32 package
 ```
-which will offer to merge f32 (or some of it) into f31.
+which will offer to merge f33 (or some of it) into f32.
 
 Merging can also be done together with building:
 ```
@@ -167,6 +173,11 @@ to avoid grabbing too many Koji resources).
 $ fbrnch parallel -t f33-build-side-1234 master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
 ```
 builds a list of packages in parallel ordered by build dependencies.
+
+### Other commands
+There are more commands like `nvr`, `install-deps`, `copr`.
+
+See `fbrnch --help` for details and the full list.
 
 ## Known issues
 - parallel builds will push local package commits without asking
