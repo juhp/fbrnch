@@ -15,7 +15,8 @@ extra-deps:
   - pretty-terminal-0.1.0.0
   - git: https://github.com/juhp/copr-hs.git
     commit: 92f249caa06f2d738d2de510a238f0da3a454b20
-  - git: https://github.com/juhp/http-query.git
-    commit: 95bfbbfde4c1ea1862fc4ed03bd5f0635253486e
+  # - git: https://github.com/juhp/http-query.git
+  #   commit: 95bfbbfde4c1ea1862fc4ed03bd5f0635253486e
+  - http-query-0.1.0
   - git: https://github.com/juhp/pdc-hs.git
     commit: c8747e722616407a987322bef9a299328a3fde55
