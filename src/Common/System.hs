@@ -3,7 +3,8 @@
 module Common.System (
   module SimpleCmd,
   module System.Directory,
-  module System.FilePath
+  module System.FilePath,
+  isTty,
   ) where
 
 import SimpleCmd
@@ -12,3 +13,7 @@ import SimpleCmd
 #endif
 import System.Directory
 import System.FilePath
+import System.IO
+
+isTty :: IO Bool
+isTty = hIsTerminalDevice stdin

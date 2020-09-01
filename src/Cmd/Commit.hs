@@ -25,7 +25,6 @@ commitPkgs mopt = mapM_ commitPkg
                 Nothing -> do
                   spec <- findSpecfile
                   -- FIXME check changelog in git diff
-                  -- FIXME change prompt to "commit" not "update"
                   changelog <- getChangeLog spec
                   if length (lines changelog) > 1
                     then error' "spec changelog more than 1 line"

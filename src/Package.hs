@@ -71,8 +71,11 @@ getChangeLog :: FilePath -> IO String
 getChangeLog spec = do
   clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
   putStrLn clog
-  usrlog <- prompt "Press Enter to use above or input update summary now"
-  return $ if null usrlog then clog else usrlog
+  ifM (not <$> isTty)
+    (return clog) $
+    do
+      usrlog <- prompt "Press Enter to use above or input change summary now"
+      return $ if null usrlog then clog else usrlog
   where
     cleanChangelog cs =
       case length (lines cs) of
