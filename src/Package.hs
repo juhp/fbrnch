@@ -87,9 +87,12 @@ getDirectoryName :: IO String
 getDirectoryName =
   takeFileName <$> getCurrentDirectory
 
-getPackageName :: FilePath -> Package
-getPackageName =
-  Package . takeFileName
+-- FIXME maybe check spec filename/%name more carefully
+getPackageName :: FilePath -> IO Package
+getPackageName pkgdir =
+  if pkgdir == "."
+  then Package <$> getDirectoryName
+  else return $ Package $ takeFileName pkgdir
 
 findSpecfile :: IO FilePath
 findSpecfile = fileWithExtension ".spec"

@@ -356,9 +356,7 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
     startBuild br pkgdir =
       withExistingDirectory pkgdir $ do
       gitSwitchBranch (RelBranch br)
-      pkg <- if pkgdir == "."
-             then Package <$> getDirectoryName
-             else return $ getPackageName pkgdir
+      pkg <- getPackageName pkgdir
       putPkgBrnchHdr pkg br
       unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $

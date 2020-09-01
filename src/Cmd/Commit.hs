@@ -10,13 +10,16 @@ import Package
 data CommitOpt = CommitMsg String | CommitAmend
 
 commitPkgs :: Maybe CommitOpt -> [String] -> IO ()
-commitPkgs mopt = mapM_ commitPkg
+commitPkgs mopt args =
+  if null args
+    then commitPkg "."
+    else mapM_ commitPkg args
   where
-    commitPkg :: String -> IO ()
-    commitPkg pkg =
-      withExistingDirectory pkg $
+    commitPkg :: FilePath -> IO ()
+    commitPkg path =
+      withExistingDirectory path $
       unlessM isGitDirClean $ do
-      putPkgHdr $ Package pkg
+      getPackageName path >>= putPkgHdr
       opts <- case mopt of
                 Just opt -> return $
                   case opt of

@@ -71,7 +71,7 @@ main = do
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
     , Subcommand "commit" "Git commit packages" $
-      commitPkgs <$> optional commitOpts <*> some (pkgArg "PACKAGE...")
+      commitPkgs <$> optional commitOpts <*> many (pkgArg "PACKAGE...")
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> branchesPackages
     , Subcommand "create-review" "Create a Package Review request" $
