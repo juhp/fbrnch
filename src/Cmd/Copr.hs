@@ -28,7 +28,7 @@ coprServer = "copr.fedorainfracloud.org"
 -- FIXME repo config with a setup command?
 -- FIXME interact with copr dist-git
 coprCmd ::
-  Bool -> BuildBy -> [String] -> String -> Maybe BranchOpts -> [FilePath] -> IO ()
+  Bool -> BuildBy -> [String] -> String -> Maybe BranchOpts -> [String] -> IO ()
 coprCmd dryrun buildBy archs project mbrnchopts args = do
   (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
   chroots <- coprGetChroots brs
@@ -40,6 +40,8 @@ coprCmd dryrun buildBy archs project mbrnchopts args = do
     coprGetChroots brs = do
       username <- getUsername
       chroots <- map T.unpack <$> coprChroots coprServer username project
+      when (null chroots) $
+        error' $ "No chroots found for " ++ username ++ "/" ++ project
       branches <-
         if isNothing mbrnchopts && null brs
         then return $ (map (releaseBranch . T.pack) . nub . map removeArch) chroots
