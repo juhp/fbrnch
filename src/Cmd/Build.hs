@@ -16,7 +16,6 @@ import Data.Char (isDigit, toLower)
 import Distribution.RPM.Build.Order (dependencyLayers)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import System.Console.Pretty
-import System.IO (hIsTerminalDevice, stdin)
 import System.Time.Extra (sleep)
 
 import Text.Read
@@ -84,7 +83,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
   gitSwitchBranch rbr
   gitMergeOrigin rbr
   newrepo <- initialPkgRepo
-  tty <- hIsTerminalDevice stdin
+  tty <- isTty
   unmerged <- mergeable br
   -- FIXME if already built or failed, also offer merge
   merged <-

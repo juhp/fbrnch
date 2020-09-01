@@ -5,6 +5,7 @@ module Common.System (
   module System.Directory,
   module System.FilePath,
   isTty,
+  setNoBuffering
   ) where
 
 import SimpleCmd
@@ -17,3 +18,7 @@ import System.IO
 
 isTty :: IO Bool
 isTty = hIsTerminalDevice stdin
+
+setNoBuffering :: IO ()
+setNoBuffering =
+  hSetBuffering stdout NoBuffering

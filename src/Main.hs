@@ -1,12 +1,10 @@
 module Main (main) where
 
-import Common
+import Common.System
 
 import Distribution.Fedora.Branch
 import Options.Applicative (eitherReader, ReadM)
-import SimpleCmd
 import SimpleCmdArgs
-import System.IO (BufferMode(NoBuffering), hSetBuffering, hIsTerminalDevice, stdin, stdout)
 
 -- commands
 import Cmd.Bugs
@@ -33,9 +31,7 @@ import Paths_fbrnch (version)
 
 main :: IO ()
 main = do
-  tty <- hIsTerminalDevice stdin
-  when tty $ hSetBuffering stdout NoBuffering
-  -- FIXME? some commands do not use branches
+  setNoBuffering
   simpleCmdArgs (Just version) "Fedora package branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
