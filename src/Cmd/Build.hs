@@ -370,6 +370,8 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
+      let tag = fromMaybe (branchDestTag br) mtarget
+      mlatest <- kojiLatestNVR tag $ unPackage pkg
       case buildstatus of
         Just BuildComplete -> do
           putStrLn $ nvr ++ " is already built"
@@ -390,18 +392,16 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
           return $
             kojiGetBuildTaskID fedoraHub nvr >>=
             maybe (error' $ "Task for " ++ nvr ++ " not found")
-            (kojiWaitTaskAndRepo nvr target)
+            (kojiWaitTaskAndRepo (isNothing mlatest) nvr target)
         _ -> do
           buildref <- git "show-ref" ["--hash", "origin" </> show br]
           opentasks <- kojiOpenTasks pkg (Just buildref) target
           case opentasks of
             [task] -> do
               putStrLn $ nvr ++ " task is already open"
-              return $ kojiWaitTaskAndRepo nvr target task
+              return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr target task
             (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
             [] -> do
-              let tag = fromMaybe (branchDestTag br) mtarget
-              mlatest <- kojiLatestNVR tag $ unPackage pkg
               if equivNVR nvr (fromMaybe "" mlatest)
                 then return $ error' $ color Red $ nvr ++ " is already latest (modulo disttag)"
                 else do
@@ -410,17 +410,30 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
                   then return (return nvr)
                   else do
                   task <- kojiBuildBranchNoWait target pkg Nothing ["--fail-fast", "--background"]
-                  return $ kojiWaitTaskAndRepo nvr target task
+                  return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr target task
       where
-        kojiWaitTaskAndRepo :: String -> String -> TaskID -> IO String
-        kojiWaitTaskAndRepo nvr target task = do
+        kojiWaitTaskAndRepo :: Bool -> String -> String -> TaskID -> IO String
+        kojiWaitTaskAndRepo newpkg nvr target task = do
           finish <- kojiWatchTaskQuiet task
           if finish
             then putStrLn $ color Green $ nvr ++ " build success"
             else error' $ color Red $ nvr ++ " build failed"
           unless dryrun $ do
-            when (br /= Master && isNothing mtarget) $
-              unlessM (checkAutoBodhiUpdate br) $
-              bodhiCreateOverride nvr
+            autoupdate <- checkAutoBodhiUpdate br
+            if autoupdate then
+              when newpkg $ do
+              mBugSess <- do
+                (mbid, session) <- bzReviewSession
+                return $ case mbid of
+                  Just bid -> Just (bid,session)
+                  Nothing -> Nothing
+              whenJust mBugSess $
+                \ (bid,session) -> postBuildComment session nvr bid
+              else do
+              when (isNothing mtarget) $
+                -- -- FIXME: avoid prompt in
+                -- changelog <- getChangeLog spec
+                -- bodhiUpdate (fmap fst mBugSess) changelog nvr
+                bodhiCreateOverride nvr
             kojiWaitRepo target nvr
           return nvr
