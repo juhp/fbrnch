@@ -164,19 +164,17 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                   Just bid -> Just (bid,session)
                   Nothing -> Nothing
                 else return Nothing
-              if br == Master
+              autoupdate <- checkAutoBodhiUpdate br
+              if autoupdate
                 then whenJust mBugSess $
                      \ (bid,session) -> postBuildComment session nvr bid
                 else do
+                when (isNothing mtarget) $ do
                 -- FIXME diff previous changelog?
-                changelog <- getChangeLog spec
-                autoupdate <- checkAutoBodhiUpdate br
-                unless autoupdate $
+                  changelog <- getChangeLog spec
                   bodhiUpdate (fmap fst mBugSess) changelog nvr
-                -- FIXME autochain
-                -- FIXME prompt for override note
-                when (not autoupdate && buildoptOverride opts) $
-                  when (isNothing mtarget) $
+                  -- FIXME prompt for override note
+                  when (buildoptOverride opts) $
                     bodhiCreateOverride nvr
               when morethan1 $ kojiWaitRepo target nvr
   where
