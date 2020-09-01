@@ -50,7 +50,7 @@ main = do
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd <$> dryrunOpt <*> targetOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
-      scratchCmd <$> rebuildSrpmOpt <*> noFailFastOpt <*> many archOpt <*> targetOpt <*> branchesPackages
+      scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> many archOpt <*> targetOpt <*> branchesPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd <$> optional rpmWithOpt <*> branchesPackages
     , Subcommand "prep" "Prep sources" $

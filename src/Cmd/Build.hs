@@ -236,13 +236,13 @@ bodhiCreateOverride nvr = do
         bodhiCreateOverride nvr
       Just obj -> print obj
 
--- FIXME --dry-run
 -- FIXME default to rawhide/master?
 -- FIXME --exclude-arch
 -- FIXME build from a specific git ref
 -- FIXME print message about uploading srpm
-scratchCmd :: Bool -> Bool -> [String] -> Maybe String -> [String] -> IO ()
-scratchCmd rebuildSrpm nofailfast archs mtarget =
+scratchCmd :: Bool -> Bool -> Bool -> [String] -> Maybe String -> [String]
+           -> IO ()
+scratchCmd dryrun rebuildSrpm nofailfast archs mtarget =
   withPackageByBranches (Just False) Nothing Nothing Nothing scratchBuild
   where
     scratchBuild :: Package -> AnyBranch -> IO ()
@@ -259,11 +259,12 @@ scratchCmd rebuildSrpm nofailfast archs mtarget =
           if clean then
             null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
             else return False
-        if pushed then do
-          void $ getSources spec
-          kojiBuildBranch target pkg Nothing $ "--scratch" : kojiargs
+        unless dryrun $ do
+          if pushed then do
+            void $ getSources spec
+            kojiBuildBranch target pkg Nothing $ "--scratch" : kojiargs
+            else srpmBuild target kojiargs spec
           else srpmBuild target kojiargs spec
-        else srpmBuild target kojiargs spec
       where
         srpmBuild :: FilePath -> [String] -> String -> IO ()
         srpmBuild target kojiargs spec =
