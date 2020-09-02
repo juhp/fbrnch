@@ -352,9 +352,9 @@ withPackageByBranches :: Maybe Bool
                       -> (Package -> AnyBranch -> IO ())
                       -> [String]
                       -> IO ()
-withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args =
-    withPackageByBranches' mheader mgitopts mbrnchopts mreqbr action
+withPackageByBranches mheader mgitopts mbrnchopts mconstrainBr action args =
   splitBranchesPkgs (have gitOptActive) mbrnchopts args >>=
+    withPackageByBranches' mheader mgitopts mbrnchopts mconstrainBr action
   where
     have :: (GitOpts -> Bool) -> Bool
     have opt = maybe False opt mgitopts
@@ -366,13 +366,13 @@ withPackageByBranches' :: Maybe Bool
                        -> (Package -> AnyBranch -> IO ())
                        -> ([AnyBranch], [String])
                        -> IO ()
-withPackageByBranches' mheader mgitopts mbrnchopts mreqbr action (brs,pkgs) = do
+withPackageByBranches' mheader mgitopts mbrnchopts mconstrainBr action (brs,pkgs) = do
   case mbrnchopts of
     Just _ ->
       unless (null brs) $
       error' "cannot specify branches and branch option together"
     Nothing ->
-      case mreqbr of
+      case mconstrainBr of
         Just (required,brerr) ->
           unless (required brs) $ error' brerr
         Nothing -> return ()
