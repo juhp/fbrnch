@@ -27,6 +27,7 @@ coprServer = "copr.fedorainfracloud.org"
 -- FIXME make project optional (if same as pkg??) or configurable ?
 -- FIXME repo config with a setup command?
 -- FIXME interact with copr dist-git
+-- FIXME parallel copr builds
 coprCmd ::
   Bool -> BuildBy -> [String] -> String -> Maybe BranchOpts -> [String] -> IO ()
 coprCmd dryrun buildBy archs project mbrnchopts args = do

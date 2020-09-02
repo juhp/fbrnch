@@ -24,6 +24,7 @@ commitPkgs mopt args =
                 Just opt -> return $
                   case opt of
                     CommitMsg msg -> ["-m", msg]
+                    -- FIXME reject amend if already pushed
                     CommitAmend -> ["--amend", "--no-edit"]
                 Nothing -> do
                   spec <- findSpecfile
