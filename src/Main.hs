@@ -50,7 +50,7 @@ main = do
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd <$> dryrunOpt <*> targetOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
-      scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> many archOpt <*> targetOpt <*> branchesPackages
+      scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> targetOpt <*> branchesPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd <$> optional rpmWithOpt <*> branchesPackages
     , Subcommand "prep" "Prep sources" $
@@ -157,7 +157,7 @@ main = do
     mockOpt = switchWith 'm' "mock" "Do mock build to test"
 
     archOpt :: Parser String
-    archOpt = strOptionWith 'a' "arch" "ARCH[,ARCH].." "Scratch build for arch(s)"
+    archOpt = strOptionWith 'a' "arch" "ARCH[,ARCH].." "build for arch(s)"
 
     rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
 
@@ -168,6 +168,12 @@ main = do
     mergeOpt = switchWith 'm' "merge" "merge from newer branch"
 
     noFailFastOpt = switchWith 'f' "no-fast-fail" "Do not --fast-fail"
+
+    excludeArch :: Parser String
+    excludeArch = strOptionWith 'X' "exclude-arch" "ARCH[,ARCH].." "build without arch(s)"
+
+    archesOpt :: Parser Archs
+    archesOpt = Archs <$> some archOpt <|> ExcludedArchs <$> some excludeArch
 
     targetOpt :: Parser (Maybe String)
     targetOpt = optional (strOptionWith 't' "target" "TARGET" "Koji target")

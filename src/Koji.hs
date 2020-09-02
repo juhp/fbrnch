@@ -12,6 +12,8 @@ module Koji (
   kojiBuildBranch,
   kojiBuildBranchNoWait,
   kojiSource,
+  kojiBuildTarget,
+  kojiTagArchs,
   kojiWaitRepo,
   kojiWatchTask,
   kojiWatchTaskQuiet,
@@ -22,6 +24,7 @@ module Koji (
 import Data.Char (isDigit)
 
 import Fedora.Koji
+import qualified Fedora.Koji.Internal as Koji
 
 import Common
 import Common.System
@@ -149,3 +152,10 @@ kojiWaitRepo target nvr = do
   Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
   cmd_ "date" []
   cmd_ "koji" ["wait-repo", buildtag, "--build=" ++ nvr]
+
+kojiTagArchs :: String -> IO [String]
+kojiTagArchs tag = do
+  st <- Koji.getTag fedoraHub (Koji.InfoString tag) Nothing
+  return $ case lookupStruct "arches" st of
+    Nothing -> []
+    Just as -> words as
