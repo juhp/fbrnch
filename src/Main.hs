@@ -79,7 +79,7 @@ main = do
     , Subcommand "update-review" "Update a Package Review" $
       updateReview <$> noScratchBuild <*> mockOpt <*> optional (strArg "SPECFILE")
     , Subcommand "reviews" "List package reviews" $
-      reviewsCmd <$> reviewStatusOpt
+      reviewsCmd <$> reviewShortOpt <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
       requestRepos <$> switchWith 'r' "retry" "Re-request repo" <*> many (pkgArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
@@ -98,6 +98,9 @@ main = do
     cloneRequest = flagWith' (CloneUser Nothing) 'M' "mine" "Your packages" <|> CloneUser . Just <$> strOptionWith 'u' "user" "USER" "Packages of FAS user" <|> ClonePkgs <$> some (pkgArg "PACKAGE...")
 
     noScratchBuild = switchWith 'S' "no-scratch-build" "Skip Koji scratch build"
+
+    reviewShortOpt :: Parser Bool
+    reviewShortOpt = switchWith 's' "short" "Only output the package name"
 
     reviewStatusOpt :: Parser ReviewStatus
     reviewStatusOpt =

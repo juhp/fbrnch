@@ -8,9 +8,9 @@ import ListReviews
 
 -- FIXME add --state or --new, --modified, etc
 -- FIXME display time of last update
-reviewsCmd :: ReviewStatus -> IO ()
-reviewsCmd status =
-  listReviews' True status >>= mapM_ putReviewBug . sortBugsByStatus
+reviewsCmd :: Bool -> ReviewStatus -> IO ()
+reviewsCmd short status =
+  listReviews' True status >>= mapM_ (putReviewBug short) . sortBugsByStatus
 
 findReview :: String -> IO ()
 findReview pkg = do

@@ -302,11 +302,13 @@ checkForComment session bid text = do
     comments <- map commentText <$> getComments session bid
     return $ any (text `T.isInfixOf`) $ reverse comments
 
-putReviewBug :: Bug -> IO ()
-putReviewBug bug = do
-  putStrLn $ reviewBugToPackage bug ++ " (" ++ T.unpack (bugStatus bug) ++ ")"
-  putBugId $ bugId bug
-  putStrLn ""
+putReviewBug :: Bool -> Bug -> IO ()
+putReviewBug short bug = do
+  if short then putStrLn $ reviewBugToPackage bug
+    else do
+    putStrLn $ reviewBugToPackage bug ++ " (" ++ T.unpack (bugStatus bug) ++ ")"
+    putBugId $ bugId bug
+    putStrLn ""
 
 putBug :: Bug -> IO ()
 putBug bug = do
