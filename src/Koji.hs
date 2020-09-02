@@ -9,7 +9,6 @@ module Koji (
   kojiScratchBuild,
   buildIDInfo,
   BuildState(..),
-  kojiBuild,
   kojiBuildBranch,
   kojiBuildBranchNoWait,
   kojiSource,
@@ -90,10 +89,10 @@ kojiBuild' wait target args = do
   cmd_ "date" []
   return $ if wait then Right kojiurl else Left task
 
-kojiBuild :: String -> [String] -> IO String
-kojiBuild target args = do
-  Right url <- kojiBuild' True target args
-  return url
+-- kojiBuild :: String -> [String] -> IO String
+-- kojiBuild target args = do
+--   Right url <- kojiBuild' True target args
+--   return url
 
 -- FIXME filter/simplify output
 kojiWatchTask :: TaskID -> IO ()
