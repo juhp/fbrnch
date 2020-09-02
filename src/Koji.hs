@@ -76,6 +76,10 @@ kojiBuild' :: Bool -> String -> [String] -> IO KojiBuildTask
 kojiBuild' wait target args = do
   krbTicket
   cmd_ "date" []
+  if null args
+    then error' "no args passed to koji build"
+    else when (".src.rpm" `isSuffixOf` (last args)) $
+         putStrLn "uploading srpm..."
   -- FIXME setTermTitle nvr
   -- FIXME tee functionality
   out <- cmd "koji" $ ["build", "--nowait", target] ++ args
