@@ -79,7 +79,7 @@ main = do
     , Subcommand "update-review" "Update a Package Review" $
       updateReview <$> noScratchBuild <*> mockOpt <*> optional (strArg "SPECFILE")
     , Subcommand "reviews" "List package reviews" $
-      reviewsCmd <$> reviewShortOpt <*> reviewStatusOpt
+      reviewsCmd <$> reviewShortOpt <*> reviewAllStatusOpt <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
       requestRepos <$> switchWith 'r' "retry" "Re-request repo" <*> many (pkgArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
@@ -101,6 +101,9 @@ main = do
 
     reviewShortOpt :: Parser Bool
     reviewShortOpt = switchWith 's' "short" "Only output the package name"
+
+    reviewAllStatusOpt :: Parser Bool
+    reviewAllStatusOpt = switchWith 'A' "all-status" "Output all open reviews"
 
     reviewStatusOpt :: Parser ReviewStatus
     reviewStatusOpt =

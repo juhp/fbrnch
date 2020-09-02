@@ -27,15 +27,24 @@ listReviews' :: Bool -> ReviewStatus -> IO [Bug]
 listReviews' allopen status = do
   (session,user) <- bzLoginSession
   let reviews = reporterIs user .&&. packageReview
-      open = if allopen then statusOpen else statusNewPost
+      open = if allopen
+        then statusOpen else
+        case status of
+          ReviewAllOpen -> statusOpen
+          ReviewUnApproved -> statusOpen
+          ReviewApproved -> statusNewPost
+          ReviewRepoCreated -> statusNewPost
+          ReviewUnbranched -> statusNewModified
+          _ -> statusNewPost
       query = case status of
-        ReviewAllOpen -> reviews .&&. statusOpen
-        ReviewUnApproved -> reviews .&&. statusOpen .&&. not' reviewApproved
-        ReviewApproved -> reviews .&&. statusNewPost .&&. reviewApproved
-        ReviewUnbranched -> reviews .&&. statusNewModified .&&. reviewApproved
-        _ -> reviews .&&. open .&&. reviewApproved
+        ReviewAllOpen -> reviews
+        ReviewUnApproved -> reviews .&&. not' reviewApproved
+        ReviewApproved -> reviews .&&. reviewApproved
+        ReviewRepoCreated -> reviews .&&. reviewApproved
+        ReviewUnbranched -> reviews .&&. reviewApproved
+        _ -> reviews .&&. reviewApproved
   -- FIXME sort by status, bid (default?) / pkg?
-  bugs <- searchBugs session query
+  bugs <- searchBugs session (query .&&. open)
   case status of
     ReviewWithoutRepoReq ->
       filterM (fmap not . checkRepoRequestedComment session . bugId) bugs
