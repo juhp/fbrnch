@@ -40,6 +40,7 @@ module Bugzilla (
   sortBugsByStatus,
   -- output
   putBug,
+  putBugVer,
   putReviewBug,
   putBugId,
   -- request
@@ -309,9 +310,14 @@ putReviewBug bug = do
 
 putBug :: Bug -> IO ()
 putBug bug = do
-  T.putStrLn $ "[" <> prodVersion <> "] " <> bugSummary bug <> " (" <> bugStatus bug <> ")"
+  T.putStrLn $ bugSummary bug <> " (" <> bugStatus bug <> ")"
   putBugId $ bugId bug
   putStrLn ""
+
+putBugVer :: Bug -> IO ()
+putBugVer bug = do
+  T.putStr $ "[" <> prodVersion <> "] "
+  putBug bug
   where
     prodVersion = T.unwords (bugVersion bug)
 
