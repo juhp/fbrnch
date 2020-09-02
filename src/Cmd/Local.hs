@@ -88,9 +88,10 @@ data RpmWith = RpmWith String | RpmWithout String
 sortCmd :: Maybe RpmWith -> [String] -> IO ()
 sortCmd _ [] = return ()
 sortCmd mrpmwith args = do
-  withPackageByBranches Nothing Nothing Nothing oneBranch dummy args
+  (brs,pkgs) <- splitBranchesPkgs False Nothing args
+  withPackageByBranches' Nothing Nothing Nothing oneBranch dummy (brs,pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
-  packages <- dependencySortRpmOpts rpmopts $ reverse args
+  packages <- dependencySortRpmOpts rpmopts $ reverse pkgs
   putStrLn $ unwords packages
   where
     dummy _ br = gitSwitchBranch br

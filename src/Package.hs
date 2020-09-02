@@ -315,8 +315,8 @@ spanM p (x:xs) = do
 
 splitBranchesPkgs :: Bool -> Maybe BranchOpts -> [String]
                   -> IO ([AnyBranch], [String])
-splitBranchesPkgs existing mbrnchopts args = do
-  (abrs,pkgs) <- if existing
+splitBranchesPkgs release mbrnchopts args = do
+  (abrs,pkgs) <- if release
     then return $ span (isRelBranch . anyBranch) args
     else spanM (notM . doesDirectoryExist) args
   let brs = map anyBranch abrs
@@ -353,8 +353,11 @@ withPackageByBranches :: Maybe Bool
                       -> [String]
                       -> IO ()
 withPackageByBranches mheader mgitopts mbrnchopts mreqbr action args =
-  splitBranchesPkgs True mbrnchopts args >>=
     withPackageByBranches' mheader mgitopts mbrnchopts mreqbr action
+  splitBranchesPkgs (have gitOptActive) mbrnchopts args >>=
+  where
+    have :: (GitOpts -> Bool) -> Bool
+    have opt = maybe False opt mgitopts
 
 withPackageByBranches' :: Maybe Bool
                        -> Maybe GitOpts
