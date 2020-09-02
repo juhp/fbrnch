@@ -226,7 +226,7 @@ checkAutoBodhiUpdate br =
 bodhiCreateOverride :: String -> IO ()
 bodhiCreateOverride nvr = do
   putStrLn $ "Creating Bodhi Override for " ++ nvr ++ ":"
-  ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building", "--duration", "7", nvr]
+  ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", "7", nvr]
   unless ok $ do
     moverride <- bodhiOverride nvr
     case moverride of
