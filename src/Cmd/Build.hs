@@ -285,7 +285,7 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
 
 type Job = (String, Async String)
 
--- FIXME option to build package branches in parallel
+-- FIXME option to build packages over branches in parallel
 -- FIXME add --with-side-tag
 -- FIXME check sources asap
 -- FIXME check not in pkg git dir
