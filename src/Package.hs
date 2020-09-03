@@ -4,6 +4,7 @@ module Package (
   fedpkg,
   fedpkg_,
   checkForSpecFile,
+  cleanChangelog,
   getChangeLog,
   getDirectoryName,
   getPackageName,
@@ -76,12 +77,13 @@ getChangeLog spec = do
     do
       usrlog <- prompt "Press Enter to use above or input change summary now"
       return $ if null usrlog then clog else usrlog
-  where
-    cleanChangelog cs =
-      case length (lines cs) of
-        0 -> error' "empty changelog" -- should not happen
-        1 -> removePrefix "- " cs
-        _ -> cs
+
+cleanChangelog :: String -> String
+cleanChangelog cs =
+  case length (lines cs) of
+    0 -> error' "empty changelog" -- should not happen
+    1 -> removePrefix "- " cs
+    _ -> cs
 
 getDirectoryName :: IO String
 getDirectoryName =
