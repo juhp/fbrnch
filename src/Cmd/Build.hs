@@ -11,8 +11,10 @@ module Cmd.Build (
 
 import Common
 import Common.System
+import qualified Common.Text as T
 
 import Control.Concurrent.Async
+import Data.Aeson.Types (Object, (.:), parseEither)
 import Data.Char (isDigit, toLower)
 import Distribution.RPM.Build.Order (dependencyLayers)
 import Fedora.Bodhi hiding (bodhiUpdate)
@@ -222,7 +224,13 @@ checkSourcesMatch spec = do
 
 checkAutoBodhiUpdate :: Branch -> IO Bool
 checkAutoBodhiUpdate br =
-  lookupKey' "create_automatic_updates" <$> bodhiRelease (show br)
+  lookupKey'' "create_automatic_updates" <$> bodhiRelease (show br)
+  where
+    -- Error in $: key "create_automatic_updates" not found
+    lookupKey'' :: T.Text -> Object -> Bool
+    lookupKey'' k obj =
+      let errMsg e = error $ e ++ " " ++ show obj in
+        either errMsg id $ parseEither (.: k) obj
 
 bodhiCreateOverride :: String -> IO ()
 bodhiCreateOverride nvr = do
