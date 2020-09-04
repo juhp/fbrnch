@@ -59,7 +59,7 @@ data BuildOpts = BuildOpts
   , buildoptTarget :: Maybe String
   , buildoptOverride :: Bool
   , buildoptDryrun :: Bool
-  , buildoptUpdateType :: UpdateType
+  , buildoptUpdateType :: Maybe UpdateType
   }
 
 -- FIXME --add-to-update nvr
@@ -190,19 +190,21 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
       -- FIXME also query for open existing bugs
       -- FIXME extract bug no(s) from changelog
       putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
-      let updateType = show $ buildoptUpdateType opts
-      updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else updateType , "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
-      unless updateOK $ do
-        updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
-        case updatequery of
-          [] -> do
-            putStrLn "bodhi submission failed"
-            prompt_ "Press Enter to resubmit to Bodhi"
-            bodhiUpdate mreview changelog nvr
-          [update] -> case lookupKey "url" update of
-            Nothing -> error' "Update created but no url"
-            Just uri -> putStrLn uri
-          _ -> error' $ "impossible happened: more than one update found for " ++ nvr
+      case buildoptUpdateType opts of
+        Nothing -> return ()
+        Just updateType -> do
+          updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType , "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+          unless updateOK $ do
+            updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
+            case updatequery of
+              [] -> do
+                putStrLn "bodhi submission failed"
+                prompt_ "Press Enter to resubmit to Bodhi"
+                bodhiUpdate mreview changelog nvr
+              [update] -> case lookupKey "url" update of
+                Nothing -> error' "Update created but no url"
+                Just uri -> putStrLn uri
+              _ -> error' $ "impossible happened: more than one update found for " ++ nvr
 
     extractBugReference :: String -> Maybe String
     extractBugReference clog =

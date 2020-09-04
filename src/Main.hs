@@ -182,7 +182,7 @@ main = do
 
     dryrunOpt = switchWith 'n' "dry-run" "Do not write (push, build, post, override)"
 
-    updatetypeOpt = optionalWith auto 'u' "update-type" "TYPE" "security, bugfix, enhancement (default), or newpackage" EnhancementUpdate
+    updatetypeOpt = flagWith' Nothing 'U' "no-update" "Do not generate a Bodhi update" <|> Just <$> optionalWith auto 'u' "update-type" "TYPE" "security, bugfix, enhancement (default), or newpackage" EnhancementUpdate
 
     forceshortOpt =
       flagWith' ForceBuild 'f' "rebuild" "Rebuild even if already built" <|>
