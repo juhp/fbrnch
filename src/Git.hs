@@ -79,7 +79,8 @@ gitPushSilent mref = do
 
 gitFetchSilent :: IO ()
 gitFetchSilent = do
-  putStr "git fetching... "
+  name <- getDirectoryName
+  putStr $ "git fetching " ++ name ++ "... "
   out <- cmdQuiet "git" ["fetch", "--quiet"]
   putStrLn $ if null out then "done" else "\n" ++ out
 
@@ -135,7 +136,9 @@ gitSwitchBranch br = do
        (return True) $
         gitFetchSilent >> checkIfRemoteBranchExists
     if not remotebranch
-      then error' $ show br ++ " branch does not exist!"
+      then do
+      name <- getDirectoryName
+      error' $ name ++ " " ++ show br ++ " branch does not exist!"
       else
       git_ "checkout" ["-q", "-b", show br, "--track", "origin" </> show br]
   where

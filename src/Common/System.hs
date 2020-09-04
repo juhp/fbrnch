@@ -4,6 +4,7 @@ module Common.System (
   module SimpleCmd,
   module System.Directory,
   module System.FilePath,
+  getDirectoryName,
   isTty,
   setNoBuffering
   ) where
@@ -22,3 +23,7 @@ isTty = hIsTerminalDevice stdin
 setNoBuffering :: IO ()
 setNoBuffering =
   hSetBuffering stdout NoBuffering
+
+getDirectoryName :: IO String
+getDirectoryName =
+  takeFileName <$> getCurrentDirectory

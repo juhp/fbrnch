@@ -85,10 +85,6 @@ cleanChangelog cs =
     1 -> removePrefix "- " cs
     _ -> cs
 
-getDirectoryName :: IO String
-getDirectoryName =
-  takeFileName <$> getCurrentDirectory
-
 -- FIXME maybe check spec filename/%name more carefully
 getPackageName :: FilePath -> IO Package
 getPackageName pkgdir =

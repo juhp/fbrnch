@@ -3,9 +3,9 @@
 module Common (
   module Control.Monad.Extra,
   module Data.List.Extra,
-  module Data.Maybe
+  module Data.Maybe,
 #if !MIN_VERSION_base(4,11,0)
-, (<>)
+  (<>)
 #endif
   ) where
 
