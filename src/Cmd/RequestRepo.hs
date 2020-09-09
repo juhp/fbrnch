@@ -5,7 +5,6 @@ module Cmd.RequestRepo (requestRepos) where
 import Common
 
 import Data.Either
-import Network.HTTP.Simple
 import SimpleCmd
 import System.FilePath
 
@@ -52,10 +51,7 @@ requestRepo retry pkg = do
         putStrLn url
         -- FIXME get name of reviewer from bug
         let comment = "Thank you for the review\n\n" <> url
-            req = setRequestMethod "POST" $
-                  setRequestCheckStatus $
-                  newBzRequest session ["bug", intAsText bid, "comment"] [makeTextItem "comment" comment]
-        void $ httpNoBody req
+        postComment session bid comment
         putStrLn "comment added to review"
         putStrLn ""
   where

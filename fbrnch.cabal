@@ -78,6 +78,7 @@ executable fbrnch
                      , http-conduit
                      , http-directory >= 0.1.5
                      , http-query
+                     , http-types
                      , koji
                      , network-uri
                      , optparse-applicative
@@ -90,6 +91,7 @@ executable fbrnch
                      , text
                      , time
                      , typed-process >= 0.2.4.0
+                     , utf8-string
                      , xdg-basedir
   if impl(ghc<8.0)
        build-depends: semigroups

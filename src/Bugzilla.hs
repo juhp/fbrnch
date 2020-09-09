@@ -29,6 +29,8 @@ module Bugzilla (
   Comment,
   checkForComment,
   checkRepoCreatedComment,
+  createBug,
+  updateBug,
   postComment,
   postBuildComment,
   showComment,
@@ -52,10 +54,13 @@ module Bugzilla (
 import Common
 import Common.System
 import qualified Common.Text as T
+import Prompt
 
 import Control.Exception (finally)
 import qualified Data.ByteString.Char8 as B
+import Data.ByteString.UTF8
 import Data.Ini.Config
+import Network.HTTP.Conduit
 import Network.HTTP.Query
 import Network.HTTP.Simple
 import System.Environment
@@ -64,17 +69,34 @@ import System.IO (hSetEcho, stdin)
 import qualified Text.Email.Validate as Email
 import Web.Bugzilla.RedHat
 import Web.Bugzilla.RedHat.Search
--- local
-import Package (getDirectoryName)
-import Prompt
+
+createBug :: BugzillaSession -> [(String,String)] -> IO Int
+createBug session params = do
+  let req = -- posting url encoded utf8 to bugzilla only seems to work in body
+            urlEncodedBody (encodeParams params) $
+            setRequestCheckStatus $
+            newBzRequest session ["bug"] []
+  lookupKey' "id" . getResponseBody <$> httpJSON req
+
+updateBug :: BugzillaSession -> BugId -> [String] -> [(String,String)]
+        -> IO ()
+updateBug session bid pth params = do
+  let req = setRequestMethod "PUT" $
+            -- posting url encoded utf8 to bugzilla only seems to work in body
+            urlEncodedBody (encodeParams params) $
+            setRequestCheckStatus $
+            newBzRequest session (map T.pack ("bug":show bid:pth)) []
+  void (lookupKey' "id" . getResponseBody <$> httpJSON req :: IO Int)
+
+encodeParams :: [(String, String)] -> [(ByteString, ByteString)]
+encodeParams [] = []
+encodeParams ((k,v):ps) =
+  (B.pack k, fromString v) : encodeParams ps
 
 postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
 postBuildComment session nvr bid = do
-  let req = setRequestMethod "PUT" $
-            setRequestCheckStatus $
-            newBzRequest session ["bug", intAsText bid]
-            [makeTextItem "cf_fixed_in" nvr, makeTextItem "status" "MODIFIED"]
-  void $ httpNoBody req
+  void $ updateBug session bid []
+    [("cf_fixed_in", nvr), ("status", "MODIFIED")]
   putStrLn $ "build posted to review bug " ++ show bid
 
 brc :: T.Text
@@ -82,12 +104,8 @@ brc = "bugzilla.redhat.com"
 
 postComment :: BugzillaSession -> BugId -> String -> IO ()
 postComment session bid comment = do
-  let req = setRequestMethod "POST" $
-            setRequestCheckStatus $
-            newBzRequest session ["bug", intAsText bid, "comment"] [makeTextItem "comment" comment]
-  res <- lookupKey' "id" . getResponseBody <$> httpJSON req
-  -- FIXME probably don't want commentid here
-  putStrLn $ "Comment (" ++ res ++ ") added:"
+  updateBug session bid ["comment"] [("comment", comment)]
+  putStrLn "Comment added:"
   putStrLn comment
 
 bzReviewSession :: IO (Maybe BugId,BugzillaSession)

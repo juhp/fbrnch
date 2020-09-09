@@ -11,8 +11,6 @@ import qualified Common.Text as T
 
 import Data.Char
 import Network.HTTP.Directory
-import Network.HTTP.Query
-import Network.HTTP.Simple
 
 import Branches
 import Bugzilla
@@ -52,16 +50,12 @@ createReview noscratch mock pkgs =
         postReviewReq session spec specSrpmUrls mkojiurl pkg = do
           summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
           description <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
-          let req = setRequestMethod "POST" $
-                  setRequestCheckStatus $
-                  newBzRequest session ["bug"]
-                  [ makeTextItem "product" "Fedora"
-                  , makeTextItem "component" "Package Review"
-                  , makeTextItem "version" "rawhide"
-                  , makeTextItem "summary" $ "Review Request: " <> pkg <> " - " <> summary
-                  , makeTextItem "description" $ specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl
-                  ]
-          lookupKey' "id" . getResponseBody <$> httpJSON req
+          createBug session
+            [ ("product", "Fedora")
+            , ("component", "Package Review")
+            , ("version", "rawhide")
+            , ("summary", "Review Request: " <> pkg <> " - " <> summary)
+            , ("description", specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl)]
 
 getSpecFile :: Maybe FilePath -> IO String
 getSpecFile =
