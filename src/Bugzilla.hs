@@ -306,8 +306,8 @@ bugStatusEnum st =
 showComment :: Comment -> IO ()
 showComment cmt = do
   -- comment0 from fedora-create-review has leading newline
-  T.putStr $ "(Comment " <> intAsText (commentCount cmt) <> ") <" <> commentCreator cmt <> "> " <> (T.pack . show) (commentCreationTime cmt)
-            <> "\n\n" <> (T.unlines . map ("  " <>) . dropDuplicates . removeLeadingNewline . T.lines $ commentText cmt)
+  T.putStrLn $ "(Comment " <> intAsText (commentCount cmt) <> ") <" <> commentCreator cmt <> "> " <> (T.pack . show) (commentCreationTime cmt) <> "\n"
+  mapM_ (T.putStrLn . ("  " <>)) $ dropDuplicates . removeLeadingNewline . T.lines $ commentText cmt
   putStrLn ""
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
