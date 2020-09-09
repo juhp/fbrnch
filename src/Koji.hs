@@ -80,7 +80,7 @@ kojiBuild' wait target args = do
   cmd_ "date" []
   let srpm = if null args
              then error' "no args passed to koji build"
-             else ".src.rpm" `isSuffixOf` (last args)
+             else ".src.rpm" `isSuffixOf` last args
   -- FIXME use tee functionality
   when srpm $ putStrLn "uploading srpm..."
   -- FIXME setTermTitle nvr
@@ -159,6 +159,4 @@ kojiWaitRepo target nvr = do
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do
   st <- Koji.getTag fedoraHub (Koji.InfoString tag) Nothing
-  return $ case lookupStruct "arches" st of
-    Nothing -> []
-    Just as -> words as
+  return $ maybe [] words $ lookupStruct "arches" st
