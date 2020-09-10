@@ -18,10 +18,9 @@ data DiffWork =
   DiffWorkAll | DiffWorkUnstage | DiffWorkStaged
   deriving (Eq)
 
--- FIXME diff branch(es) (without switching?)
--- FIXME --no-fetch
-diffCmd :: DiffWork -> DiffFormat -> [String] -> IO ()
-diffCmd work fmt =
+-- FIXME diff other branches without switching
+diffCmd :: DiffWork -> DiffFormat -> Maybe AnyBranch -> [String] -> IO ()
+diffCmd work fmt mwbr =
   withPackageByBranches Nothing dirtyGit Nothing zeroOneBranches diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
@@ -32,11 +31,15 @@ diffCmd work fmt =
                      -- FIXME hide "files changed" and "insertions" summary
                      DiffStats -> ["--compact-summary"]
                      _ -> []
-          workArgs = case work of
-                       DiffWorkAll -> ["HEAD"]
-                       DiffWorkUnstage -> []
-                       DiffWorkStaged -> ["--cached"]
-      diff <- git "diff" $ contxt ++ workArgs
+          (workOpts,workArgs) =
+            case work of
+              DiffWorkAll -> ([],["HEAD" | isNothing mwbr])
+              DiffWorkUnstage -> ([],[])
+              DiffWorkStaged -> (["--cached"],[])
+          withBranch = case mwbr of
+                         Nothing -> []
+                         Just wbr -> [show wbr]
+      diff <- git "diff" $ contxt ++ workOpts ++ withBranch ++ workArgs
       unless (null diff) $
         case fmt of
           DiffQuiet -> putStrLn $ unPackage pkg

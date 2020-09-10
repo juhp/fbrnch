@@ -60,7 +60,7 @@ main = do
     , Subcommand "srpm" "Build srpm" $
       srpmCmd <$> branchesPackages
     , Subcommand "diff" "Diff local changes" $
-      diffCmd <$> diffWorkOpt <*> diffFormatOpt <*> branchesPackages
+      diffCmd <$> diffWorkOpt <*> diffFormatOpt <*> diffBranchOpt <*> branchesPackages
     , Subcommand "mock" "Local mock build" $
       mockCmd <$> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> branchesPackages
     , Subcommand "install-deps" "Install package build dependencies" $
@@ -123,14 +123,8 @@ main = do
     branchM :: ReadM Branch
     branchM = eitherReader eitherBranch'
 
-    -- anyBranchOpt :: Parser AnyBranch
-    -- anyBranchOpt = optionWith anyBranchM 'b' "branch" "BRANCH" "branch"
-
-    -- anyBranchArg :: Parser AnyBranch
-    -- anyBranchArg = argumentWith anyBranchM "BRANCH.."
-
-    -- anyBranchM :: ReadM AnyBranch
-    -- anyBranchM = anyBranch <$> str
+    anyBranchM :: ReadM AnyBranch
+    anyBranchM = anyBranch <$> str
 
     pkgArg :: String -> Parser String
     pkgArg lbl = removeSuffix "/" <$> strArg lbl
@@ -201,6 +195,9 @@ main = do
     diffWorkOpt =
       flagWith' DiffWorkStaged 'S' "staged" "Diff staged changes (git diff --cached)" <|>
       flagWith DiffWorkAll DiffWorkUnstage 'U' "unstaged" "Diff unstaged changes (git diff) [default is 'git diff HEAD']"
+
+    diffBranchOpt :: Parser (Maybe AnyBranch)
+    diffBranchOpt = optional (optionWith anyBranchM 'w' "with-branch" "BRANCH" "branch")
 
     commitOpts :: Parser CommitOpt
     commitOpts =
