@@ -37,11 +37,25 @@ diffCmd speconly work fmt mwbr =
               DiffWorkAll -> ([],["HEAD" | isNothing mwbr])
               DiffWorkUnstage -> ([],[])
               DiffWorkStaged -> (["--cached"],[])
-          withBranch = case mwbr of
-                         Nothing -> []
-                         Just wbr -> [show wbr]
           file = [packageSpec pkg | speconly]
-      diff <- git "diff" $ contxt ++ workOpts ++ withBranch ++ workArgs ++ file
+      withBranch <-
+        case mwbr of
+          Nothing -> return []
+          Just wbr ->
+            let brn = show wbr in
+              if '/' `elem` brn
+              then return [brn]
+              else do
+                localbrs <- gitLines "branch" ["--format=%(refname:short)"]
+                if brn `elem` localbrs
+                  then return [brn]
+                  else return ["origin/" ++ brn]
+      let revdiff = case mwbr of
+            Nothing -> []
+            Just wbr -> case (wbr,br) of
+              (RelBranch rwbr, RelBranch rbr) -> ["-R" | rwbr > rbr]
+              _ -> []
+      diff <- git "diff" $ contxt ++ workOpts ++ revdiff ++ withBranch ++ workArgs ++ file
       unless (null diff) $
         case fmt of
           DiffQuiet -> putStrLn $ unPackage pkg
