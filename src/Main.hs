@@ -60,7 +60,7 @@ main = do
     , Subcommand "srpm" "Build srpm" $
       srpmCmd <$> branchesPackages
     , Subcommand "diff" "Diff local changes" $
-      diffCmd <$> diffWorkOpt <*> diffFormatOpt <*> diffBranchOpt <*> branchesPackages
+      diffCmd <$> diffSpecOnly <*> diffWorkOpt <*> diffFormatOpt <*> diffBranchOpt <*> branchesPackages
     , Subcommand "mock" "Local mock build" $
       mockCmd <$> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> branchesPackages
     , Subcommand "install-deps" "Install package build dependencies" $
@@ -190,6 +190,9 @@ main = do
       flagWith' DiffMinimal 'm' "minimal" "Minimize diff noise" <|>
       flagWith' DiffStats 's' "stats" "Minimize diff noise" <|>
       flagWith DiffDefault DiffQuiet 'q' "quiet" "Just output package name"
+
+    diffSpecOnly :: Parser Bool
+    diffSpecOnly = switchWith 'o' "spec-only" "Only diff spec file"
 
     diffWorkOpt :: Parser DiffWork
     diffWorkOpt =

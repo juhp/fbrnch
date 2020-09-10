@@ -19,8 +19,9 @@ data DiffWork =
   deriving (Eq)
 
 -- FIXME diff other branches without switching
-diffCmd :: DiffWork -> DiffFormat -> Maybe AnyBranch -> [String] -> IO ()
-diffCmd work fmt mwbr =
+diffCmd :: Bool -> DiffWork -> DiffFormat -> Maybe AnyBranch -> [String]
+        -> IO ()
+diffCmd speconly work fmt mwbr =
   withPackageByBranches Nothing dirtyGit Nothing zeroOneBranches diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
@@ -39,7 +40,8 @@ diffCmd work fmt mwbr =
           withBranch = case mwbr of
                          Nothing -> []
                          Just wbr -> [show wbr]
-      diff <- git "diff" $ contxt ++ workOpts ++ withBranch ++ workArgs
+          file = [packageSpec pkg | speconly]
+      diff <- git "diff" $ contxt ++ workOpts ++ withBranch ++ workArgs ++ file
       unless (null diff) $
         case fmt of
           DiffQuiet -> putStrLn $ unPackage pkg
