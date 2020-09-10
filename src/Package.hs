@@ -319,9 +319,8 @@ splitBranchesPkgs release mbrnchopts args = do
     else spanM (notM . doesDirectoryExist) args
   let brs = map anyBranch abrs
   return $ case mbrnchopts of
-    Nothing -> (brs,pkgs)
-    Just _ | null brs -> (brs,pkgs)
-           | otherwise -> error' "cannot specify branches with branch options"
+    Just _ | brs /= [] -> error' "cannot specify branches with branch options"
+    _ -> (brs,pkgs)
 
 data GitOpts =
   GitOpts
