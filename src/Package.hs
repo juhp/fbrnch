@@ -338,8 +338,8 @@ dirtyGit =            Just $ GitOpts False False False
 dirtyGitFetch =       Just $ GitOpts False True  False
 
 zeroOneBranches, oneBranch :: Maybe ([AnyBranch] -> Bool, String)
-zeroOneBranches = Just ((< 2) . length, "cannot specify more than one branch")
-oneBranch = Just ((== 1) . length, "must specify one branch")
+zeroOneBranches = Just ((< 2) . length, "more than one branch given")
+oneBranch = Just ((== 1) . length, "exactly one branch not given")
 
 -- do package over branches
 withPackageByBranches :: Maybe Bool
@@ -371,7 +371,7 @@ withPackageByBranches' mheader mgitopts mbrnchopts mconstrainBr action (brs,pkgs
     Nothing ->
       case mconstrainBr of
         Just (required,brerr) ->
-          unless (required brs) $ error' brerr
+          unless (required brs) $ error' $ brerr ++ ", or package(s) not found"
         Nothing -> return ()
   if null pkgs
     then do
