@@ -1,4 +1,5 @@
 module Cmd.Local (
+  commandCmd,
   installCmd,
   installDepsCmd,
   localCmd,
@@ -11,6 +12,8 @@ module Cmd.Local (
   ) where
 
 import Distribution.RPM.Build.Order (dependencySortRpmOpts)
+import qualified System.Process as P
+import System.Environment
 
 import Branches
 import Common
@@ -134,3 +137,14 @@ nvrCmd mbrnchopts =
           sbr <- systemBranch
           pkgNameVerRel' sbr spec
         >>= putStrLn
+
+commandCmd :: String -> Maybe BranchOpts -> [String] -> IO ()
+commandCmd cs mbrnchopts =
+  withPackageByBranches (Just True) Nothing mbrnchopts Nothing cmdBranch
+  where
+    cmdBranch :: Package -> AnyBranch -> IO ()
+    cmdBranch pkg _br = do
+      curEnv <- getEnvironment
+      let p = (P.shell cs) { P.env = Just (("p",unPackage pkg):curEnv) }
+      (_,_,_,h) <- P.createProcess p
+      void $ P.waitForProcess h

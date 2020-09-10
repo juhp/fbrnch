@@ -90,6 +90,8 @@ main = do
       findReview <$> pkgArg "PACKAGE"
 --    , Subcommand "test-bz-token" "Check bugzilla login status" $
 --      pure testBZlogin
+    , Subcommand "command" "Run shell command in package dirs ($p)" $
+      commandCmd <$> commandOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
       coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> strArg "PROJECT" <*> branchesOpt <*> branchesPackages
     ]
@@ -206,3 +208,5 @@ main = do
       flagWith' CommitAmend 'a' "amend" "Amend commit"
 
     buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
+
+    commandOpt = strOptionWith 'c' "cmd" "COMMAND" "Shell command to run in $p"
