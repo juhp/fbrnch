@@ -225,6 +225,7 @@ checkSourcesMatch spec = do
     checkSourcesMatch spec
 
 checkAutoBodhiUpdate :: Branch -> IO Bool
+checkAutoBodhiUpdate Master = return True
 checkAutoBodhiUpdate br =
   lookupKey'' "create_automatic_updates" <$> bodhiRelease (show br)
   where
