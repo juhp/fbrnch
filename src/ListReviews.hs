@@ -35,13 +35,11 @@ listReviews' allopen status = do
           ReviewApproved -> statusNewPost
           ReviewRepoCreated -> statusNewPost
           ReviewUnbranched -> statusNewModified
+          ReviewBranched -> statusNewModified
           _ -> statusNewPost
       query = case status of
         ReviewAllOpen -> reviews
         ReviewUnApproved -> reviews .&&. not' reviewApproved
-        ReviewApproved -> reviews .&&. reviewApproved
-        ReviewRepoCreated -> reviews .&&. reviewApproved
-        ReviewUnbranched -> reviews .&&. reviewApproved
         _ -> reviews .&&. reviewApproved
   -- FIXME sort by status, bid (default?) / pkg?
   bugs <- searchBugs session (query .&&. open)
