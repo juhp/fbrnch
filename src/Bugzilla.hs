@@ -322,7 +322,7 @@ checkForComment session bid text = do
 
 putReviewBug :: Bool -> Bug -> IO ()
 putReviewBug short bug = do
-  if short then putStrLn $ reviewBugToPackage bug
+  if short then putStr $ reviewBugToPackage bug ++ " "
     else do
     putStrLn $ reviewBugToPackage bug ++ " (" ++ T.unpack (bugStatus bug) ++ ")"
     putBugId $ bugId bug
