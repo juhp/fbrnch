@@ -46,7 +46,7 @@ mergeBranch build unmerged br = do
   -- FIXME avoid Mass_Rebuild bumps
   mmerge <-
     if newrepo && length unmerged == 1 then return $ Just Nothing
-    else refPrompt unmerged $ "Press Enter to merge " ++ (if build then "and build " else "") ++ show newerBr ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
+    else refPrompt unmerged $ "Press Enter to merge " ++ show newerBr ++ (if build then " and build" else "") ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
   whenJust mmerge $ \ mhash -> do
     let ref = case mhash of
                 Nothing -> show newerBr
