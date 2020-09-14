@@ -71,6 +71,7 @@ checkForSpecFile spec = do
 getChangeLog :: FilePath -> IO String
 getChangeLog spec = do
   clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
+  putStrLn ""
   putStrLn clog
   ifM (not <$> isTty)
     (return clog) $
