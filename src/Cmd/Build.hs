@@ -95,9 +95,9 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
       else return False
   let spec = packageSpec pkg
   checkForSpecFile spec
-  -- FIXME offer merge if newer branch has commits
   checkSourcesMatch spec
-  -- FIXME print nvr
+  nvr <- pkgNameVerRel' br spec
+  putStrLn $ nvr ++ "\n"
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   when (not merged || br == Master) $
     unless (null unpushed) $ do
@@ -111,7 +111,6 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
       then refPrompt unpushed $ "Press Enter to push" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ "; or 'no' to skip pushing"
       else return $ Just Nothing
   let dryrun = buildoptDryrun opts
-  nvr <- pkgNameVerRel' br spec
   buildstatus <- kojiBuildStatus nvr
   let mtarget = buildoptTarget opts
       target = fromMaybe (branchTarget br) mtarget
@@ -395,6 +394,7 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
         unless dryrun $
           gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
+      putStrLn $ nvr ++ "\n"
       let  target = fromMaybe (branchTarget br) mtarget
       -- FIXME should compare git refs
       -- FIXME check for target
