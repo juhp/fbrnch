@@ -18,6 +18,7 @@ module Koji (
   kojiWatchTask,
   kojiWatchTaskQuiet,
   TaskID,
+  displayID,
   fedoraHub
   ) where
 

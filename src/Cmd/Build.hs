@@ -111,9 +111,6 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
       then refPrompt unpushed $ "Press Enter to push" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ "; or 'no' to skip pushing"
       else return $ Just Nothing
   let dryrun = buildoptDryrun opts
-  whenJust mpush $ \ mref ->
-    unless dryrun $
-    gitPushSilent $ fmap (++ ":" ++ show br) mref
   nvr <- pkgNameVerRel' br spec
   buildstatus <- kojiBuildStatus nvr
   let mtarget = buildoptTarget opts
@@ -121,18 +118,23 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
   case buildstatus of
     Just BuildComplete -> do
       putStrLn $ nvr ++ " is already built"
+      when (isJust mpush) $
+        error' "Please bump the spec file"
       when morethan1 $ do
-        when (br /= Master && isNothing mtarget && not dryrun) $ do
+        when (br /= Master && isNothing mtarget) $ do
           mtags <- kojiNVRTags nvr
           case mtags of
             Nothing -> error' $ nvr ++ " is untagged"
             Just tags ->
               unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
                 unlessM (checkAutoBodhiUpdate br) $
+                unless dryrun $
                 bodhiCreateOverride nvr
         kojiWaitRepo target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
+      when (isJust mpush) $
+        error' "Please bump the spec file"
       whenJustM (kojiGetBuildTaskID fedoraHub nvr) kojiWatchTask
       -- FIXME do override
     _ -> do
@@ -142,9 +144,11 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
       opentasks <- kojiOpenTasks pkg mbuildref target
       case opentasks of
         [task] -> do
-          putStrLn $ nvr ++ " task is already open"
+          putStrLn $ nvr ++ " task " ++ displayID task ++ " is already open"
+          when (isJust mpush) $
+            error' "Please bump the spec file"
           kojiWatchTask task
-        (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
+        (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already!"
         [] -> do
           let tag = fromMaybe (branchDestTag br) mtarget
           mlatest <- kojiLatestNVR tag $ unPackage pkg
@@ -152,6 +156,9 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
             then error' $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
             else do
             unless dryrun krbTicket
+            whenJust mpush $ \ mref ->
+              unless dryrun $
+              gitPushSilent $ fmap (++ ":" ++ show br) mref
             unlessM (null <$> gitShortLog ("origin" </> show br ++ "..HEAD")) $
               when (mpush == Just Nothing) $
               error' "Unpushed changes remain"
