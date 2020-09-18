@@ -80,11 +80,11 @@ getChangeLog spec = do
       return $ if null usrlog then clog else usrlog
 
 cleanChangelog :: String -> String
+cleanChangelog [] = error' "empty changelog" -- should not happen
 cleanChangelog cs =
-  case length (lines cs) of
-    0 -> error' "empty changelog" -- should not happen
-    1 -> removePrefix "- " cs
-    _ -> cs
+  let ls = lines cs
+      no = length $ filter ("- " `isPrefixOf`) ls
+  in if no == 1 then removePrefix "- " cs else cs
 
 -- FIXME maybe check spec filename/%name more carefully
 getPackageName :: FilePath -> IO Package
