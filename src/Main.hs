@@ -71,7 +71,7 @@ main = do
       -- FIXME drop --shortcircuit from install?
       installCmd <$> optional forceshortOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> branchesPackages
     , Subcommand "bugs" "List package bugs" $
-      bugsCmd <$> optional (pkgArg "PACKAGE")
+      bugsCmd <$> many (pkgArg "PACKAGE...")
     , Subcommand "bump" "Bump release for package" $
       bumpPkgs <$> optional commitOpts <*> branchesOpt <*> branchesPackages
     , Subcommand "commit" "Git commit packages" $
