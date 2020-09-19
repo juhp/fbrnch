@@ -92,8 +92,9 @@ kojiBuild' wait target args = do
     else out
   let kojiurl = last $ words out
       task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
-  when wait $ kojiWatchTask task
-  cmd_ "date" []
+  when wait $ do
+    kojiWatchTask task
+    cmd_ "date" []
   return $ if wait then Right kojiurl else Left task
 
 -- kojiBuild :: String -> [String] -> IO String
