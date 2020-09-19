@@ -156,6 +156,8 @@ kojiWaitRepo :: String -> String -> IO ()
 kojiWaitRepo target nvr = do
   Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
   cmd_ "date" []
+  putStrLn $ "Running wait-repo for " ++ buildtag
+  cmd_ "koji" ["wait-repo", buildtag]
   cmd_ "koji" ["wait-repo", buildtag, "--build=" ++ nvr]
 
 kojiTagArchs :: String -> IO [String]
