@@ -3,7 +3,7 @@ name:                fbrnch
 version:             0.5
 synopsis:            Build and create Fedora package repos and branches
 description:
-            Fed Brnch is a convenient packaging tool for Fedora Packagers,
+            Fed Br*nch is a convenient packaging tool for Fedora Packagers,
             with integration for bugzilla, koji, and bodhi. Features include:
             - create and update package reviews and list them
             - create repo and branch requests for new approved packages
@@ -22,11 +22,11 @@ build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
 tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
-                     GHC == 8.6.5,  GHC == 8.8.3, GHC == 8.10.1
+                     GHC == 8.6.5,  GHC == 8.8.4, GHC == 8.10.2
 
 source-repository head
   type:                git
-  location:            https://github.com/juhp/fedbrnch.git
+  location:            https://github.com/juhp/fbrnch.git
 
 executable fbrnch
   main-is:             Main.hs
