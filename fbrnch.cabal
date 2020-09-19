@@ -34,6 +34,7 @@ executable fbrnch
                        Bugzilla
                        Cmd.Bugs
                        Cmd.Build
+                       Cmd.Bump
                        Cmd.Clone
                        Cmd.Commit
                        Cmd.Copr

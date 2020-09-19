@@ -1,7 +1,6 @@
 # new commands
 - 'unpushed' command, etc (from f-h-t)
 - 'push'
-- 'bump'
 - 'check-sources'
 - 'update' version
 - worktree support

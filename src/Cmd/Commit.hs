@@ -1,6 +1,5 @@
 module Cmd.Commit
   ( commitPkgs,
-    CommitOpt (..),
   )
 where
 
@@ -10,8 +9,7 @@ import Git
 import Package
 import Prompt
 
-data CommitOpt = CommitMsg String | CommitAmend
-
+-- FIXME use branches after all?
 commitPkgs :: Maybe CommitOpt -> [String] -> IO ()
 commitPkgs mopt args =
   if null args

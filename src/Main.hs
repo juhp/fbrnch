@@ -9,6 +9,7 @@ import SimpleCmdArgs
 -- commands
 import Cmd.Bugs
 import Cmd.Build
+import Cmd.Bump
 import Cmd.Clone
 import Cmd.Commit
 import Cmd.Copr
@@ -25,6 +26,7 @@ import Cmd.Status
 import Cmd.Switch
 
 import Branches
+import Git (CommitOpt(..))
 import ListReviews
 import Package (ForceShort(..))
 import Paths_fbrnch (version)
@@ -70,6 +72,8 @@ main = do
       installCmd <$> optional forceshortOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> branchesPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (pkgArg "PACKAGE")
+    , Subcommand "bump" "Bump release for package" $
+      bumpPkgs <$> optional commitOpts <*> branchesOpt <*> branchesPackages
     , Subcommand "commit" "Git commit packages" $
       commitPkgs <$> optional commitOpts <*> many (pkgArg "PACKAGE...")
     , Subcommand "pull" "Git pull packages" $

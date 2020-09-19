@@ -19,6 +19,7 @@ module Git (
   isPkgGitRepo,
   checkWorkingDirClean,
   isGitDirClean,
+  CommitOpt (..),
   module SimpleCmd.Git
   ) where
 
@@ -144,3 +145,5 @@ gitSwitchBranch br = do
   where
     checkIfRemoteBranchExists =
       gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+
+data CommitOpt = CommitMsg String | CommitAmend
