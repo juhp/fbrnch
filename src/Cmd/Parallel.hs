@@ -124,7 +124,6 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
         unless dryrun $
           gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
-      putStrLn $ nvr ++ "\n"
       mtarget <- case msidetagTarget of
                    Nothing -> return Nothing
                    Just (Target t) -> return $ Just t
@@ -136,6 +135,7 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
                        [tag] -> return $ Just tag
                        _ -> error' $ "More than one user side-tag found for " ++ tgt
       let target = fromMaybe (branchTarget br) mtarget
+      putStrLn $ nvr ++ " (" ++ target ++ ")\n"
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
