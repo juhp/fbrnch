@@ -6,6 +6,7 @@
 - worktree support
 - 'update-sources'
 - 'clean-old-source-dirs' (--threshold SIZE)
+- 'override'
 
 # release deps
 - koji (new)
