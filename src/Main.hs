@@ -50,9 +50,9 @@ main = do
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
-      parallelBuildCmd <$> dryrunOpt <*> targetOpt <*> branchesOpt <*> branchesPackages
+      parallelBuildCmd <$> dryrunOpt <*> sidetagTargetOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
-      scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> targetOpt <*> branchesPackages
+      scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> mtargetOpt <*> branchesPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd <$> optional rpmWithOpt <*> branchesPackages
     , Subcommand "prep" "Prep sources" $
@@ -161,7 +161,7 @@ main = do
 
     rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
 
-    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> targetOpt <*> overrideOpt <*> dryrunOpt <*> updatetypeOpt
+    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> mtargetOpt <*> overrideOpt <*> dryrunOpt <*> updatetypeOpt
 
 --    yesOpt = switchWith 'y' "yes" "Assume yes for questions"
 
@@ -175,8 +175,11 @@ main = do
     archesOpt :: Parser Archs
     archesOpt = Archs <$> some archOpt <|> ExcludedArchs <$> some excludeArch
 
-    targetOpt :: Parser (Maybe String)
-    targetOpt = optional (strOptionWith 't' "target" "TARGET" "Koji target")
+    mtargetOpt :: Parser (Maybe String)
+    mtargetOpt = optional targetOpt
+
+    targetOpt :: Parser String
+    targetOpt = strOptionWith 't' "target" "TARGET" "Koji target"
 
     overrideOpt = switchWith 'o' "override" "Create a buildroot override and wait-repo"
 
@@ -214,3 +217,8 @@ main = do
     buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
 
     commandOpt = strOptionWith 'c' "cmd" "COMMAND" "Shell command to run in $p"
+
+    sidetagTargetOpt :: Parser (Maybe SideTagTarget)
+    sidetagTargetOpt =
+      optional (Target <$> targetOpt <|>
+                flagWith' SideTag 's' "side-tag" "Use branch side-tag for building: create first with 'fedpkg request-side-tag --base-tag'")

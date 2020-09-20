@@ -6,7 +6,8 @@ module Cmd.Build (
   UpdateType(..),
   scratchCmd,
   Archs(..),
-  parallelBuildCmd
+  parallelBuildCmd,
+  SideTagTarget(..)
   ) where
 
 import Common
@@ -300,19 +301,27 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
         anyTarget (RelBranch b) = branchTarget b
         anyTarget _ = "rawhide"
 
+data SideTagTarget = SideTag | Target String
+
+maybeTarget :: Maybe SideTagTarget -> Maybe String
+maybeTarget (Just (Target t)) = Just t
+maybeTarget _ = Nothing
+
 type Job = (String, Async String)
 
 -- FIXME option to build multiple packages over branches in parallel
--- FIXME add --with-side-tag or require --target
+-- FIXME require --with-side-tag or --target
 -- FIXME use --wait-build=NVR
 -- FIXME check sources asap
 -- FIXME check not in pkg git dir
-parallelBuildCmd :: Bool -> Maybe String -> Maybe BranchOpts -> [String] -> IO ()
-parallelBuildCmd dryrun mtarget mbrnchopts args = do
+parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe BranchOpts -> [String]
+                 -> IO ()
+parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
   (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
   when (null brs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
   branches <- listOfBranches True True mbrnchopts brs
+  let mtarget = maybeTarget msidetagTarget
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   if null pkgs
@@ -396,7 +405,8 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
           gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
       putStrLn $ nvr ++ "\n"
-      let  target = fromMaybe (branchTarget br) mtarget
+      let mtarget = maybeTarget msidetagTarget
+          target = fromMaybe (branchTarget br) mtarget
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
@@ -460,6 +470,7 @@ parallelBuildCmd dryrun mtarget mbrnchopts args = do
               whenJust mBugSess $
                 \ (bid,session) -> postBuildComment session nvr bid
               else do
+              let mtarget = maybeTarget msidetagTarget
               when (isNothing mtarget) $
                 -- -- FIXME: avoid prompt in
                 -- changelog <- getChangeLog spec
