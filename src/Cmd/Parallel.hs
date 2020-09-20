@@ -125,8 +125,17 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
           gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
       putStrLn $ nvr ++ "\n"
-      let mtarget = maybeTarget msidetagTarget
-          target = fromMaybe (branchTarget br) mtarget
+      mtarget <- case msidetagTarget of
+                   Nothing -> return Nothing
+                   Just (Target t) -> return $ Just t
+                   Just SideTag -> do
+                     tags <- map (head . words) . lines <$> fedpkg "list-side-tags" ["--mine"]
+                     let tgt = branchTarget br
+                     case filter ((tgt ++ "-") `isPrefixOf`) tags of
+                       [] -> error' $ "No user side-tag found: please create with 'fedpkg request-side-tag --base-tag " ++ tgt
+                       [tag] -> return $ Just tag
+                       _ -> error' $ "More than one user side-tag found for " ++ tgt
+      let target = fromMaybe (branchTarget br) mtarget
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
@@ -135,7 +144,7 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
       case buildstatus of
         Just BuildComplete -> do
           putStrLn $ nvr ++ " is already built"
-          when (br /= Master && isNothing mtarget) $ do
+          when (br /= Master && isNothing msidetagTarget) $ do
             mtags <- kojiNVRTags nvr
             case mtags of
               Nothing -> error' $ nvr ++ " is untagged"
@@ -190,8 +199,7 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
               whenJust mBugSess $
                 \ (bid,session) -> postBuildComment session nvr bid
               else do
-              let mtarget = maybeTarget msidetagTarget
-              when (isNothing mtarget) $
+              when (isNothing msidetagTarget) $
                 -- -- FIXME: avoid prompt in
                 -- changelog <- getChangeLog spec
                 -- bodhiUpdate (fmap fst mBugSess) changelog nvr
