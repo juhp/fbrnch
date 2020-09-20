@@ -153,12 +153,12 @@ kojiBuildBranchNoWait target pkg mref args = do
   return task
 
 -- FIXME use koji-hs
-kojiWaitRepo :: String -> String -> IO ()
-kojiWaitRepo target nvr = do
+kojiWaitRepo :: Bool -> String -> String -> IO ()
+kojiWaitRepo built target nvr = do
   Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
   cmd_ "date" []
-  putStrLn $ "Running wait-repo for " ++ buildtag
-  waitRepo buildtag []
+  putStrLn $ "Running wait-repo for " ++ buildtag ++ " (" ++ nvr ++ ")"
+  unless built $ waitRepo buildtag []
   waitRepo buildtag ["--build=" ++ nvr]
   where
     waitRepo :: String -> [String] -> IO ()
