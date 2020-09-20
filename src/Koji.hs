@@ -24,6 +24,7 @@ module Koji (
 
 import Data.Char (isDigit)
 
+import Control.Concurrent (threadDelay)
 import Fedora.Koji
 import qualified Fedora.Koji.Internal as Koji
 
@@ -157,8 +158,21 @@ kojiWaitRepo target nvr = do
   Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
   cmd_ "date" []
   putStrLn $ "Running wait-repo for " ++ buildtag
-  cmd_ "koji" ["wait-repo", buildtag]
-  cmd_ "koji" ["wait-repo", buildtag, "--build=" ++ nvr]
+  waitRepo buildtag []
+  waitRepo buildtag ["--build=" ++ nvr]
+  where
+    waitRepo :: String -> [String] -> IO ()
+    waitRepo buildtag args =
+      cmdFragile_ "koji" $ ["wait-repo", buildtag] ++ args
+
+cmdFragile_ :: String -> [String] -> IO ()
+cmdFragile_ c as = do
+  ok <- cmdBool c as
+  if ok then return ()
+    else do
+    warning $ "retrying \"" ++ c +-+ unwords as ++ "\""
+    threadDelay 2000000
+    cmdFragile_ c as
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do
