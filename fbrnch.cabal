@@ -30,7 +30,8 @@ source-repository head
 
 executable fbrnch
   main-is:             Main.hs
-  other-modules:       Branches
+  other-modules:       Bodhi
+                       Branches
                        Bugzilla
                        Cmd.Bugs
                        Cmd.Build
@@ -42,6 +43,7 @@ executable fbrnch
                        Cmd.Import
                        Cmd.Local
                        Cmd.Merge
+                       Cmd.Parallel
                        Cmd.PkgReview
                        Cmd.Pull
                        Cmd.RequestBranch

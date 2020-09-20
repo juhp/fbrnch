@@ -15,6 +15,7 @@ module Package (
   buildRPMs,
   installDeps,
   prepPackage,
+  checkSourcesMatch,
   getSources,
   putPkgHdr,
   putPkgBrnchHdr,
@@ -48,6 +49,7 @@ import Common.System
 
 import Distribution.Fedora
 import SimpleCmd.Rpm
+import System.Console.Pretty
 
 import Branches
 import Git
@@ -230,6 +232,17 @@ prepPackage pkg br =
       _ -> return ()
     cmdSilent_ "rpmbuild" args
     putStrLn "done"
+
+checkSourcesMatch :: FilePath -> IO ()
+checkSourcesMatch spec = do
+  -- "^[Ss]ource[0-9]*:"
+  sourcefiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
+  sources <- lines <$> readFile "sources"
+  gitfiles <- gitLines "ls-files" []
+  forM_ sourcefiles $ \ src ->
+    unless (isJust (find (src `isInfixOf`) sources) || src `elem` gitfiles) $ do
+    prompt_ $ color Red $ src ++ " not in sources, please fix"
+    checkSourcesMatch spec
 
 getSources :: FilePath -> IO ()
 getSources spec = do
