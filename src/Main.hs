@@ -23,6 +23,7 @@ import Cmd.Pull
 import Cmd.RequestBranch
 import Cmd.RequestRepo
 import Cmd.Reviews
+import Cmd.Scratch
 import Cmd.Status
 import Cmd.Switch
 

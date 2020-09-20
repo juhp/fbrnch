@@ -49,6 +49,7 @@ executable fbrnch
                        Cmd.RequestBranch
                        Cmd.RequestRepo
                        Cmd.Reviews
+                       Cmd.Scratch
                        Cmd.Status
                        Cmd.Switch
                        Common
