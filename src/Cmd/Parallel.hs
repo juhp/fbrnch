@@ -78,8 +78,10 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
     parallelBuild :: Branch -> [String] -> IO ()
     parallelBuild br layer =  do
       krbTicket
-      putStrLn $ "\nBuilding parallel layer of " ++ show (length layer) ++ " packages:"
-      putStrLn $ unwords layer
+      let nopkgs = length layer in
+        when (nopkgs > 1) $ do
+        putStrLn $ "\nBuilding parallel layer of " ++ show nopkgs ++ " packages:"
+        putStrLn $ unwords layer
       jobs <- mapM setupBuild layer
       failures <- watchJobs [] jobs
       unless (null failures) $
