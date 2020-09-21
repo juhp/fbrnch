@@ -212,13 +212,13 @@ b) With cabal-install (probably 2.4 or later) and cabal-rpm, in the source dir r
 
 ```
 $ cabal-rpm builddep
-$ cabal new-install
+$ cabal new-install --installdir=~/bin
 ```
 
 ## Contributing
 Bug reports, feedback, and fixes are welcome.
 
-See the TODO list and also scattered source FIXME comments.
+See the TODO list and also the many FIXME comments scattered across the source.
 As usual better to ask before embarking on large changes.
 
 ## Usual disclaimer
