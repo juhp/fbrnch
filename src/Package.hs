@@ -363,9 +363,14 @@ withPackageByBranches :: Maybe Bool
                       -> (Package -> AnyBranch -> IO ())
                       -> [String]
                       -> IO ()
-withPackageByBranches mheader mgitopts mbrnchopts mconstrainBr action args =
-  splitBranchesPkgs (have gitOptActive) mbrnchopts args >>=
-    withPackageByBranches' mheader mgitopts mbrnchopts mconstrainBr action
+withPackageByBranches mheader mgitopts mbrnchopts mconstrainBr action args = do
+  (brs,pkgs) <- splitBranchesPkgs (have gitOptActive) mbrnchopts args
+  let mheader' =
+        case mheader of
+          Nothing -> Nothing
+          Just _ | length pkgs < 2 && length brs < 2 -> Nothing
+          _ -> mheader
+  withPackageByBranches' mheader' mgitopts mbrnchopts mconstrainBr action (brs,pkgs)
   where
     have :: (GitOpts -> Bool) -> Bool
     have opt = maybe False opt mgitopts
@@ -406,7 +411,7 @@ withPackageByBranches' mheader mgitopts mbrnchopts mconstrainBr action (brs,pkgs
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
       let fetch = have gitOptFetch
-      when ((mheader == Just True || isJust mheader && length brs > 1 || fetch) && dir /= ".") $
+      when ((mheader == Just True || isJust mheader && max (length brs) (length pkgs) > 1 || fetch) && dir /= ".") $
         putPkgHdr pkg
       when haveGit $
         when (have gitOptClean) checkWorkingDirClean
