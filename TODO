@@ -14,7 +14,7 @@
 - bodhi (new)
 - copr (new)
 - fedora-dists (update)
-  - pdc
+  - pdc (new)
 
 # other namespaces
 - support containers/ and modules/
