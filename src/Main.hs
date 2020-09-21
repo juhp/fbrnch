@@ -46,7 +46,7 @@ main = do
     , Subcommand "nvr" "Print name-version-release" $
       nvrCmd <$> branchesOpt <*> branchesPackages
     , Subcommand "status" "Status package/branch status" $
-      statusCmd <$> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesOpt <*> branchesPackages
+      statusCmd <$> switchWith 'n' "no-fetch" "Do not git fetch to save time" <*> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesOpt <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
