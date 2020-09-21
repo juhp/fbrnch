@@ -49,11 +49,14 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
     unlessM isPkgGitRepo $
       error' "Please specify at least one package"
     parallelBranches $ map onlyRelBranch branches
-    else
+    else do
+    whenM isPkgGitRepo $
+      error' "Cannot build multiple packages inside a package dir"
     forM_ branches $ \ br -> do
       case br of
         (RelBranch rbr) -> do
-          putStrLn $ "# " ++ show rbr
+          when (length branches > 1) $
+            putStrLn $ "# " ++ show rbr
           layers <- dependencyLayers pkgs
           mapM_ (parallelBuild rbr) layers
         (OtherBranch _) ->
@@ -145,7 +148,7 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
       mlatest <- kojiLatestNVR tag $ unPackage pkg
       case buildstatus of
         Just BuildComplete -> do
-          putStrLn $ nvr ++ " is already built"
+          putStrLn $ nvr ++ " is " ++ color Green "already built"
           when (br /= Master && isNothing msidetagTarget) $ do
             mtags <- kojiNVRTags nvr
             case mtags of
