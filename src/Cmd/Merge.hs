@@ -47,6 +47,8 @@ mergeBranch build unmerged br = do
   mmerge <-
     if newrepo && length unmerged == 1 then return $ Just Nothing
     else refPrompt unmerged $ "Press Enter to merge " ++ show newerBr ++ (if build then " and build" else "") ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
+  -- ensure still on same branch!
+  gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ mhash -> do
     let ref = case mhash of
                 Nothing -> show newerBr
