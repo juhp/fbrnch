@@ -223,4 +223,4 @@ main = do
     sidetagTargetOpt :: Parser (Maybe SideTagTarget)
     sidetagTargetOpt =
       optional (Target <$> targetOpt <|>
-                flagWith' SideTag 's' "side-tag" "Use branch side-tag for building: create first with 'fedpkg request-side-tag --base-tag'")
+                flagWith' SideTag 's' "side-tag" "Use existing branch side-tag for building: create 'fedpkg request-side-tag --base-tag'")
