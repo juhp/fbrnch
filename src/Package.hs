@@ -41,7 +41,8 @@ module Package (
   notInstalled,
   pkgInstalled,
   systemBranch,
-  equivNVR
+  equivNVR,
+  takeNVRName
   ) where
 
 import Common
@@ -508,3 +509,6 @@ equivNVR nvr1 nvr2
                (r2,r2') = splitExtension $ tail r'
            -- allow differing dist
            in length r1 == length r2 && r1' == r2'
+
+takeNVRName :: FilePath -> String
+takeNVRName = takeBaseName . takeBaseName

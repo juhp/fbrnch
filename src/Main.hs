@@ -17,6 +17,7 @@ import Cmd.Diff
 import Cmd.Import
 import Cmd.Local
 import Cmd.Merge
+import Cmd.Mock
 import Cmd.Parallel
 import Cmd.PkgReview
 import Cmd.Pull

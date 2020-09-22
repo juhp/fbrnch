@@ -43,6 +43,7 @@ executable fbrnch
                        Cmd.Import
                        Cmd.Local
                        Cmd.Merge
+                       Cmd.Mock
                        Cmd.Parallel
                        Cmd.PkgReview
                        Cmd.Pull
