@@ -6,15 +6,18 @@ module Common.System (
   module System.FilePath,
   getDirectoryName,
   isTty,
-  setNoBuffering
+  setNoBuffering,
+  cmdFull
   ) where
 
 import SimpleCmd
-#if (defined(MIN_VERSION_simple_cmd) && MIN_VERSION_simple_cmd(0,2,1))
+#if MIN_VERSION_simple_cmd(0,2,1)
   hiding (ifM,whenM)
 #endif
 import System.Directory
+import System.Exit
 import System.FilePath
+import System.Process
 import System.IO
 
 isTty :: IO Bool
@@ -27,3 +30,17 @@ setNoBuffering =
 getDirectoryName :: IO String
 getDirectoryName =
   takeFileName <$> getCurrentDirectory
+
+#if !MIN_VERSION_simple_cmd(0,2,3)
+cmdFull :: String -> [String] -> String -> IO (Bool, String, String)
+cmdFull c args input = do
+  (ret, out, err) <- readProcessWithExitCode c args input
+  return (ret == ExitSuccess, removeTrailingNewline out, removeTrailingNewline err)
+  where
+    removeTrailingNewline :: String -> String
+    removeTrailingNewline "" = ""
+    removeTrailingNewline str =
+      if last str == '\n'
+      then init str
+      else str
+#endif

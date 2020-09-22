@@ -133,7 +133,7 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
                    Nothing -> return Nothing
                    Just (Target t) -> return $ Just t
                    Just SideTag -> do
-                     tags <- map (head . words) . lines <$> fedpkg "list-side-tags" ["--mine"]
+                     tags <- map (head . words) <$> listUserSideTags
                      let tgt = branchTarget br
                      case filter ((tgt ++ "-") `isPrefixOf`) tags of
                        [] -> error' $ "No user side-tag found: please create with 'fedpkg request-side-tag --base-tag " ++ tgt
@@ -211,3 +211,15 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
                 bodhiCreateOverride nvr
             kojiWaitRepo False target nvr
           return nvr
+
+listUserSideTags :: IO [String]
+listUserSideTags = do
+  -- can fail:
+  -- Kerberos authentication fails: unable to obtain a session
+  -- Could not execute list_side_tags: Could not login to https://koji.fedoraproject.org/kojihub
+  (ok, out, err) <- cmdFull "fedpkg" ("list-side-tags" : ["--mine"]) ""
+  if ok then return $ lines out
+    else do
+    warning err
+    sleep 1
+    listUserSideTags
