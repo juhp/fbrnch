@@ -25,4 +25,9 @@ logCmd long br1 br2 pkgs = do
       withExistingDirectory pkgdir $ do
       unless (null pkgs) $
         getPackageName pkgdir >>= putPkgHdr
-      git_ "log" $ ["--format=reference" | not long] ++ [show br1 ++ ".." ++ show br2]
+      let (br1',br2') =
+            case (br1, br2) of
+              (RelBranch b1, RelBranch b2) | b2 < b1 -> (br2,br1)
+              _ -> (br1,br2)
+        in
+        git_ "log" $ ["--format=reference" | not long] ++ [show br1' ++ ".." ++ show br2']
