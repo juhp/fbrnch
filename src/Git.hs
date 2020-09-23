@@ -55,15 +55,15 @@ gitMergeOrigin br = do
 
 gitShortLog :: String -> IO [String]
 gitShortLog range =
-  gitLines "log" ["--pretty=oneline", range]
+  gitLines "log" ["--pretty=reference", range]
 
 gitShortLogN :: Int -> Maybe String -> IO [String]
 gitShortLogN num mrange =
-  gitLines "log" (["--max-count=" ++ show num, "--pretty=oneline"] ++ maybeToList mrange)
+  gitLines "log" (["--max-count=" ++ show num, "--pretty=reference"] ++ maybeToList mrange)
 
 gitShortLog1 :: Maybe String -> IO String
 gitShortLog1 mrange =
-  git "log" (["--max-count=1", "--pretty=oneline"] ++ maybeToList mrange)
+  git "log" (["--max-count=1", "--pretty=reference"] ++ maybeToList mrange)
 
 simplifyCommitLog :: String -> String
 simplifyCommitLog = unwords . shortenHash . words
