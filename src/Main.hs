@@ -16,6 +16,7 @@ import Cmd.Copr
 import Cmd.Diff
 import Cmd.Import
 import Cmd.Local
+import Cmd.Log
 import Cmd.Merge
 import Cmd.Mock
 import Cmd.Parallel
@@ -66,6 +67,8 @@ main = do
       srpmCmd <$> branchesPackages
     , Subcommand "diff" "Diff local changes" $
       diffCmd <$> diffSpecOnly <*> diffWorkOpt <*> diffFormatOpt <*> diffBranchOpt <*> branchesPackages
+    , Subcommand "log" "Show commits between branches" $
+      logCmd <$> switchWith 'l' "long" "show full commit log" <*> anyBranchArg <*> anyBranchArg <*> many (pkgArg "PACKAGE...")
     , Subcommand "mock" "Local mock build" $
       mockCmd <$> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> branchesPackages
     , Subcommand "install-deps" "Install package build dependencies" $
@@ -126,6 +129,9 @@ main = do
 
     branchOpt :: Parser Branch
     branchOpt = optionWith branchM 'b' "branch" "BRANCH" "branch"
+
+    anyBranchArg :: Parser AnyBranch
+    anyBranchArg = argumentWith anyBranchM "BRANCH"
 
     branchM :: ReadM Branch
     branchM = eitherReader eitherBranch'
