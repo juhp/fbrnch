@@ -136,7 +136,7 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
                      tags <- map (head . words) <$> listUserSideTags
                      let tgt = branchTarget br
                      case filter ((tgt ++ "-") `isPrefixOf`) tags of
-                       [] -> error' $ "No user side-tag found: please create with 'fedpkg request-side-tag --base-tag " ++ tgt
+                       [] -> error' $ "No user side-tag found: please create with '(cd " ++ pkgdir ++ "; fedpkg request-side-tag)'"
                        [tag] -> return $ Just tag
                        _ -> error' $ "More than one user side-tag found for " ++ tgt
       let target = fromMaybe (branchTarget br) mtarget
