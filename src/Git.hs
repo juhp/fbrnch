@@ -65,6 +65,7 @@ gitShortLog1 :: Maybe String -> IO String
 gitShortLog1 mrange =
   git "log" (["--max-count=1", "--pretty=reference"] ++ maybeToList mrange)
 
+-- FIXME currently no-op with --format=reference
 simplifyCommitLog :: String -> String
 simplifyCommitLog = unwords . shortenHash . words
   where
