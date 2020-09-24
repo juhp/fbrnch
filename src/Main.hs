@@ -1,7 +1,5 @@
 module Main (main) where
 
-import Common.System
-
 import Distribution.Fedora.Branch
 import Options.Applicative (eitherReader, ReadM)
 import SimpleCmdArgs
@@ -30,6 +28,7 @@ import Cmd.Status
 import Cmd.Switch
 
 import Branches
+import Common.System
 import Git (CommitOpt(..))
 import ListReviews
 import Package (ForceShort(..))
