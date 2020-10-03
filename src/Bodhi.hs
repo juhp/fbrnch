@@ -9,7 +9,6 @@ import Data.Aeson.Types (Object, (.:), parseEither)
 import Fedora.Bodhi hiding (bodhiUpdate)
 
 import Branches
-import Common
 import Common.System
 import qualified Common.Text as T
 import Prompt
@@ -25,11 +24,14 @@ checkAutoBodhiUpdate br =
       let errMsg e = error $ e ++ " " ++ show obj in
         either errMsg id $ parseEither (.: k) obj
 
+-- FIXME should determine 3 days for branched devel release
 bodhiCreateOverride :: String -> IO ()
 bodhiCreateOverride nvr = do
   putStrLn $ "Creating Bodhi Override for " ++ nvr ++ ":"
   ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", "7", nvr]
-  unless ok $ do
+  if ok
+    then putStrLn $ "https://bodhi.fedoraproject.org/overrides/" ++ nvr
+    else do
     moverride <- bodhiOverride nvr
     case moverride of
       Nothing -> do
