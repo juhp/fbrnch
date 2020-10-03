@@ -20,7 +20,7 @@ extra-deps:
   - rpmbuild-order-0.4.2
   - pretty-terminal-0.1.0.0
   - git: https://github.com/juhp/copr-hs.git
-    commit: a554a95e508dd1b2344f73ed4b2f71e86ff84704
+    commit: ba98747c810893212fa057fdcd8aa72a6c38137f
   # - git: https://github.com/juhp/http-query.git
   #   commit: 95bfbbfde4c1ea1862fc4ed03bd5f0635253486e
   - http-query-0.1.0

@@ -23,7 +23,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/juhp/copr-hs.git
-    tag: a554a95e508dd1b2344f73ed4b2f71e86ff84704
+    tag: ba98747c810893212fa057fdcd8aa72a6c38137f
 
 -- source-repository-package
 --     type: git
