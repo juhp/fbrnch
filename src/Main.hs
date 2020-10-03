@@ -17,6 +17,7 @@ import Cmd.Local
 import Cmd.Log
 import Cmd.Merge
 import Cmd.Mock
+import Cmd.Override
 import Cmd.Parallel
 import Cmd.PkgReview
 import Cmd.Pull
@@ -54,6 +55,8 @@ main = do
       buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd <$> dryrunOpt <*> sidetagTargetOpt <*> branchesOpt <*> branchesPackages
+    , Subcommand "override" "Tag builds into buildroot override in Koji" $
+      overrideCmd <$> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> mtargetOpt <*> branchesPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
