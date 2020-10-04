@@ -9,8 +9,8 @@ import Common.System
 import Git
 import Package
 
-mockCmd :: Maybe Branch -> [String] -> IO ()
-mockCmd mroot args = do
+mockCmd :: Bool -> Bool -> Maybe Branch -> [String] -> IO ()
+mockCmd noclean noCleanAfter mroot args = do
   (brs, pkgs) <- splitBranchesPkgs True Nothing args
   if null pkgs
     then do
@@ -44,7 +44,7 @@ mockCmd mroot args = do
                  in ["--resultdir=results" </> verrel]
               _ -> []
       let command = if length pkgs > 1 then "--chain" else "--rebuild"
-      cmd_ "mock" $ [command, "--root", mockConfig rootBr] ++ resultdir ++ srpms
+      cmd_ "mock" $ [command, "--root", mockConfig rootBr] ++ ["--no-clean" | noclean] ++ ["--no-clean-after" | noCleanAfter] ++ resultdir ++ srpms
       where
         prepSrpm :: AnyBranch -> FilePath -> IO FilePath
         prepSrpm rbr pkgdir =
