@@ -117,8 +117,9 @@ localBranchSpecFile pkg br = do
     ifM (doesFileExist spec)
       (return spec) $
       do
+        spc <- findSpecfile
         putStrLn $ "spec file is not " ++ spec ++ "\n"
-        findSpecfile
+        return spc
     else findSpecfile
 
 rpmEval :: String -> IO (Maybe String)
