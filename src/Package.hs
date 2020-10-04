@@ -511,5 +511,7 @@ equivNVR nvr1 nvr2
            -- allow differing dist
            in length r1 == length r2 && r1' == r2'
 
+-- FIXME?
+-- n-v-r.src.rpm -> n-v-r
 takeNVRName :: FilePath -> String
 takeNVRName = takeBaseName . takeBaseName

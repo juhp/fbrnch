@@ -29,8 +29,9 @@ maybeTarget _ = Nothing
 
 type Job = (String, Async String)
 
--- FIXME option to build multiple packages over branches in parallel
 -- FIXME require --with-side-tag or --target
+-- FIXME only override if more packages to build
+-- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources asap
 -- FIXME check not in pkg git dir
