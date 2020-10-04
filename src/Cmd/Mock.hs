@@ -39,10 +39,9 @@ mockCmd mroot args = do
       let resultdir =
             case pkgs of
               [] -> error' "cannot build zero packages"
-              [pkg] ->
-                let mverrel = stripInfix "-" $ removePrefix (pkg ++ "-") $ takeNVRName (head srpms)
-                    verrel = maybe "" (uncurry (</>)) mverrel
-                 in ["--resultdir=results_" ++ pkg </> verrel]
+              [_] ->
+                let verrel = joinPath $ takeEnd 2 $ splitOn "-" $ takeNVRName (head srpms)
+                 in ["--resultdir=results" </> verrel]
               _ -> []
       let command = if length pkgs > 1 then "--chain" else "--rebuild"
       cmd_ "mock" $ [command, "--root", mockConfig rootBr] ++ resultdir ++ srpms
