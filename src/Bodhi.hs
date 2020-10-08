@@ -1,12 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Bodhi (
+  bodhiCreateOverride,
   checkAutoBodhiUpdate,
-  bodhiCreateOverride)
+  UpdateType(..)
+  )
 where
 
 import Data.Aeson.Types (Object, (.:), parseEither)
+import Data.Char (toLower)
 import Fedora.Bodhi hiding (bodhiUpdate)
+import Text.Read
+import qualified Text.ParserCombinators.ReadP as R
+import qualified Text.ParserCombinators.ReadPrec as RP
+
 
 import Branches
 import Common.System
@@ -39,3 +46,22 @@ bodhiCreateOverride nvr = do
         prompt_ "Press Enter to retry"
         bodhiCreateOverride nvr
       Just obj -> print obj
+
+data UpdateType =
+  SecurityUpdate | BugfixUpdate | EnhancementUpdate | NewPackageUpdate
+
+instance Show UpdateType where
+  show SecurityUpdate = "security"
+  show BugfixUpdate = "bugfix"
+  show EnhancementUpdate = "enhancement"
+  show NewPackageUpdate = "newpackage"
+
+instance Read UpdateType where
+  readPrec = do
+    s <- look
+    case map toLower s of
+      "security" -> RP.lift (R.string s) >> return SecurityUpdate
+      "bugfix" -> RP.lift (R.string s) >> return BugfixUpdate
+      "enhancement" -> RP.lift (R.string s) >> return EnhancementUpdate
+      "newpackage" -> RP.lift (R.string s) >> return NewPackageUpdate
+      _ -> error' "unknown bodhi update type" >> RP.pfail

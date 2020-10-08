@@ -20,6 +20,7 @@ import Git
 import Krb
 import Koji
 import Package
+import Prompt
 
 data SideTagTarget = SideTag | Target String
 
@@ -34,9 +35,9 @@ type Job = (String, Async (String, String))
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources asap
-parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe BranchOpts -> [String]
+parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe UpdateType -> Maybe BranchOpts -> [String]
                  -> IO ()
-parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
+parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
   (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
   when (null brs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
@@ -62,10 +63,13 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
           when (length branches > 1) $
             putStrLn $ "# " ++ show rbr
           targets <- mapM (parallelBuild rbr) layers
-          when (rbr /= Master && head targets == branchTarget rbr) $
-            unless (null targets) $
-            unlessM (checkAutoBodhiUpdate rbr) $
-            return ()
+          when (isJust msidetagTarget && null targets) $
+            error' "No target was returned from jobs!"
+          unless (isNothing msidetagTarget || null targets) $ do
+            let target = head targets
+            when (target /= branchTarget rbr) $ do
+              prompt_ $ "Press Enter to submit Bodhi update for " ++ target
+              bodhiSidetagUpdate target
         (OtherBranch _) ->
           error' "parallel builds only defined for release branches"
   where
@@ -223,3 +227,14 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
                 bodhiCreateOverride nvr
             kojiWaitRepo False target nvr
           return (target,nvr)
+
+    bodhiSidetagUpdate :: String -> IO ()
+    bodhiSidetagUpdate sidetag = do
+      case mupdatetype of
+        Nothing -> return ()
+        Just updateType -> do
+          putStrLn $ "Creating Bodhi Update for " ++ sidetag
+          ok <- cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--notes", "to be written", "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
+          when ok $ do
+            prompt_ "After editing update, press Enter to remove sidetag"
+            fedpkg_ "remove-side-tag" [sidetag]

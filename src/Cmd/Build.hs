@@ -9,12 +9,8 @@ module Cmd.Build (
 import Common
 import Common.System
 
-import Data.Char (isDigit, toLower)
+import Data.Char (isDigit)
 import Fedora.Bodhi hiding (bodhiUpdate)
-
-import Text.Read
-import qualified Text.ParserCombinators.ReadP as R
-import qualified Text.ParserCombinators.ReadPrec as RP
 
 import Bodhi
 import Bugzilla
@@ -25,25 +21,6 @@ import Krb
 import Koji
 import Package
 import Prompt
-
-data UpdateType =
-  SecurityUpdate | BugfixUpdate | EnhancementUpdate | NewPackageUpdate
-
-instance Show UpdateType where
-  show SecurityUpdate = "security"
-  show BugfixUpdate = "bugfix"
-  show EnhancementUpdate = "enhancement"
-  show NewPackageUpdate = "newpackage"
-
-instance Read UpdateType where
-  readPrec = do
-    s <- look
-    case map toLower s of
-      "security" -> RP.lift (R.string s) >> return SecurityUpdate
-      "bugfix" -> RP.lift (R.string s) >> return BugfixUpdate
-      "enhancement" -> RP.lift (R.string s) >> return EnhancementUpdate
-      "newpackage" -> RP.lift (R.string s) >> return NewPackageUpdate
-      _ -> error' "unknown bodhi update type" >> RP.pfail
 
 data BuildOpts = BuildOpts
   { buildoptMerge :: Bool
@@ -184,13 +161,12 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
       let cbugs = mapMaybe extractBugReference $ lines changelog
           bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
             if null bids then [] else ["--bugs", intercalate "," bids]
-      -- FIXME check for autocreated update (pre-updates-testing)
       -- FIXME also query for open existing bugs
       -- FIXME extract bug no(s) from changelog
-      putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
       case buildoptUpdateType opts of
         Nothing -> return ()
         Just updateType -> do
+          putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
           updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType , "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
           unless updateOK $ do
             updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
