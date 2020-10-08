@@ -175,7 +175,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
                   bodhiCreateOverride nvr
           return $ do
             unless dryrun $
-              kojiWaitRepo True target nvr
+              kojiWaitRepo target nvr
             return (target,nvr)
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
@@ -225,7 +225,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
                 -- changelog <- getChangeLog spec
                 -- bodhiUpdate (fmap fst mBugSess) changelog nvr
                 bodhiCreateOverride nvr
-            kojiWaitRepo False target nvr
+            kojiWaitRepo target nvr
           return (target,nvr)
 
     bodhiSidetagUpdate :: String -> IO ()

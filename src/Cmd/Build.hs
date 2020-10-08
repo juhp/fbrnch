@@ -98,7 +98,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                 unlessM (checkAutoBodhiUpdate br) $
                 unless dryrun $
                 bodhiCreateOverride nvr
-        kojiWaitRepo True target nvr
+        kojiWaitRepo target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
       when (isJust mpush) $
@@ -154,7 +154,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                   -- FIXME prompt for override note
                   when (buildoptOverride opts) $
                     bodhiCreateOverride nvr
-              when morethan1 $ kojiWaitRepo False target nvr
+              when morethan1 $ kojiWaitRepo target nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do

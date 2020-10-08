@@ -30,4 +30,4 @@ overrideCmd =
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
           unlessM (checkAutoBodhiUpdate br) $ do
           bodhiCreateOverride nvr
-          kojiWaitRepo True (branchTarget br) nvr
+          kojiWaitRepo (branchTarget br) nvr
