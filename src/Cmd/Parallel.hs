@@ -23,26 +23,26 @@ import Package
 
 data SideTagTarget = SideTag | Target String
 
-maybeTarget :: Maybe SideTagTarget -> Maybe String
-maybeTarget (Just (Target t)) = Just t
+maybeTarget :: SideTagTarget -> Maybe String
+maybeTarget (Target t) = Just t
 maybeTarget _ = Nothing
 
-type Job = (String, Async String)
+-- (pkg, (sidetag, nvr))
+type Job = (String, Async (String, String))
 
--- FIXME require --with-side-tag or --target
 -- FIXME only override if more packages to build
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources asap
 -- FIXME check not in pkg git dir
-parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe BranchOpts -> [String]
+parallelBuildCmd :: Bool -> SideTagTarget -> Maybe BranchOpts -> [String]
                  -> IO ()
-parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
+parallelBuildCmd dryrun sidetagTarget mbrnchopts args = do
   (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
   when (null brs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
   branches <- listOfBranches True True mbrnchopts brs
-  let mtarget = maybeTarget msidetagTarget
+  let mtarget = maybeTarget sidetagTarget
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   if null pkgs
@@ -59,7 +59,11 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
           when (length branches > 1) $
             putStrLn $ "# " ++ show rbr
           layers <- dependencyLayers pkgs
-          mapM_ (parallelBuild rbr) layers
+          targets <- mapM (parallelBuild rbr) layers
+          when (rbr /= Master && head targets == branchTarget rbr) $
+            unless (null targets) $
+            unlessM (checkAutoBodhiUpdate rbr) $
+            return ()
         (OtherBranch _) ->
           error' "parallel builds only defined for release branches"
   where
@@ -69,7 +73,7 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
       putStrLn $ "Building parallel " ++ show (length brs) ++ " branches:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
-      failures <- watchJobs [] jobs
+      (failures,_mtarget) <- watchJobs Nothing [] jobs
       unless (null failures) $
         error' $ "Build failures: " ++ unwords failures
       where
@@ -79,7 +83,7 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
           sleep 5
           return (show br,job)
 
-    parallelBuild :: Branch -> [String] -> IO ()
+    parallelBuild :: Branch -> [String] -> IO String
     parallelBuild br layer =  do
       krbTicket
       let nopkgs = length layer in
@@ -87,9 +91,12 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
         putStrLn $ "\nBuilding parallel layer of " ++ show nopkgs ++ " packages:"
         putStrLn $ unwords layer
       jobs <- mapM setupBuild layer
-      failures <- watchJobs [] jobs
+      (failures,mtarget) <- watchJobs Nothing [] jobs
       unless (null failures) $
         error' $ "Build failures: " ++ unwords failures
+      when (null jobs) $
+        error' "No jobs run"
+      return $ fromMaybe (error' "No target determined") mtarget
       where
         setupBuild :: String -> IO Job
         setupBuild pkg = do
@@ -97,24 +104,24 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
           sleep 5
           return (pkg,job)
 
-    watchJobs :: [String] -> [Job] -> IO [String]
-    watchJobs fails [] = return fails
-    watchJobs fails (job:jobs) = do
+    watchJobs :: Maybe String -> [String] -> [Job] -> IO ([String],Maybe String)
+    watchJobs mtarget fails [] = return (fails,mtarget)
+    watchJobs mtarget fails (job:jobs) = do
       sleep 1
       status <- poll (snd job)
       case status of
-        Nothing -> watchJobs fails (jobs ++ [job])
-        Just (Right nvr) -> do
+        Nothing -> watchJobs mtarget fails (jobs ++ [job])
+        Just (Right (target,nvr)) -> do
           putStrLn $ nvr ++ " job " ++ color Yellow "completed" ++  " (" ++ show (length jobs) ++ " jobs left)"
-          watchJobs fails jobs
+          watchJobs (Just target) fails jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
           putStrLn $ "** " ++ pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " jobs left)"
-          watchJobs (pkg : fails) jobs
+          watchJobs mtarget (pkg : fails) jobs
 
     -- FIXME prefix output with package name
-    startBuild :: Branch -> String -> IO (IO String)
+    startBuild :: Branch -> String -> IO (IO (String,String))
     startBuild br pkgdir =
       withExistingDirectory pkgdir $ do
       gitSwitchBranch (RelBranch br)
@@ -130,27 +137,28 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
         unless dryrun $
           gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
-      mtarget <- case msidetagTarget of
-                   Nothing -> return Nothing
-                   Just (Target t) -> return $ Just t
-                   Just SideTag -> do
-                     tags <- map (head . words) <$> listUserSideTags
-                     let tgt = branchTarget br
-                     case filter ((tgt ++ "-") `isPrefixOf`) tags of
-                       [] -> error' $ "No user side-tag found: please create with '(cd " ++ pkgdir ++ "; fedpkg request-side-tag)'"
-                       [tag] -> return $ Just tag
-                       _ -> error' $ "More than one user side-tag found for " ++ tgt
-      let target = fromMaybe (branchTarget br) mtarget
+      target <- case sidetagTarget of
+                   Target t -> return t
+                   SideTag -> do
+                     tags <- map (head . words) <$> kojiUserSideTags br
+                     case tags of
+                       [] -> do
+                         out <- head . lines <$> fedpkg "request-side-tag" []
+                         if "Side tag '" `isPrefixOf` out then
+                           return $ init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
+                           else error' "'fedpkg request-side-tag' failed"
+                       [tag] -> return tag
+                       _ -> error' $ "More than one user side-tag found for " ++ show br
       putStrLn $ nvr ++ " (" ++ target ++ ")\n"
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
-      let tag = fromMaybe (branchDestTag br) mtarget
+      let tag = if target == branchTarget br then branchDestTag br else target
       mlatest <- kojiLatestNVR tag $ unPackage pkg
       case buildstatus of
         Just BuildComplete -> do
           putStrLn $ nvr ++ " is " ++ color Green "already built"
-          when (br /= Master && isNothing msidetagTarget) $ do
+          when (br /= Master && target == branchTarget br) $ do
             mtags <- kojiNVRTags nvr
             case mtags of
               Nothing -> error' $ nvr ++ " is untagged"
@@ -161,7 +169,7 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
           return $ do
             unless dryrun $
               kojiWaitRepo True target nvr
-            return nvr
+            return (target,nvr)
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
           return $
@@ -182,12 +190,12 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
                 else do
                 -- FIXME parse build output
                 if dryrun
-                  then return (return nvr)
+                  then return (return (target,nvr))
                   else do
                   task <- kojiBuildBranchNoWait target pkg Nothing ["--fail-fast", "--background"]
                   return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr target task
       where
-        kojiWaitTaskAndRepo :: Bool -> String -> String -> TaskID -> IO String
+        kojiWaitTaskAndRepo :: Bool -> String -> String -> TaskID -> IO (String,String)
         kojiWaitTaskAndRepo newpkg nvr target task = do
           finish <- kojiWatchTaskQuiet task
           if finish
@@ -205,22 +213,10 @@ parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
               whenJust mBugSess $
                 \ (bid,session) -> postBuildComment session nvr bid
               else do
-              when (isNothing msidetagTarget) $
+              when (target == branchTarget br) $
                 -- -- FIXME: avoid prompt in
                 -- changelog <- getChangeLog spec
                 -- bodhiUpdate (fmap fst mBugSess) changelog nvr
                 bodhiCreateOverride nvr
             kojiWaitRepo False target nvr
-          return nvr
-
-listUserSideTags :: IO [String]
-listUserSideTags = do
-  -- can fail:
-  -- Kerberos authentication fails: unable to obtain a session
-  -- Could not execute list_side_tags: Could not login to https://koji.fedoraproject.org/kojihub
-  (ok, out, err) <- cmdFull "fedpkg" ("list-side-tags" : ["--mine"]) ""
-  if ok then return $ lines out
-    else do
-    warning err
-    sleep 1
-    listUserSideTags
+          return (target,nvr)

@@ -239,7 +239,7 @@ main = do
 
     commandOpt = strOptionWith 'c' "cmd" "COMMAND" "Shell command to run in $p"
 
-    sidetagTargetOpt :: Parser (Maybe SideTagTarget)
+    sidetagTargetOpt :: Parser SideTagTarget
     sidetagTargetOpt =
-      optional (Target <$> targetOpt <|>
-                flagWith' SideTag 's' "side-tag" "Use existing branch side-tag for building: create 'fedpkg request-side-tag --base-tag'")
+      Target <$> targetOpt <|>
+      flagWith' SideTag 's' "sidetag" "Use existing branch side-tag for building: create with 'fedpkg request-side-tag --base-tag'"
