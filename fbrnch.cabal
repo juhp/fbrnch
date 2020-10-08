@@ -53,6 +53,7 @@ executable fbrnch
                        Cmd.RequestRepo
                        Cmd.Reviews
                        Cmd.Scratch
+                       Cmd.SideTags
                        Cmd.Status
                        Cmd.Switch
                        Common

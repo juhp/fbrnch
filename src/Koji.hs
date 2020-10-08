@@ -7,6 +7,7 @@ module Koji (
   kojiLatestNVR,
   kojiOpenTasks,
   kojiScratchBuild,
+  kojiUserSideTags,
   buildIDInfo,
   BuildState(..),
   kojiBuildBranch,
@@ -28,6 +29,7 @@ import Control.Concurrent (threadDelay)
 import Fedora.Koji
 import qualified Fedora.Koji.Internal as Koji
 
+import Branches
 import Common
 import Common.System
 import Git
@@ -178,3 +180,9 @@ kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do
   st <- Koji.getTag fedoraHub (Koji.InfoString tag) Nothing
   return $ maybe [] words $ lookupStruct "arches" st
+
+kojiUserSideTags :: Branch -> IO [String]
+kojiUserSideTags br = do
+  Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (branchTarget br)
+  user <- fasIdFromKrb
+  kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)

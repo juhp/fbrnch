@@ -25,6 +25,7 @@ import Cmd.RequestBranch
 import Cmd.RequestRepo
 import Cmd.Reviews
 import Cmd.Scratch
+import Cmd.SideTags
 import Cmd.Status
 import Cmd.Switch
 
@@ -55,6 +56,8 @@ main = do
       buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd <$> dryrunOpt <*> sidetagTargetOpt <*> branchesOpt <*> branchesPackages
+    , Subcommand "sidetags" "List user's side-tags" $
+      sideTagsCmd <$> many branchArg
     , Subcommand "override" "Tag builds into buildroot override in Koji" $
       overrideCmd <$> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
@@ -131,6 +134,9 @@ main = do
 
     branchOpt :: Parser Branch
     branchOpt = optionWith branchM 'b' "branch" "BRANCH" "branch"
+
+    branchArg :: Parser Branch
+    branchArg = argumentWith branchM "BRANCH"
 
     anyBranchArg :: Parser AnyBranch
     anyBranchArg = argumentWith anyBranchM "BRANCH"
