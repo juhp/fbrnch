@@ -203,6 +203,9 @@ kojiTagArchs tag = do
 
 kojiUserSideTags :: Branch -> IO [String]
 kojiUserSideTags br = do
-  Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (branchTarget br)
-  user <- fasIdFromKrb
-  kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)
+  mtags <- kojiBuildTarget fedoraHub (branchTarget br)
+  case mtags of
+    Nothing -> return []
+    Just (buildtag,_desttag) -> do
+      user <- fasIdFromKrb
+      kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)
