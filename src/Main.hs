@@ -55,7 +55,7 @@ main = do
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
-      parallelBuildCmd <$> dryrunOpt <*> sidetagTargetOpt <*> branchesOpt <*> branchesPackages
+      parallelBuildCmd <$> dryrunOpt <*> optional sidetagTargetOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd <$> many branchArg
     , Subcommand "override" "Tag builds into buildroot override in Koji" $

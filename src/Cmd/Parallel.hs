@@ -23,8 +23,8 @@ import Package
 
 data SideTagTarget = SideTag | Target String
 
-maybeTarget :: SideTagTarget -> Maybe String
-maybeTarget (Target t) = Just t
+maybeTarget :: Maybe SideTagTarget -> Maybe String
+maybeTarget (Just (Target t)) = Just t
 maybeTarget _ = Nothing
 
 -- (pkg, (sidetag, nvr))
@@ -34,15 +34,14 @@ type Job = (String, Async (String, String))
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources asap
--- FIXME check not in pkg git dir
-parallelBuildCmd :: Bool -> SideTagTarget -> Maybe BranchOpts -> [String]
+parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe BranchOpts -> [String]
                  -> IO ()
-parallelBuildCmd dryrun sidetagTarget mbrnchopts args = do
+parallelBuildCmd dryrun msidetagTarget mbrnchopts args = do
   (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
   when (null brs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
   branches <- listOfBranches True True mbrnchopts brs
-  let mtarget = maybeTarget sidetagTarget
+  let mtarget = maybeTarget msidetagTarget
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   if null pkgs
@@ -56,9 +55,12 @@ parallelBuildCmd dryrun sidetagTarget mbrnchopts args = do
     forM_ branches $ \ br -> do
       case br of
         (RelBranch rbr) -> do
+          layers <- dependencyLayers pkgs
+          when (isNothing msidetagTarget && length layers > 1) $ do
+            unlessM (checkAutoBodhiUpdate rbr) $
+              error' "You must use --target/--sidetag to build package layers for this branch"
           when (length branches > 1) $
             putStrLn $ "# " ++ show rbr
-          layers <- dependencyLayers pkgs
           targets <- mapM (parallelBuild rbr) layers
           when (rbr /= Master && head targets == branchTarget rbr) $
             unless (null targets) $
@@ -137,18 +139,19 @@ parallelBuildCmd dryrun sidetagTarget mbrnchopts args = do
         unless dryrun $
           gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
-      target <- case sidetagTarget of
-                   Target t -> return t
-                   SideTag -> do
-                     tags <- map (head . words) <$> kojiUserSideTags br
-                     case tags of
-                       [] -> do
-                         out <- head . lines <$> fedpkg "request-side-tag" []
-                         if "Side tag '" `isPrefixOf` out then
-                           return $ init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
-                           else error' "'fedpkg request-side-tag' failed"
-                       [tag] -> return tag
-                       _ -> error' $ "More than one user side-tag found for " ++ show br
+      target <- case msidetagTarget of
+                  Nothing -> return $ branchTarget br
+                  Just (Target t) -> return t
+                  Just SideTag -> do
+                    tags <- map (head . words) <$> kojiUserSideTags br
+                    case tags of
+                      [] -> do
+                        out <- head . lines <$> fedpkg "request-side-tag" []
+                        if "Side tag '" `isPrefixOf` out then
+                          return $ init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
+                          else error' "'fedpkg request-side-tag' failed"
+                      [tag] -> return tag
+                      _ -> error' $ "More than one user side-tag found for " ++ show br
       putStrLn $ nvr ++ " (" ++ target ++ ")\n"
       -- FIXME should compare git refs
       -- FIXME check for target
