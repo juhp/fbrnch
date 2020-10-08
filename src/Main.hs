@@ -196,7 +196,11 @@ main = do
     mtargetOpt = optional targetOpt
 
     targetOpt :: Parser String
-    targetOpt = strOptionWith 't' "target" "TARGET" "Koji target"
+    targetOpt =
+      checkNotMaster <$> strOptionWith 't' "target" "TARGET" "Koji target"
+      where
+        checkNotMaster "master" = error' "'master' is not a valid target!"
+        checkNotMaster t = t
 
     overrideOpt = switchWith 'o' "override" "Create a buildroot override and wait-repo"
 
