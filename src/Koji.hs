@@ -179,22 +179,19 @@ kojiWaitRepo target nvr = do
           then waitRepo buildtag mrepo
           else do
             let mevent = lookupStruct "create_event" repo
-                mtime = lookupStruct "creation_time" repo
             case mevent of
               Nothing -> error "create_event not found"
               Just event -> do
                 latest <- kojiLatestNVRRepo buildtag event (nameOfNVR nvr)
-                if latest == (Just nvr)
-                  then
-                  if isNothing moldrepo
-                  then putStrLn $ nvr ++ " is in " ++ buildtag
-                  else putStrLn "done"
+                if latest == Just nvr
+                  then if isNothing moldrepo
+                       then putStrLn $ nvr ++ " is in " ++ buildtag
+                       else putStrLn "done"
                   else do
                   when (isNothing moldrepo) $ do
                     cmd_ "date" []
                     putStrLn $ "Waiting for " ++ buildtag ++ " to have " ++ nvr
-                    whenJust mtime $ \t -> putStrLn $ "Koji repo was created " ++ t
-                    waitRepo buildtag mrepo
+                  waitRepo buildtag mrepo
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do
