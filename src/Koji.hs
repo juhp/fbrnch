@@ -57,6 +57,13 @@ kojiLatestNVR tag pkg = do
              Nothing -> Nothing
              Just bld -> lookupStruct "nvr" bld
 
+kojiLatestNVRRepo :: String -> Int -> String -> IO (Maybe String)
+kojiLatestNVRRepo tag event pkg = do
+  mbld <- kojiLatestBuildRepo fedoraHub tag event pkg
+  return $ case mbld of
+             Nothing -> Nothing
+             Just bld -> lookupStruct "nvr" bld
+
 kojiOpenTasks :: Package -> Maybe String -> String -> IO [TaskID]
 kojiOpenTasks pkg mref target = do
   user <- fasIdFromKrb
@@ -154,27 +161,40 @@ kojiBuildBranchNoWait target pkg mref args = do
   Left task <- kojiBuildBranch' False target pkg mref args
   return task
 
--- FIXME use koji-hs
 kojiWaitRepo :: Bool -> String -> String -> IO ()
-kojiWaitRepo built target nvr = do
+kojiWaitRepo _built target nvr = do
   Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
-  cmd_ "date" []
-  putStrLn $ "Running wait-repo for " ++ buildtag ++ " (" ++ nvr ++ ")"
-  unless built $ waitRepo buildtag []
-  waitRepo buildtag ["--build=" ++ nvr]
+  waitRepo buildtag Nothing
   where
-    waitRepo :: String -> [String] -> IO ()
-    waitRepo buildtag args =
-      cmdFragile_ "koji" $ ["wait-repo", buildtag] ++ args
-
-cmdFragile_ :: String -> [String] -> IO ()
-cmdFragile_ c as = do
-  ok <- cmdBool c as
-  if ok then return ()
-    else do
-    warning $ "retrying \"" ++ c +-+ unwords as ++ "\""
-    threadDelay 2000000
-    cmdFragile_ c as
+    waitRepo :: String -> Maybe Struct -> IO ()
+    waitRepo buildtag moldrepo = do
+      when (isJust moldrepo) $ do
+        threadDelay (50 * 1000 * 1000) -- 50s
+        putChar '.'
+      mrepo <- kojiGetRepo fedoraHub buildtag Nothing Nothing
+      case mrepo of
+        Nothing -> error' $ "failed to find koji repo for " ++ buildtag
+        Just repo ->
+          if moldrepo == mrepo
+          then waitRepo buildtag mrepo
+          else do
+            let mevent = lookupStruct "create_event" repo
+                mtime = lookupStruct "creation_time" repo
+            case mevent of
+              Nothing -> error "create_event not found"
+              Just event -> do
+                latest <- kojiLatestNVRRepo buildtag event (nameOfNVR nvr)
+                if latest == (Just nvr)
+                  then
+                  if isNothing moldrepo
+                  then putStrLn $ nvr ++ " is in " ++ buildtag
+                  else putStrLn "done"
+                  else do
+                  when (isNothing moldrepo) $ do
+                    cmd_ "date" []
+                    putStrLn $ "Waiting for " ++ buildtag ++ " to have " ++ nvr
+                    whenJust mtime $ \t -> putStrLn $ "Koji repo was created " ++ t
+                    waitRepo buildtag mrepo
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do

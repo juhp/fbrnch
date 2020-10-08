@@ -42,7 +42,8 @@ module Package (
   pkgInstalled,
   systemBranch,
   equivNVR,
-  takeNVRName
+  takeNVRName,
+  nameOfNVR
   ) where
 
 import Common
@@ -515,3 +516,9 @@ equivNVR nvr1 nvr2
 -- n-v-r.src.rpm -> n-v-r
 takeNVRName :: FilePath -> String
 takeNVRName = takeBaseName . takeBaseName
+
+-- n-v-r -> n
+nameOfNVR :: String -> String
+nameOfNVR = removeSeg . removeSeg
+  where
+    removeSeg = init . dropWhileEnd (/= '-')
