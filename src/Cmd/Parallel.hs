@@ -68,8 +68,8 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
           unless (isNothing msidetagTarget || null targets) $ do
             let target = head targets
             when (target /= branchTarget rbr) $ do
-              prompt_ $ "Press Enter to submit Bodhi update for " ++ target
-              bodhiSidetagUpdate target
+              notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
+              bodhiSidetagUpdate target notes
         (OtherBranch _) ->
           error' "parallel builds only defined for release branches"
   where
@@ -228,13 +228,13 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
             kojiWaitRepo target nvr
           return (target,nvr)
 
-    bodhiSidetagUpdate :: String -> IO ()
-    bodhiSidetagUpdate sidetag = do
+    bodhiSidetagUpdate :: String -> String -> IO ()
+    bodhiSidetagUpdate sidetag notes = do
       case mupdatetype of
         Nothing -> return ()
         Just updateType -> do
           putStrLn $ "Creating Bodhi Update for " ++ sidetag
-          ok <- cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--notes", "to be written", "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
+          ok <- cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--notes", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
           when ok $ do
             prompt_ "After editing update, press Enter to remove sidetag"
             fedpkg_ "remove-side-tag" [sidetag]
