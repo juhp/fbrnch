@@ -81,7 +81,7 @@ createBug session params = do
 updateBug :: BugzillaSession -> BugId -> [String] -> [(String,String)]
         -> IO ()
 updateBug session bid pth params = do
-  let req = setRequestMethod "PUT" $
+  let req = setRequestMethod "POST" $
             -- posting url encoded utf8 to bugzilla only seems to work in body
             urlEncodedBody (encodeParams params) $
             setRequestCheckStatus $
