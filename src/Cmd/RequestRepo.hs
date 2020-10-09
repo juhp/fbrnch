@@ -52,7 +52,6 @@ requestRepo retry pkg = do
         -- FIXME get name of reviewer from bug
         let comment = "Thank you for the review\n\n" <> url
         postComment session bid comment
-        putStrLn "comment added to review"
         putStrLn ""
   where
     existingRepoRequests :: IO [IssueTitleStatus]
