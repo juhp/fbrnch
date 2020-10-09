@@ -108,7 +108,7 @@ main = do
     , Subcommand "command" "Run shell command in package dirs ($p)" $
       commandCmd <$> commandOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
-      coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> strArg "PROJECT" <*> branchesOpt <*> branchesPackages
+      coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> pkgArg "PROJECT" <*> branchesOpt <*> branchesPackages
     ]
   where
     cloneRequest :: Parser CloneRequest
