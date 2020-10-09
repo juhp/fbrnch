@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Package (
   builtRpms,
   clonePkg,
@@ -104,7 +106,10 @@ findSpecfile = fileWithExtension ".spec"
     fileWithExtension :: String -> IO FilePath
     fileWithExtension ext = do
       files <- filter ((== ext) . takeExtension) <$> listDirectory "."
-      maybe (error' ("No unique " ++ ext ++ " file found")) return $ listToMaybe files
+      case files of
+        [] -> error "No spec file found"
+        [spec] -> return spec
+        _ -> error' $ "No unique " ++ ext ++ " file found"
 
 localBranchSpecFile :: Package -> AnyBranch -> IO FilePath
 localBranchSpecFile pkg br = do
@@ -308,10 +313,6 @@ putPkgAnyBrnchHdr :: Package -> AnyBranch -> IO ()
 putPkgAnyBrnchHdr pkg br =
   putStrLn $ "\n== " ++ unPackage pkg ++ " " ++ show br ++ " =="
 
-packagePath :: String -> (FilePath, Package)
-packagePath path =
-  (path, Package (takeFileName path))
-
 packageSpec :: Package -> FilePath
 packageSpec pkg = unPackage pkg <.> "spec"
 
@@ -329,16 +330,31 @@ spanM p (x:xs) = do
     (!) :: (MonadPlus p) => a -> p a -> p a
     x' ! y = return x' `mplus` y
 
+-- FIXME unify logic
 splitBranchesPkgs :: Bool -> Maybe BranchOpts -> [String]
                   -> IO ([AnyBranch], [String])
 splitBranchesPkgs release mbrnchopts args = do
   (abrs,pkgs) <- if release
     then return $ span (isRelBranch . anyBranch) args
-    else spanM (notM . doesDirectoryExist) args
+    else spanM (notM . isPath) args
   let brs = map anyBranch abrs
   return $ case mbrnchopts of
     Just _ | brs /= [] -> error' "cannot specify branches with branch options"
     _ -> (brs,pkgs)
+  where
+    isPath :: FilePath -> IO Bool
+    isPath fp =
+      if ".spec" `isExtensionOf` fp
+      then do
+        exists <- doesFileExist fp
+        unless exists $ error' $ fp ++ " file not found"
+        return True
+      else do
+        exists <- doesDirectoryExist fp
+        let ispath = '/' `elem` fp
+        when (not exists && ispath) $
+          error' $ fp ++ " directory not found"
+        return exists
 
 data GitOpts =
   GitOpts
@@ -398,17 +414,26 @@ withPackageByBranches' mheader mgitopts mbrnchopts mconstrainBr action (brs,pkgs
         Nothing -> return ()
   if null pkgs
     then do
-    pkg <- Package <$> getDirectoryName
-    withPackageDir (".", pkg)
+    withPackageDir "."
     else do
     when (length pkgs > 1 && null brs) $
       error' "At least one branch must be specified when there are multiple packages"
-    mapM_ (withPackageDir . packagePath) pkgs
+    mapM_ withPackageDir pkgs
   where
     -- FIXME support arbitrary (module) branches
-    withPackageDir :: (FilePath, Package) -> IO ()
-    withPackageDir (dir, pkg) =
-      withExistingDirectory dir $ do
+    withPackageDir :: FilePath -> IO ()
+    withPackageDir path = do
+     let dir =
+           if ".spec" `isExtensionOf` path
+           then takeDirectory path
+           else path
+     withExistingDirectory dir $ do
+      spec <- if ".spec" `isExtensionOf` path
+              then return $ takeFileName path
+              else findSpecfile
+      pkg <- Package <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+      unless (spec == unPackage pkg <.> "spec") $
+        putStrLn  "Warning: package name and spec filename differ!"
       haveGit <- isPkgGitRepo
       when (isJust mgitopts && not haveGit) $
         error' $ "Not a pkg git dir: " ++ unPackage pkg
@@ -523,3 +548,9 @@ nameOfNVR :: String -> String
 nameOfNVR = removeSeg . removeSeg
   where
     removeSeg = init . dropWhileEnd (/= '-')
+
+#if !MIN_VERSION_filepath(1,4,2)
+isExtensionOf :: String -> FilePath -> Bool
+isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
+isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
+#endif

@@ -25,11 +25,9 @@ createReview noscratch mock pkgs =
   withPackageByBranches (Just True) Nothing Nothing Nothing createPkgReview ("master":pkgs)
   where
     createPkgReview :: Package -> AnyBranch -> IO ()
-    createPkgReview _pkg _br = do
-      spec <- getSpecFile Nothing
-      pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
-      unless (spec == pkg <.> "spec") $
-        putStrLn "Warning: package name and spec filename differ!"
+    createPkgReview package _br = do
+      let spec = packageSpec package
+          pkg = unPackage package
       unless (all isAscii pkg) $
         putStrLn "Warning: package name is not ASCII!"
       putStrLn "checking for existing reviews..."
