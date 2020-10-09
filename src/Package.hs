@@ -119,7 +119,8 @@ localBranchSpecFile pkg br = do
       (return spec) $
       do
         spc <- findSpecfile
-        putStrLn $ "spec file is not " ++ spec ++ "\n"
+        -- FIXME maybe drop this
+        putStrLn $ "Warning: directory name differs from " ++ spc ++ "\n"
         return spc
     else findSpecfile
 
