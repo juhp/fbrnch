@@ -1,3 +1,5 @@
+- add CHANGELOG.md
+
 - fbrnch switch Agda
 => "exactly one branch not given, or package(s) not found"
 
