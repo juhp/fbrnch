@@ -23,6 +23,8 @@ like:
 - importing new packages
 - automatic parallel builds of sets of packages in dependency order
 
+and more.
+
 ## Usage
 
 ### Creating new packages/branches
@@ -91,7 +93,7 @@ $ fbrnch clone [package] ...
 (one can also clone all one's packages or another user's packages).
 
 ```
-$ fbrnch switch master [package] ...
+$ fbrnch switch f33 [package] ...
 ```
 
 You can also git pull:
@@ -100,7 +102,7 @@ $ fbrnch pull [package] ...
 ```
 #### Package status
 ```
-$ fbrnch status [package]
+$ fbrnch status -B [package]
 ```
 outputs information about the status of each branch.
 The status command can also be used with `--reviews`
@@ -116,7 +118,7 @@ You can commit to the current branch:
 ```
 $ fbrnch commit
 ```
-if there is a changelog, or you can pass `-m "..."` or amend with `-a`.
+uses any rpm changelog, or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
@@ -126,21 +128,22 @@ which will offer to merge f33 (or some of it) into f32.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build package
+$ fbrnch build f33 package
 ```
 will offer to merge newer commits from the newer branch.
-Otherwise if a branch NVR is also ready pushed and built it will be skipped.
+If the branch NVR is also ready pushed and built it will be skipped.
 Branch builds are pushed to Bodhi.
 
-You can of course specify which branch(es) to build:
+You can also build all branches:
 ```
-$ fbrnch build f33 package
+$ fbrnch build -B package
 ```
 
 Scratch builds can also be done:
 ```
 $ fbrnch scratch master
 ```
+optionally a different koji target can be given.
 
 You can sort packages by build dependency order:
 ```
@@ -170,9 +173,12 @@ in Koji in dependency layers (using low-priority background builds
 to avoid grabbing too many Koji resources).
 
 ```
-$ fbrnch parallel -t f33-build-side-1234 master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
+$ fbrnch parallel --sidetag master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
 ```
 builds a list of packages in parallel ordered by build dependencies.
+
+Note it requires a sidetag in general, so you need to manage and select them
+if using more than one per branch with `--target`.
 
 ### Other commands
 There are more commands like `nvr`, `install-deps`, `copr`.
@@ -181,13 +187,12 @@ See `fbrnch --help` for details and the full list.
 
 ## Known issues
 - parallel builds will push local package commits without asking
-- only checks if already built by NVR not githash
+- currently only checks if already built by NVR not githash
 - authentication is not implemented yet natively for Koji, Bodhi, Pagure
   (and source upload)
   - so python clients are used for "writing"
     (specifically koji, bodhi-client, fedpkg),
     but all queries are done directly by Web RPC for speed and control.
-- does not take package.cfg into account, eg for epel8-playground
 
 ## Motivation and history
 This project started off (as "fedbrnch") basically as a simple tool to
@@ -219,10 +224,10 @@ $ cabal new-install --installdir=~/bin
 Bug reports, feedback, and fixes are welcome.
 
 See the TODO list and also the many FIXME comments scattered across the source.
-As usual better to ask before embarking on large changes.
+It is better to ask before embarking on large changes.
 
 ## Usual disclaimer
 This is still in active development.
 While it is generally works well for me,
 if it should breaks things for you, you get to keep the pieces. :)
-But please report unsupported or unintuitive workflows.
+But please do report unsupported or unintuitive workflows.
