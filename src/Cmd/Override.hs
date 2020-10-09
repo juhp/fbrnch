@@ -22,7 +22,7 @@ overrideCmd =
       gitSwitchBranch rbr
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
-      putStrLn $ nvr
+      putStrLn nvr
       mtags <- kojiNVRTags nvr
       case mtags of
         Nothing -> error' $ nvr ++ " is untagged"
