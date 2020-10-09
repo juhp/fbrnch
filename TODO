@@ -1,3 +1,6 @@
+- fbrnch switch Agda
+=> "exactly one branch not given, or package(s) not found"
+
 # new commands
 - 'unpushed' command, etc (from f-h-t)
 - 'push'
@@ -6,7 +9,6 @@
 - worktree support
 - 'update-sources'
 - 'clean-old-source-dirs' (--threshold SIZE)
-- 'override'
 - 'chain'
 
 # release deps

@@ -19,7 +19,6 @@ import Krb
 import Package
 import Prompt
 
--- FIXME add --mock option
 -- FIXME add --dependent pkgreview
 createReview :: Bool -> Bool -> [FilePath] -> IO ()
 createReview noscratch mock pkgs =
@@ -38,6 +37,7 @@ createReview noscratch mock pkgs =
       unless (null bugs) $ do
         putStrLn "Existing review(s):"
         mapM_ putBug bugs
+        -- FIXME abort if open review (unless --force?)
         prompt_ "Press Enter to continue"
       srpm <- generateSrpm Nothing spec
       mockRpmLint mock pkg spec srpm

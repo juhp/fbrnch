@@ -18,7 +18,7 @@ import Koji
 import ListReviews
 import Package
 
--- FIXME add --no-pull?
+-- FIXME instead --pull?
 -- FIXME --pending
 -- FIXME handle not cloned (remote only)
 -- FIXME silence fetching of new branches? (for --reviews etc)

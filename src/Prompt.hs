@@ -8,6 +8,7 @@ import Common
 
 import Data.Char
 
+-- FIXME promptNonEmpty
 prompt :: String -> IO String
 prompt s = do
   putStr $ s ++ ": "
