@@ -94,7 +94,7 @@ main = do
     , Subcommand "update-review" "Update a Package Review" $
       updateReview <$> noScratchBuild <*> mockOpt <*> optional (strArg "SPECFILE")
     , Subcommand "reviews" "List package reviews" $
-      reviewsCmd <$> reviewShortOpt <*> reviewAllStatusOpt <*> reviewStatusOpt
+      reviewsCmd <$> reviewShortOpt <*> reviewAllStatusOpt <*> optional (strOptionWith 'U' "user" "EMAIL" "Bugzilla user") <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
       requestRepos <$> switchWith 'r' "retry" "Re-request repo" <*> many (pkgArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $

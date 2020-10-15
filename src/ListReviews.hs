@@ -7,6 +7,9 @@ module ListReviews (
   ) where
 
 import Common
+import Common.System
+import qualified Common.Text as T
+import Network.HTTP.Query
 
 import Branches
 import Bugzilla
@@ -21,12 +24,24 @@ data ReviewStatus = ReviewAllOpen
                   | ReviewBranched
 
 listReviews :: ReviewStatus -> IO [Bug]
-listReviews = listReviews' False
+listReviews = listReviews' False Nothing
 
-listReviews' :: Bool -> ReviewStatus -> IO [Bug]
-listReviews' allopen status = do
+listReviews' :: Bool -> Maybe String -> ReviewStatus-> IO [Bug]
+listReviews' allopen muser status = do
   (session,user) <- bzLoginSession
-  let reviews = reporterIs user .&&. packageReview
+  submitter <- do
+    case muser of
+      Nothing -> return user
+      Just userid ->
+        if '@' `elem` userid then return $ T.pack userid
+        else do
+          users <- listBzUsers session userid
+          case users of
+            [] -> error' $ "No user found for " ++ userid
+            [obj] -> return $ T.pack $ lookupKey' "email" obj
+            objs -> error' $ "Found multiple user matches: " ++
+                    unwords (map (lookupKey' "email") objs)
+  let reviews = reporterIs submitter .&&. packageReview
       open = if allopen
         then statusOpen else
         case status of

@@ -14,6 +14,7 @@ module Bugzilla (
   approvedReviewBugSession,
   pkgBugs,
   pkgReviews,
+  listBzUsers,
 --  testBZlogin,
   -- search
   searchBugs,
@@ -57,6 +58,7 @@ import qualified Common.Text as T
 import Prompt
 
 import Control.Exception (finally)
+import Data.Aeson.Types (Object)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.UTF8
 import Data.Ini.Config
@@ -368,3 +370,9 @@ removeLeadingNewline ts = ts
 -- | make a key-value
 makeTextItem :: String -> String -> (T.Text, Maybe T.Text)
 makeTextItem k val = (T.pack k, Just (T.pack val))
+
+listBzUsers :: BugzillaSession -> String -> IO [Object]
+listBzUsers session user = do
+  let req = setRequestCheckStatus $
+            newBzRequest session ["user"] [makeTextItem "match" user]
+  lookupKey' "users" . getResponseBody <$> httpJSON req
