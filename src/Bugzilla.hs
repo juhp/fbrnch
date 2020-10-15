@@ -276,7 +276,10 @@ approvedReviewBugSession pkg = do
 
 reviewBugToPackage :: Bug -> String
 reviewBugToPackage =
-  head . words . removePrefix "Review Request: " . T.unpack . bugSummary
+  head . dropOne ["Request:"] . dropOne ["Review", "Re-Review", "Rename"]  . words . T.unpack . bugSummary
+  where
+    dropOne _ [] = []
+    dropOne ks as@(w:ws) = if w `elem` ks then ws else as
 
 readIniConfig :: FilePath -> IniParser a -> (a -> b) -> IO b
 readIniConfig inifile iniparser fn = do
