@@ -3,8 +3,8 @@ module Cmd.Bugs (bugsCmd) where
 import Bugzilla
 import Package
 
-bugsCmd :: [String] -> IO ()
-bugsCmd pkgs = do
+bugsCmd :: Maybe String -> [String] -> IO ()
+bugsCmd keyword pkgs = do
   if null pkgs
     then bugsPkg "."
     else mapM_ bugsPkg pkgs
@@ -13,5 +13,9 @@ bugsCmd pkgs = do
     bugsPkg path = do
       pkg <- getPackageName path
       putPkgHdr pkg
-      (bugs, _) <- bugsSession $ pkgBugs (unPackage pkg) .&&. statusOpen
+      let query =
+            case keyword of
+              Nothing -> statusOpen
+              Just key -> statusOpen .&&. summaryContains key
+      (bugs, _) <- bugsSession $ pkgBugs (unPackage pkg) .&&. query
       mapM_ putBugVer $ sortBugsByProduct bugs

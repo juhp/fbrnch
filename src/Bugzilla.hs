@@ -26,6 +26,7 @@ module Bugzilla (
   statusNewPost,
   statusNewModified,
   statusOpen,
+  summaryContains,
   -- comments
   Comment,
   checkForComment,
@@ -237,6 +238,10 @@ pkgReviews pkg =
 pkgBugs :: String -> SearchExpression
 pkgBugs pkg =
   ComponentField .==. [T.pack pkg]
+
+summaryContains :: String -> SearchExpression
+summaryContains keywrd =
+  SummaryField `contains` T.pack keywrd
 
 bugIdsSession :: SearchExpression -> IO ([BugId],BugzillaSession)
 bugIdsSession query = do
