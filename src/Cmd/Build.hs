@@ -167,7 +167,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
         Nothing -> return ()
         Just updateType -> do
           putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
-          updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType , "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+          updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType , "--notes", "--request", "testing", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
           unless updateOK $ do
             updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
             case updatequery of

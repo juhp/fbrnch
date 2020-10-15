@@ -234,7 +234,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
         Nothing -> return ()
         Just updateType -> do
           putStrLn $ "Creating Bodhi Update for " ++ sidetag
-          ok <- cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--notes", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
+          ok <- cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--notes", "--request", "testing", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
           when ok $ do
             prompt_ "After editing update, press Enter to remove sidetag"
             fedpkg_ "remove-side-tag" [sidetag]
