@@ -21,6 +21,7 @@ module Bugzilla (
   (.&&.),
   not',
   packageReview,
+  assigneeIs,
   reporterIs,
   reviewApproved,
   statusNewPost,
@@ -209,6 +210,9 @@ data BzTokenStatus = ValidToken BugzillaSession | InvalidToken T.Text | NoToken
 
 reporterIs :: T.Text -> SearchExpression
 reporterIs = (ReporterField .==.)
+
+assigneeIs :: T.Text -> SearchExpression
+assigneeIs = (AssignedToField .==.)
 
 packageReview :: SearchExpression
 packageReview =

@@ -24,12 +24,12 @@ data ReviewStatus = ReviewAllOpen
                   | ReviewBranched
 
 listReviews :: ReviewStatus -> IO [Bug]
-listReviews = listReviews' False Nothing
+listReviews = listReviews' False False Nothing
 
-listReviews' :: Bool -> Maybe String -> ReviewStatus-> IO [Bug]
-listReviews' allopen muser status = do
+listReviews' :: Bool -> Bool -> Maybe String -> ReviewStatus-> IO [Bug]
+listReviews' allopen assignee muser status = do
   (session,user) <- bzLoginSession
-  submitter <- do
+  account <- do
     case muser of
       Nothing -> return user
       Just userid ->
@@ -41,7 +41,7 @@ listReviews' allopen muser status = do
             [obj] -> return $ T.pack $ lookupKey' "email" obj
             objs -> error' $ "Found multiple user matches: " ++
                     unwords (map (lookupKey' "email") objs)
-  let reviews = reporterIs submitter .&&. packageReview
+  let reviews = (if assignee then assigneeIs else reporterIs) account .&&. packageReview
       open = if allopen
         then statusOpen else
         case status of
