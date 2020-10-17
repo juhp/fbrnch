@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1
+- build, parallel: request testing state for bodhi updates
+- bugs: --summary to filter by a phrase
+- reviews: --user to list reviews from another user
+- reviews: --assigned-to to list bugs by reviewer
+- reviews: filter out "Rename Request" and "Re-Review Request" prefixes
+- copr: remove trailing / from project name
 
 ## Below are pre-release changes from the copr package rpm:
 
