@@ -16,6 +16,7 @@ import Package
 
 import Data.Ini.Config
 import System.Environment.XDG.BaseDir (getUserConfigDir)
+import System.Time.Extra (sleep)
 import Web.Fedora.Copr (coprChroots)
 
 data BuildBy = SingleBuild | ValidateByRelease | ValidateByArch | BuildByRelease
@@ -142,7 +143,14 @@ coprBuild dryrun project srpm buildroots = do
     output <- cmd "copr" buildargs
     putStrLn output
     let bid = last $ words $ last $ lines output
-    cmd_ "copr" ["watch-build", bid]
+    coprWatch bid
+
+coprWatch :: String -> IO ()
+coprWatch bid = do
+  ok <- cmdBool "copr" ["watch-build", bid]
+  unless ok $ do
+    sleep 5
+    coprWatch bid
 
 #if !MIN_VERSION_simple_cmd(0,1,4)
 error' :: String -> a
