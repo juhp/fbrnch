@@ -35,9 +35,9 @@ coprCmd dryrun buildBy archs project mbrnchopts args = do
   (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
   chroots <- coprGetChroots brs
   if null pkgs then
-    getDirectoryName >>= coprBuildPkg chroots
+    getPackageName "." >>= coprBuildPkg chroots
     else
-    mapM_ (\ p -> withExistingDirectory p $ coprBuildPkg chroots p) pkgs
+    mapM_ (\ p -> withExistingDirectory p $ coprBuildPkg chroots (Package p)) pkgs
   where
     coprGetChroots brs = do
       username <- getUsername
@@ -61,9 +61,9 @@ coprCmd dryrun buildBy archs project mbrnchopts args = do
         then error' "No chroots chosen"
         else return buildroots
 
-    coprBuildPkg buildroots _pkg = do
+    coprBuildPkg buildroots pkg = do
       -- FIXME check is pkg.spec
-      spec <- findSpecfile
+      spec <- localBranchSpecFile pkg (RelBranch Master)
       -- pkg <- takeFileName <$> getCurrentDirectory
       -- hack to avoid generating srpm for dryrun
       srpm <- if not dryrun
