@@ -66,8 +66,9 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
   checkForSpecFile spec
   checkSourcesMatch spec
   nvr <- pkgNameVerRel' br spec
-  putStrLn $ nvr ++ "\n"
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+  unless (null unpushed) $
+    putStrLn $ "\n" ++ nvr ++ "\n"
   when (not merged || br == Master) $
     unless (null unpushed) $ do
       putStrLn "Local commits:"
@@ -77,7 +78,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
     else
       -- see mergeBranch for: unmerged == 1 (774b5890)
       if tty && (not merged || (newrepo && length unmerged == 1))
-      then refPrompt unpushed $ "Press Enter to push" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ "; or 'no' to skip pushing"
+      then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
       else return $ Just Nothing
   let dryrun = buildoptDryrun opts
   buildstatus <- kojiBuildStatus nvr
