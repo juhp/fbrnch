@@ -22,6 +22,8 @@ import Prompt
 
 checkAutoBodhiUpdate :: Branch -> IO Bool
 checkAutoBodhiUpdate Master = return True
+-- epel7 returns 'create_automatic_updates: null' !
+checkAutoBodhiUpdate (EPEL 7) = return False
 checkAutoBodhiUpdate br =
   lookupKey'' "create_automatic_updates" <$> bodhiRelease (show br)
   where
@@ -29,6 +31,7 @@ checkAutoBodhiUpdate br =
     lookupKey'' :: T.Text -> Object -> Bool
     lookupKey'' k obj =
       let errMsg e = error $ e ++ " " ++ show obj in
+        -- bodhi-hs has lookupKeyEither
         either errMsg id $ parseEither (.: k) obj
 
 -- FIXME should determine 3 days for branched devel release
