@@ -55,16 +55,6 @@ createReview noscratch mock pkgs =
             , ("summary", "Review Request: " <> pkg <> " - " <> summary)
             , ("description", specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl)]
 
-getSpecFile :: Maybe FilePath -> IO String
-getSpecFile =
-  -- FIXME or change to dir
-  maybe findSpecfile checkLocalFile
-  where
-    checkLocalFile :: FilePath -> IO FilePath
-    checkLocalFile f =
-      if takeFileName f == f then return f
-        else error' "Please run in the directory of the spec file"
-
 buildAndUpload :: Bool -> String -> String -> FilePath
                -> IO (Maybe String, String)
 buildAndUpload noscratch srpm pkg spec = do
@@ -75,7 +65,7 @@ buildAndUpload noscratch srpm pkg spec = do
 
 updateReview :: Bool -> Bool -> Maybe FilePath -> IO ()
 updateReview noscratch mock mspec = do
-  spec <- getSpecFile mspec
+  spec <- maybe findSpecfile checkLocalFile mspec
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   (bid,session) <- reviewBugIdSession pkg
   putBugId bid
@@ -88,6 +78,11 @@ updateReview noscratch mock mspec = do
   changelog <- getChangeLog spec
   postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
   -- putStrLn "Review bug updated"
+  where
+    checkLocalFile :: FilePath -> IO FilePath
+    checkLocalFile f =
+      if takeFileName f == f then return f
+        else error' "Please run in the directory of the spec file"
 
 uploadPkgFiles :: String -> FilePath -> FilePath -> IO String
 uploadPkgFiles pkg spec srpm = do
