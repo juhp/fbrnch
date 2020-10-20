@@ -149,7 +149,8 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                      \ (bid,session) -> postBuildComment session nvr bid
                 else do
                 when (isNothing mtarget) $ do
-                -- FIXME diff previous changelog?
+                  -- FIXME diff previous changelog?
+                  -- FIXME for initial build use Summary
                   changelog <- getChangeLog spec
                   bodhiUpdate (fmap fst mBugSess) changelog nvr
                   -- FIXME prompt for override note
@@ -163,12 +164,11 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
           bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
             if null bids then [] else ["--bugs", intercalate "," bids]
       -- FIXME also query for open existing bugs
-      -- FIXME extract bug no(s) from changelog
       case buildoptUpdateType opts of
         Nothing -> return ()
         Just updateType -> do
           putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
-          updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType , "--notes", "--request", "testing", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+          updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
           unless updateOK $ do
             updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
             case updatequery of
