@@ -29,11 +29,11 @@ listReviews = listReviews' False False Nothing
 listReviews' :: Bool -> Bool -> Maybe String -> ReviewStatus-> IO [Bug]
 listReviews' allopen assignee muser status = do
   (session,user) <- bzLoginSession
-  account <- do
+  accountid <- do
     case muser of
       Nothing -> return user
       Just userid ->
-        if '@' `elem` userid then return $ T.pack userid
+        if emailIsValid userid then return $ T.pack userid
         else do
           users <- listBzUsers session userid
           case users of
@@ -41,7 +41,7 @@ listReviews' allopen assignee muser status = do
             [obj] -> return $ T.pack $ lookupKey' "email" obj
             objs -> error' $ "Found multiple user matches: " ++
                     unwords (map (lookupKey' "email") objs)
-  let reviews = (if assignee then assigneeIs else reporterIs) account .&&. packageReview
+  let reviews = (if assignee then assigneeIs else reporterIs) accountid .&&. packageReview
       open = if allopen
         then statusOpen else
         case status of

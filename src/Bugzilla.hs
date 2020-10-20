@@ -16,6 +16,7 @@ module Bugzilla (
   pkgBugs,
   pkgReviews,
   listBzUsers,
+  emailIsValid,
 --  testBZlogin,
   -- search
   searchBugs,
@@ -125,6 +126,9 @@ bzReviewSession = do
 newtype BzUserRC = BzUserRC {rcUserEmail :: UserEmail}
   deriving (Eq, Show)
 
+emailIsValid :: String -> Bool
+emailIsValid = Email.isValid . B.pack
+
 -- FIXME support bugzilla API key
 bzLoginSession :: IO (BugzillaSession, UserEmail)
 bzLoginSession = do
@@ -143,7 +147,7 @@ bzLoginSession = do
         do
         -- FIXME: option to override email
         email <- prompt "Bugzilla Username"
-        when (Email.isValid (B.pack email)) $ do
+        when (emailIsValid email) $ do
           T.writeFile rc $ "[" <> brc <> "]\nuser = " <> T.pack email <> "\n"
           putStrLn $ "Saved in " ++ rc
         getBzUser
