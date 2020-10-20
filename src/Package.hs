@@ -100,15 +100,22 @@ getPackageName pkgdir =
   else return $ Package $ takeFileName pkgdir
 
 findSpecfile :: IO FilePath
-findSpecfile = fileWithExtension ".spec"
+findSpecfile = do
+  mspec <- maybeFindSpecfile
+  case mspec of
+    Just spec -> return spec
+    Nothing -> error' "No spec file found"
+
+maybeFindSpecfile :: IO (Maybe FilePath)
+maybeFindSpecfile = fileWithExtension ".spec"
   where
     -- looks in dir for a unique file with given extension
-    fileWithExtension :: String -> IO FilePath
+    fileWithExtension :: String -> IO (Maybe FilePath)
     fileWithExtension ext = do
       files <- filter ((== ext) . takeExtension) <$> listDirectory "."
       case files of
-        [] -> error "No spec file found"
-        [spec] -> return spec
+        [] -> return Nothing
+        [spec] -> return $ Just spec
         _ -> error' $ "No unique " ++ ext ++ " file found"
 
 localBranchSpecFile :: Package -> AnyBranch -> IO FilePath
@@ -123,10 +130,12 @@ localBranchSpecFile pkg br = do
     ifM (doesFileExist spec)
       (return spec) $
       do
-        spc <- findSpecfile
-        -- FIXME maybe drop this
-        putStrLn $ "Warning: directory name differs from " ++ spc ++ "\n"
-        return spc
+        mspec <- maybeFindSpecfile
+        case mspec of
+          Just spc -> do
+            putStrLn $ "Warning: directory name differs from " ++ spc ++ "\n"
+            return spc
+          Nothing -> error' "No spec file"
     else findSpecfile
 
 rpmEval :: String -> IO (Maybe String)
@@ -428,11 +437,14 @@ withPackageByBranches' mheader mgitopts mbrnchopts mconstrainBr action (brs,pkgs
            then takeDirectory path
            else path
      withExistingDirectory dir $ do
-      spec <- if ".spec" `isExtensionOf` path
-              then return $ takeFileName path
-              else findSpecfile
-      pkg <- Package <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
-      unless (spec == unPackage pkg <.> "spec") $
+      mspec <- if ".spec" `isExtensionOf` path
+              then return $ Just $ takeFileName path
+              else maybeFindSpecfile
+      pkg <- Package <$>
+             case mspec of
+               Just spec -> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+               Nothing -> getDirectoryName
+      unless (isNothing mspec || mspec == Just (unPackage pkg <.> "spec")) $
         putStrLn  "Warning: package name and spec filename differ!"
       haveGit <- isPkgGitRepo
       when (isJust mgitopts && not haveGit) $
