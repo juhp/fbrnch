@@ -2,6 +2,7 @@
 
 module Bugzilla (
   Bug(..),
+  User(..),
   BugId,
   -- session
   BugzillaSession,

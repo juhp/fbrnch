@@ -3,6 +3,7 @@
 module Cmd.RequestRepo (requestRepos) where
 
 import Common
+import qualified Common.Text as T
 
 import Data.Either
 import SimpleCmd
@@ -49,8 +50,8 @@ requestRepo retry pkg = do
         checkNoPagureRepo
         url <- fedpkg "request-repo" [pkg, show bid]
         putStrLn url
-        -- FIXME get name of reviewer from bug
-        let comment = "Thank you for the review\n\n" <> url
+        let assignee = userRealName (bugAssignedToDetail bug)
+        let comment = "Thank you for the review," ++ T.unpack assignee ++ "\n\n" <> url
         postComment session bid comment
         putStrLn ""
   where
