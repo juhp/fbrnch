@@ -22,11 +22,22 @@ mergeCmd =
       unmerged <- mergeable br
       mergeBranch False unmerged br
 
+getNewerBranch :: Branch -> IO Branch
+getNewerBranch Master = return Master
+getNewerBranch br = do
+  branches <- fedoraBranches localBranches
+  let newer = newerBranch br branches
+  return $ if newer > br then newer
+    -- FIXME this can be dropped with next fedora-dists
+    else case elemIndex br branches of
+           Just i -> branches !! (i - 1)
+           Nothing -> error' $ show br ++ ": branch not found"
+
 -- FIXME newer branch might not exist (eg epel8):
    -- restrict to local branches
 mergeable :: Branch -> IO [String]
 mergeable br = do
-  newerBr <- newerBranch br <$> getFedoraBranches
+  newerBr <- getNewerBranch br
   gitMergeable $ show newerBr
 
 -- FIXME return merged ref
@@ -34,7 +45,7 @@ mergeBranch :: Bool -> [String] -> Branch -> IO ()
 mergeBranch _ _ Master = return ()
 mergeBranch _ [] _ = return ()
 mergeBranch build unmerged br = do
-  newerBr <- newerBranch br <$> getFedoraBranches
+  newerBr <- getNewerBranch br
   newrepo <- initialPkgRepo
   unless (null unmerged) $ do
     putStrLn $ (if newrepo then "Merging from" else "New commits in") ++ " " ++ show newerBr ++ ":"
