@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.6.1
+## 0.6.2 (2020-10-20)
+- build: fix bodhi update options error
+- merging to latest epel now works (from oldest active fedora branch)
+- status: fixed error on new branch
+- request-repo: thank reviewer by name
+- copr: watch now restarts on a net failure
+
+## 0.6.1 (2020-10-17)
 - build, parallel: request testing state for bodhi updates
 - bugs: --summary to filter by a phrase
 - reviews: --user to list reviews from another user
