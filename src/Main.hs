@@ -13,6 +13,7 @@ import Cmd.Commit
 import Cmd.Copr
 import Cmd.Diff
 import Cmd.Import
+import Cmd.ListBranches
 import Cmd.Local
 import Cmd.Log
 import Cmd.Merge
@@ -54,6 +55,8 @@ main = do
       mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
+    , Subcommand "branches" "List package branches" $
+      branchesCmd <$> switchWith 'a' "all" "List all branches" <*> many (pkgArg "PACKAGE...")
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd <$> dryrunOpt <*> optional sidetagTargetOpt <*> updatetypeOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "sidetags" "List user's side-tags" $
