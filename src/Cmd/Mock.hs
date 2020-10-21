@@ -12,13 +12,9 @@ import Package
 mockCmd :: Bool -> Bool -> Maybe Branch -> [String] -> IO ()
 mockCmd noclean noCleanAfter mroot args = do
   (brs, pkgs) <- splitBranchesPkgs True Nothing args
-  if null pkgs
-    then do
-      unlessM isPkgGitRepo $
-        error' "Please specify at least one package"
-    else do
-      whenM isPkgGitRepo $
-        error' "Cannot build multiple packages inside a package dir"
+  unless (null pkgs) $
+    whenM isPkgGitRepo $
+    error' "Cannot build multiple packages inside a package dir"
   when (null brs && length pkgs > 1 && isNothing mroot) $
     error' "Must specific branch or --root chroot"
   branches <-
