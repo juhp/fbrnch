@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.3 (2020-10-21)
+- new 'branches' command lists package's branches
+- copr: fix running in a package dir
+- copr: revert restarting failed watch
+- mock: fix running in a package dir
+- mock: --network option
+- improve errors for commands that only take zero or one branches
+
 ## 0.6.2 (2020-10-20)
 - build: fix bodhi update options error
 - merging to latest epel now works (from oldest active fedora branch)
