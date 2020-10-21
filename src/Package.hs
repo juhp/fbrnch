@@ -28,8 +28,7 @@ module Package (
 --  withBranchByPackages,
   withPackageByBranches,
   withPackageByBranches',
-  zeroOneBranches,
-  oneBranch,
+  LimitBranches(..),
   cleanGit,
   cleanGitFetch,
   cleanGitFetchActive,
@@ -380,26 +379,25 @@ cleanGitFetchActive = Just $ GitOpts True  True  True
 dirtyGit =            Just $ GitOpts False False False
 dirtyGitFetch =       Just $ GitOpts False True  False
 
-zeroOneBranches, oneBranch :: Maybe ([AnyBranch] -> Bool, String)
-zeroOneBranches = Just ((< 2) . length, "more than one branch given")
-oneBranch = Just ((== 1) . length, "exactly one branch not given")
+data LimitBranches = AnyNumber | ZeroOrOne | ExactlyOne
+  deriving Eq
 
 -- do package over branches
 withPackageByBranches :: Maybe Bool
                       -> Maybe GitOpts
                       -> Maybe BranchOpts
-                      -> Maybe ([AnyBranch] -> Bool, String)
+                      -> LimitBranches
                       -> (Package -> AnyBranch -> IO ())
                       -> [String]
                       -> IO ()
-withPackageByBranches mheader mgitopts mbrnchopts mconstrainBr action args = do
+withPackageByBranches mheader mgitopts mbrnchopts limitBranches action args = do
   (brs,pkgs) <- splitBranchesPkgs (have gitOptActive) mbrnchopts args
   let mheader' =
         case mheader of
           Nothing -> Nothing
           Just _ | length pkgs < 2 && length brs < 2 -> Nothing
           _ -> mheader
-  withPackageByBranches' mheader' mgitopts mbrnchopts mconstrainBr action (brs,pkgs)
+  withPackageByBranches' mheader' mgitopts mbrnchopts limitBranches action (brs,pkgs)
   where
     have :: (GitOpts -> Bool) -> Bool
     have opt = maybe False opt mgitopts
@@ -407,20 +405,24 @@ withPackageByBranches mheader mgitopts mbrnchopts mconstrainBr action args = do
 withPackageByBranches' :: Maybe Bool
                        -> Maybe GitOpts
                        -> Maybe BranchOpts
-                       -> Maybe ([AnyBranch] -> Bool, String)
+                       -> LimitBranches
                        -> (Package -> AnyBranch -> IO ())
                        -> ([AnyBranch], [String])
                        -> IO ()
-withPackageByBranches' mheader mgitopts mbrnchopts mconstrainBr action (brs,pkgs) = do
+withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkgs) = do
   case mbrnchopts of
     Just _ ->
       unless (null brs) $
       error' "cannot specify branches and branch option together"
     Nothing ->
-      case mconstrainBr of
-        Just (required,brerr) ->
-          unless (required brs) $ error' $ brerr ++ ", or package(s) not found"
-        Nothing -> return ()
+      case limitBranches of
+        ZeroOrOne | length brs > 1 ->
+          error' "more than one branch given"
+        ExactlyOne | null brs ->
+          error' "please specify one branch"
+        ExactlyOne | length brs > 1 ->
+          error' "please only specify one branch"
+        _ -> return ()
   if null pkgs
     then do
     withPackageDir "."

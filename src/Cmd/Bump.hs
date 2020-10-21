@@ -12,7 +12,7 @@ import Package
 
 bumpPkgs :: Maybe CommitOpt -> Maybe BranchOpts -> [String] -> IO ()
 bumpPkgs mopt mbrnchopts =
-  withPackageByBranches (Just True) cleanGitFetchActive mbrnchopts Nothing bumpPkg
+  withPackageByBranches (Just True) cleanGitFetchActive mbrnchopts AnyNumber bumpPkg
   where
     bumpPkg :: Package -> AnyBranch -> IO ()
     bumpPkg pkg br = do

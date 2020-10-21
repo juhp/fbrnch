@@ -28,7 +28,7 @@ statusCmd nofetch reviews mbrnchopts args = do
     map reviewBugToPackage <$> listReviews' True False Nothing ReviewRepoCreated
     else return []
   -- FIXME dirty not okay for multiple branches?
-  withPackageByBranches (Just False) (if nofetch then dirtyGit else dirtyGitFetch) mbrnchopts Nothing statusBranch
+  withPackageByBranches (Just False) (if nofetch then dirtyGit else dirtyGitFetch) mbrnchopts AnyNumber statusBranch
     (args ++ reviewpkgs)
 
 -- FIXME note dirty when local changes

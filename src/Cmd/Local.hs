@@ -24,7 +24,7 @@ import Package
 -- FIXME --ignore-uninstalled subpackages
 installCmd :: Maybe ForceShort -> Bool -> [String] -> IO ()
 installCmd mforceshort reinstall =
-  withPackageByBranches Nothing Nothing Nothing oneBranch installPkg
+  withPackageByBranches Nothing Nothing Nothing ExactlyOne installPkg
   where
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
@@ -55,7 +55,7 @@ installCmd mforceshort reinstall =
 
 localCmd :: Maybe ForceShort -> [String] -> IO ()
 localCmd mforceshort =
-  withPackageByBranches Nothing Nothing Nothing zeroOneBranches localBuildPkg
+  withPackageByBranches Nothing Nothing Nothing ZeroOrOne localBuildPkg
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
     localBuildPkg pkg br = do
@@ -66,7 +66,7 @@ localCmd mforceshort =
 -- FIXME single branch
 installDepsCmd :: [String] -> IO ()
 installDepsCmd =
-  withPackageByBranches Nothing Nothing Nothing zeroOneBranches installDepsPkg
+  withPackageByBranches Nothing Nothing Nothing ZeroOrOne installDepsPkg
   where
     installDepsPkg :: Package -> AnyBranch -> IO ()
     installDepsPkg pkg br =
@@ -75,7 +75,7 @@ installDepsCmd =
 -- FIXME single branch
 srpmCmd :: [String] -> IO ()
 srpmCmd =
-  withPackageByBranches Nothing Nothing Nothing zeroOneBranches srpmBuildPkg
+  withPackageByBranches Nothing Nothing Nothing ZeroOrOne srpmBuildPkg
   where
     srpmBuildPkg :: Package -> AnyBranch -> IO ()
     srpmBuildPkg pkg br = do
@@ -88,7 +88,7 @@ sortCmd :: Maybe RpmWith -> [String] -> IO ()
 sortCmd _ [] = return ()
 sortCmd mrpmwith args = do
   (brs,pkgs) <- splitBranchesPkgs False Nothing args
-  withPackageByBranches' Nothing Nothing Nothing oneBranch dummy (brs,pkgs)
+  withPackageByBranches' Nothing Nothing Nothing ExactlyOne dummy (brs,pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
   packages <- dependencySortRpmOpts rpmopts $ reverse pkgs
   putStrLn $ unwords packages
@@ -101,11 +101,11 @@ sortCmd mrpmwith args = do
 
 prepCmd :: [String] -> IO ()
 prepCmd =
-  withPackageByBranches Nothing Nothing Nothing zeroOneBranches prepPackage
+  withPackageByBranches Nothing Nothing Nothing ZeroOrOne prepPackage
 
 nvrCmd :: Maybe BranchOpts -> [String] -> IO ()
 nvrCmd mbrnchopts =
-  withPackageByBranches Nothing Nothing mbrnchopts Nothing nvrBranch
+  withPackageByBranches Nothing Nothing mbrnchopts AnyNumber nvrBranch
   where
     nvrBranch :: Package -> AnyBranch -> IO ()
     nvrBranch pkg br = do
@@ -120,7 +120,7 @@ nvrCmd mbrnchopts =
 
 commandCmd :: String -> Maybe BranchOpts -> [String] -> IO ()
 commandCmd cs mbrnchopts =
-  withPackageByBranches (Just True) Nothing mbrnchopts Nothing cmdBranch
+  withPackageByBranches (Just True) Nothing mbrnchopts AnyNumber cmdBranch
   where
     cmdBranch :: Package -> AnyBranch -> IO ()
     cmdBranch pkg _br = do

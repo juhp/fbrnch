@@ -19,7 +19,7 @@ data Archs = Archs [String] | ExcludedArchs [String]
 scratchCmd :: Bool -> Bool -> Bool -> Maybe Archs -> Maybe String -> [String]
            -> IO ()
 scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
-  withPackageByBranches (Just False) Nothing Nothing Nothing scratchBuild
+  withPackageByBranches (Just False) Nothing Nothing AnyNumber scratchBuild
   where
     scratchBuild :: Package -> AnyBranch -> IO ()
     scratchBuild pkg br = do

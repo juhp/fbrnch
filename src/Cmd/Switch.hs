@@ -7,6 +7,6 @@ import Package
 switchCmd :: [String] -> IO ()
 switchCmd =
   -- FIXME use withBranchByPackages ?
-  withPackageByBranches Nothing cleanGit Nothing oneBranch dummy
+  withPackageByBranches Nothing cleanGit Nothing ExactlyOne dummy
   where
     dummy _ br = gitSwitchBranch br
