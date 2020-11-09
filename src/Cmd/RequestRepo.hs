@@ -51,7 +51,7 @@ requestRepo retry pkg = do
         url <- fedpkg "request-repo" [pkg, show bid]
         putStrLn url
         let assignee = userRealName (bugAssignedToDetail bug)
-        let comment = "Thank you for the review," ++ T.unpack assignee ++ "\n\n" <> url
+        let comment = "Thank you for the review" ++ maybe "" ((", " ++) . T.unpack) (getFirstname assignee) ++ "\n\n" <> url
         postComment session bid comment
         putStrLn ""
   where
@@ -70,3 +70,11 @@ requestRepo retry pkg = do
       res <- pagureProjectInfo srcfpo $ "rpms" </> pkg
       when (isRight res) $
         error' $ "Repo for " ++ pkg ++ " already exists"
+
+    -- FIXME handle "email name"
+    getFirstname :: T.Text -> Maybe T.Text
+    getFirstname t =
+      let first = head (T.words t) in
+        if "@" `T.isInfixOf` first
+        then Nothing
+        else Just first
