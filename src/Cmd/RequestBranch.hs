@@ -1,5 +1,6 @@
 module Cmd.RequestBranch (
-  requestBranches
+  requestBranches,
+  requestPkgBranches
   ) where
 
 import Common

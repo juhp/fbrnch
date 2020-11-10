@@ -10,6 +10,7 @@ import Network.URI
 
 import Branches
 import Bugzilla
+import Cmd.RequestBranch (requestPkgBranches)
 import Git
 import Koji
 import Krb
@@ -71,7 +72,7 @@ importPkg pkg = do
     gitPushSilent Nothing
     kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
     postBuildComment session nvr bid
-    -- FIXME build branches too
+    requestPkgBranches False Nothing [] (Package pkg)
   when (pkg /= takeFileName dir) $
     setCurrentDirectory dir
   where
