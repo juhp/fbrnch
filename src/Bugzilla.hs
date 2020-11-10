@@ -87,12 +87,18 @@ createBug session params = do
 updateBug :: BugzillaSession -> BugId -> [String] -> [(String,String)]
         -> IO ()
 updateBug session bid pth params = do
-  let req = setRequestMethod "POST" $
-            -- posting url encoded utf8 to bugzilla only seems to work in body
+  let req = setRequestMethod "PUT" $
+            -- earlier posting url encoded utf8 only seemed to work in body
             urlEncodedBody (encodeParams params) $
             setRequestCheckStatus $
             newBzRequest session (map T.pack ("bug":show bid:pth)) []
-  void (lookupKey' "id" . getResponseBody <$> httpJSON req :: IO Int)
+  res <- getResponseBody <$> httpJSON req
+  when (isNothing (lookupKey "id" res :: Maybe Int)) $ do
+    -- eg [("error",Bool True),("documentation",String "https://bugzilla.redhat.com/docs/en/html/api/index.html"),("code",Number 32614.0),("message",String "A REST API resource was not found for 'POST /bug/1880903'.")]
+    case lookupKey "message" res of
+      Nothing -> print res
+      Just msg -> T.putStrLn msg
+    error' $ "failed to update bug " ++ show bid
 
 encodeParams :: [(String, String)] -> [(ByteString, ByteString)]
 encodeParams [] = []
