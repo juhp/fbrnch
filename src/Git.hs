@@ -113,12 +113,17 @@ isPkgGitRepo = grepGitConfig' "@\\(pkgs\\|src\\)\\."
     grepGitConfig' key =
       ifM (isGitDir ".")
       (egrep_ key ".git/config") $
-      -- could be an absorbed submodule (#8)
+      -- could be a worktree or absorbed submodule (#8)
       ifM (not <$> doesFileExist ".git")
       (return False) $ do
-      -- "gitdir: ../.git/modules/R-bit"
       gitdir <- last . words <$> readFile ".git"
-      egrep_ key $ gitdir </> "config"
+      if "/worktrees/" `isInfixOf` gitdir
+        then egrep_ key (takeDirectory (takeDirectory gitdir) </> "config")
+        else
+        -- absorbed submodule: "gitdir: ../.git/modules/R-bit"
+        if "/modules/" `isInfixOf` gitdir then
+          egrep_ key $ gitdir </> "config"
+          else return False
 
 gitLines :: String -> [String] -> IO [String]
 gitLines c args = lines <$> git c args
