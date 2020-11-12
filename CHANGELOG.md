@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.4 (2020-11-12)
+- Bugzilla: fix updating of bugs and check for error
+- import: offer to request-branches after build
+- branches: can now take branch args and --missing option
+- request-repo: thank reviewer by first name
+
 ## 0.6.3 (2020-10-21)
 - new 'branches' command lists package's branches
 - copr: fix running in a package dir
