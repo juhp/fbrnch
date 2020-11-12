@@ -79,12 +79,19 @@ gitPushSilent mref = do
   out <- cmdQuiet "git" $ ["push", "--quiet", "origin"] ++ maybeToList mref
   putStrLn $ if null out then "done\n" else "\n" ++ out
 
+-- FIXME flag for really silent?
 gitFetchSilent :: IO ()
 gitFetchSilent = do
   name <- getDirectoryName
   putStr $ "git fetching " ++ name ++ "... "
-  out <- cmdQuiet "git" ["fetch", "--quiet"]
-  putStrLn $ if null out then "done" else "\n" ++ out
+  (ok, out, err) <- cmdFull "git" ["fetch"] ""
+  unless (null out) $ putStrLn out
+  unless ok $ error' err
+  let filtered = case lines err of
+        [] -> []
+        (hd:tl) -> filter (/= "Already up to date.") $
+                   if "From " `isPrefixOf` hd then tl else hd:tl
+  putStrLn $ if null filtered then "done" else "\n" ++ intercalate "\n" filtered
 
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
