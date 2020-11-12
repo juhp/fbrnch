@@ -11,8 +11,8 @@ import Git
 import Package
 
 -- FIXME remote/pagures branch and --remote or --no-remote
-branchesCmd :: Bool -> Bool -> [String] -> IO ()
-branchesCmd allbrs missing args = do
+branchesCmd :: Bool -> Bool -> Bool -> [String] -> IO ()
+branchesCmd skipdead allbrs missing args = do
   (brs,pkgs) <- splitBranchesPkgs False Nothing args
   when allbrs $ do
     unless (null brs) $
@@ -25,24 +25,32 @@ branchesCmd allbrs missing args = do
   where
     branchesPkg :: [AnyBranch] -> FilePath -> IO ()
     branchesPkg branches path = do
-      withExistingDirectory path $ do
-        unlessM isPkgGitRepo $
-          error' "not dist-git"
-        pkg <- getPackageName path
-        localbrs <- localBranches
-        if allbrs then do
-          putStr $ unPackage pkg ++ ": "
-          putStrLn $ unwords localbrs
-          else do
-          if null branches then do
-            -- FIXME better to filter inactive instead
-            active <- getFedoraBranches
-            let result = if missing then active \\ mapMaybe readBranch localbrs else activeBranches active localbrs
+      withExistingDirectory path $
+        if skipdead then
+          ifM (doesFileExist "dead.package")
+          (return ())
+          doBranchesPkg
+        else doBranchesPkg
+      where
+        doBranchesPkg :: IO ()
+        doBranchesPkg = do
+          unlessM isPkgGitRepo $
+            error' "not dist-git"
+          pkg <- getPackageName path
+          localbrs <- localBranches
+          if allbrs then do
             putStr $ unPackage pkg ++ ": "
-            putStrLn $ (unwords . map show) result
+            putStrLn $ unwords localbrs
             else do
-            let havebrs = filter (`elem` branches) (map anyBranch localbrs)
-                result = if missing then branches \\ havebrs else havebrs
-            unless (null result) $ do
+            if null branches then do
+              -- FIXME better to filter inactive instead
+              active <- getFedoraBranches
+              let result = if missing then active \\ mapMaybe readBranch localbrs else activeBranches active localbrs
               putStr $ unPackage pkg ++ ": "
               putStrLn $ (unwords . map show) result
+              else do
+              let havebrs = filter (`elem` branches) (map anyBranch localbrs)
+                  result = if missing then branches \\ havebrs else havebrs
+              unless (null result) $ do
+                putStr $ unPackage pkg ++ ": "
+                putStrLn $ (unwords . map show) result

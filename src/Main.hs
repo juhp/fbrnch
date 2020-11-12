@@ -56,7 +56,7 @@ main = do
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
     , Subcommand "branches" "List package branches" $
-      branchesCmd <$> switchWith 'a' "all" "List all branches" <*> switchWith 'm' "missing" "Show missing branches" <*> many (pkgArg "PACKAGE...")
+      branchesCmd <$> switchWith 'd' "skip-dead" "Skip if dead.package exists" <*> switchWith 'a' "all" "List all branches" <*> switchWith 'm' "missing" "Show missing branches" <*> many (pkgArg "PACKAGE...")
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd <$> dryrunOpt <*> optional sidetagTargetOpt <*> updatetypeOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "sidetags" "List user's side-tags" $
