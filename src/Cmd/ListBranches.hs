@@ -10,6 +10,7 @@ import Branches
 import Git
 import Package
 
+-- FIXME remote/pagures branch and --remote or --no-remote
 branchesCmd :: Bool -> Bool -> [String] -> IO ()
 branchesCmd allbrs missing args = do
   (brs,pkgs) <- splitBranchesPkgs False Nothing args
@@ -34,7 +35,7 @@ branchesCmd allbrs missing args = do
           putStrLn $ unwords localbrs
           else do
           if null branches then do
-            -- FIXME better to filter inactive
+            -- FIXME better to filter inactive instead
             active <- getFedoraBranches
             putStrLn $ (unwords . map show) $ if missing then active \\ mapMaybe readBranch localbrs else activeBranches active localbrs
             else
