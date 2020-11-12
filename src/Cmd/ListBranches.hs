@@ -26,19 +26,23 @@ branchesCmd allbrs missing args = do
     branchesPkg :: [AnyBranch] -> FilePath -> IO ()
     branchesPkg branches path = do
       withExistingDirectory path $ do
-        pkg <- getPackageName path
-        putStr $ unPackage pkg ++ ": "
         unlessM isPkgGitRepo $
           error' "not dist-git"
+        pkg <- getPackageName path
         localbrs <- localBranches
         if allbrs then do
+          putStr $ unPackage pkg ++ ": "
           putStrLn $ unwords localbrs
           else do
           if null branches then do
             -- FIXME better to filter inactive instead
             active <- getFedoraBranches
-            putStrLn $ (unwords . map show) $ if missing then active \\ mapMaybe readBranch localbrs else activeBranches active localbrs
-            else
+            let result = if missing then active \\ mapMaybe readBranch localbrs else activeBranches active localbrs
+            putStr $ unPackage pkg ++ ": "
+            putStrLn $ (unwords . map show) result
+            else do
             let havebrs = filter (`elem` branches) (map anyBranch localbrs)
-            in putStrLn $ (unwords . map show) $
-               if missing then branches \\ havebrs else havebrs
+                result = if missing then branches \\ havebrs else havebrs
+            unless (null result) $ do
+              putStr $ unPackage pkg ++ ": "
+              putStrLn $ (unwords . map show) result
