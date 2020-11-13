@@ -93,7 +93,7 @@ kojiBuild' wait target args = do
              then error' "no args passed to koji build"
              else ".src.rpm" `isSuffixOf` last args
   -- FIXME use tee functionality
-  when srpm $ putStrLn "uploading srpm to koji..."
+  when srpm $ putStrLn "koji srpm build uploading..."
   -- FIXME setTermTitle nvr
   out <- cmd "koji" $ ["build", "--nowait", target] ++ args
   putStrLn $ if srpm
