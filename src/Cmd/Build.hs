@@ -156,7 +156,9 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                   -- FIXME prompt for override note
                   when (buildoptOverride opts) $
                     bodhiCreateOverride nvr
-              when morethan1 $ kojiWaitRepo target nvr
+              when morethan1 $
+                when (buildoptOverride opts || autoupdate) $
+                kojiWaitRepo target nvr
   where
     bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
     bodhiUpdate mreview changelog nvr = do
