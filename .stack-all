@@ -1,0 +1,3 @@
+[versions]
+# bugzilla fails: setRequestCheckStatus
+oldest = lts-11
