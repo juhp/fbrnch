@@ -43,7 +43,9 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
           if clean then
             null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
             else return False
-        unless dryrun $ do
+        if dryrun
+          then putStrLn $ "koji scratch " ++ (if pushed then "" else "srpm ") ++ "build for " ++ target
+          else do
           if pushed then do
             void $ getSources spec
             kojiBuildBranch target pkg Nothing $ "--scratch" : kojiargs
