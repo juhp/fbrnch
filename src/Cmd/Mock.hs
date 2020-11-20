@@ -1,5 +1,5 @@
 module Cmd.Mock
-  ( mockCmd,
+  ( mockCmd
   )
 where
 
@@ -9,8 +9,8 @@ import Common.System
 import Git
 import Package
 
-mockCmd :: Bool -> Bool -> Bool -> Maybe Branch -> [String] -> IO ()
-mockCmd noclean network noCleanAfter mroot args = do
+mockCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch -> [String] -> IO ()
+mockCmd dryrun noclean network noCleanAfter mroot args = do
   (brs, pkgs) <- splitBranchesPkgs True Nothing args
   unless (null pkgs) $
     whenM isPkgGitRepo $
@@ -40,7 +40,7 @@ mockCmd noclean network noCleanAfter mroot args = do
                  in ["--resultdir=results" </> verrel]
               _ -> []
       let command = if length pkgs > 1 then "--chain" else "--rebuild"
-      cmd_ "mock" $ [command, "--root", mockConfig rootBr] ++ ["--no-clean" | noclean] ++ ["--no-clean-after" | noCleanAfter] ++ ["--enable-network" | network] ++ resultdir ++ srpms
+      (if dryrun then cmdN else cmd_) "mock" $ [command, "--root", mockConfig rootBr] ++ ["--no-clean" | noclean] ++ ["--no-clean-after" | noCleanAfter] ++ ["--config-opts=cleanup_on_failure=False" | not noCleanAfter] ++ ["--enable-network" | network] ++ resultdir ++ srpms
       where
         prepSrpm :: AnyBranch -> FilePath -> IO FilePath
         prepSrpm rbr pkgdir =

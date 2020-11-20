@@ -78,7 +78,7 @@ main = do
     , Subcommand "log" "Show commits between branches" $
       logCmd <$> switchWith 'l' "long" "show full commit log" <*> anyBranchArg <*> anyBranchArg <*> many (pkgArg "PACKAGE...")
     , Subcommand "mock" "Local mock build" $
-      mockCmd <$> switchWith 'n' "no-clean" "Do not clean chroot before building a package" <*> switchWith 'w' "network" "Use network during build" <*> switchWith 'N' "no-clean-after" "Don't clean  chroot after building a package" <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> branchesPackages
+      mockCmd <$> switchWith 'd' "dry-run" "Do not build (but creates srpm)" <*> switchWith 'n' "no-clean" "Do not clean chroot before building a package" <*> switchWith 'w' "network" "Use network during build" <*> switchWith 'N' "no-clean-after" "Don't clean  chroot after building a package" <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> branchesPackages
     , Subcommand "install-deps" "Install package build dependencies" $
       installDepsCmd <$> branchesPackages
     , Subcommand "install" "Build locally and install package(s)" $
