@@ -7,6 +7,7 @@
 - 'update-sources'
 - 'clean-old-source-dirs' (--threshold SIZE)
 - 'chain'
+- 'check-deps'
 
 # release deps
 - koji (new)

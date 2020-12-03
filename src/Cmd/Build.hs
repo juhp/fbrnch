@@ -150,7 +150,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                 else do
                 when (isNothing mtarget) $ do
                   -- FIXME diff previous changelog?
-                  -- FIXME for initial build use Summary
+                  -- FIXME for initial build use URL or Summary
                   changelog <- getChangeLog spec
                   bodhiUpdate (fmap fst mBugSess) changelog nvr
                   -- FIXME prompt for override note
