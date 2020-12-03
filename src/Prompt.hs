@@ -12,8 +12,7 @@ import Data.Char
 prompt :: String -> IO String
 prompt s = do
   putStr $ s ++ ": "
-  inp <- getLine
-  return inp
+  getLine
 
 prompt_ :: String -> IO ()
 prompt_ = void <$> prompt
