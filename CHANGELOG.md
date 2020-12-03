@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.5 (2020-12-03)
+- support git worktrees (experimental)
+- branches: fix --missing output for given branch and --skip-dead
+- git fetching now outputs new branches
+- build: only wait-repo if overriding or autoupdate
+- koji: improve uploading message
+- mock and scratch: --dryrun
+- add --all-fedora and --all-epel branch options (#)
+- Prompt: no extra newline after reading
+
 ## 0.6.4 (2020-11-12)
 - Bugzilla: fix updating of bugs and check for error
 - import: offer to request-branches after build
