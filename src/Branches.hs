@@ -2,6 +2,8 @@ module Branches (
   activeBranches,
   fedoraBranches,
   fedoraBranchesNoMaster,
+  isFedoraBranch,
+  isEPELBranch,
   localBranches,
   pagurePkgBranches,
   mockConfig,
@@ -57,6 +59,15 @@ fedoraBranchesNoMaster mthd = do
   active <- getFedoraBranched
   activeBranches active <$> mthd
 
+isFedoraBranch :: Branch -> Bool
+isFedoraBranch (Fedora _) = True
+isFedoraBranch Master = True
+isFedoraBranch _ = False
+
+isEPELBranch :: Branch -> Bool
+isEPELBranch (EPEL _) = True
+isEPELBranch _ = False
+
 localBranches :: IO [String]
 localBranches = do
   origins <- filter ("origin/" `isPrefixOf`) <$> cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-2)"]
@@ -77,7 +88,7 @@ mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"
 
 ------
 
-data BranchOpts = AllBranches | ExcludeBranches [Branch]
+data BranchOpts = AllBranches | AllFedora | AllEPEL | ExcludeBranches [Branch]
   deriving Eq
 
 onlyRelBranch :: AnyBranch -> Branch
@@ -90,11 +101,23 @@ systemBranch =
 
 listOfBranches :: Bool -> Bool -> Maybe BranchOpts -> [AnyBranch] -> IO [AnyBranch]
 listOfBranches _ _active (Just AllBranches) (_:_) =
-  error' "cannot specify branches with all-branches"
+  error' "cannot specify branches with --all-branches"
 listOfBranches distgit _active (Just AllBranches) [] =
   if distgit
   then map RelBranch <$> fedoraBranches localBranches
   else error' "--all-branches only allowed for dist-git packages"
+listOfBranches _ _active (Just AllFedora) (_:_) =
+  error' "cannot specify branches with --all-fedora"
+listOfBranches distgit _active (Just AllFedora) [] =
+  if distgit
+  then map RelBranch . filter isFedoraBranch <$> fedoraBranches localBranches
+  else error' "--all-fedora only allowed for dist-git packages"
+listOfBranches _ _active (Just AllEPEL) (_:_) =
+  error' "cannot specify branches with --all-epel"
+listOfBranches distgit _active (Just AllEPEL) [] =
+  if distgit
+  then map RelBranch . filter isEPELBranch <$> fedoraBranches localBranches
+  else error' "--all-epel only allowed for dist-git packages"
 listOfBranches distgit active Nothing brs =
   if null brs
   then

@@ -156,6 +156,8 @@ main = do
     branchesOpt :: Parser (Maybe BranchOpts)
     branchesOpt =
       optional (flagWith' AllBranches 'B' "all-branches" "All active release branches" <|>
+                flagWith' AllFedora 'F' "all-fedora" "All active Fedora branches" <|>
+                flagWith' AllEPEL 'E' "all-epel" "All active EPEL branches" <|>
                 ExcludeBranches <$> some excludeBranchOpt)
 
     excludeBranchOpt :: Parser Branch

@@ -40,6 +40,8 @@ requestPkgBranches mock mbrnchopts brs pkg = do
     Just request -> do
       let requested = case request of
                         AllBranches -> active
+                        AllFedora -> filter isFedoraBranch active
+                        AllEPEL -> filter isEPELBranch active
                         ExcludeBranches xbrs -> active \\ xbrs
       inp <- prompt $ "Confirm branches [" ++ unwords (map show requested) ++ "]"
       return $ if null inp
