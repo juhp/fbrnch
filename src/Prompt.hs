@@ -13,7 +13,6 @@ prompt :: String -> IO String
 prompt s = do
   putStr $ s ++ ": "
   inp <- getLine
-  putStrLn ""
   return inp
 
 prompt_ :: String -> IO ()
