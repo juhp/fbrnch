@@ -7,8 +7,7 @@
 - build: only wait-repo if overriding or autoupdate
 - koji: improve uploading message
 - mock and scratch: --dryrun
-- add --all-fedora and --all-epel branch options (#)
-- Prompt: no extra newline after reading
+- add --all-fedora and --all-epel branch options (#15)
 
 ## 0.6.4 (2020-11-12)
 - Bugzilla: fix updating of bugs and check for error
