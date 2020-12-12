@@ -87,7 +87,6 @@ executable fbrnch
                      , http-conduit
                      , http-directory >= 0.1.5
                      , http-query
-                     , http-types
                      , koji
                      , network-uri
                      , optparse-applicative
