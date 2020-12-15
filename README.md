@@ -17,11 +17,11 @@ to help to (semi-)automate common workflows to save time and effort.
 like:
 
 - merging and building a package across release branches
-- creating package reviews
-- listing approved package reviews
-- requesting repo and branches
-- importing new packages
 - automatic parallel builds of sets of packages in dependency order
+- creating, updating and listing package reviews
+- requesting new repos and branches
+- importing new packages
+- progressive copr builds
 
 and more.
 
