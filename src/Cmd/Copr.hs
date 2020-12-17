@@ -137,6 +137,7 @@ coprBuild dryrun project srpm buildroots = do
   let chrootargs = mconcat [["-r", bldrt] | bldrt <- buildroots]
       buildargs = ["build", "--nowait"] ++ chrootargs ++ [project, srpm]
   putStrLn ""
+  putStrLn $ unwords buildroots
   cmdN "copr" buildargs
   unless dryrun $ do
     output <- cmd "copr" buildargs
