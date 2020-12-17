@@ -12,6 +12,8 @@ Fedora developers use a lot of time building packages across releases
 and workflow for adding new packages, etc. The motivation for fbrnch is
 to help to (semi-)automate common workflows to save time and effort.
 
+fbrnch is distributed under the GPL license version 2 or later.
+
 ## Description
 `fbrnch` is a Fedora Packager client which tries to automate some common tasks
 like:

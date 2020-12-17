@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.6 (2020-12-17)
+- Bugzilla: use POST again for comments...
+- copr: print chroots when building
+
 ## 0.6.5 (2020-12-03)
 - support git worktrees (experimental)
 - branches: fix --missing output for given branch and --skip-dead
