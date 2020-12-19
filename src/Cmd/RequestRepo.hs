@@ -14,6 +14,7 @@ import Krb
 import ListReviews
 import Package
 import Pagure
+import Prompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 requestRepos :: Bool -> Bool -> [String] -> IO ()
@@ -49,9 +50,12 @@ requestRepo retry pkg = do
       when (null requests || retry) $ do
         checkNoPagureRepo
         url <- fedpkg "request-repo" [pkg, show bid]
-        putStrLn url
+        putStrLn $ url ++ "\n"
         let assignee = userRealName (bugAssignedToDetail bug)
-        let comment = "Thank you for the review" ++ maybe "" ((", " ++) . T.unpack) (getFirstname assignee) ++ "\n\n" <> url
+        let draft = "Thank you for the review" ++ maybe "" ((", " ++) . T.unpack) (getFirstname assignee)
+        putStrLn draft
+        input <- prompt "Press Enter to post above comment, or input now:"
+        let comment = (if null input then draft else input) ++ "\n\n" <> url
         postComment session bid comment
         putStrLn ""
   where
