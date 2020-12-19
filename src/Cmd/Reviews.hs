@@ -11,7 +11,7 @@ import ListReviews
 -- FIXME display time of last update
 reviewsCmd :: Bool -> Bool -> Bool -> Maybe String -> ReviewStatus -> IO ()
 reviewsCmd short allstates assignee muser status = do
-  listReviews' allstates assignee muser status >>=
+  listReviewsFull assignee muser allstates status >>=
     mapM_ (putReviewBug short) . sortBugsByStatus
   when short $ putStrLn ""
 

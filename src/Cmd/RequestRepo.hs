@@ -16,12 +16,12 @@ import Package
 import Pagure
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
-requestRepos :: Bool -> [String] -> IO ()
-requestRepos retry ps = do
+requestRepos :: Bool -> Bool -> [String] -> IO ()
+requestRepos allstates retry ps = do
   when (retry && length ps /= 1) $
     error' "--retry only for a single package"
   pkgs <- if null ps
-    then map reviewBugToPackage <$> listReviews ReviewWithoutRepoReq
+    then map reviewBugToPackage <$> listReviewsAll allstates ReviewWithoutRepoReq
     else return ps
   mapM_ (requestRepo retry) pkgs
 

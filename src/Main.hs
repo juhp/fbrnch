@@ -99,7 +99,7 @@ main = do
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd <$> reviewShortOpt <*> reviewAllStatusOpt <*> switchWith 'T' "assigned-to" "List reviews assigned to user" <*> optional (strOptionWith 'U' "user" "USER" "Bugzilla user email") <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
-      requestRepos <$> switchWith 'r' "retry" "Re-request repo" <*> many (pkgArg "NEWPACKAGE...")
+      requestRepos <$> reviewAllStatusOpt <*> switchWith 'r' "retry" "Re-request repo" <*> many (pkgArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importCmd <$> many (pkgArg "NEWPACKAGE...")
     , Subcommand "request-branches" "Request branches for approved created packages" $
@@ -123,7 +123,7 @@ main = do
     reviewShortOpt = switchWith 's' "short" "Only output the package name"
 
     reviewAllStatusOpt :: Parser Bool
-    reviewAllStatusOpt = switchWith 'A' "all-status" "Output all open reviews"
+    reviewAllStatusOpt = switchWith 'A' "all-status" "all open reviews"
 
     reviewStatusOpt :: Parser ReviewStatus
     reviewStatusOpt =

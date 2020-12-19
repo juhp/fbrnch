@@ -25,7 +25,7 @@ import Package
 statusCmd :: Bool -> Bool -> Maybe BranchOpts -> [String] -> IO ()
 statusCmd nofetch reviews mbrnchopts args = do
   reviewpkgs <- if reviews then
-    map reviewBugToPackage <$> listReviews' True False Nothing ReviewRepoCreated
+    map reviewBugToPackage <$> listReviewsAll True ReviewRepoCreated
     else return []
   -- FIXME dirty not okay for multiple branches?
   withPackageByBranches (Just False) (if nofetch then dirtyGit else dirtyGitFetch) mbrnchopts AnyNumber statusBranch

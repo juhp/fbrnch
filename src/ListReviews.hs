@@ -3,7 +3,8 @@
 module ListReviews (
   ReviewStatus(..),
   listReviews,
-  listReviews'
+  listReviewsAll,
+  listReviewsFull
   ) where
 
 import Common
@@ -24,10 +25,13 @@ data ReviewStatus = ReviewAllOpen
                   | ReviewBranched
 
 listReviews :: ReviewStatus -> IO [Bug]
-listReviews = listReviews' False False Nothing
+listReviews = listReviewsAll False
 
-listReviews' :: Bool -> Bool -> Maybe String -> ReviewStatus-> IO [Bug]
-listReviews' allopen assignee muser status = do
+listReviewsAll :: Bool -> ReviewStatus -> IO [Bug]
+listReviewsAll = listReviewsFull False Nothing
+
+listReviewsFull :: Bool -> Maybe String -> Bool -> ReviewStatus-> IO [Bug]
+listReviewsFull assignee muser allopen status = do
   (session,user) <- bzLoginSession
   accountid <- do
     case muser of
