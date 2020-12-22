@@ -40,7 +40,7 @@ data BuildOpts = BuildOpts
 buildCmd :: BuildOpts -> Maybe BranchOpts -> [String] -> IO ()
 buildCmd opts mbrnchopts args = do
   let singleBrnch = if isJust (buildoptTarget opts)
-                    then ExactlyOne
+                    then ZeroOrOne
                     else AnyNumber
   (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
   let morethan1 = length pkgs > 1
