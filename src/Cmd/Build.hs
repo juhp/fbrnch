@@ -136,7 +136,8 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
             -- FIXME parse build output
             unless dryrun $ do
               kojiBuildBranch target pkg mbuildref ["--fail-fast"]
-              mBugSess <- if isNothing mlatest
+              mBugSess <-
+                if isNothing mlatest
                 then do
                 (mbid, session) <- bzReviewSession
                 return $ case mbid of
