@@ -1,3 +1,5 @@
+- merge koji-progress
+
 # new commands
 - 'unpushed' command, etc (from f-h-t)
 - 'push'

@@ -1,6 +1,6 @@
 cabal-version:       2.0
 name:                fbrnch
-version:             0.6.6
+version:             0.6.7
 synopsis:            Build and create Fedora package repos and branches
 description:
             Fed Br*nch is a convenient packaging tool for Fedora Packagers,

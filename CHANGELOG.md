@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.7 (2020-12-23)
+- Bugzilla: don't conflate POST comment with PUT update
+- build/install: allow no branch arg for current directory
+- request-repos: prompt for reviewer thanks
+- request-repos: added --all-states for Modified
+- copr: only output buildargs when build fails
+
 ## 0.6.6 (2020-12-17)
 - Bugzilla: use POST again for comments...
 - copr: print chroots when building
