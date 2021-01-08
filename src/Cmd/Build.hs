@@ -171,18 +171,17 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
         Nothing -> return ()
         Just updateType -> do
           putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
-          updateOK <- cmdBool "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
-          unless updateOK $ do
-            updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
-            case updatequery of
-              [] -> do
-                putStrLn "bodhi submission failed"
-                prompt_ "Press Enter to resubmit to Bodhi"
-                bodhiUpdate mreview changelog nvr
-              [update] -> case lookupKey "url" update of
-                Nothing -> error' "Update created but no url"
-                Just uri -> putStrLn uri
-              _ -> error' $ "impossible happened: more than one update found for " ++ nvr
+          cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+          updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
+          case updatequery of
+            [] -> do
+              putStrLn "bodhi submission failed"
+              prompt_ "Press Enter to resubmit to Bodhi"
+              bodhiUpdate mreview changelog nvr
+            [update] -> case lookupKey "url" update of
+              Nothing -> error' "Update created but no url"
+              Just uri -> putStrLn uri
+            _ -> error' $ "impossible happened: more than one update found for " ++ nvr
 
     extractBugReference :: String -> Maybe String
     extractBugReference clog =
