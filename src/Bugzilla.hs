@@ -93,7 +93,7 @@ updateBug session bid pth params = do
             setRequestCheckStatus $
             newBzRequest session (map T.pack ("bug":show bid:pth)) []
   res <- getResponseBody <$> httpJSON req
-  when (isNothing (lookupKey "id" res :: Maybe Int)) $ do
+  when (isNothing (lookupKey "bugs" res :: Maybe Object)) $ do
     -- eg [("error",Bool True),("documentation",String "https://bugzilla.redhat.com/docs/en/html/api/index.html"),("code",Number 32614.0),("message",String "A REST API resource was not found for 'POST /bug/1880903'.")]
     case lookupKey "message" res of
       Nothing -> print res
