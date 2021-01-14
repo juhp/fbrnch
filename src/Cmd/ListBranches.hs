@@ -11,8 +11,8 @@ import Git
 import Package
 
 -- FIXME remote/pagures branch and --remote or --no-remote
-branchesCmd :: Bool -> Bool -> Bool -> [String] -> IO ()
-branchesCmd skipdead allbrs missing args = do
+branchesCmd :: Bool -> Bool -> Bool -> Bool -> [String] -> IO ()
+branchesCmd skipdead allbrs missing remote args = do
   (brs,pkgs) <- splitBranchesPkgs False Nothing args
   when allbrs $ do
     unless (null brs) $
@@ -25,7 +25,9 @@ branchesCmd skipdead allbrs missing args = do
   where
     branchesPkg :: [AnyBranch] -> FilePath -> IO ()
     branchesPkg branches path = do
-      withExistingDirectory path $
+      if remote then doBranchesPkg
+        else
+        withExistingDirectory path $
         if skipdead then
           ifM (doesFileExist "dead.package")
           (return ())
@@ -35,21 +37,23 @@ branchesCmd skipdead allbrs missing args = do
         doBranchesPkg :: IO ()
         doBranchesPkg = do
           unlessM isPkgGitRepo $
+            unless remote $
             error' "not dist-git"
           pkg <- getPackageName path
-          localbrs <- localBranches
+          brs <- if remote
+                 then pagurePkgBranches (unPackage pkg)
+                 else localBranches
           if allbrs then do
-            putStr $ unPackage pkg ++ ": "
-            putStrLn $ unwords localbrs
+            putStrLn $ unPackage pkg ++ ": " ++ unwords brs
             else do
             if null branches then do
               -- FIXME better to filter inactive instead
               active <- getFedoraBranches
-              let result = if missing then active \\ mapMaybe readBranch localbrs else activeBranches active localbrs
+              let result = if missing then active \\ mapMaybe readBranch brs else activeBranches active brs
               putStr $ unPackage pkg ++ ": "
               putStrLn $ (unwords . map show) result
               else do
-              let havebrs = filter (`elem` branches) (map anyBranch localbrs)
+              let havebrs = filter (`elem` branches) (map anyBranch brs)
                   result = if missing then branches \\ havebrs else havebrs
               unless (null result) $ do
                 putStr $ unPackage pkg ++ ": "
