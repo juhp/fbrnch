@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.8 (2021-01-16)
+- build: check bodhi client new update success more carefully
+- Bugzilla: correctly check that bug update succeeded
+- new 'list' command to list packages from pagure
+- branches: add --remote option
+- update to latest lts-16.29
+
 ## 0.6.7 (2020-12-23)
 - Bugzilla: don't conflate POST comment with PUT update
 - build/install: allow no branch arg for current directory
