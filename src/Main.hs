@@ -14,6 +14,7 @@ import Cmd.Copr
 import Cmd.Diff
 import Cmd.Import
 import Cmd.ListBranches
+import Cmd.ListPackages
 import Cmd.Local
 import Cmd.Log
 import Cmd.Merge
@@ -55,6 +56,8 @@ main = do
       mergeCmd <$> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
+    , Subcommand "list" "List packages in pagure" $
+      listCmd <$> switchWith 'c' "count" "Print number of packages" <*> optional packagerOpt <*> many (pkgArg "PKGPAT...")
     , Subcommand "branches" "List package branches" $
       branchesCmd <$> switchWith 'd' "skip-dead" "Skip if dead.package exists" <*> switchWith 'a' "all" "List all branches" <*> switchWith 'm' "missing" "Show missing branches" <*> switchWith 'r' "remote" "List remote branches" <*> many (pkgArg "PACKAGE...")
     , Subcommand "parallel" "Parallel build packages in Koji" $
@@ -248,3 +251,7 @@ main = do
     sidetagTargetOpt =
       Target <$> targetOpt <|>
       flagWith' SideTag 's' "sidetag" "Use existing branch side-tag for building: create with 'fedpkg request-side-tag --base-tag'"
+
+    packagerOpt = Owner <$> ownerOpt <|> Committer <$> usernameOpt
+    usernameOpt = strOptionWith 'u' "username" "USERNAME" "Packages user can commit to"
+    ownerOpt = strOptionWith 'o' "owner" "OWNER" "Package owner"

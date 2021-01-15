@@ -45,6 +45,7 @@ executable fbrnch
                        Cmd.Diff
                        Cmd.Import
                        Cmd.ListBranches
+                       Cmd.ListPackages
                        Cmd.Local
                        Cmd.Log
                        Cmd.Merge
