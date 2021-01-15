@@ -7,17 +7,21 @@ module Common.System (
   getDirectoryName,
   isTty,
   setNoBuffering,
+#if !MIN_VERSION_simple_cmd(0,2,3)
   cmdFull
+#endif
   ) where
 
 import SimpleCmd
 #if MIN_VERSION_simple_cmd(0,2,1)
   hiding (ifM,whenM)
 #endif
-import System.Directory
+#if !MIN_VERSION_simple_cmd(0,2,3)
 import System.Exit
-import System.FilePath
 import System.Process
+#endif
+import System.Directory
+import System.FilePath
 import System.IO
 
 isTty :: IO Bool
