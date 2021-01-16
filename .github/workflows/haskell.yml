@@ -1,4 +1,4 @@
-name: CI build
+name: Haskell
 on:
   push:
     branches: [ master ]
@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ['8.10', '8.8', '8.6']
+        ghc: ['8.10', '8.8', '8.6', '8.4', '8.2', '8.0']
     name: Haskell GHC ${{ matrix.ghc }}
     steps:
       - uses: actions/checkout@v2
@@ -26,6 +26,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.ghc }}-
             ${{ runner.os }}-
-      - run: cabal v2-update
-      - run: cabal v2-build
-      - run: cabal v2-sdist
+      - run: cabal update
+      - run: cabal build
+      - run: cabal sdist

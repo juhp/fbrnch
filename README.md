@@ -1,6 +1,7 @@
 # fbrnch - "Fed Brunch"
 
 [![GPL-2 license](https://img.shields.io/badge/license-GPL--2-blue.svg)](LICENSE)
+[![GitHub CI](https://github.com/juhp/fbrnch/workflows/Haskell/badge.svg)](https://github.com/juhp/fbrnch/actions)
 <!---
 [![Hackage](https://img.shields.io/hackage/v/fbrnch.svg)](https://hackage.haskell.org/package/fbrnch)
 [![Stackage Lts](http://stackage.org/package/fbrnch/badge/lts)](http://stackage.org/lts/package/fbrnch)
