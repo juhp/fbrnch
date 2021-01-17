@@ -22,8 +22,8 @@ import Package
 
 -- FIXME package countdown
 -- FIXME --ignore-uninstalled subpackages
-installCmd :: Maybe ForceShort -> Bool -> [String] -> IO ()
-installCmd mforceshort reinstall =
+installCmd :: Maybe ForceShort -> [BCond] -> Bool -> [String] -> IO ()
+installCmd mforceshort bconds reinstall =
   withPackageByBranches Nothing Nothing Nothing True ZeroOrOne installPkg
   where
     installPkg :: Package -> AnyBranch -> IO ()
@@ -39,7 +39,7 @@ installCmd mforceshort reinstall =
       where
         doInstallPkg spec rpms installed = do
           putStrLn $ takeBaseName (head rpms) ++ "\n"
-          buildRPMs True mforceshort rpms br spec
+          buildRPMs True mforceshort bconds rpms br spec
           putStrLn ""
           unless (mforceshort == Just ShortCircuit) $
             if reinstall then do
@@ -53,15 +53,15 @@ installCmd mforceshort reinstall =
 
         filterDebug = filter (\p -> not (any (`isInfixOf` p) ["-debuginfo-", "-debugsource-"]))
 
-localCmd :: Maybe ForceShort -> [String] -> IO ()
-localCmd mforceshort =
+localCmd :: Maybe ForceShort -> [BCond] -> [String] -> IO ()
+localCmd mforceshort bconds =
   withPackageByBranches Nothing Nothing Nothing True ZeroOrOne localBuildPkg
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
     localBuildPkg pkg br = do
       spec <- localBranchSpecFile pkg br
       rpms <- builtRpms br spec
-      buildRPMs False mforceshort rpms br spec
+      buildRPMs False mforceshort bconds rpms br spec
 
 -- FIXME single branch
 installDepsCmd :: [String] -> IO ()

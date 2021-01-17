@@ -35,7 +35,7 @@ import Branches
 import Common.System
 import Git (CommitOpt(..))
 import ListReviews
-import Package (ForceShort(..))
+import Package (ForceShort(..), BCond(..))
 import Paths_fbrnch (version)
 
 main :: IO ()
@@ -73,7 +73,7 @@ main = do
     , Subcommand "prep" "Prep sources" $
       prepCmd <$> branchesPackages
     , Subcommand "local" "Build locally" $
-      localCmd <$> optional forceshortOpt <*> branchesPackages
+      localCmd <$> optional forceshortOpt <*> many bcondOpt <*> branchesPackages
     , Subcommand "srpm" "Build srpm" $
       srpmCmd <$> branchesPackages
     , Subcommand "diff" "Diff local changes" $
@@ -86,7 +86,7 @@ main = do
       installDepsCmd <$> branchesPackages
     , Subcommand "install" "Build locally and install package(s)" $
       -- FIXME drop --shortcircuit from install?
-      installCmd <$> optional forceshortOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> branchesPackages
+      installCmd <$> optional forceshortOpt <*> many bcondOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> branchesPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (strOptionWith 's' "summary" "KEY" "Search for bugs containing keyword") <*> many (pkgArg "PACKAGE...")
     , Subcommand "bump" "Bump release for package" $
@@ -255,3 +255,6 @@ main = do
     packagerOpt = Owner <$> ownerOpt <|> Committer <$> usernameOpt
     usernameOpt = strOptionWith 'u' "username" "USERNAME" "Packages user can commit to"
     ownerOpt = strOptionWith 'o' "owner" "OWNER" "Package owner"
+
+    bcondOpt = BuildWith <$> strOptionWith 'w' "with" "FEATURE" "Turn on package FEATURE for build" <|>
+               BuildWithout <$> strOptionWith 'W' "without" "FEATURE" "Turn off package FEATURE for build"

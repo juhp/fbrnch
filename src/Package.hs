@@ -13,6 +13,7 @@ module Package (
   findSpecfile,
   localBranchSpecFile,
   generateSrpm,
+  BCond(..),
   ForceShort(..),
   buildRPMs,
   installDeps,
@@ -184,10 +185,17 @@ generateSrpm mbr spec = do
 data ForceShort = ForceBuild | ShortCircuit
   deriving Eq
 
+data BCond = BuildWith String | BuildWithout String
+
+instance Show BCond where
+  show (BuildWith s) = "--with=" ++ s
+  show (BuildWithout s) = "--without=" ++ s
+
 -- FIXME create build.log
-buildRPMs :: Bool -> Maybe ForceShort -> [FilePath] -> AnyBranch -> FilePath
-          -> IO ()
-buildRPMs quiet mforceshort rpms br spec = do
+-- Note does not check if bcond changed
+buildRPMs :: Bool -> Maybe ForceShort -> [BCond] -> [FilePath] -> AnyBranch
+          -> FilePath -> IO ()
+buildRPMs quiet mforceshort bconds rpms br spec = do
   needBuild <-
     if isJust mforceshort
     then return True
@@ -210,7 +218,7 @@ buildRPMs quiet mforceshort rpms br spec = do
         rpmdirs =
           [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
-        args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++ buildopt ++ [spec]
+        args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++ buildopt ++ map show bconds ++ [spec]
     if not quiet || shortcircuit then
       cmd_ "rpmbuild" args
       else do
