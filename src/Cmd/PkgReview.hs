@@ -90,9 +90,9 @@ uploadPkgFiles pkg spec srpm = do
   -- read ~/.config/fedora-create-review
   let sshhost = "fedorapeople.org"
       sshpath = "public_html/reviews/" ++ pkg
-  cmd_ "ssh" [sshhost, "mkdir", "-p", sshpath]
+  cmd_ "ssh" [fasid ++ "@" ++ sshhost, "mkdir", "-p", sshpath]
   cmd_ "scp" [spec, srpm, sshhost ++ ":" ++ sshpath]
-  getCheckedFileUrls $ "https://" <> fasid <> ".fedorapeople.org" </> removePrefix "public_html/" sshpath
+  getCheckedFileUrls $ "https://" <> fasid ++ "@" ++ fasid <> ".fedorapeople.org" </> removePrefix "public_html/" sshpath
   where
     getCheckedFileUrls :: String -> IO String
     getCheckedFileUrls uploadurl = do
