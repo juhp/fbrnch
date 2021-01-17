@@ -12,7 +12,7 @@ import Package
 
 overrideCmd :: [String] -> IO ()
 overrideCmd =
-  withPackageByBranches (Just False) cleanGitFetchActive Nothing AnyNumber overrideBranch
+  withPackageByBranches (Just False) cleanGitFetchActive Nothing True AnyNumber overrideBranch
   where
     overrideBranch :: Package -> AnyBranch -> IO ()
     overrideBranch _ (OtherBranch _) =

@@ -38,7 +38,7 @@ type Job = (String, Async (String, String))
 parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe UpdateType -> Maybe BranchOpts -> [String]
                  -> IO ()
 parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
-  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
+  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts True args
   when (null brs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
   branches <- listOfBranches True True mbrnchopts brs

@@ -17,7 +17,7 @@ import Prompt
 
 requestBranches :: Bool -> Maybe BranchOpts -> [String] -> IO ()
 requestBranches mock mbrnchopts args = do
-  (abrs,ps) <- splitBranchesPkgs True mbrnchopts args
+  (abrs,ps) <- splitBranchesPkgs True mbrnchopts True args
   let brs = map onlyRelBranch abrs
   if null ps then
     ifM isPkgGitRepo

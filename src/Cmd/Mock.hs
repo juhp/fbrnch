@@ -11,7 +11,7 @@ import Package
 
 mockCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch -> [String] -> IO ()
 mockCmd dryrun noclean network noCleanAfter mroot args = do
-  (brs, pkgs) <- splitBranchesPkgs True Nothing args
+  (brs, pkgs) <- splitBranchesPkgs True Nothing True args
   unless (null pkgs) $
     whenM isPkgGitRepo $
     error' "Cannot build multiple packages inside a package dir"

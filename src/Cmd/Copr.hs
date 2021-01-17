@@ -31,7 +31,7 @@ coprServer = "copr.fedorainfracloud.org"
 coprCmd ::
   Bool -> BuildBy -> [String] -> String -> Maybe BranchOpts -> [String] -> IO ()
 coprCmd dryrun buildBy archs project mbrnchopts args = do
-  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
+  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts True args
   chroots <- coprGetChroots brs
   if null pkgs then
     getPackageName "." >>= coprBuildPkg chroots

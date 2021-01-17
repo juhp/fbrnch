@@ -22,7 +22,7 @@ import Prompt
 -- FIXME add --dependent pkgreview
 createReview :: Bool -> Bool -> [FilePath] -> IO ()
 createReview noscratch mock pkgs =
-  withPackageByBranches (Just True) Nothing Nothing AnyNumber createPkgReview ("master":pkgs)
+  withPackageByBranches (Just True) Nothing Nothing True AnyNumber createPkgReview ("master":pkgs)
   where
     createPkgReview :: Package -> AnyBranch -> IO ()
     createPkgReview package _br = do

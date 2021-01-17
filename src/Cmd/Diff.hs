@@ -22,7 +22,7 @@ data DiffWork =
 diffCmd :: Bool -> DiffWork -> DiffFormat -> Maybe AnyBranch -> [String]
         -> IO ()
 diffCmd speconly work fmt mwbr =
-  withPackageByBranches Nothing dirtyGit Nothing ZeroOrOne diffPkg
+  withPackageByBranches Nothing dirtyGit Nothing True ZeroOrOne diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
     diffPkg pkg br = do

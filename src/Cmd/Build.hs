@@ -42,7 +42,7 @@ buildCmd opts mbrnchopts args = do
   let singleBrnch = if isJust (buildoptTarget opts)
                     then ZeroOrOne
                     else AnyNumber
-  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts args
+  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts True args
   let morethan1 = length pkgs > 1
   withPackageByBranches' (Just False) cleanGitFetchActive mbrnchopts singleBrnch (buildBranch morethan1 opts) (brs,pkgs)
 
