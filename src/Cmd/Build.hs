@@ -147,7 +147,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
               autoupdate <- checkAutoBodhiUpdate br
               if autoupdate
                 then whenJust mBugSess $
-                     \ (bid,session) -> postBuildComment session nvr bid
+                     \ (bid,session) -> putBugBuild session bid nvr
                 else do
                 when (isNothing mtarget) $ do
                   -- FIXME diff previous changelog?

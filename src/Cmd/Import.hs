@@ -71,7 +71,7 @@ importPkg pkg = do
     prompt_ $ "Press Enter to push and build " ++ nvr
     gitPushSilent Nothing
     kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
-    postBuildComment session nvr bid
+    putBugBuild session bid nvr
     requestPkgBranches False Nothing [] (Package pkg)
   when (pkg /= takeFileName dir) $
     setCurrentDirectory dir

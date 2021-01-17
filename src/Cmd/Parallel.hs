@@ -218,7 +218,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
                   Just bid -> Just (bid,session)
                   Nothing -> Nothing
               whenJust mBugSess $
-                \ (bid,session) -> postBuildComment session nvr bid
+                \ (bid,session) -> putBugBuild session bid nvr
               else do
               when (target == branchTarget br) $
                 -- -- FIXME: avoid prompt in

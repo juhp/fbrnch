@@ -35,9 +35,9 @@ module Bugzilla (
   checkForComment,
   checkRepoCreatedComment,
   createBug,
+  commentBug,
   updateBug,
-  postComment,
-  postBuildComment,
+  putBugBuild,
   showComment,
   commentText,
   getComments,
@@ -84,10 +84,28 @@ createBug session params = do
             newBzRequest session ["bug"] []
   lookupKey' "id" . getResponseBody <$> httpJSON req
 
+commentBug :: BugzillaSession -> BugId -> String -> IO ()
+commentBug session bid comment = do
+  let req = setRequestMethod "POST" $
+            -- earlier posting url encoded utf8 only seemed to work in body
+            urlEncodedBody (encodeParams [("comment", comment)]) $
+            setRequestCheckStatus $
+            newBzRequest session (map T.pack (["bug",show bid,"comment"])) []
+  res <- getResponseBody <$> httpJSON req
+  -- [("id",Number 1.4682731e7)]
+  when (isNothing (lookupKey "id" res :: Maybe Int)) $ do
+    -- eg [("error",Bool True),("documentation",String "https://bugzilla.redhat.com/docs/en/html/api/index.html"),("code",Number 32614.0),("message",String "A REST API resource was not found for 'POST /bug/1880903'.")]
+    case lookupKey "message" res of
+      Nothing -> print res
+      Just msg -> T.putStrLn msg
+    error' $ "failed to update bug " ++ show bid
+  putStrLn "Comment added:"
+  putStrLn comment
+
 updateBug :: BugzillaSession -> BugId -> [String] -> [(String,String)]
         -> IO ()
 updateBug session bid pth params = do
-  let req = setRequestMethod (if pth == ["comment"] then "POST" else "PUT") $
+  let req = setRequestMethod "PUT" $
             -- earlier posting url encoded utf8 only seemed to work in body
             urlEncodedBody (encodeParams params) $
             setRequestCheckStatus $
@@ -105,20 +123,14 @@ encodeParams [] = []
 encodeParams ((k,v):ps) =
   (B.pack k, fromString v) : encodeParams ps
 
-postBuildComment :: BugzillaSession -> String -> BugId -> IO ()
-postBuildComment session nvr bid = do
+putBugBuild :: BugzillaSession -> BugId -> String -> IO ()
+putBugBuild session bid nvr = do
   void $ updateBug session bid []
     [("cf_fixed_in", nvr), ("status", "MODIFIED")]
   putStrLn $ "build posted to review bug " ++ show bid
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
-
-postComment :: BugzillaSession -> BugId -> String -> IO ()
-postComment session bid comment = do
-  updateBug session bid ["comment"] [("comment", comment)]
-  putStrLn "Comment added:"
-  putStrLn comment
 
 bzReviewSession :: IO (Maybe BugId,BugzillaSession)
 bzReviewSession = do

@@ -56,7 +56,7 @@ requestRepo retry pkg = do
         putStrLn draft
         input <- prompt "Press Enter to post above comment, or input now"
         let comment = (if null input then draft else input) ++ "\n\n" <> url
-        postComment session bid comment
+        commentBug session bid comment
         putStrLn ""
   where
     existingRepoRequests :: IO [IssueTitleStatus]

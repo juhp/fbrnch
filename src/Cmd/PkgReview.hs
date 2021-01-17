@@ -76,7 +76,7 @@ updateReview noscratch mock mspec = do
   mockRpmLint mock pkg spec srpm
   (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
   changelog <- getChangeLog spec
-  postComment session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
+  commentBug session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
   -- putStrLn "Review bug updated"
   where
     checkLocalFile :: FilePath -> IO FilePath
