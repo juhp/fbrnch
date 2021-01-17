@@ -90,7 +90,7 @@ commentBug session bid comment = do
             -- earlier posting url encoded utf8 only seemed to work in body
             urlEncodedBody (encodeParams [("comment", comment)]) $
             setRequestCheckStatus $
-            newBzRequest session (map T.pack (["bug",show bid,"comment"])) []
+            newBzRequest session (map T.pack ["bug",show bid,"comment"]) []
   res <- getResponseBody <$> httpJSON req
   -- [("id",Number 1.4682731e7)]
   when (isNothing (lookupKey "id" res :: Maybe Int)) $ do
@@ -102,14 +102,13 @@ commentBug session bid comment = do
   putStrLn "Comment added:"
   putStrLn comment
 
-updateBug :: BugzillaSession -> BugId -> [String] -> [(String,String)]
-        -> IO ()
-updateBug session bid pth params = do
+updateBug :: BugzillaSession -> BugId -> [(String,String)] -> IO ()
+updateBug session bid params = do
   let req = setRequestMethod "PUT" $
             -- earlier posting url encoded utf8 only seemed to work in body
             urlEncodedBody (encodeParams params) $
             setRequestCheckStatus $
-            newBzRequest session (map T.pack ("bug":show bid:pth)) []
+            newBzRequest session (map T.pack ["bug",show bid]) []
   res <- getResponseBody <$> httpJSON req
   when (isNothing (lookupKey "bugs" res :: Maybe Object)) $ do
     -- eg [("error",Bool True),("documentation",String "https://bugzilla.redhat.com/docs/en/html/api/index.html"),("code",Number 32614.0),("message",String "A REST API resource was not found for 'POST /bug/1880903'.")]
@@ -125,7 +124,7 @@ encodeParams ((k,v):ps) =
 
 putBugBuild :: BugzillaSession -> BugId -> String -> IO ()
 putBugBuild session bid nvr = do
-  void $ updateBug session bid []
+  void $ updateBug session bid
     [("cf_fixed_in", nvr), ("status", "MODIFIED")]
   putStrLn $ "build posted to review bug " ++ show bid
 

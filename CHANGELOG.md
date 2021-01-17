@@ -2,6 +2,7 @@
 
 ## 0.6.9 (2021-01-17)
 - PkgReview: use fasid for ssh (#16)
+- Bugzilla: separate commentBug from updateBug
 
 ## 0.6.8 (2021-01-16)
 - build: check bodhi client new update success more carefully
