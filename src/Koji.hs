@@ -154,7 +154,9 @@ kojiBuildBranch' wait target pkg mref args = do
 
 kojiBuildBranch :: String -> Package -> Maybe String -> [String] -> IO ()
 kojiBuildBranch target pkg mref args =
-  void $ kojiBuildBranch' True target pkg mref args
+  checkResult <$> kojiBuildBranch' True target pkg mref args
+  where
+    checkResult = either (\ task -> error' (displayID task ++ " not completed")) (const ())
 
 kojiBuildBranchNoWait ::String -> Package -> Maybe String -> [String] -> IO TaskID
 kojiBuildBranchNoWait target pkg mref args = do
