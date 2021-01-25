@@ -62,7 +62,7 @@ import qualified Common.Text as T
 import Prompt
 
 import Control.Exception (finally)
-import Data.Aeson.Types (Object)
+import Data.Aeson.Types (Array, Object)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.UTF8
 import Data.Ini.Config
@@ -110,7 +110,8 @@ updateBug session bid params = do
             setRequestCheckStatus $
             newBzRequest session (map T.pack ["bug",show bid]) []
   res <- getResponseBody <$> httpJSON req
-  when (isNothing (lookupKey "bugs" res :: Maybe Object)) $ do
+  -- [("bugs",Array [Object (fromList [("changes",Object (fromList [])),("alias",Array []),("id",Number 1897441.0),("last_change_time",String "2021-01-24T08:20:18Z")])])]
+  when (isNothing (lookupKey "bugs" res :: Maybe Array)) $ do
     -- eg [("error",Bool True),("documentation",String "https://bugzilla.redhat.com/docs/en/html/api/index.html"),("code",Number 32614.0),("message",String "A REST API resource was not found for 'POST /bug/1880903'.")]
     case lookupKey "message" res of
       Nothing -> print res
