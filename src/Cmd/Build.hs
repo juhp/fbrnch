@@ -151,9 +151,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                 else do
                 when (isNothing mtarget) $ do
                   -- FIXME diff previous changelog?
-                  -- FIXME for initial build use URL or Summary
-                  changelog <- getChangeLog spec
-                  bodhiUpdate (fmap fst mBugSess) changelog nvr
+                  bodhiUpdate (fmap fst mBugSess) spec nvr
                   -- FIXME prompt for override note
                   when (buildoptOverride opts) $
                     bodhiCreateOverride nvr
@@ -161,8 +159,11 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                 when (buildoptOverride opts || autoupdate) $
                 kojiWaitRepo target nvr
   where
-    bodhiUpdate :: Maybe BugId -> String -> String -> IO ()
-    bodhiUpdate mreview changelog nvr = do
+    bodhiUpdate :: Maybe BugId -> FilePath -> String -> IO ()
+    bodhiUpdate mreview spec nvr = do
+      changelog <- if isJust mreview
+                   then getSummaryURL spec
+                   else getChangeLog spec
       let cbugs = mapMaybe extractBugReference $ lines changelog
           bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
             if null bids then [] else ["--bugs", intercalate "," bids]
@@ -177,7 +178,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
             [] -> do
               putStrLn "bodhi submission failed"
               prompt_ "Press Enter to resubmit to Bodhi"
-              bodhiUpdate mreview changelog nvr
+              bodhiUpdate mreview spec nvr
             [update] -> case lookupKey "url" update of
               Nothing -> error' "Update created but no url"
               Just uri -> putStrLn uri

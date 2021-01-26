@@ -10,6 +10,7 @@ module Package (
   getChangeLog,
   getDirectoryName,
   getPackageName,
+  getSummaryURL,
   findSpecfile,
   localBranchSpecFile,
   generateSrpm,
@@ -78,12 +79,14 @@ getChangeLog :: FilePath -> IO String
 getChangeLog spec = do
   clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
   putStrLn ""
+  putStrLn "```"
   putStrLn clog
+  putStrLn "```"
   ifM (not <$> isTty)
     (return clog) $
     do
-      usrlog <- prompt "Press Enter to use above or input change summary now"
-      return $ if null usrlog then clog else usrlog
+      userlog <- prompt "Press Enter to use above or input change summary now"
+      return $ if null userlog then clog else userlog
 
 cleanChangelog :: String -> String
 cleanChangelog [] = error' "empty changelog" -- should not happen
@@ -91,6 +94,19 @@ cleanChangelog cs =
   let ls = lines cs
       no = length $ filter ("- " `isPrefixOf`) ls
   in if no == 1 then removePrefix "- " cs else cs
+
+getSummaryURL :: FilePath -> IO String
+getSummaryURL spec = do
+  notes <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}\n\n- %{url}", spec]
+  putStrLn ""
+  putStrLn "```"
+  putStrLn notes
+  putStrLn "```"
+  ifM (not <$> isTty)
+    (return notes) $
+    do
+      usernote <- prompt "Press Enter to use above or input notes"
+      return $ if null usernote then notes else usernote
 
 -- FIXME maybe check spec filename/%name more carefully
 getPackageName :: FilePath -> IO Package
