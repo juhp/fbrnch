@@ -89,17 +89,27 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
       putStrLn $ nvr ++ " is already built"
       when (isJust mpush) $
         error' "Please bump the spec file"
-      when morethan1 $ do
-        when (br /= Master && isNothing mtarget) $ do
-          mtags <- kojiNVRTags nvr
-          case mtags of
-            Nothing -> error' $ nvr ++ " is untagged"
-            Just tags ->
-              unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-                unlessM (checkAutoBodhiUpdate br) $
-                unless dryrun $
-                bodhiCreateOverride nvr
-        kojiWaitRepo target nvr
+      when (br /= Master && isNothing mtarget) $ do
+        mtags <- kojiNVRTags nvr
+        case mtags of
+          Nothing -> error' $ nvr ++ " is untagged"
+          Just tags ->
+            unless dryrun $
+            unlessM (checkAutoBodhiUpdate br) $ do
+            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
+              mBugSess <- do
+                (mbid, session) <- bzReviewSession
+                return $ case mbid of
+                  Just bid -> Just (bid,session)
+                  Nothing -> Nothing
+              bodhiUpdate (fmap fst mBugSess) spec nvr
+            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+              when (buildoptOverride opts) $
+              bodhiCreateOverride nvr
+            when morethan1 $ do
+              autoupdate <- checkAutoBodhiUpdate br
+              when (buildoptOverride opts || autoupdate) $
+                kojiWaitRepo target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
       when (isJust mpush) $
