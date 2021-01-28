@@ -129,7 +129,7 @@ kojiWatchTask task = do
     Just TaskCanceled -> return ()
     _ -> kojiWatchTask task
 
-kojiWatchTaskQuiet ::TaskID -> IO Bool
+kojiWatchTaskQuiet :: TaskID -> IO Bool
 kojiWatchTaskQuiet task =
   ifM (cmdBool "koji" ["watch-task", "--quiet", displayID task])
   (return True) $
