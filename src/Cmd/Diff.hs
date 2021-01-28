@@ -26,6 +26,7 @@ diffCmd speconly work fmt mwbr =
   where
     diffPkg :: Package -> AnyBranch -> IO ()
     diffPkg pkg br = do
+      gitSwitchBranch br
       let contxt = case fmt of
                      DiffContext n -> ["--unified=" ++ show n]
                      DiffMinimal -> ["--unified=0"]
