@@ -71,7 +71,17 @@ simplifyCommitLog = unwords . shortenHash . words
   where
     shortenHash :: [String] -> [String]
     shortenHash [] = []
-    shortenHash (h:cs) = take 8 h : cs
+    shortenHash (h:cs) = take 8 h : simplifyLog cs
+
+    simplifyLog [] = []
+    -- remove leading '('
+    simplifyLog (w:ws) =
+      case ws of
+        [] -> error "malformed changelog"
+        [_] -> init (tail w) : map ('(' :) ws
+        _ ->
+          let (mid,end) = splitAt (length ws - 2) ws
+          in tail w : mid ++ [init (head end),'(' : last end]
 
 gitPushSilent :: Maybe String -> IO ()
 gitPushSilent mref = do
