@@ -48,9 +48,13 @@ requestPkgBranches mock mbrnchopts brs pkg = do
                then requested
                else map (readActiveBranch' active) $ words inp
   newbranches <- filterExistingBranchRequests branches
-  forM_ newbranches $ \ br -> do
-    when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
-    fedpkg_ "request-branch" [show br]
+  unless (null newbranches) $ do
+    (bug,session) <- approvedReviewBugSession (unPackage pkg)
+    let bid = bugId bug
+    urls <- forM newbranches $ \ br -> do
+      when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
+      fedpkg "request-branch" [show br]
+    commentBug session bid $ unlines urls
   where
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests branches = do
