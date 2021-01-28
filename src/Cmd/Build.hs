@@ -23,7 +23,7 @@ import Package
 import Prompt
 
 data BuildOpts = BuildOpts
-  { buildoptMerge :: Bool
+  { buildoptNoPrompt :: Bool
   , buildoptNoFailFast :: Bool
   , buildoptTarget :: Maybe String
   , buildoptOverride :: Bool
@@ -59,8 +59,8 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
   unmerged <- mergeable br
   -- FIXME if already built or failed, also offer merge
   merged <-
-    if notNull unmerged && (buildoptMerge opts || newrepo || tty)
-      then mergeBranch True unmerged br >> return True
+    if notNull unmerged && (buildoptNoPrompt opts || newrepo || tty)
+      then mergeBranch True (buildoptNoPrompt opts) unmerged br >> return True
       else return False
   let spec = packageSpec pkg
   checkForSpecFile spec

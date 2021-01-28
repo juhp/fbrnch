@@ -8,6 +8,8 @@ import Git
 import Package
 import Prompt
 
+-- FIXME add --no-prompt
+-- add BranchOpts?
 mergeCmd :: [String] -> IO ()
 mergeCmd =
   withPackageByBranches (Just False) cleanGitFetchActive Nothing True AnyNumber runMergeBranch
@@ -20,7 +22,7 @@ mergeCmd =
       gitSwitchBranch rbr
       gitMergeOrigin rbr
       unmerged <- mergeable br
-      mergeBranch False unmerged br
+      mergeBranch False False unmerged br
 
 getNewerBranch :: Branch -> IO Branch
 getNewerBranch Master = return Master
@@ -41,14 +43,14 @@ mergeable br = do
   gitMergeable $ show newerBr
 
 -- FIXME return merged ref
-mergeBranch :: Bool -> [String] -> Branch -> IO ()
-mergeBranch _ _ Master = return ()
-mergeBranch _ [] _ = return ()
-mergeBranch build unmerged br = do
+mergeBranch :: Bool -> Bool -> [String] -> Branch -> IO ()
+mergeBranch _ _ _ Master = return ()
+mergeBranch _ _ [] _ = return ()
+mergeBranch build noprompt unmerged br = do
   newerBr <- getNewerBranch br
   newrepo <- initialPkgRepo
   unless (null unmerged) $ do
-    putStrLn $ (if newrepo then "Merging from" else "New commits in") ++ " " ++ show newerBr ++ ":"
+    putStrLn $ (if newrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show newerBr ++ ":"
     mapM_ (putStrLn . simplifyCommitLog) unmerged
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
@@ -56,7 +58,7 @@ mergeBranch build unmerged br = do
     mapM_ (putStrLn . simplifyCommitLog) unpushed
   -- FIXME avoid Mass_Rebuild bumps
   mmerge <-
-    if newrepo && length unmerged == 1 then return $ Just Nothing
+    if newrepo && length unmerged == 1 || noprompt then return $ Just Nothing
     else refPrompt unmerged $ "Press Enter to merge " ++ show newerBr ++ (if build then " and build" else "") ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
