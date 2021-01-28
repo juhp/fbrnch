@@ -35,6 +35,7 @@ import Common.System
 import Git
 import Krb
 import Package
+import Pagure
 
 fedoraHub :: String
 fedoraHub = fedoraKojiHub
@@ -144,7 +145,7 @@ kojiWatchTaskQuiet task =
 
 kojiSource :: Package -> String -> String
 kojiSource pkg ref =
-  "git+https://src.fedoraproject.org/rpms" </> unPackage pkg ++ ".git#" ++ ref
+  "git+https://" ++ srcfpo ++ "/rpms" </> unPackage pkg ++ ".git#" ++ ref
 
 kojiBuildBranch' :: Bool -> String -> Package -> Maybe String -> [String]
                  -> IO KojiBuildTask
