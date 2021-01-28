@@ -61,6 +61,7 @@ executable fbrnch
                        Cmd.SideTags
                        Cmd.Status
                        Cmd.Switch
+                       Cmd.Update
                        Common
                        Common.System
                        Common.Text

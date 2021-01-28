@@ -30,6 +30,7 @@ import Cmd.Scratch
 import Cmd.SideTags
 import Cmd.Status
 import Cmd.Switch
+import Cmd.Update
 
 import Branches
 import Common.System
@@ -68,6 +69,8 @@ main = do
       overrideCmd <$> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> mtargetOpt <*> branchesPackages
+    , Subcommand "update" "Update package to newer version" $
+      updateCmd <$> many (pkgArg "[VERSION] [PKG...]")
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd <$> optional rpmWithOpt <*> branchesPackages
     , Subcommand "prep" "Prep sources" $

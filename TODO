@@ -4,7 +4,6 @@
 - 'unpushed' command, etc (from f-h-t)
 - 'push'
 - 'check-sources'
-- 'update' version
 - worktree support
 - 'update-sources'
 - 'clean-old-source-dirs' (--threshold SIZE)
