@@ -72,10 +72,22 @@ importPkg pkg = do
     gitPushSilent Nothing
     kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
     putBugBuild session bid nvr
-    requestPkgBranches False Nothing [] (Package pkg)
+    brs <- branchingPrompt
+    requestPkgBranches False Nothing brs (Package pkg)
   when (pkg /= takeFileName dir) $
     setCurrentDirectory dir
   where
     findSRPMs :: Comment -> [T.Text]
     findSRPMs =
       filter (\ l -> "https://" `T.isInfixOf` l && any (`T.isPrefixOf` T.toLower l) ["srpm url:", "srpm:", "new srpm:", "updated srpm:"] && ".src.rpm" `T.isSuffixOf` l) . T.lines . commentText
+
+    branchingPrompt :: IO [Branch]
+    branchingPrompt = do
+      inp <- prompt $ "Enter required branches [default: latest 2]"
+      if null inp
+        then return []
+        else
+        let brs = map anyBranch $ words inp
+        in if all isRelBranch brs
+           then return $ map onlyRelBranch brs
+           else branchingPrompt
