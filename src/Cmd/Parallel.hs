@@ -85,15 +85,14 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
       where
         setupBranch :: Branch -> IO Job
         setupBranch br = do
-          job <- startBuild br "." >>= async
+          job <- startBuild False br "." >>= async
           sleep 5
           return (show br,job)
 
     parallelBuild :: Branch -> [String] -> IO String
     parallelBuild br layer =  do
       krbTicket
-      let nopkgs = length layer in
-        when (nopkgs > 1) $ do
+      when (nopkgs > 1) $ do
         putStrLn $ "\nBuilding parallel layer of " ++ show nopkgs ++ " packages:"
         putStrLn $ unwords layer
       jobs <- mapM setupBuild layer
@@ -104,9 +103,11 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
         error' "No jobs run"
       return $ fromMaybe (error' "No target determined") mtarget
       where
+        nopkgs = length layer
+
         setupBuild :: String -> IO Job
         setupBuild pkg = do
-          job <- startBuild br pkg >>= async
+          job <- startBuild (nopkgs > 5) br pkg >>= async
           sleep 5
           return (pkg,job)
 
@@ -127,8 +128,8 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
           watchJobs mtarget (pkg : fails) jobs
 
     -- FIXME prefix output with package name
-    startBuild :: Branch -> String -> IO (IO (String,String))
-    startBuild br pkgdir =
+    startBuild :: Bool -> Branch -> String -> IO (IO (String,String))
+    startBuild background br pkgdir =
       withExistingDirectory pkgdir $ do
       gitSwitchBranch (RelBranch br)
       pkg <- getPackageName pkgdir
@@ -199,7 +200,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
                 if dryrun
                   then return (return (target,nvr))
                   else do
-                  task <- kojiBuildBranchNoWait target pkg Nothing ["--fail-fast", "--background"]
+                  task <- kojiBuildBranchNoWait target pkg Nothing $ "--fail-fast" : ["--background" | background]
                   return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr target task
       where
         kojiWaitTaskAndRepo :: Bool -> String -> String -> TaskID -> IO (String,String)
