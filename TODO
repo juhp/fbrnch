@@ -1,4 +1,13 @@
+- filter bz# out from bodhi notes
+
+- fbrnch build
+  == gtk2hs-buildtools f32 ==
+  fatal: Not a valid object name f33
+
+- stash and restore
+
 - merge koji-progress
+- install from koji
 
 # new commands
 - 'unpushed' command, etc (from f-h-t)

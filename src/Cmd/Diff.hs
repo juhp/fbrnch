@@ -19,6 +19,7 @@ data DiffWork =
   deriving (Eq)
 
 -- FIXME diff other branches without switching
+-- FIXME --older/--newer branch
 diffCmd :: Bool -> DiffWork -> DiffFormat -> Maybe AnyBranch -> [String]
         -> IO ()
 diffCmd speconly work fmt mwbr =
