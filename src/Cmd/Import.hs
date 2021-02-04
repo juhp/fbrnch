@@ -83,7 +83,7 @@ importPkg pkg = do
 
     branchingPrompt :: IO [Branch]
     branchingPrompt = do
-      inp <- prompt $ "Enter required branches [default: latest 2]"
+      inp <- prompt "Enter required branches [default: latest 2]"
       if null inp
         then return []
         else
