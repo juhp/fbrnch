@@ -53,7 +53,9 @@ requestRepo retry pkg = do
         putStrLn $ url ++ "\n"
         let assignee = userRealName (bugAssignedToDetail bug)
         let draft = "Thank you for the review" ++ maybe "" ((", " ++) . T.unpack) (getFirstname assignee)
+        putStrLn "```"
         putStrLn draft
+        putStrLn "```"
         input <- prompt "Press Enter to post above comment, or input now"
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment
