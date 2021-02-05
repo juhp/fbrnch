@@ -7,7 +7,8 @@ module Cmd.Local (
   prepCmd,
   sortCmd,
   RpmWith(..),
-  srpmCmd
+  srpmCmd,
+  masterRenameCmd
   ) where
 
 import Distribution.RPM.Build.Order (dependencySortRpmOpts)
@@ -128,3 +129,12 @@ commandCmd cs mbrnchopts =
       let p = (P.shell cs) { P.env = Just (("p",unPackage pkg):curEnv) }
       (_,_,_,h) <- P.createProcess p
       void $ P.waitForProcess h
+
+masterRenameCmd :: [String] -> IO ()
+masterRenameCmd =
+  withPackageByBranches Nothing dirtyGitFetch Nothing True ZeroOrOne masterRenameBranch
+  where
+  masterRenameBranch :: Package -> AnyBranch -> IO ()
+  masterRenameBranch _pkg _br = do
+    git_ "branch" ["-m", "master", "rawhide"]
+    git_ "branch" ["-u", "origin/rawhide", "rawhide"]
