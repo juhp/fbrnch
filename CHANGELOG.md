@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.0 (2021-02-05)
+- reworked branch/pkg arg processing
+  which allows `branches --remote` to work without a repo
+- 'local'/'install': --with/--without bcond options
+- Koji: exit if aborting incomplete build (prevents premature bugzilla comment)
+- Bugzilla: updateBug result is Array not Object
+- 'build': for a new package use rpm Summary & Url for Bodhi note
+- 'build': offer to create a Bodhi update for an already built candidate nvr
+- new 'update' command: highly experimental package version updating
+- 'diff' now works for a different branch
+- 'request-branches' now posts pagure urls to package review too
+- 'import' prompts for branching after build
+- 'build': --no-prompt replaces --merge
+- Git: more readable shortlogs
+- 'parallel': only use --background if >5 packages in layer (#17)
+- Master branches are now Rawhide
+- new 'master-rename' command: renames package master branches to rawhide
+
 ## 0.6.9 (2021-01-17)
 - PkgReview: use fasid for ssh (#16)
 - Bugzilla: separate commentBug from updateBug
