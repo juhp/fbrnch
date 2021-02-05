@@ -26,7 +26,7 @@ updateCmd args = do
     updatePkg mver pkg br = do
       spec <- localBranchSpecFile pkg br
       (curver,_) <- pkgVerRel spec
-      vdiff <- filter ("Version:" `isInfixOf`) <$> gitLines "diff" ["-U0", "HEAD", spec]
+      vdiff <- filter ("Version:" `isInfixOf`) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
       when (isNothing mver) $ do
         when (null vdiff) $
           error' "please specify version or edit in spec file"
@@ -61,7 +61,7 @@ updateCmd args = do
             cmd_ "spectool" ["-g", "-S", spec]
           krbTicket
           copyFile "sources" "sources.fbrnch"
-          cmd_ "fedpkg" ["new-sources", unPackage pkg ++ "-" ++ newver <.> "tar.gz"]
+          cmd_ "fedpkg" $ "new-sources" : filter (".tar." `isInfixOf`) sources
           shell_ $ "cat sources.fbrnch >>" +-+ "sources"
           removeFile "sources.fbrnch"
           prepPackage pkg br
