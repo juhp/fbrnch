@@ -67,7 +67,7 @@ importPkg pkg = do
     krbTicket
     fedpkg_ "import" [srpmfile]
     git_ "commit" ["--message", "import #" ++ show bid]
-    nvr <- pkgNameVerRel' Master (pkg <.> "spec")
+    nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
     prompt_ $ "Press Enter to push and build " ++ nvr
     gitPushSilent Nothing
     kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]

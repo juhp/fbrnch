@@ -5,7 +5,7 @@ extra-deps:
   #  commit: b3cc51c12c4c5925f07d8bb0abf9047ef5842bf6
   - bugzilla-redhat-0.3.0@rev:1
   - git: https://github.com/juhp/fedora-dists.git
-    commit: a4f6f690e50c6c2e69cc81afb13b7e4581079907
+    commit: 0fafd8ff0b8ec35daeebd8e061fd45e52b96c0dc
   - git: https://github.com/juhp/bodhi-hs.git
     commit: c7d8f0728e7e34ec872755f1081dca1e32fa2f80
   - git: https://github.com/juhp/pagure-hs.git

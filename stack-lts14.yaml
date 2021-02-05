@@ -4,7 +4,7 @@ extra-deps:
   - simple-cmd-args-0.1.6
   - bugzilla-redhat-0.3.0
   - git: https://github.com/juhp/fedora-dists.git
-    commit: a4f6f690e50c6c2e69cc81afb13b7e4581079907
+    commit: 0fafd8ff0b8ec35daeebd8e061fd45e52b96c0dc
   - git: https://github.com/juhp/bodhi-hs.git
     commit: c7d8f0728e7e34ec872755f1081dca1e32fa2f80
   - git: https://github.com/juhp/pagure-hs.git

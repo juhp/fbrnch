@@ -69,7 +69,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $
     putStrLn $ "\n" ++ nvr ++ "\n"
-  when (not merged || br == Master) $
+  when (not merged || br == Rawhide) $
     unless (null unpushed) $ do
       putStrLn "Local commits:"
       mapM_ (putStrLn . simplifyCommitLog) unpushed
@@ -89,7 +89,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
       putStrLn $ nvr ++ " is already built"
       when (isJust mpush) $
         error' "Please bump the spec file"
-      when (br /= Master && isNothing mtarget) $ do
+      when (br /= Rawhide && isNothing mtarget) $ do
         mtags <- kojiNVRTags nvr
         case mtags of
           Nothing -> error' $ nvr ++ " is untagged"

@@ -61,7 +61,7 @@ fedoraBranchesNoMaster mthd = do
 
 isFedoraBranch :: Branch -> Bool
 isFedoraBranch (Fedora _) = True
-isFedoraBranch Master = True
+isFedoraBranch Rawhide = True
 isFedoraBranch _ = False
 
 isEPELBranch :: Branch -> Bool
@@ -82,7 +82,7 @@ pagurePkgBranches pkg = do
     include p e = e ++ ": " ++ p
 
 mockConfig :: Branch -> String
-mockConfig Master = "fedora-rawhide-x86_64"
+mockConfig Rawhide = "fedora-rawhide-x86_64"
 mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
 mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"
 
@@ -135,7 +135,7 @@ listOfBranches distgit active Nothing brs =
             else
             case rbr of
               Fedora _ -> do
-                let latest = maximum (delete Master activeBrs)
+                let latest = maximum (delete Rawhide activeBrs)
                 when (rbr > latest) $
                   error' $ show rbr ++ " is newer than latest branch"
               -- FIXME also check for too new EPEL

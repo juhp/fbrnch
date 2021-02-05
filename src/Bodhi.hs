@@ -21,7 +21,7 @@ import qualified Common.Text as T
 import Prompt
 
 checkAutoBodhiUpdate :: Branch -> IO Bool
-checkAutoBodhiUpdate Master = return True
+checkAutoBodhiUpdate Rawhide = return True
 -- epel7 returns 'create_automatic_updates: null' !
 checkAutoBodhiUpdate (EPEL 7) = return False
 checkAutoBodhiUpdate br =

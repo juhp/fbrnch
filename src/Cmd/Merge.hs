@@ -25,7 +25,7 @@ mergeCmd =
       mergeBranch False False unmerged br
 
 getNewerBranch :: Branch -> IO Branch
-getNewerBranch Master = return Master
+getNewerBranch Rawhide = return Rawhide
 getNewerBranch br = do
   branches <- fedoraBranches localBranches
   let newer = newerBranch br branches
@@ -44,7 +44,7 @@ mergeable br = do
 
 -- FIXME return merged ref
 mergeBranch :: Bool -> Bool -> [String] -> Branch -> IO ()
-mergeBranch _ _ _ Master = return ()
+mergeBranch _ _ _ Rawhide = return ()
 mergeBranch _ _ [] _ = return ()
 mergeBranch build noprompt unmerged br = do
   newerBr <- getNewerBranch br

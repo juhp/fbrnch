@@ -62,7 +62,7 @@ coprCmd dryrun buildBy archs project mbrnchopts args = do
 
     coprBuildPkg buildroots pkg = do
       -- FIXME check is pkg.spec
-      spec <- localBranchSpecFile pkg (RelBranch Master)
+      spec <- localBranchSpecFile pkg (RelBranch Rawhide)
       -- pkg <- takeFileName <$> getCurrentDirectory
       -- hack to avoid generating srpm for dryrun
       srpm <- if not dryrun
@@ -104,7 +104,7 @@ coprCmd dryrun buildBy archs project mbrnchopts args = do
     reverseSort = reverse . sort
 
 branchRelease :: Branch -> String
-branchRelease Master = "fedora-rawhide"
+branchRelease Rawhide = "fedora-rawhide"
 branchRelease (Fedora n) = "fedora-" ++ show n
 branchRelease (EPEL n) = "epel-" ++ show n
 

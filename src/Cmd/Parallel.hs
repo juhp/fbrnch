@@ -166,7 +166,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
       case buildstatus of
         Just BuildComplete -> do
           putStrLn $ nvr ++ " is " ++ color Green "already built"
-          when (br /= Master && target == branchTarget br) $ do
+          when (br /= Rawhide && target == branchTarget br) $ do
             mtags <- kojiNVRTags nvr
             case mtags of
               Nothing -> error' $ nvr ++ " is untagged"
