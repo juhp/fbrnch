@@ -304,7 +304,11 @@ getSources spec = do
           else return False
         if uploaded
           then cmd_ "fedpkg" ["sources"]
-          else cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
+          else do
+          cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
+          unlessM (doesFileExist (srcdir </> src)) $
+            error' "download failed"
+
   where
     sourceFieldFile :: String -> FilePath
     sourceFieldFile field =

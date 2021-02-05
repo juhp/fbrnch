@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.7.0.1 (2021-02-05)
+- Srpm generation: error if spectool fails to download source tarball
+
 ## 0.7.0 (2021-02-05)
 - reworked branch/pkg arg processing
   which allows `branches --remote` to work without a repo
