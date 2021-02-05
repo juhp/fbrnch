@@ -68,10 +68,11 @@ isEPELBranch :: Branch -> Bool
 isEPELBranch (EPEL _) = True
 isEPELBranch _ = False
 
+-- FIXME misnamed
 localBranches :: IO [String]
 localBranches = do
   origins <- filter ("origin/" `isPrefixOf`) <$> cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-2)"]
-  return $ delete "HEAD" $ map (removePrefix "origin/") origins
+  return $ map (removePrefix "origin/") origins \\ ["HEAD", "master"]
 
 pagurePkgBranches :: String -> IO [String]
 pagurePkgBranches pkg = do
