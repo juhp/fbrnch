@@ -1,6 +1,6 @@
 cabal-version:       2.0
 name:                fbrnch
-version:             0.7.0.1
+version:             0.7.1
 synopsis:            Build and create Fedora package repos and branches
 description:
             Fed Br*nch is a convenient packaging tool for Fedora Packagers,
@@ -23,6 +23,12 @@ category:            Utility
 build-type:          Simple
 extra-doc-files:     CHANGELOG.md
                      README.md
+                     bodhi-hs/LICENSE
+                     copr-hs/LICENSE
+                     fedora-dists/LICENSE
+                     koji-hs/LICENSE
+                     pagure-hs/LICENSE
+                     pdc-hs/LICENSE
 tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
                      GHC == 8.6.5,  GHC == 8.8.4, GHC == 8.10.3
 
@@ -75,27 +81,29 @@ executable fbrnch
                        Paths_fbrnch
                        Prompt
   hs-source-dirs:      src
+  default-language:    Haskell2010
 
   build-depends:       aeson
                      , async
                      , base < 5
-                     , bodhi
+                     , bodhi-internal
                      , bugzilla-redhat >= 0.3
                      , bytestring
                      , config-ini
-                     , copr
+                     , copr-internal
                      , directory >= 1.2.3
                      , email-validate
                      , extra
-                     , fedora-dists > 2.0
+                     , fedora-dists-internal
+                       -- > 2.0
                      , filepath
                      , http-conduit
                      , http-directory >= 0.1.5
                      , http-query
-                     , koji
+                     , koji-internal
                      , network-uri
                      , optparse-applicative
-                     , pagure
+                     , pagure-internal
                      , pretty-terminal
                      , process
                      , rpmbuild-order >= 0.4.2
@@ -125,4 +133,139 @@ executable fbrnch
   if impl(ghc >= 8.10)
     ghc-options:       -Wunused-packages
 
+
+library bodhi-internal
+  build-depends:       aeson
+                     , base >= 4 && < 5
+                     , http-query
+                     , text
+                     , time
+                     , lens, lens-aeson
   default-language:    Haskell2010
+  default-extensions:  OverloadedStrings
+  hs-source-dirs:      libs/bodhi-hs/src
+  exposed-modules:     Fedora.Bodhi
+  ghc-options:         -Wall
+  if impl(ghc >= 8.0)
+    ghc-options:       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options:       -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:       -Wmissing-export-lists
+                       -Wpartial-fields
+
+library copr-internal
+  default-language:    Haskell2010
+  exposed-modules:     Web.Fedora.Copr
+                       Web.Fedora.Copr.API
+  hs-source-dirs:      libs/copr-hs/src
+  build-depends:
+                base >= 4.7 && <5
+              , aeson
+              , bytestring
+              , directory
+              , http-query
+              , text
+              , unordered-containers
+  ghc-options:         -Wall
+  if impl(ghc >= 8.0)
+    ghc-options:       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options:       -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:       -Wmissing-export-lists
+                       -Wpartial-fields
+
+library fedora-dists-internal
+  exposed-modules:     Distribution.Fedora
+                       Distribution.Fedora.Branch
+  other-modules:       Distribution.Fedora.Products
+                       Distribution.Fedora.ReadProducts
+  hs-source-dirs:      libs/fedora-dists/src
+  build-depends:       base >= 4.6 && < 5
+                     , aeson
+                     , bytestring
+                     , directory
+                     , filepath
+                     , pdc-internal
+                     , text
+                     , time
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  if impl(ghc >= 8.0)
+    ghc-options:       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options:       -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:       -Wmissing-export-lists
+                       -Wpartial-fields
+
+
+library koji-internal
+  hs-source-dirs:      libs/koji-hs/src
+  exposed-modules:     Fedora.Koji
+                       Fedora.Koji.Internal
+
+  build-depends:       base >= 4 && < 5
+                     , haxr >= 3000.11.4
+                     , mtl
+  default-language:    Haskell2010
+  default-extensions:  OverloadedStrings
+  ghc-options:         -Wall
+
+library pagure-internal
+  build-depends:       aeson
+                     , base >= 4 && < 5
+                     , http-query
+                     , text
+                     , lens, lens-aeson
+  default-language:    Haskell2010
+  default-extensions:  OverloadedStrings
+  hs-source-dirs:      libs/pagure-hs/src
+  exposed-modules:     Fedora.Pagure
+  ghc-options:         -Wall
+  if impl(ghc >= 8.0)
+    ghc-options:       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options:       -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:       -Wmissing-export-lists
+                       -Wpartial-fields
+
+library pdc-internal
+  build-depends:       aeson
+                     , base >= 4 && < 5
+                     , http-query
+                     , text
+                     , time
+  default-language:    Haskell2010
+  exposed-modules:     Fedora.PDC
+  hs-source-dirs:      libs/pdc-hs/src
+  ghc-options:         -Wall
+  if impl(ghc >= 8.0)
+    ghc-options:       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options:       -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:       -Wmissing-export-lists
+                       -Wpartial-fields

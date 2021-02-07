@@ -210,13 +210,19 @@ On Fedora the easiest way to install is using my [copr repo](https://copr.fedora
 ## Build from source
 1. Install openssl-devel
 
-2. Clone the git repo and either:
+2. Clone the git repo
 
-a) Using stack >= 2.1, in the source dir run: `stack install`
+3. And in the source dir, setup the git submodules:
+
+`git submodule update --init`
+
+and then either:
+
+a) Using stack >= 2.1: `stack install`
 
 or
 
-b) With cabal-install (probably 2.4 or later) and cabal-rpm, in the source dir run:
+b) With cabal-install (probably 2.4 or later) and cabal-rpm:
 
 ```
 $ cabal-rpm builddep
