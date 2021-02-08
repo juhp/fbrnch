@@ -23,6 +23,7 @@ import Package
 
 -- FIXME package countdown
 -- FIXME --ignore-uninstalled subpackages
+-- FIXME --recursive
 installCmd :: Maybe ForceShort -> [BCond] -> Bool -> [String] -> IO ()
 installCmd mforceshort bconds reinstall =
   withPackageByBranches Nothing Nothing Nothing True ZeroOrOne installPkg

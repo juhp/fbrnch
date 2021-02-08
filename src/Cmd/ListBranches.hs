@@ -11,6 +11,7 @@ import Git
 import Package
 
 -- FIXME remote/pagures branch and --remote or --no-remote
+-- FIXME --local for existing local branches
 branchesCmd :: Bool -> Bool -> Bool -> Bool -> [String] -> IO ()
 branchesCmd skipdead allbrs missing remote args = do
   (brs,pkgs) <- splitBranchesPkgs False Nothing (not remote) args
