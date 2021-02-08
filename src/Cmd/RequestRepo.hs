@@ -5,9 +5,9 @@ module Cmd.RequestRepo (requestRepos) where
 import Common
 import qualified Common.Text as T
 
-import Data.Either
+import Network.HTTP.Directory (httpExists, httpManager)
+import Network.HTTP.Query ((+/+))
 import SimpleCmd
-import System.FilePath
 
 import Bugzilla
 import Krb
@@ -73,8 +73,9 @@ requestRepo retry pkg = do
 
     checkNoPagureRepo :: IO ()
     checkNoPagureRepo = do
-      res <- pagureProjectInfo srcfpo $ "rpms" </> pkg
-      when (isRight res) $
+      mgr <- httpManager
+      exists <- httpExists mgr $ "https://" ++ srcfpo +/+ "rpms" +/+ pkg
+      when exists $
         error' $ "Repo for " ++ pkg ++ " already exists"
 
     -- FIXME handle "email name"

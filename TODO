@@ -4,6 +4,8 @@
   == gtk2hs-buildtools f32 ==
   fatal: Not a valid object name f33
 
+- use +/+ for urls instead of </>
+
 - stash and restore
 
 - merge koji-progress
