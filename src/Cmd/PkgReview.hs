@@ -118,6 +118,6 @@ mockRpmLint mock pkg spec srpm = do
       map (resultsdir </>) . filter ((== ".rpm") . takeExtension) <$> listDirectory resultsdir
     else
       builtRpms (RelBranch Rawhide) spec >>= filterM doesFileExist
-  -- FIXME run rpmlint on spec too??
-  void $ cmdBool "rpmlint" $ srpm:rpms
+  -- FIXME parse # of errors/warnings
+  void $ cmdBool "rpmlint" $ spec:srpm:rpms
   prompt_ "Press Enter to submit"
