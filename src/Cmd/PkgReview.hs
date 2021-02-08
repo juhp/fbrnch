@@ -39,7 +39,7 @@ createReview noscratch mock pkgs =
         -- FIXME abort if open review (unless --force?)
         prompt_ "Press Enter to continue"
       srpm <- generateSrpm Nothing spec
-      mockRpmLint mock pkg spec srpm
+      mockRpmLint mock noscratch pkg spec srpm
       (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
       bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
       putStrLn "Review request posted:"
@@ -74,7 +74,7 @@ updateReview noscratch mock mspec = do
   submitted <- checkForComment session bid (T.pack srpm)
   when submitted $
     error' "This NVR was already posted on the review bug: please bump"
-  mockRpmLint mock pkg spec srpm
+  mockRpmLint mock noscratch pkg spec srpm
   (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
   changelog <- getChangeLog spec
   commentBug session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
@@ -108,8 +108,8 @@ uploadPkgFiles pkg spec srpm = do
           okay <- httpExists mgr url
           unless okay $ error' $ "Could not access: " ++ url
 
-mockRpmLint :: Bool -> String -> FilePath -> FilePath -> IO ()
-mockRpmLint mock pkg spec srpm = do
+mockRpmLint :: Bool -> Bool -> String -> FilePath -> FilePath -> IO ()
+mockRpmLint mock noscratch pkg spec srpm = do
   rpms <-
     if mock then do
       -- FIXME check that mock is installed
@@ -120,4 +120,4 @@ mockRpmLint mock pkg spec srpm = do
       builtRpms (RelBranch Rawhide) spec >>= filterM doesFileExist
   -- FIXME parse # of errors/warnings
   void $ cmdBool "rpmlint" $ spec:srpm:rpms
-  prompt_ "Press Enter to submit"
+  prompt_ $ "Press Enter to " ++ if noscratch then "upload" else "submit"
