@@ -289,7 +289,7 @@ getSources :: FilePath -> IO ()
 getSources spec = do
     gitDir <- isGitRepo
     srcdir <- getSourceDir gitDir
-    srcs <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
+    srcs <- mapMaybe sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
     unless gitDir $
       unlessM (doesDirectoryExist srcdir) $
       createDirectoryIfMissing True srcdir
@@ -307,15 +307,17 @@ getSources spec = do
           else do
           cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
           unlessM (doesFileExist (srcdir </> src)) $
-            error' "download failed"
-
+            error' $ "download failed: " ++ src
   where
-    sourceFieldFile :: String -> FilePath
+    sourceFieldFile :: String -> Maybe FilePath
     sourceFieldFile field =
-      if null field then
-        -- should be impossible
-        error "empty source field!"
-      else (takeFileName . last . words) field
+      case words field of
+        [f,v] ->
+          -- workaround rpmdevtools 9.3 (spectool -S lists patches)
+          if "source" `isPrefixOf` lower f
+          then Just $ takeFileName v
+          else Nothing
+        _ -> error $ "bad source field!: " ++ field
 
     getSourceDir :: Bool -> IO FilePath
     getSourceDir gitDir =
