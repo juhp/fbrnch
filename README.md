@@ -1,13 +1,10 @@
 # fbrnch - "Fed Brunch"
 
-[![GPL-2 license](https://img.shields.io/badge/license-GPL--2-blue.svg)](LICENSE)
+[![GPL-2+ license](https://img.shields.io/badge/license-GPL--2+-blue.svg)](LICENSE)
 [![GitHub CI](https://github.com/juhp/fbrnch/workflows/Haskell/badge.svg)](https://github.com/juhp/fbrnch/actions)
-<!---
 [![Hackage](https://img.shields.io/hackage/v/fbrnch.svg)](https://hackage.haskell.org/package/fbrnch)
-[![Stackage Lts](http://stackage.org/package/fbrnch/badge/lts)](http://stackage.org/lts/package/fbrnch)
-[![Stackage Nightly](http://stackage.org/package/fbrnch/badge/nightly)](http://stackage.org/nightly/package/fbrnch)
--->
-Tool to help Fedora Packagers build package branches and add new packages.
+
+A tool to help Fedora Packagers build package branches and add new packages.
 
 Fedora developers use a lot of time building packages across releases
 and workflow for adding new packages, etc. The motivation for fbrnch is
@@ -25,6 +22,7 @@ like:
 - requesting new repos and branches
 - importing new packages
 - progressive copr builds
+- rename master branches to rawhide
 
 and more.
 
@@ -144,18 +142,18 @@ $ fbrnch build -B package
 
 Scratch builds can also be done:
 ```
-$ fbrnch scratch master
+$ fbrnch scratch rawhide
 ```
 optionally a different koji target can be given.
 
 You can sort packages by build dependency order:
 ```
-$ fbrnch sort master package1 package2 package3 package4 ...
+$ fbrnch sort rawhide package1 package2 package3 package4 ...
 ```
 
 ### Local commands
 ```
-$ fbrnch prep master package
+$ fbrnch prep rawhide package
 ```
 
 Build locally:
@@ -176,7 +174,7 @@ in Koji in dependency layers (using low-priority background builds
 to avoid grabbing too many Koji resources).
 
 ```
-$ fbrnch parallel --sidetag master pkg-x pkg-y pkg-z pkg-xy pkg-xyz
+$ fbrnch parallel --sidetag rawhide pkg-x pkg-y pkg-z pkg-xy pkg-xyz
 ```
 builds a list of packages in parallel ordered by build dependencies.
 
@@ -210,19 +208,17 @@ On Fedora the easiest way to install is using my [copr repo](https://copr.fedora
 ## Build from source
 1. Install openssl-devel
 
-2. Clone the git repo
-
-3. And in the source dir, setup the git submodules:
+2. Clone the git repo and in the source dir, setup the git submodules:
 
 `git submodule update --init`
 
-and then either:
+3. Then either:
 
-a) Using stack >= 2.1: `stack install`
+a) using stack >= 2.1: `stack install`
 
 or
 
-b) With cabal-install (probably 2.4 or later) and cabal-rpm:
+b) with cabal-install (probably 2.4 or later) and cabal-rpm:
 
 ```
 $ cabal-rpm builddep
