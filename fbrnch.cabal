@@ -3,14 +3,23 @@ name:                fbrnch
 version:             0.7.1
 synopsis:            Build and create Fedora package repos and branches
 description:
-            Fed Br*nch is a convenient packaging tool for Fedora Packagers,
-            with integration for bugzilla, koji, and bodhi. Features include:
+            fbrnch is a convenient packaging tool for Fedora Packagers,
+            with integration for Bugzilla, Koji, and Bodhi.
+            .
+            Features include:
+            .
             - merging and building a package across release branches
+            .
             - automatic parallel builds of sets of packages in dependency order
-            - creating, updating and listing package reviews
-            - requesting repo for new approved packages and branch requests
+            .
+            - creating, updating and listing one's package reviews
+            .
+            - requesting repos for new approved packages and branch requests
+            .
             - import srpms from package reviews
+            .
             - progressive copr builds
+            .
             - and many more commands.
 homepage:            https://github.com/juhp/fbrnch
 bug-reports:         https://github.com/juhp/fbrnch/issues
