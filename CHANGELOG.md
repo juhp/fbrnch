@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1 (2021-02-09)
+- fix package review urls and also run rpmlint on .spec
+- 'master-rename' improvements
+- workaround spectool src download bug introduced with 0.7.0.1
+- Fedora web service API libraries are now internal libraries
+
 ## 0.7.0.1 (2021-02-05)
 - Srpm generation: error if spectool fails to download source tarball
 
