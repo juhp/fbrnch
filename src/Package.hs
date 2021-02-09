@@ -496,6 +496,7 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
               else maybeFindSpecfile
       pkg <- Package <$>
              case mspec of
+               -- FIXME fails if spec file can't be parsed
                Just spec -> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
                Nothing -> getDirectoryName
       unless (isNothing mspec || mspec == Just (unPackage pkg <.> "spec")) $
