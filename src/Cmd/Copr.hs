@@ -144,7 +144,7 @@ coprBuild dryrun project srpm buildroots = do
     let bid = last $ words $ last $ lines output
     ok <- cmdBool "copr" ["watch-build", bid]
     unless ok $
-      cmdN "Failed: copr" buildargs
+      error' $ "Failed: copr " ++ unwords buildargs
 
 #if !MIN_VERSION_simple_cmd(0,1,4)
 error' :: String -> a
