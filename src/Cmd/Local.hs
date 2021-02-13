@@ -133,11 +133,13 @@ commandCmd cs mbrnchopts =
 
 masterRenameCmd :: [String] -> IO ()
 masterRenameCmd =
-  withPackageByBranches Nothing dirtyGit Nothing True ZeroOrOne masterRenameBranch
+  withPackageByBranches (Just False) dirtyGit Nothing True ZeroOrOne masterRenameBranch
   where
   masterRenameBranch :: Package -> AnyBranch -> IO ()
   masterRenameBranch _pkg _br = do
-    git_ "fetch" ["--prune"]
-    git_ "branch" ["-m", "master", "rawhide"]
-    git_ "remote" ["set-head", "origin", "rawhide"]
-    git_ "branch" ["-u", "origin/rawhide", "rawhide"]
+    locals <- gitLines "branch" ["--format=%(refname:short)"]
+    when ("rawhide" `notElem` locals) $ do
+      git_ "fetch" ["--prune"]
+      git_ "branch" ["--move", "master", "rawhide"]
+      git_ "remote" ["set-head", "origin", "rawhide"]
+      git_ "branch" ["--set-upstream-to", "origin/rawhide", "rawhide"]
