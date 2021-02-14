@@ -496,9 +496,12 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
               else maybeFindSpecfile
       pkg <- Package <$>
              case mspec of
-               -- FIXME fails if spec file can't be parsed
-               Just spec -> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+               -- FIXME fails if spec file can't be parsed and also is *slow*
+               -- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+               -- For now assume spec filename = package name
+               Just spec -> return $ takeBaseName spec
                Nothing -> getDirectoryName
+
       unless (isNothing mspec || mspec == Just (unPackage pkg <.> "spec")) $
         putStrLn  "Warning: package name and spec filename differ!"
       haveGit <- isPkgGitRepo
