@@ -24,8 +24,10 @@ module Bugzilla (
   not',
   packageReview,
   assigneeIs,
+  bugIdIs,
   reporterIs,
   reviewApproved,
+  statusNewAssigned,
   statusNewPost,
   statusNewModified,
   statusOpen,
@@ -231,6 +233,9 @@ newtype BzTokenConf = BzTokenConf {bzToken :: T.Text}
 
 data BzTokenStatus = ValidToken BugzillaSession | InvalidToken T.Text | NoToken
 
+bugIdIs :: BugId -> SearchExpression
+bugIdIs bid = BugIdField .==. bid
+
 reporterIs :: T.Text -> SearchExpression
 reporterIs = (ReporterField .==.)
 
@@ -244,6 +249,10 @@ packageReview =
 statusOpen :: SearchExpression
 statusOpen =
   StatusField ./=. "CLOSED"
+
+statusNewAssigned :: SearchExpression
+statusNewAssigned =
+  StatusField `equalsAny` ["NEW", "ASSIGNED"]
 
 statusNewPost :: SearchExpression
 statusNewPost =

@@ -95,7 +95,7 @@ sortCmd mrpmwith args = do
   packages <- dependencySortRpmOpts rpmopts $ reverse pkgs
   putStrLn $ unwords packages
   where
-    dummy _ br =
+    dummy _pkg br =
       whenM isPkgGitRepo $ gitSwitchBranch br
 
     toRpmOption :: RpmWith -> [String]

@@ -2,7 +2,8 @@
 
 module Cmd.PkgReview (
   createReview,
-  updateReview
+  updateReview,
+  reviewPackage
   ) where
 
 import Common
@@ -121,3 +122,20 @@ mockRpmLint mock noscratch pkg spec srpm = do
   -- FIXME parse # of errors/warnings
   void $ cmdBool "rpmlint" $ spec:srpm:rpms
   prompt_ $ "Press Enter to " ++ if noscratch then "upload" else "submit"
+
+reviewPackage :: Maybe String -> IO ()
+reviewPackage mpkg = do
+  -- FIXME if spec file exists use it directly
+  pkg <- maybe getDirectoryName return mpkg
+  (bugs, _) <- if all isDigit pkg
+    then bugsSession $ packageReview .&&. statusNewAssigned .&&. bugIdIs (read pkg)
+    else bugsSession $ pkgReviews pkg .&&. statusNewAssigned
+  case bugs of
+    [bug] -> do
+      putReviewBug False bug
+      prompt_ "Press Enter to run fedora-review"
+      -- FIXME support copr build
+      -- FIXME if toolbox set REVIEW_NO_MOCKGROUP_CHECK
+      cmd_ "fedora-review" ["-b", show (bugId bug)]
+    [] -> error' $ "No review bug found for " ++ pkg
+    _ -> error' $ "More than one review bug found for " ++ pkg
