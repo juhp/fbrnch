@@ -235,12 +235,16 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
           [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
         args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++ buildopt ++ map show bconds ++ [spec]
-    if not quiet || shortcircuit then
-      cmd_ "rpmbuild" args
+    ok <-
+      if not quiet || shortcircuit then
+      cmdBool "rpmbuild" args
       else do
       putStr "Building locally: "
-      cmdSilent_ "rpmbuild" args
-      putStrLn "done"
+      res <- cmdSilentBool "rpmbuild" args
+      when res $ putStrLn "done"
+      return res
+    unless ok $
+      error' $ "build failed for: " ++ takeBaseName spec
 
 installDeps :: FilePath -> IO ()
 installDeps spec = do
@@ -271,7 +275,7 @@ prepPackage pkg br =
         nvr <- pkgNameVerRel' rbr spec
         putStr $ "Prepping " ++ nvr ++ ": "
       _ -> return ()
-    cmdSilent_ "rpmbuild" args
+    cmdSilent' "rpmbuild" args
     putStrLn "done"
 
 checkSourcesMatch :: FilePath -> IO ()
