@@ -9,6 +9,7 @@ import Branches
 import Common
 import Common.System
 import Git
+import InterleaveOutput (cmdSilent')
 import Krb
 import Package
 
@@ -64,7 +65,9 @@ updateCmd args = do
           cmd_ "fedpkg" $ "new-sources" : filter (".tar." `isInfixOf`) sources
           shell_ $ "cat sources.fbrnch >>" +-+ "sources"
           removeFile "sources.fbrnch"
-          prepPackage pkg br
+          putStr $ "Prepping... "
+          cmdSilent' "rpmbuild" ["-bp", spec]
+          putStrLn "done"
           cmd_ "git" ["commit", "-a", "-m", "update to " ++ newver]
 
     sourceFieldFile :: String -> FilePath
