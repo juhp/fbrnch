@@ -137,9 +137,11 @@ maybeFindSpecfile = fileWithExtension ".spec"
 localBranchSpecFile :: Package -> AnyBranch -> IO FilePath
 localBranchSpecFile pkg br = do
   gitdir <- isPkgGitRepo
-  when gitdir $ do
+  if gitdir
+    then do
     putPkgAnyBrnchHdr pkg br
     gitSwitchBranch br
+    else putPkgHdr pkg
   if gitdir
     then do
     let spec = packageSpec pkg
