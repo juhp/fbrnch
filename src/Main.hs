@@ -105,7 +105,7 @@ main = do
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd <$> reviewShortOpt <*> reviewAllStatusOpt <*> switchWith 'T' "assigned-to" "List reviews assigned to user" <*> optional (strOptionWith 'U' "user" "USER" "Bugzilla user email") <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
-      requestRepos <$> reviewAllStatusOpt <*> switchWith 'r' "retry" "Re-request repo" <*> many (pkgArg "NEWPACKAGE...")
+      requestRepos <$> reviewAllStatusOpt <*> switchWith 'r' "retry" "Re-request repo" <*> branchesOpt <*> many (pkgArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importCmd <$> many (pkgArg "NEWPACKAGE...")
     , Subcommand "request-branches" "Request branches for approved created packages" $

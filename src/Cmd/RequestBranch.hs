@@ -1,6 +1,7 @@
 module Cmd.RequestBranch (
   requestBranches,
-  requestPkgBranches
+  requestPkgBranches,
+  getRequestedBranches
   ) where
 
 import Common
@@ -32,21 +33,7 @@ requestPkgBranches :: Bool -> Maybe BranchOpts -> [Branch] -> Package -> IO ()
 requestPkgBranches mock mbrnchopts brs pkg = do
   putPkgHdr pkg
   git_ "fetch" []
-  active <- getFedoraBranched
-  branches <- case mbrnchopts of
-    Nothing -> if null brs
-               then return $ take 2 active
-               else return brs
-    Just request -> do
-      let requested = case request of
-                        AllBranches -> active
-                        AllFedora -> filter isFedoraBranch active
-                        AllEPEL -> filter isEPELBranch active
-                        ExcludeBranches xbrs -> active \\ xbrs
-      inp <- prompt $ "Confirm branches [" ++ unwords (map show requested) ++ "]"
-      return $ if null inp
-               then requested
-               else map (readActiveBranch' active) $ words inp
+  branches <- getRequestedBranches mbrnchopts brs
   newbranches <- filterExistingBranchRequests branches
   unless (null newbranches) $ do
     (bug,session) <- approvedReviewBugSession (unPackage pkg)
@@ -87,3 +74,21 @@ requestPkgBranches mock mbrnchopts brs pkg = do
         putStrLn $ "Branch request already open for " ++ unPackage pkg ++ ":" ++ show br
         mapM_ printScmIssue pending
       return $ null pending
+
+getRequestedBranches :: Maybe BranchOpts -> [Branch] -> IO [Branch]
+getRequestedBranches mbrnchopts brs = do
+  active <- getFedoraBranched
+  case mbrnchopts of
+    Nothing -> if null brs
+               then return $ take 2 active
+               else return brs
+    Just request -> do
+      let requested = case request of
+                        AllBranches -> active
+                        AllFedora -> filter isFedoraBranch active
+                        AllEPEL -> filter isEPELBranch active
+                        ExcludeBranches xbrs -> active \\ xbrs
+      inp <- prompt $ "Confirm branches request [" ++ unwords (map show requested) ++ "]"
+      return $ if null inp
+               then requested
+               else map (readActiveBranch' active) $ words inp

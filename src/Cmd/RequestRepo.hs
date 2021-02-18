@@ -9,7 +9,9 @@ import Network.HTTP.Directory (httpExists, httpManager)
 import Network.HTTP.Query ((+/+))
 import SimpleCmd
 
+import Branches
 import Bugzilla
+import Cmd.RequestBranch (getRequestedBranches)
 import Krb
 import ListReviews
 import Package
@@ -17,18 +19,18 @@ import Pagure
 import Prompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
-requestRepos :: Bool -> Bool -> [String] -> IO ()
-requestRepos allstates retry ps = do
+requestRepos :: Bool -> Bool -> Maybe BranchOpts -> [String] -> IO ()
+requestRepos allstates retry mbrnchopts ps = do
   when (retry && length ps /= 1) $
     error' "--retry only for a single package"
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviewsAll allstates ReviewWithoutRepoReq
     else return ps
-  mapM_ (requestRepo retry) pkgs
+  mapM_ (requestRepo retry mbrnchopts) pkgs
 
 -- FIXME also accept bugid instead
-requestRepo :: Bool -> String -> IO ()
-requestRepo retry pkg = do
+requestRepo :: Bool -> Maybe BranchOpts -> String -> IO ()
+requestRepo retry mbrnchopts pkg = do
   putStrLn pkg
   (bug,session) <- approvedReviewBugSession pkg
   putBug bug
@@ -60,6 +62,9 @@ requestRepo retry pkg = do
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment
         putStrLn ""
+        branches <- getRequestedBranches mbrnchopts []
+        forM_ branches $ \ br ->
+          fedpkg "request-branch" ["--repo", pkg, show br]
   where
     existingRepoRequests :: IO [IssueTitleStatus]
     existingRepoRequests = do
