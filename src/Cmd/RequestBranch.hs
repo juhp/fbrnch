@@ -45,14 +45,14 @@ requestPkgBranches mock mbrnchopts brs pkg = do
   where
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests branches = do
-      existing <- fedoraBranchesNoMaster localBranches
+      existing <- fedoraBranchesNoRawhide localBranches
       forM_ branches $ \ br ->
         when (br `elem` existing) $
         putStrLn $ show br ++ " branch already exists"
       let brs' = branches \\ existing
       if null brs' then return []
         else do
-        current <- fedoraBranchesNoMaster $ pagurePkgBranches (unPackage pkg)
+        current <- fedoraBranchesNoRawhide $ pagurePkgBranches (unPackage pkg)
         forM_ brs' $ \ br ->
           when (br `elem` current) $
           putStrLn $ show br ++ " remote branch already exists"

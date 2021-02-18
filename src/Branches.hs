@@ -1,7 +1,7 @@
 module Branches (
   activeBranches,
   fedoraBranches,
-  fedoraBranchesNoMaster,
+  fedoraBranchesNoRawhide,
   isFedoraBranch,
   isEPELBranch,
   localBranches,
@@ -54,8 +54,8 @@ fedoraBranches mthd = do
   active <- getFedoraBranches
   activeBranches active <$> mthd
 
-fedoraBranchesNoMaster :: IO [String] -> IO [Branch]
-fedoraBranchesNoMaster mthd = do
+fedoraBranchesNoRawhide :: IO [String] -> IO [Branch]
+fedoraBranchesNoRawhide mthd = do
   active <- getFedoraBranched
   activeBranches active <$> mthd
 

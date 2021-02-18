@@ -87,4 +87,4 @@ listReviewsFull assignee muser allopen status = do
     branched pkg = not <$> notBranched pkg
 
     notBranched :: String -> IO Bool
-    notBranched pkg = null <$> fedoraBranchesNoMaster (pagurePkgBranches pkg)
+    notBranched pkg = null <$> fedoraBranchesNoRawhide (pagurePkgBranches pkg)

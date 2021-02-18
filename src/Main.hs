@@ -212,10 +212,10 @@ main = do
 
     targetOpt :: Parser String
     targetOpt =
-      checkNotMaster <$> strOptionWith 't' "target" "TARGET" "Koji target"
+      checkNotRawhide <$> strOptionWith 't' "target" "TARGET" "Koji target"
       where
-        checkNotMaster "master" = error' "'master' is not a valid target!"
-        checkNotMaster t = t
+        checkNotRawhide "rawhide" = error' "'rawhide' is not a valid target!"
+        checkNotRawhide t = t
 
     overrideOpt = switchWith 'o' "override" "Create a buildroot override and wait-repo"
 

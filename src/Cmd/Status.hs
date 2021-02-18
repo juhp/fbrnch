@@ -50,7 +50,7 @@ statusBranch pkg rbr@(RelBranch br) = do
         putStr "HEAD "
         gitShortLog1 Nothing >>= putStrLn . simplifyCommitLog
       Just nvr -> do
-        -- unless (br == Master) $ do
+        -- unless (br == Rawhide) $ do
         --   newerBr <- newerBranch br <$> getFedoraBranches
         --   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show newerBr]
         --   when ancestor $ do
