@@ -475,7 +475,8 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
     Nothing ->
       case limitBranches of
         ZeroOrOne | length brs > 1 ->
-          error' "more than one branch given"
+          -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
+          error' $ "more than one branch given or packages not found: " ++ unwords (tail (map show brs))
         ExactlyOne | null brs ->
           error' "please specify one branch"
         ExactlyOne | length brs > 1 ->
