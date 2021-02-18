@@ -1,6 +1,6 @@
 cabal-version:       2.0
 name:                fbrnch
-version:             0.7.1
+version:             0.7.2
 synopsis:            Build and create Fedora package repos and branches
 description:
             fbrnch is a convenient packaging tool for Fedora Packagers,
@@ -28,7 +28,7 @@ license-file:        LICENSE
 author:              Jens Petersen
 maintainer:          petersen@fedoraproject.org
 copyright:           2019-2021 Jens Petersen
-category:            Utility
+category:            Distribution
 build-type:          Simple
 extra-doc-files:     CHANGELOG.md
                      README.md
@@ -39,7 +39,7 @@ extra-doc-files:     CHANGELOG.md
                      libs/pagure-hs/LICENSE
                      libs/pdc-hs/LICENSE
 tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
-                     GHC == 8.6.5,  GHC == 8.8.4, GHC == 8.10.3
+                     GHC == 8.6.5,  GHC == 8.8.4, GHC == 8.10.4
 
 source-repository head
   type:                git
