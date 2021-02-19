@@ -137,5 +137,8 @@ reviewPackage mpkg = do
       -- FIXME support copr build
       -- FIXME if toolbox set REVIEW_NO_MOCKGROUP_CHECK
       cmd_ "fedora-review" ["-b", show (bugId bug)]
-    [] -> error' $ "No review bug found for " ++ pkg
+    [] -> do
+      spec <- findSpecfile
+      srpm <- generateSrpm Nothing spec
+      cmd_ "fedora-review" ["-rn", srpm]
     _ -> error' $ "More than one review bug found for " ++ pkg
