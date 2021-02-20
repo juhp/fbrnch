@@ -66,7 +66,7 @@ main = do
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd <$> many branchArg
     , Subcommand "override" "Tag builds into buildroot override in Koji" $
-      overrideCmd <$> branchesPackages
+      overrideCmd <$> dryrunOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> mtargetOpt <*> branchesPackages
     , Subcommand "update" "Update package to newer version" $

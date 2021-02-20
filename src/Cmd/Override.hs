@@ -10,8 +10,8 @@ import Git
 import Koji
 import Package
 
-overrideCmd :: [String] -> IO ()
-overrideCmd =
+overrideCmd :: Bool -> [String] -> IO ()
+overrideCmd dryrun =
   withPackageByBranches (Just False) cleanGitFetchActive Nothing True AnyNumber overrideBranch
   where
     overrideBranch :: Package -> AnyBranch -> IO ()
@@ -28,6 +28,9 @@ overrideCmd =
         Nothing -> error' $ nvr ++ " is untagged"
         Just tags ->
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-          unlessM (checkAutoBodhiUpdate br) $ do
-          bodhiCreateOverride nvr
-          kojiWaitRepo (branchTarget br) nvr
+          unlessM (checkAutoBodhiUpdate br) $
+          if dryrun
+          then putStrLn $ "override " ++ nvr
+          else do
+            bodhiCreateOverride nvr
+            kojiWaitRepo (branchTarget br) nvr
