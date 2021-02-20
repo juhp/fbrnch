@@ -48,7 +48,8 @@ bodhiCreateOverride nvr = do
         putStrLn "bodhi override failed"
         prompt_ "Press Enter to retry"
         bodhiCreateOverride nvr
-      Just obj -> print obj
+      -- FIXME prettyprint
+      Just obj -> error' $ show obj
 
 data UpdateType =
   SecurityUpdate | BugfixUpdate | EnhancementUpdate | NewPackageUpdate
