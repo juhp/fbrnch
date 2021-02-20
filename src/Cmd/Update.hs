@@ -65,7 +65,7 @@ updateCmd args = do
           cmd_ "fedpkg" $ "new-sources" : filter (".tar." `isInfixOf`) sources
           shell_ $ "cat sources.fbrnch >>" +-+ "sources"
           removeFile "sources.fbrnch"
-          putStr $ "Prepping... "
+          putStr "Prepping... "
           cmdSilent' "rpmbuild" ["-bp", spec]
           putStrLn "done"
           cmd_ "git" ["commit", "-a", "-m", "update to " ++ newver]
