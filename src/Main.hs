@@ -257,7 +257,7 @@ main = do
     sidetagTargetOpt :: Parser SideTagTarget
     sidetagTargetOpt =
       Target <$> targetOpt <|>
-      flagWith' SideTag 's' "sidetag" "Use existing branch side-tag for building: create with 'fedpkg request-side-tag --base-tag'"
+      flagWith' SideTag 's' "sidetag" "Use the existing branch side-tag to build or creates one for you (with 'fedpkg request-side-tag --base-tag')"
 
     packagerOpt = Owner <$> ownerOpt <|> Committer <$> usernameOpt
     usernameOpt = strOptionWith 'u' "username" "USERNAME" "Packages user can commit to"
