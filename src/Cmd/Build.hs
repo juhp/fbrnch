@@ -37,20 +37,23 @@ data BuildOpts = BuildOpts
 -- FIXME support --wait-build=NVR
 -- FIXME provide direct link to failed task/build.log
 -- FIXME default behaviour for build in pkg dir: all branches or current?
+-- FIXME --auto-override for deps in testing
 buildCmd :: BuildOpts -> Maybe BranchOpts -> [String] -> IO ()
 buildCmd opts mbrnchopts args = do
   let singleBrnch = if isJust (buildoptTarget opts)
                     then ZeroOrOne
                     else AnyNumber
   (brs,pkgs) <- splitBranchesPkgs True mbrnchopts True args
-  let morethan1 = length pkgs > 1
-  withPackageByBranches' (Just False) cleanGitFetchActive mbrnchopts singleBrnch (buildBranch morethan1 opts) (brs,pkgs)
+  let mlastOfPkgs = if length pkgs > 1
+                    then Just (Package (last pkgs))
+                    else Nothing
+  withPackageByBranches' (Just False) cleanGitFetchActive mbrnchopts singleBrnch (buildBranch mlastOfPkgs opts) (brs,pkgs)
 
 -- FIXME what if untracked files
-buildBranch :: Bool -> BuildOpts -> Package -> AnyBranch -> IO ()
+buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()
 buildBranch _ _ _ (OtherBranch _) =
   error' "build only defined for release branches"
-buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
+buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   putPkgAnyBrnchHdr pkg rbr
   gitSwitchBranch rbr
   gitMergeOrigin rbr
@@ -106,7 +109,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
             unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
               when (buildoptOverride opts) $
               bodhiCreateOverride nvr
-            when morethan1 $ do
+            when (isJust mlastpkg && mlastpkg /= Just pkg) $ do
               autoupdate <- checkAutoBodhiUpdate br
               when (buildoptOverride opts || autoupdate) $
                 kojiWaitRepo target nvr
@@ -165,7 +168,7 @@ buildBranch morethan1 opts pkg rbr@(RelBranch br) = do
                   -- FIXME prompt for override note
                   when (buildoptOverride opts) $
                     bodhiCreateOverride nvr
-              when morethan1 $
+              when (isJust mlastpkg && mlastpkg /= Just pkg) $
                 when (buildoptOverride opts || autoupdate) $
                 kojiWaitRepo target nvr
   where

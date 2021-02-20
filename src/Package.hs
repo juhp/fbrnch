@@ -344,6 +344,7 @@ initialPkgRepo = do
   return $ commits <= 1
 
 newtype Package = Package {unPackage :: String}
+  deriving Eq
 
 putPkgHdr :: Package -> IO ()
 putPkgHdr pkg =
