@@ -54,21 +54,8 @@
 - list builds not pushed to bodhi
 - status when no local dir/checkout
 
-# external clients
-- fedpkg
-- bodhi
-- koji
-
 - (future feature) rpminspect
 - (use hs-git)
-
-# required tools
-- curl
-- rpmbuild & rpmspec
-- klist
-- git
-- ssh & scp
-- copr-cli
 
 # longterm ideas
 - "fbrnch todo" list

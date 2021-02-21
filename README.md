@@ -202,8 +202,25 @@ and Bodhi integration was added, and gradually more features, including
 some generic commands across packages which had already been done before
 in fedora-haskell-tools.
 
+## Required runtime tools
+fbrnch currently uses these fedora cli tools:
+- fedpkg
+- bodhi
+- koji
+- copr-cli
+for pushing packages.
+
+It also makes use of:
+- curl
+- rpmbuild & rpmspec
+- klist
+- git
+- ssh & scp (for uploading package reviews)
+
 ## Installation
-On Fedora the easiest way to install is using my [copr repo](https://copr.fedorainfracloud.org/coprs/petersen/fbrnch/).
+fbrnch is packaged in Fedora: `sudo dnf install fbrnch`.
+
+There is also a [copr repo](https://copr.fedorainfracloud.org/coprs/petersen/fbrnch/).
 
 ## Build from source
 1. Install openssl-devel
