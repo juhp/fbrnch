@@ -43,6 +43,7 @@ module Package (
   buildRequires,
   notInstalled,
   pkgInstalled,
+  repoquery,
   systemBranch,
   equivNVR,
   takeNVRName,
@@ -241,7 +242,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
       if not quiet || shortcircuit then
       cmdBool "rpmbuild" args
       else do
-      putStr "Building locally: "
+      putStr $ "Building " ++ takeBaseName spec ++ " locally: "
       res <- cmdSilentBool "rpmbuild" args
       when res $ putStrLn "done"
       return res
@@ -599,6 +600,9 @@ pkgInstalled :: String -> IO Bool
 pkgInstalled pkg =
   cmdBool "rpm" ["--quiet", "-q", pkg]
 
+repoquery :: Branch -> [String] -> IO String
+repoquery br args =
+  cmd "dnf" (["repoquery", "--quiet", "--releasever=" ++ branchVersion br] ++ args)
 
 -- FIXME could be more strict about dist tag (eg .fcNN only)
 equivNVR :: String -> String -> Bool

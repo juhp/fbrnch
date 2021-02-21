@@ -59,6 +59,7 @@ executable fbrnch
                        Cmd.Copr
                        Cmd.Diff
                        Cmd.Import
+                       Cmd.Install
                        Cmd.ListBranches
                        Cmd.ListPackages
                        Cmd.Local

@@ -13,6 +13,7 @@ import Cmd.Commit
 import Cmd.Copr
 import Cmd.Diff
 import Cmd.Import
+import Cmd.Install
 import Cmd.ListBranches
 import Cmd.ListPackages
 import Cmd.Local
@@ -89,7 +90,7 @@ main = do
       installDepsCmd <$> branchesPackages
     , Subcommand "install" "Build locally and install package(s)" $
       -- FIXME drop --shortcircuit from install?
-      installCmd <$> optional forceshortOpt <*> many bcondOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> branchesPackages
+      installCmd <$> switchWith 'r' "recurse" "build and install missing deps packages" <*> optional forceshortOpt <*> many bcondOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> branchesPackages
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (strOptionWith 's' "summary" "KEY" "Search for bugs containing keyword") <*> many (pkgArg "PACKAGE...")
     , Subcommand "bump" "Bump release for package" $

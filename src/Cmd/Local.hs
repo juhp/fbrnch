@@ -1,6 +1,5 @@
 module Cmd.Local (
   commandCmd,
-  installCmd,
   installDepsCmd,
   localCmd,
   nvrCmd,
@@ -17,43 +16,8 @@ import System.Environment
 
 import Branches
 import Common
-import Common.System
 import Git
 import Package
-
--- FIXME package countdown
--- FIXME --ignore-uninstalled subpackages
--- FIXME --recursive
-installCmd :: Maybe ForceShort -> [BCond] -> Bool -> [String] -> IO ()
-installCmd mforceshort bconds reinstall =
-  withPackageByBranches Nothing Nothing Nothing True ZeroOrOne installPkg
-  where
-    installPkg :: Package -> AnyBranch -> IO ()
-    installPkg pkg br = do
-      spec <- localBranchSpecFile pkg br
-      rpms <- builtRpms br spec
-      -- removing arch
-      let packages = map takeNVRName rpms
-      installed <- filterM pkgInstalled packages
-      if isJust mforceshort || null installed || reinstall
-        then doInstallPkg spec rpms installed
-        else putStrLn $ unwords installed ++ " already installed!\n"
-      where
-        doInstallPkg spec rpms installed = do
-          putStrLn $ takeBaseName (head rpms) ++ "\n"
-          buildRPMs True mforceshort bconds rpms br spec
-          putStrLn ""
-          unless (mforceshort == Just ShortCircuit) $
-            if reinstall then do
-              let reinstalls = filter (\ f -> takeNVRName f `elem` installed) rpms
-              unless (null reinstalls) $
-                sudo_ "/usr/bin/dnf" $ "reinstall" : "-q" : "-y" : reinstalls
-              let remaining = filterDebug $ rpms \\ reinstalls
-              unless (null remaining) $
-                sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
-              else sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : filterDebug rpms
-
-        filterDebug = filter (\p -> not (any (`isInfixOf` p) ["-debuginfo-", "-debugsource-"]))
 
 localCmd :: Maybe ForceShort -> [BCond] -> [String] -> IO ()
 localCmd mforceshort bconds =

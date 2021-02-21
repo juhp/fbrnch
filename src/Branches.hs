@@ -16,7 +16,9 @@ module Branches (
   listOfBranches,
   gitCurrentBranch,
   systemBranch,
-  getReleaseBranch
+  getReleaseBranch,
+  branchVersion,
+  anyBranchToRelease
 ) where
 
 import Common
@@ -152,12 +154,19 @@ listOfBranches distgit _ (Just (ExcludeBranches brs)) [] = do
   return $ map RelBranch (branches \\ brs)
 
 getReleaseBranch :: IO Branch
-getReleaseBranch = do
-  mcurrent <- gitCurrentBranch
-  case mcurrent of
-    RelBranch br -> return br
-    _ -> systemBranch
+getReleaseBranch =
+  gitCurrentBranch >>= anyBranchToRelease
 
 gitCurrentBranch :: IO AnyBranch
 gitCurrentBranch =
   anyBranch <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
+
+anyBranchToRelease :: AnyBranch -> IO Branch
+anyBranchToRelease (RelBranch rbr) = return rbr
+anyBranchToRelease (OtherBranch _) = systemBranch
+
+-- move to fedora-dists
+branchVersion :: Branch -> String
+branchVersion Rawhide = "rawhide"
+branchVersion (Fedora n) = show n
+branchVersion (EPEL n) = show n
