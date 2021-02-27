@@ -1,5 +1,6 @@
 module Cmd.Install (
   installCmd,
+  notInstalledCmd
   ) where
 
 import Branches
@@ -81,3 +82,22 @@ installCmd recurse mforceshort bconds reinstall = do
               repoquery rbr ["--qf=%{source_name}", "--whatprovides", p]
 
         filterDebug = filter (\p -> not (any (`isInfixOf` p) ["-debuginfo-", "-debugsource-"]))
+
+notInstalledCmd :: [String] -> IO ()
+notInstalledCmd =
+  withPackageByBranches Nothing Nothing Nothing True ZeroOrOne notInstalledPkg
+  where
+    notInstalledPkg :: Package -> AnyBranch -> IO ()
+    notInstalledPkg pkg br = do
+      dead <- doesFileExist "dead.package"
+      unless dead $ do
+        spec <- findSpecfile
+        rpms <- builtRpms br spec
+        let packages = map takeBaseName rpms
+        installed <- filterM pkgInstalled packages
+        when (null installed) $ do
+          let pkgnames = map nameOfNVR packages
+          older <- filterM pkgInstalled pkgnames
+          if null older
+            then putStrLn $ unPackage pkg ++ " not installed!"
+            else putStrLn $ unPackage pkg ++ " not latest"
