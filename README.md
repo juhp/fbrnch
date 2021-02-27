@@ -17,7 +17,7 @@ fbrnch is distributed under the GPL license version 2 or later.
 like:
 
 - merging and building a package across release branches
-- automatic parallel builds of sets of packages in dependency order
+- automated parallel builds of sets of packages in dependency order
 - creating, updating and listing package reviews
 - requesting new repos and branches
 - importing new packages
@@ -169,7 +169,7 @@ $ fbrnch install package1 package2 package3 ...
 ```
 
 ### Parallel building
-fbrnch can automatically sort packages and build them in parallel
+fbrnch can sort packages automatically and build them in parallel
 in Koji in dependency layers (using low-priority background builds
 to avoid grabbing too many Koji resources).
 
