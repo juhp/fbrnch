@@ -70,8 +70,10 @@ importPkg pkg = do
     nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
     prompt_ $ "Press Enter to push and build " ++ nvr
     gitPushSilent Nothing
+    -- FIXME build more branches
     kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
     putBugBuild session bid nvr
+    -- FIXME skip if branches already made
     brs <- branchingPrompt
     requestPkgBranches False Nothing brs (Package pkg)
   when (pkg /= takeFileName dir) $

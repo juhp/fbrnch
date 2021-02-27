@@ -8,6 +8,8 @@
 
 - use +/+ for urls instead of </>
 
+- pull creating new branches and/or clone --all?
+
 - stash and restore
 
 - merge koji-progress
@@ -22,6 +24,7 @@
 - 'clean-old-source-dirs' (--threshold SIZE)
 - 'chain'
 - 'check-deps'
+- 'clone-deps'
 
 # release deps
 - koji (new)
@@ -49,7 +52,7 @@
 - update pagure key in ~/.config/rpkg/fedpkg.conf
 - bugzilla login via api key
 
-# status/unbuilt/unreleased
+# status/*unbuilt*/unreleased
 - list pending new package builds
 - list builds not pushed to bodhi
 - status when no local dir/checkout
