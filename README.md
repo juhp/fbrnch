@@ -1,7 +1,7 @@
 # fbrnch - "Fed Brunch"
 
 [![GPL-2+ license](https://img.shields.io/badge/license-GPL--2+-blue.svg)](LICENSE)
-[![GitHub CI](https://github.com/juhp/fbrnch/workflows/Haskell/badge.svg)](https://github.com/juhp/fbrnch/actions)
+[![GitHub CI](https://github.com/juhp/fbrnch/workflows/build/badge.svg)](https://github.com/juhp/fbrnch/actions)
 [![Hackage](https://img.shields.io/hackage/v/fbrnch.svg)](https://hackage.haskell.org/package/fbrnch)
 
 A tool to help Fedora Packagers build package branches and add new packages.
