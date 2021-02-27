@@ -45,9 +45,8 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
             else return False
         putStrLn $ "koji scratch " ++ (if pushed then "" else "srpm ") ++ "build for " ++ target
         unless dryrun $ do
-          if pushed then do
-            void $ getSources spec
-            kojiBuildBranch target pkg Nothing $ "--scratch" : kojiargs
+          if pushed
+            then kojiBuildBranch target pkg Nothing $ "--scratch" : kojiargs
             else srpmBuild target kojiargs spec
           else srpmBuild target kojiargs spec
       where
