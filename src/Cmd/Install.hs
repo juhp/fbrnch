@@ -99,5 +99,5 @@ notInstalledCmd =
           let pkgnames = map nameOfNVR packages
           older <- filterM pkgInstalled pkgnames
           if null older
-            then putStrLn $ unPackage pkg ++ " not installed!"
-            else putStrLn $ unPackage pkg ++ " not latest"
+            then putStrLn $ unPackage pkg
+            else putStrLn $ " " ++ unPackage pkg
