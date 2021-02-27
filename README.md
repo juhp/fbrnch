@@ -195,12 +195,16 @@ See `fbrnch --help` for details and the full list.
     (specifically koji, bodhi-client, fedpkg),
     but all queries are done directly by Web RPC for speed and control.
 
-## Motivation and history
+## Motivation, history, talks
 This project started off (as "fedbrnch") basically as a simple tool to
 build a package across branches (ie for current releases).  Then bugzilla
 and Bodhi integration was added, and gradually more features, including
 some generic commands across packages which had already been done before
 in fedora-haskell-tools.
+
+I have given a couple of short talks about fbranch:
+- Nest with Fedora: [youtube](https://www.youtube.com/watch?v=40kTBsA674U) and [slides](https://github.com/juhp/presentations/blob/master/fedora-nest-2020-fbrnch/fbrnch-nest.md)
+- Lightning talk at devconf.cz 2021: [youtube](https://www.youtube.com/watch?v=O2-6rDuPMRA&t=2s)
 
 ## Required runtime tools
 fbrnch currently uses these fedora cli tools:

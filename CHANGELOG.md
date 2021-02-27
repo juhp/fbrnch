@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.2 (2021-02-27)
+- 'install': --recurse to install any missing neighboring deps
+- 'request-repo': offer to request branches too
+- 'override': --dryrun
+- Bodhi overrides: error if failed and use 4 days
+- 'build' no longer overrides the final package built
+- 'review-package': new experimental command
+- 'local','install': print name of failed package
+- 'copr': abort on failure
+- 'sort': only switch branch for dist-git
+- bunch of tweaks and smaller fixes
+
 ## 0.7.1 (2021-02-09)
 - fix package review urls and also run rpmlint on .spec
 - 'master-rename' improvements
