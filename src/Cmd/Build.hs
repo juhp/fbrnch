@@ -54,7 +54,6 @@ buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()
 buildBranch _ _ _ (OtherBranch _) =
   error' "build only defined for release branches"
 buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
-  putPkgAnyBrnchHdr pkg rbr
   gitSwitchBranch rbr
   gitMergeOrigin rbr
   newrepo <- initialPkgRepo

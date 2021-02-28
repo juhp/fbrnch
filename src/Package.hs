@@ -140,11 +140,7 @@ localBranchSpecFile pkg br = do
   gitdir <- isPkgGitRepo
   if gitdir
     then do
-    putPkgAnyBrnchHdr pkg br
     gitSwitchBranch br
-    else putPkgHdr pkg
-  if gitdir
-    then do
     let spec = packageSpec pkg
     ifM (doesFileExist spec)
       (return spec) $
@@ -520,7 +516,9 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
                         else return Nothing
       let fetch = have gitOptFetch
       when ((mheader == Just True || isJust mheader && max (length brs) (length pkgs) > 1 || fetch) && dir /= ".") $
-        putPkgHdr pkg
+        case brs of
+          [br] -> putPkgAnyBrnchHdr pkg br
+          _ -> putPkgHdr pkg
       when haveGit $
         when (have gitOptClean) checkWorkingDirClean
       when fetch gitFetchSilent

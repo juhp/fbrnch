@@ -17,8 +17,7 @@ mergeCmd =
     runMergeBranch :: Package -> AnyBranch -> IO ()
     runMergeBranch _ (OtherBranch _) =
       error' "merge only defined for release branches"
-    runMergeBranch pkg rbr@(RelBranch br) = do
-      putPkgBrnchHdr pkg br
+    runMergeBranch _pkg rbr@(RelBranch br) = do
       gitSwitchBranch rbr
       gitMergeOrigin rbr
       unmerged <- mergeable br
