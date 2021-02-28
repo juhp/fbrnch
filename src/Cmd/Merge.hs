@@ -8,10 +8,9 @@ import Git
 import Package
 import Prompt
 
--- FIXME add --no-prompt
 -- add BranchOpts?
-mergeCmd :: [String] -> IO ()
-mergeCmd =
+mergeCmd :: Bool -> [String] -> IO ()
+mergeCmd noprompt =
   withPackageByBranches (Just False) cleanGitFetchActive Nothing True AnyNumber runMergeBranch
   where
     runMergeBranch :: Package -> AnyBranch -> IO ()
@@ -21,7 +20,7 @@ mergeCmd =
       gitSwitchBranch rbr
       gitMergeOrigin rbr
       unmerged <- mergeable br
-      mergeBranch False False unmerged br
+      mergeBranch False noprompt unmerged br
 
 getNewerBranch :: Branch -> IO Branch
 getNewerBranch Rawhide = return Rawhide
