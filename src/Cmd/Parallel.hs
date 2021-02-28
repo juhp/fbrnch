@@ -86,7 +86,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
         setupBranch :: Branch -> IO Job
         setupBranch br = do
           job <- startBuild False br "." >>= async
-          sleep 5
+          unless dryrun $ sleep 5
           return (show br,job)
 
     parallelBuild :: Branch -> [String] -> IO String
@@ -108,7 +108,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
         setupBuild :: String -> IO Job
         setupBuild pkg = do
           job <- startBuild (nopkgs > 5) br pkg >>= async
-          sleep 5
+          unless dryrun $ sleep 5
           return (pkg,job)
 
     watchJobs :: Maybe String -> [String] -> [Job] -> IO ([String],Maybe String)
