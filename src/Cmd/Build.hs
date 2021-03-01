@@ -92,26 +92,23 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       when (isJust mpush) $
         error' "Please bump the spec file"
       when (br /= Rawhide && isNothing mtarget) $ do
-        mtags <- kojiNVRTags nvr
-        case mtags of
-          Nothing -> error' $ nvr ++ " is untagged"
-          Just tags ->
-            unless dryrun $
-            unlessM (checkAutoBodhiUpdate br) $ do
-            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
-              mBugSess <- do
-                (mbid, session) <- bzReviewSession
-                return $ case mbid of
-                  Just bid -> Just (bid,session)
-                  Nothing -> Nothing
-              bodhiUpdate (fmap fst mBugSess) spec nvr
-            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-              when (buildoptOverride opts) $
-              bodhiCreateOverride nvr
-            when (isJust mlastpkg && mlastpkg /= Just pkg) $ do
-              autoupdate <- checkAutoBodhiUpdate br
-              when (buildoptOverride opts || autoupdate) $
-                kojiWaitRepo target nvr
+        tags <- kojiNVRTags nvr
+        unless dryrun $
+          unlessM (checkAutoBodhiUpdate br) $ do
+          unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
+            mBugSess <- do
+              (mbid, session) <- bzReviewSession
+              return $ case mbid of
+                Just bid -> Just (bid,session)
+                Nothing -> Nothing
+            bodhiUpdate (fmap fst mBugSess) spec nvr
+          unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+            when (buildoptOverride opts) $
+            bodhiCreateOverride nvr
+          when (isJust mlastpkg && mlastpkg /= Just pkg) $ do
+            autoupdate <- checkAutoBodhiUpdate br
+            when (buildoptOverride opts || autoupdate) $
+              kojiWaitRepo target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
       when (isJust mpush) $

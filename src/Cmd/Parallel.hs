@@ -167,13 +167,10 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
         Just BuildComplete -> do
           putStrLn $ nvr ++ " is " ++ color Green "already built"
           when (br /= Rawhide && target == branchTarget br) $ do
-            mtags <- kojiNVRTags nvr
-            case mtags of
-              Nothing -> error' $ nvr ++ " is untagged"
-              Just tags ->
-                unless (dryrun || any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-                  unlessM (checkAutoBodhiUpdate br) $
-                  bodhiCreateOverride nvr
+            tags <- kojiNVRTags nvr
+            unless (dryrun || any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+              unlessM (checkAutoBodhiUpdate br) $
+              bodhiCreateOverride nvr
           return $ do
             unless dryrun $
               kojiWaitRepo target nvr

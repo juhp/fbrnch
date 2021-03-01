@@ -23,14 +23,11 @@ overrideCmd dryrun =
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
       putStrLn nvr
-      mtags <- kojiNVRTags nvr
-      case mtags of
-        Nothing -> error' $ nvr ++ " is untagged"
-        Just tags ->
-          unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-          unlessM (checkAutoBodhiUpdate br) $
-          if dryrun
-          then putStrLn $ "override " ++ nvr
-          else do
-            bodhiCreateOverride nvr
-            kojiWaitRepo (branchTarget br) nvr
+      tags <- kojiNVRTags nvr
+      unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+        unlessM (checkAutoBodhiUpdate br) $
+        if dryrun
+        then putStrLn $ "override " ++ nvr
+        else do
+          bodhiCreateOverride nvr
+          kojiWaitRepo (branchTarget br) nvr

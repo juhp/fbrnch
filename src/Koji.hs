@@ -36,16 +36,17 @@ import Git
 import Krb
 import Package
 import Pagure
+import Prompt
 
 fedoraHub :: String
 fedoraHub = fedoraKojiHub
 
-kojiNVRTags :: String -> IO (Maybe [String])
+kojiNVRTags :: String -> IO [String]
 kojiNVRTags nvr = do
   mbldid <- kojiGetBuildID fedoraHub nvr
   case mbldid of
-    Nothing -> return Nothing
-    Just bldid -> Just <$> kojiBuildTags fedoraHub (buildIDInfo bldid)
+    Nothing -> error' $ nvr ++ " koji build not found"
+    Just bldid -> kojiBuildTags fedoraHub (buildIDInfo bldid)
 
 kojiBuildStatus :: String -> IO (Maybe BuildState)
 kojiBuildStatus nvr =
