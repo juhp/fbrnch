@@ -133,6 +133,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           if equivNVR nvr (fromMaybe "" mlatest)
             then error' $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
             else do
+            whenJust mlatest $ \ latest -> do
+              latesttags <- kojiNVRTags latest
+              unless (any (`elem` latesttags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $
+                putStrLn $ "Warning: " ++ latest ++ " still in testing?"
             unless dryrun krbTicket
             whenJust mpush $ \ mref ->
               unless dryrun $

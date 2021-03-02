@@ -26,8 +26,11 @@ module Koji (
 import Data.Char (isDigit)
 
 import Control.Concurrent (threadDelay)
+import qualified Data.ByteString.Lazy.Char8 as B
 import Fedora.Koji
 import qualified Fedora.Koji.Internal as Koji
+import System.Exit
+import System.Process.Typed
 
 import Branches
 import Common
@@ -84,9 +87,7 @@ kojiScratchBuild target args srpm = do
 
 type KojiBuildTask = Either TaskID String
 
--- FIXME can fail like:
--- [ERROR] koji: AuthError: unable to obtain a session
--- readCreateProcess: koji "build" "--nowait" "f33-build-side-25385" "--fail-fast" "--background" ... (exit 1): failed
+-- FIXME setTermTitle nvr
 kojiBuild' :: Bool -> String -> [String] -> IO KojiBuildTask
 kojiBuild' wait target args = do
   krbTicket
@@ -96,18 +97,25 @@ kojiBuild' wait target args = do
              else ".src.rpm" `isSuffixOf` last args
   -- FIXME use tee functionality
   when srpm $ putStrLn "koji srpm build uploading..."
-  -- FIXME setTermTitle nvr
-  out <- cmd "koji" $ ["build", "--nowait", target] ++ args
-  putStrLn $ if srpm
+  -- can fail like:
+  -- [ERROR] koji: Request error: POST::https://koji.fedoraproject.org/kojihub/ssllogin::<PreparedRequest [POST]>
+  -- [ERROR] koji: AuthError: unable to obtain a session
+  -- readCreateProcess: koji "build" "--nowait" "f33-build-side-25385" "--fail-fast" "--background" ... (exit 1): failed
+  (ret,out) <- readProcessStdout $ proc "koji" $ ["build", "--nowait", target] ++ args
+  B.putStrLn $ if srpm
     -- drop uploading line until doing tee
-    then (unlines . tail . lines) out
+    then (B.unlines . tail . B.lines) out
     else out
-  let kojiurl = last $ words out
-      task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
-  when wait $ do
-    kojiWatchTask task
-    cmd_ "date" []
-  return $ if wait then Right kojiurl else Left task
+  if ret == ExitSuccess then do
+    let kojiurl = B.unpack $ last $ B.words out
+        task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
+    when wait $ do
+      kojiWatchTask task
+      cmd_ "date" []
+    return $ if wait then Right kojiurl else Left task
+    else do
+    prompt_ "Press Enter to resubmit Koji build"
+    kojiBuild' wait target args
 
 -- kojiBuild :: String -> [String] -> IO String
 -- kojiBuild target args = do
