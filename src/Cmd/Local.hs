@@ -26,7 +26,9 @@ localCmd mforceshort bconds =
     localBuildPkg :: Package -> AnyBranch -> IO ()
     localBuildPkg pkg br = do
       spec <- localBranchSpecFile pkg br
-      rpms <- builtRpms br spec
+      rpms <- if isJust mforceshort
+              then return []
+              else builtRpms br spec
       buildRPMs False mforceshort bconds rpms br spec
 
 -- FIXME single branch
