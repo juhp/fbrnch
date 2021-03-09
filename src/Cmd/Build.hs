@@ -62,8 +62,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   -- FIXME if already built or failed, also offer merge
   merged <-
     if notNull unmerged && (buildoptNoPrompt opts || newrepo || tty)
-      then mergeBranch True (buildoptNoPrompt opts) unmerged br >> return True
-      else return False
+    then mergeBranch True (buildoptNoPrompt opts) unmerged br >> return True
+    else return False
   let spec = packageSpec pkg
   checkForSpecFile spec
   checkSourcesMatch spec
