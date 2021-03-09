@@ -2,6 +2,7 @@
 
 module Bodhi (
   bodhiCreateOverride,
+  bodhiTestingRepo,
   checkAutoBodhiUpdate,
   UpdateType(..)
   )
@@ -70,3 +71,11 @@ instance Read UpdateType where
       "enhancement" -> RP.lift (R.string s) >> return EnhancementUpdate
       "newpackage" -> RP.lift (R.string s) >> return NewPackageUpdate
       _ -> error' "unknown bodhi update type" >> RP.pfail
+
+bodhiTestingRepo :: Branch -> IO (Maybe String)
+bodhiTestingRepo Rawhide = return Nothing
+bodhiTestingRepo br = do
+  obj <- bodhiRelease (show br)
+  return $ case lookupKey "testing_repository" obj :: Maybe String of
+             Nothing -> Nothing
+             Just _ -> lookupKey' "testing_tag" obj

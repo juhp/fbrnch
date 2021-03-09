@@ -133,10 +133,20 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           if equivNVR nvr (fromMaybe "" mlatest)
             then error' $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
             else do
-            whenJust mlatest $ \ latest -> do
-              latesttags <- kojiNVRTags latest
-              unless (any (`elem` latesttags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $
-                putStrLn $ "Warning: " ++ latest ++ " still in testing?"
+            firstBuild <- do
+              mtestingRepo <- bodhiTestingRepo br
+              case mtestingRepo of
+                Nothing -> return $ isNothing mlatest
+                Just testing -> do
+                  mnewest <- kojiLatestNVR testing $ unPackage pkg
+                  case mnewest of
+                    Nothing -> return $ isNothing mlatest
+                    Just newest -> do
+                      newestTags <- kojiNVRTags newest
+                      unless (any (`elem` newestTags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $ do
+                        putStrLn $ "Warning: " ++ newest ++ " still in testing?"
+                        prompt_ "Press Enter to continue"
+                      return False
             unless dryrun krbTicket
             whenJust mpush $ \ mref ->
               unless dryrun $
@@ -150,7 +160,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             unless dryrun $ do
               kojiBuildBranch target pkg mbuildref ["--fail-fast"]
               mBugSess <-
-                if isNothing mlatest
+                if firstBuild
                 then do
                 (mbid, session) <- bzReviewSession
                 return $ case mbid of
