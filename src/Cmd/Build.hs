@@ -58,11 +58,11 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   gitMergeOrigin rbr
   newrepo <- initialPkgRepo
   tty <- isTty
-  unmerged <- mergeable br
+  (ancestor,unmerged) <- mergeable br
   -- FIXME if already built or failed, also offer merge
   merged <-
-    if notNull unmerged && (buildoptNoPrompt opts || newrepo || tty)
-    then mergeBranch True (buildoptNoPrompt opts) unmerged br >> return True
+    if buildoptNoPrompt opts || newrepo || tty
+    then mergeBranch True (buildoptNoPrompt opts) (ancestor,unmerged) br >> return True
     else return False
   let spec = packageSpec pkg
   checkForSpecFile spec
@@ -79,7 +79,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
     if null unpushed then return Nothing
     else
       -- see mergeBranch for: unmerged == 1 (774b5890)
-      if tty && (not merged || (newrepo && length unmerged == 1))
+      if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
       then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
       else return $ Just Nothing
   let dryrun = buildoptDryrun opts

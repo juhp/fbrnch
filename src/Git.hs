@@ -39,19 +39,21 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
-gitMergeable :: String -> IO [String]
+gitMergeable :: String -> IO (Bool,[String])
 gitMergeable ref = do
   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
-  if ancestor then gitShortLog $ "HEAD.." ++ ref
-    else return []
+  commits <- gitShortLog ("HEAD.." ++ ref)
+  return (ancestor, commits)
 
 gitMergeOrigin :: AnyBranch -> IO ()
 gitMergeOrigin br = do
-  commits <- gitMergeable $ "origin" </> show br
-  unless (null commits) $ do
+  (ancestor,commits) <- gitMergeable $ "origin" </> show br
+  if ancestor then
+    unless (null commits) $ do
     rebase <- git "rebase" []
     unless ("Already up to date." `isPrefixOf` rebase) $
       putStr rebase
+    else git_ "rebase" []
 
 gitShortLog :: String -> IO [String]
 gitShortLog range =

@@ -35,20 +35,20 @@ getNewerBranch br = do
 
 -- FIXME newer branch might not exist (eg epel8):
    -- restrict to local branches
-mergeable :: Branch -> IO [String]
+mergeable :: Branch -> IO (Bool,[String])
 mergeable br = do
   newerBr <- getNewerBranch br
   gitMergeable $ show newerBr
 
 -- FIXME return merged ref
-mergeBranch :: Bool -> Bool -> [String] -> Branch -> IO ()
+mergeBranch :: Bool -> Bool -> (Bool,[String]) -> Branch -> IO ()
 mergeBranch _ _ _ Rawhide = return ()
-mergeBranch _ _ [] _ = return ()
-mergeBranch build noprompt unmerged br = do
+mergeBranch _ _ (True,[]) _ = return ()
+mergeBranch build noprompt (True, unmerged) br = do
   newerBr <- getNewerBranch br
-  newrepo <- initialPkgRepo
+  isnewrepo <- initialPkgRepo
   unless (null unmerged) $ do
-    putStrLn $ (if newrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show newerBr ++ ":"
+    putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show newerBr ++ ":"
     mapM_ (putStrLn . simplifyCommitLog) unmerged
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
@@ -56,7 +56,7 @@ mergeBranch build noprompt unmerged br = do
     mapM_ (putStrLn . simplifyCommitLog) unpushed
   -- FIXME avoid Mass_Rebuild bumps
   mmerge <-
-    if newrepo && length unmerged == 1 || noprompt then return $ Just Nothing
+    if isnewrepo && length unmerged == 1 || noprompt then return $ Just Nothing
     else refPrompt unmerged $ "Press Enter to merge " ++ show newerBr ++ (if build then " and build" else "") ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
@@ -65,3 +65,15 @@ mergeBranch build noprompt unmerged br = do
                 Nothing -> show newerBr
                 Just hash -> hash
     git_ "merge" ["--quiet", ref]
+mergeBranch _build noprompt (False,unmerged) br = do
+  putStrLn "Branch is not directly mergeable:"
+  mapM_ (putStrLn . simplifyCommitLog) unmerged
+  putStrLn ""
+  gitShortLog "-1" >>= mapM_ (putStrLn . simplifyCommitLog)
+  mmerge <-
+    if noprompt then return Nothing
+    else conflictPrompt unmerged "Press Enter to skip merge; or give a ref to attempt merge"
+  -- ensure still on same branch!
+  gitSwitchBranch (RelBranch br)
+  whenJust mmerge $ \ ref ->
+    git_ "merge" [ref]

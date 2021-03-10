@@ -1,7 +1,8 @@
 module Prompt (
   prompt,
   prompt_,
-  refPrompt
+  refPrompt,
+  conflictPrompt
   ) where
 
 import Common
@@ -23,9 +24,18 @@ prompt_ = void <$> prompt
 refPrompt :: [String] -> String -> IO (Maybe (Maybe String))
 refPrompt commits txt = do
   let commitrefs = tail $ map (head . words) commits
-  inp <- prompt txt
-  if null inp then return (Just Nothing) else
-    if map toLower inp == "no" then return Nothing
-    else case find (inp `isPrefixOf`) commitrefs of
-      Just ref -> return $ Just (Just ref)
-      Nothing -> refPrompt commits txt
+  ref <- prompt txt
+  if null ref then return (Just Nothing) else
+    if map toLower ref == "no" then return Nothing
+    else if ref `elem` commitrefs
+      then return $ Just (Just ref)
+      else refPrompt commits txt
+
+conflictPrompt :: [String] -> String -> IO (Maybe String)
+conflictPrompt commits txt = do
+  let commitrefs = tail $ map (head . words) commits
+  ref <- prompt txt
+  if null ref then return Nothing
+    else if ref `elem` commitrefs
+      then return $ Just ref
+      else conflictPrompt commits txt
