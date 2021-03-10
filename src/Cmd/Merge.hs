@@ -49,11 +49,11 @@ mergeBranch build noprompt (True, unmerged) br = do
   isnewrepo <- initialPkgRepo
   unless (null unmerged) $ do
     putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show newerBr ++ ":"
-    mapM_ (putStrLn . simplifyCommitLog) unmerged
+    mapM_ putStrLn unmerged
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"
-    mapM_ (putStrLn . simplifyCommitLog) unpushed
+    mapM_ putStrLn unpushed
   -- FIXME avoid Mass_Rebuild bumps
   mmerge <-
     if isnewrepo && length unmerged == 1 || noprompt then return $ Just Nothing
@@ -67,9 +67,9 @@ mergeBranch build noprompt (True, unmerged) br = do
     git_ "merge" ["--quiet", ref]
 mergeBranch _build noprompt (False,unmerged) br = do
   putStrLn "Branch is not directly mergeable:"
-  mapM_ (putStrLn . simplifyCommitLog) unmerged
+  mapM_ putStrLn unmerged
   putStrLn ""
-  gitShortLog "-1" >>= mapM_ (putStrLn . simplifyCommitLog)
+  gitShortLog1 (Just "-1") >>= putStrLn
   mmerge <-
     if noprompt then return Nothing
     else conflictPrompt unmerged "Press Enter to skip merge; or give a ref to attempt merge"

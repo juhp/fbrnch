@@ -13,7 +13,6 @@ module Git (
   gitShortLogN,
   gitShortLog1,
   gitSwitchBranch,
-  simplifyCommitLog,
 --  checkIsPkgGitDir,
   isGitRepo,
   isPkgGitRepo,
@@ -57,15 +56,15 @@ gitMergeOrigin br = do
 
 gitShortLog :: String -> IO [String]
 gitShortLog range =
-  gitLines "log" ["--pretty=reference", range]
+  map simplifyCommitLog <$> gitLines "log" ["--pretty=reference", range]
 
 gitShortLogN :: Int -> Maybe String -> IO [String]
 gitShortLogN num mrange =
-  gitLines "log" (["--max-count=" ++ show num, "--pretty=reference"] ++ maybeToList mrange)
+  map simplifyCommitLog <$> gitLines "log" (["--max-count=" ++ show num, "--pretty=reference"] ++ maybeToList mrange)
 
 gitShortLog1 :: Maybe String -> IO String
 gitShortLog1 mrange =
-  git "log" (["--max-count=1", "--pretty=reference"] ++ maybeToList mrange)
+  simplifyCommitLog <$> git "log" (["--max-count=1", "--pretty=reference"] ++ maybeToList mrange)
 
 -- FIXME currently no-op with --format=reference
 simplifyCommitLog :: String -> String

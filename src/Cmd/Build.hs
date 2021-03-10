@@ -74,7 +74,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   when (not merged || br == Rawhide) $
     unless (null unpushed) $ do
       putStrLn "Local commits:"
-      mapM_ (putStrLn . simplifyCommitLog) unpushed
+      mapM_ putStrLn unpushed
   mpush <-
     if null unpushed then return Nothing
     else

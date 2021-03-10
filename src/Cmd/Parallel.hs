@@ -136,7 +136,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
       putPkgBrnchHdr pkg br
       unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $
-        mapM_ (putStrLn . simplifyCommitLog) unpushed
+        mapM_ putStrLn unpushed
       let spec = packageSpec pkg
       checkForSpecFile spec
       unless (null unpushed) $ do
