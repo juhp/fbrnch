@@ -63,9 +63,11 @@ requestRepo retry mbrnchopts pkg = do
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment
         putStrLn ""
-        branches <- getRequestedBranches mbrnchopts []
+        brs <- branchingPrompt
+        branches <- getRequestedBranches mbrnchopts brs
         forM_ branches $ \ br ->
-          fedpkg "request-branch" ["--repo", pkg, show br]
+          putStr (show br ++ " ") >>
+          fedpkg_ "request-branch" ["--repo", pkg, show br]
   where
     existingRepoRequests :: IO [IssueTitleStatus]
     existingRepoRequests = do

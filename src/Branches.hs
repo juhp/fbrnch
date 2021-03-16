@@ -18,7 +18,8 @@ module Branches (
   systemBranch,
   getReleaseBranch,
   branchVersion,
-  anyBranchToRelease
+  anyBranchToRelease,
+  branchingPrompt
 ) where
 
 import Common
@@ -28,6 +29,7 @@ import SimpleCmd
 import SimpleCmd.Git
 
 import Pagure
+import Prompt
 
 data AnyBranch = RelBranch Branch | OtherBranch String
   deriving Eq
@@ -170,3 +172,14 @@ branchVersion :: Branch -> String
 branchVersion Rawhide = "rawhide"
 branchVersion (Fedora n) = show n
 branchVersion (EPEL n) = show n
+
+branchingPrompt :: IO [Branch]
+branchingPrompt = do
+  inp <- prompt "Enter required branches [default: latest 2]"
+  if null inp
+    then return []
+    else
+    let brs = map anyBranch $ words inp
+    in if all isRelBranch brs
+       then return $ map onlyRelBranch brs
+       else branchingPrompt
