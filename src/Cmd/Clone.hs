@@ -20,6 +20,4 @@ cloneCmd mbr request = do
               map (takeFileName . T.unpack) <$> pagureUserRepos srcfpo userid
             -- FIXME detect/prevent "path/dir"
             ClonePkgs ps -> return ps
-  putStr "Cloning: "
   mapM_ (clonePkg False mbr) pkgs
-  putStrLn ""

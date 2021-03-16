@@ -554,9 +554,12 @@ clonePkg quiet mbr pkg =
             Nothing -> []
             Just br -> ["--branch", show br]
       fasid <- fasIdFromKrb
-      unless quiet $
-        putStr $ pkg ++ " "
+      putStr $
+        if quiet
+        then "cloning..."
+        else "Cloning: " ++ pkg
       git_ "clone" $ ["--quiet"] ++ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg]
+      putStrLn ""
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
 pkgNameVerRel br spec = do
