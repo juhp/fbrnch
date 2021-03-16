@@ -101,8 +101,7 @@ commentBug session bid comment = do
       Nothing -> print res
       Just msg -> T.putStrLn msg
     error' $ "failed to update bug " ++ show bid
-  putStrLn "Comment added:"
-  putStrLn comment
+  putStrLn "Comment added"
 
 updateBug :: BugzillaSession -> BugId -> [(String,String)] -> IO ()
 updateBug session bid params = do
