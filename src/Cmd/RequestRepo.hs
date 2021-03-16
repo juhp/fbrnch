@@ -45,10 +45,11 @@ requestRepo retry mbrnchopts pkg = do
       -- show comments?
       requests <- existingRepoRequests
       unless (null requests) $ do
-            putStrLn "Request exists:"
-            mapM_ printScmIssue requests
-            when (retry && pagureIssueCloseStatus (head requests) == Just "Processed") $
-              error' "The last repo request was already successfully Processed"
+        putStrLn "Request exists:"
+        mapM_ printScmIssue requests
+        -- don't retry if succeeded
+        when (retry && pagureIssueCloseStatus (head requests) == Just "Processed") $
+          error' "The last repo request was already successfully Processed"
       when (null requests || retry) $ do
         checkNoPagureRepo
         url <- fedpkg "request-repo" [pkg, show bid]
