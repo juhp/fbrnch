@@ -506,7 +506,6 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
                -- For now assume spec filename = package name
                Just spec -> return $ takeBaseName spec
                Nothing -> getDirectoryName
-
       unless (isNothing mspec || mspec == Just (unPackage pkg <.> "spec")) $
         putStrLn  "Warning: package name and spec filename differ!"
       haveGit <- isPkgGitRepo
@@ -515,17 +514,21 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
       let fetch = have gitOptFetch
-      when ((mheader == Just True || isJust mheader && max (length brs) (length pkgs) > 1 || fetch) && dir /= ".") $
+      when ((isJust mheader || fetch) && dir /= ".") $
         case brs of
-          [br] -> putPkgAnyBrnchHdr pkg br
-          _ -> putPkgHdr pkg
+          [br] -> when (fetch || mheader == Just True) $ putPkgAnyBrnchHdr pkg br
+          _ -> when (fetch || isJust mheader) $ putPkgHdr pkg
       when haveGit $
         when (have gitOptClean) checkWorkingDirClean
-      when fetch gitFetchSilent
+      when fetch $ gitFetchSilent >> putStrLn ""
       branches <- listOfBranches haveGit (have gitOptActive) mbrnchopts brs
       when (mbrnchopts == Just AllBranches) $
         putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
-      mapM_ (action pkg) branches
+      -- FIXME add newline at end?
+      let action' p b = do
+            when (isJust mheader && length brs > 1) $ putPkgAnyBrnchHdr p b
+            action p b
+      mapM_ (action' pkg) branches
       when (length branches /= 1) $
         whenJust mcurrentbranch gitSwitchBranch
 
