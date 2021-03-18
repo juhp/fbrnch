@@ -123,8 +123,8 @@ main = do
       commandCmd <$> commandOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
       coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> pkgArg "PROJECT" <*> branchesOpt <*> branchesPackages
-    , Subcommand "master-rename" "Rename local master branch to rawhide" $
-      masterRenameCmd <$> many (pkgArg "[PACKAGE]...")
+    , Subcommand "rename-master" "Rename local master branch to rawhide" $
+      renameMasterCmd <$> many (pkgArg "[PACKAGE]...")
     ]
   where
     cloneRequest :: Parser CloneRequest

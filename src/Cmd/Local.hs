@@ -7,7 +7,7 @@ module Cmd.Local (
   sortCmd,
   RpmWith(..),
   srpmCmd,
-  masterRenameCmd
+  renameMasterCmd
   ) where
 
 import Distribution.RPM.Build.Order (dependencySortRpmOpts)
@@ -98,12 +98,12 @@ commandCmd cs mbrnchopts =
       (_,_,_,h) <- P.createProcess p
       void $ P.waitForProcess h
 
-masterRenameCmd :: [String] -> IO ()
-masterRenameCmd =
-  withPackageByBranches (Just False) dirtyGit Nothing True ZeroOrOne masterRenameBranch
+renameMasterCmd :: [String] -> IO ()
+renameMasterCmd =
+  withPackageByBranches (Just False) dirtyGit Nothing True ZeroOrOne renameMasterBranch
   where
-  masterRenameBranch :: Package -> AnyBranch -> IO ()
-  masterRenameBranch _pkg _br = do
+  renameMasterBranch :: Package -> AnyBranch -> IO ()
+  renameMasterBranch _pkg _br = do
     locals <- gitLines "branch" ["--format=%(refname:short)"]
     when ("rawhide" `notElem` locals) $ do
       git_ "fetch" ["--prune"]
