@@ -120,7 +120,7 @@ main = do
 --    , Subcommand "test-bz-token" "Check bugzilla login status" $
 --      pure testBZlogin
     , Subcommand "command" "Run shell command in package dirs ($p)" $
-      commandCmd <$> commandOpt <*> branchesOpt <*> branchesPackages
+      commandCmd <$> switchWith 'o' "if-output" "only print if output" <*> commandOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
       coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> pkgArg "PROJECT" <*> branchesOpt <*> branchesPackages
     , Subcommand "rename-master" "Rename local master branch to rawhide" $

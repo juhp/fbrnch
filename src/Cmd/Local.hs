@@ -10,9 +10,11 @@ module Cmd.Local (
   renameMasterCmd
   ) where
 
+import qualified Data.ByteString.Lazy.Char8 as B
 import Distribution.RPM.Build.Order (dependencySortRpmOpts)
-import qualified System.Process as P
 import System.Environment
+import qualified System.Process as P
+import qualified System.Process.Typed as TP
 
 import Branches
 import Common
@@ -87,16 +89,24 @@ nvrCmd mbrnchopts =
           pkgNameVerRel' sbr spec
         >>= putStrLn
 
-commandCmd :: String -> Maybe BranchOpts -> [String] -> IO ()
-commandCmd cs mbrnchopts =
-  withPackageByBranches (Just True) Nothing mbrnchopts True AnyNumber cmdBranch
+commandCmd :: Bool -> String -> Maybe BranchOpts -> [String] -> IO ()
+commandCmd ifoutput cs mbrnchopts =
+  withPackageByBranches (Just (not ifoutput)) Nothing mbrnchopts True AnyNumber cmdBranch
   where
     cmdBranch :: Package -> AnyBranch -> IO ()
-    cmdBranch pkg _br = do
+    cmdBranch pkg br = do
       curEnv <- getEnvironment
-      let p = (P.shell cs) { P.env = Just (("p",unPackage pkg):curEnv) }
-      (_,_,_,h) <- P.createProcess p
-      void $ P.waitForProcess h
+      if ifoutput then do
+        out <- TP.readProcessInterleaved_ $
+                    TP.setEnv (("p",unPackage pkg):curEnv) $
+                    TP.shell cs
+        unless (B.null out) $ do
+          putPkgAnyBrnchHdr pkg br
+          B.putStrLn out
+        else do
+        let p = (P.shell cs) { P.env = Just (("p",unPackage pkg):curEnv) }
+        (_,_,_,h) <- P.createProcess p
+        void $ P.waitForProcess h
 
 renameMasterCmd :: [String] -> IO ()
 renameMasterCmd =
