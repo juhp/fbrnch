@@ -24,7 +24,7 @@ import Prompt
 -- FIXME reference existing/previous scratch build
 createReview :: Bool -> Bool -> [FilePath] -> IO ()
 createReview noscratch mock pkgs =
-  withPackageByBranches (Just True) Nothing Nothing True AnyNumber createPkgReview ("master":pkgs)
+  withPackageByBranches (Just True) Nothing Nothing True Zero createPkgReview pkgs
   where
     createPkgReview :: Package -> AnyBranch -> IO ()
     createPkgReview package _br = do

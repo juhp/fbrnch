@@ -434,7 +434,7 @@ cleanGitFetchActive = Just $ GitOpts True  True  True
 dirtyGit =            Just $ GitOpts False False False
 dirtyGitFetch =       Just $ GitOpts False True  False
 
-data LimitBranches = AnyNumber | ZeroOrOne | ExactlyOne
+data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
   deriving Eq
 
 -- do package over branches
@@ -472,6 +472,8 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
       error' "cannot specify branches and branch option together"
     Nothing ->
       case limitBranches of
+        Zero | length brs > 0 ->
+          error' $ "package not found: " ++ unwords (map show brs)
         ZeroOrOne | length brs > 1 ->
           -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
           error' $ "more than one branch given or packages not found: " ++ unwords (tail (map show brs))
