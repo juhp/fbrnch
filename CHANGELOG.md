@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.3 (2021-03-23)
+- 'scratch': don't get sources for pushed git build
+- changes/improvements to package header output
+- 'merge','build': show/query diverging newer commits
+- 'merge': add --no-prompt option
+- Build: refine the "still in testing" logic to check testing repo with prompt
+- Koji: offer to resubmit build on error
+- 'request-repos' now prompts for branching and
+  'import' skips offering branching if they exist
+- add 'not-installed' command: lists packages not installed locally at all
+- Bugzilla: don't bother reprinting comment after posting it
+- 'rename-master': renamed from 'master-rename'
+- 'srpm': add --force option
+- `local --force` (or --short): ignore existing built rpms
+- 'command': option to hide package header if no output
+- 'create-review': fix error for non-existent dir
+- 'parallel': don't sleep 5s for dryrun
+
 ## 0.7.2 (2021-02-27)
 - 'install': --recurse to install missing neighboring deps
 - 'request-repo': offer to request branches too
