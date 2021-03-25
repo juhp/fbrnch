@@ -23,8 +23,8 @@ import Prompt
 -- FIXME add --dependent pkgreview
 -- FIXME reference existing/previous scratch build
 createReview :: Bool -> Bool -> [FilePath] -> IO ()
-createReview noscratch mock pkgs =
-  withPackageByBranches (Just True) Nothing Nothing True Zero createPkgReview pkgs
+createReview noscratch mock =
+  withPackageByBranches (Just True) Nothing Nothing True Zero createPkgReview
   where
     createPkgReview :: Package -> AnyBranch -> IO ()
     createPkgReview package _br = do

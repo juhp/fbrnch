@@ -472,7 +472,7 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
       error' "cannot specify branches and branch option together"
     Nothing ->
       case limitBranches of
-        Zero | length brs > 0 ->
+        Zero | not (null brs) ->
           error' $ "package not found: " ++ unwords (map show brs)
         ZeroOrOne | length brs > 1 ->
           -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
