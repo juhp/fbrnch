@@ -1,4 +1,8 @@
-- merge rawhide pushes to main
+- check envr > any existing current package, before building
+
+- 'clean' command?
+
+- merge rawhide pushes to local main?
 
 - filter bz# out from bodhi notes
 
@@ -9,6 +13,8 @@
 - use +/+ for urls instead of </>
 
 - pull creating new branches and/or clone --all?
+
+- push/build a commit (eg if one doesn't want to build HEAD yet)
 
 - stash and restore
 
@@ -25,6 +31,7 @@
 - 'chain'
 - 'check-deps'
 - 'clone-deps'
+- 'remove-sidetag(s)'
 
 # release deps
 - koji (new)

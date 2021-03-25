@@ -13,7 +13,7 @@ import Package
 
 data Archs = Archs [String] | ExcludedArchs [String]
 
--- FIXME default to rawhide/master?
+-- FIXME default to rawhide/main?
 -- FIXME build from a specific git ref
 -- FIXME print message about uploading srpm
 scratchCmd :: Bool -> Bool -> Bool -> Maybe Archs -> Maybe String -> [String]

@@ -183,6 +183,7 @@ generateSrpm mbr spec = do
   ifM (notM $ doesFileExist srpm)
     (buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)) $
     do
+      -- FIXME also compare source tarball timestamps
     specTime <- getModificationTime spec
     srpmTime <- getModificationTime srpm
     if srpmTime > specTime
@@ -208,6 +209,7 @@ instance Show BCond where
 
 -- FIXME create build.log
 -- Note does not check if bcond changed
+-- FIXME check tarball timestamp
 buildRPMs :: Bool -> Maybe ForceShort -> [BCond] -> [FilePath] -> AnyBranch
           -> FilePath -> IO ()
 buildRPMs quiet mforceshort bconds rpms br spec = do
