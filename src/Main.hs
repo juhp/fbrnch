@@ -79,7 +79,7 @@ main = do
     , Subcommand "local" "Build locally" $
       localCmd <$> optional forceshortOpt <*> many bcondOpt <*> branchesPackages
     , Subcommand "srpm" "Build srpm" $
-      srpmCmd <$> branchesPackages
+      srpmCmd <$> switchWith 'f' "force" "regenerate even if spec older than existing srpm" <*> branchesPackages
     , Subcommand "diff" "Diff local changes" $
       diffCmd <$> diffSpecOnly <*> diffWorkOpt <*> diffFormatOpt <*> diffBranchOpt <*> branchesPackages
     , Subcommand "log" "Show commits between branches" $

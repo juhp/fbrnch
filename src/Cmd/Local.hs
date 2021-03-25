@@ -43,14 +43,14 @@ installDepsCmd =
       localBranchSpecFile pkg br >>= installDeps
 
 -- FIXME single branch
-srpmCmd :: [String] -> IO ()
-srpmCmd =
+srpmCmd :: Bool -> [String] -> IO ()
+srpmCmd force =
   withPackageByBranches Nothing Nothing Nothing True ZeroOrOne srpmBuildPkg
   where
     srpmBuildPkg :: Package -> AnyBranch -> IO ()
     srpmBuildPkg pkg br = do
       spec <- localBranchSpecFile pkg br
-      void $ generateSrpm (Just br) spec
+      void $ generateSrpm' force (Just br) spec
 
 data RpmWith = RpmWith String | RpmWithout String
 

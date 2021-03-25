@@ -14,6 +14,7 @@ module Package (
   findSpecfile,
   localBranchSpecFile,
   generateSrpm,
+  generateSrpm',
   BCond(..),
   ForceShort(..),
   buildRPMs,
@@ -159,7 +160,10 @@ rpmEval s = do
   return $ if null res || res == s then Nothing else Just res
 
 generateSrpm :: Maybe AnyBranch -> FilePath -> IO FilePath
-generateSrpm mbr spec = do
+generateSrpm = generateSrpm' False
+
+generateSrpm' :: Bool -> Maybe AnyBranch -> FilePath -> IO FilePath
+generateSrpm' force mbr spec = do
   getSources spec
   distopt <- case mbr of
                Nothing -> return []
@@ -180,18 +184,22 @@ generateSrpm mbr spec = do
       rpmEval "%{_sourcedir}" >>= maybe (error' "%_sourcedir undefined!") return
   let sourcediropt = if null sourcedir then []
                      else ["--define", "_sourcedir " ++ sourcedir]
-  ifM (notM $ doesFileExist srpm)
-    (buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)) $
-    do
+  if force then
+    buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
+    else do
+    exists <- doesFileExist srpm
+    if not exists
+      then buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
+      else do
       -- FIXME also compare source tarball timestamps
-    specTime <- getModificationTime spec
-    srpmTime <- getModificationTime srpm
-    if srpmTime > specTime
-      then do
-      -- pretty print with ~/
-      putStrLn $ srpm ++ " is up to date"
-      return srpm
-      else buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
+      specTime <- getModificationTime spec
+      srpmTime <- getModificationTime srpm
+      if srpmTime > specTime
+        then do
+        -- pretty print with ~/
+        putStrLn $ srpm ++ " is up to date"
+        return srpm
+        else buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
   where
     buildSrpm opts = do
       srpm <- last . words <$> cmd "rpmbuild" (opts ++ ["-bs", spec])
