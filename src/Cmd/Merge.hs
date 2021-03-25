@@ -65,14 +65,16 @@ mergeBranch build noprompt (True, unmerged) br = do
                 Nothing -> show newerBr
                 Just hash -> hash
     git_ "merge" ["--quiet", ref]
-mergeBranch _build noprompt (False,unmerged) br = do
+mergeBranch build noprompt (False,unmerged) br = do
   putStrLn "Branch is not directly mergeable:"
   mapM_ putStrLn unmerged
-  putStrLn ""
-  gitShortLog1 (Just "-1") >>= putStrLn
+  unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+  unless (null unpushed) $ do
+    putStrLn "Local commits:"
+    mapM_ putStrLn unpushed
   mmerge <-
     if noprompt then return Nothing
-    else conflictPrompt unmerged "Press Enter to skip merge; or give a ref to attempt merge"
+    else conflictPrompt unmerged $ "Press Enter to skip merge" ++ (if build then " and build" else "") ++ "; or give a ref to attempt merge"
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ ref ->
