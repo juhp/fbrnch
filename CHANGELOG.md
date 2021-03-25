@@ -9,6 +9,7 @@
 - Koji: offer to resubmit build on error
 - 'request-repos' now prompts for branching and
   'import' skips offering branching if they exist
+- 'import': add --mock option for checking branches (#18)
 - add 'not-installed' command: lists packages not installed locally at all
 - Bugzilla: don't bother reprinting comment after posting it
 - 'rename-master': renamed from 'master-rename'

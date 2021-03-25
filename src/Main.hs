@@ -102,17 +102,17 @@ main = do
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> branchesPackages
     , Subcommand "create-review" "Create a Package Review request" $
-      createReview <$> noScratchBuild <*> mockOpt <*> many (pkgArg "PACKAGE...")
+      createReview <$> noScratchBuild <*> mockOpt False <*> many (pkgArg "PACKAGE...")
     , Subcommand "update-review" "Update a Package Review" $
-      updateReview <$> noScratchBuild <*> mockOpt <*> optional (strArg "SPECFILE")
+      updateReview <$> noScratchBuild <*> mockOpt False <*> optional (strArg "SPECFILE")
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd <$> reviewShortOpt <*> reviewAllStatusOpt <*> switchWith 'T' "assigned-to" "List reviews assigned to user" <*> optional (strOptionWith 'U' "user" "USER" "Bugzilla user email") <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
       requestRepos <$> reviewAllStatusOpt <*> switchWith 'r' "retry" "Re-request repo" <*> branchesOpt <*> many (pkgArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
-      importCmd <$> many (pkgArg "NEWPACKAGE...")
+      importCmd <$> mockOpt True <*> many (pkgArg "NEWPACKAGE...")
     , Subcommand "request-branches" "Request branches for approved created packages" $
-      requestBranches <$> mockOpt <*> optional branchesRequestOpt <*> branchesPackages
+      requestBranches <$> mockOpt False <*> optional branchesRequestOpt <*> branchesPackages
     , Subcommand "find-review" "Find package review bug" $
       findReview <$> pkgArg "PACKAGE"
     , Subcommand "review-package" "Run fedora-review on a package Review Request bug" $
@@ -189,7 +189,7 @@ main = do
       RpmWith <$> strOptionWith 'w' "with" "BCOND" "rpmspec --with option" <|>
       RpmWithout <$> strOptionWith 'W' "without" "BCOND" "rpmspec --without option"
 
-    mockOpt = switchWith 'm' "mock" "Do mock build to test"
+    mockOpt brs = switchWith 'm' "mock" $ "Do mock build to test" ++ if brs then " branches" else ""
 
     archOpt :: Parser String
     archOpt = strOptionWith 'a' "arch" "ARCH[,ARCH].." "build for arch(s)"
