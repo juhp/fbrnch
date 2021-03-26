@@ -11,7 +11,6 @@ import SimpleCmd
 
 import Branches
 import Bugzilla
-import Cmd.RequestBranch (getRequestedBranches)
 import Krb
 import ListReviews
 import Package
@@ -20,17 +19,19 @@ import Prompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 requestRepos :: Bool -> Bool -> Maybe BranchOpts -> [String] -> IO ()
-requestRepos allstates retry mbrnchopts ps = do
+requestRepos allstates retry mbrnchopts args = do
+  (abrs,ps) <- splitBranchesPkgs True mbrnchopts True args
+  let brs = map onlyRelBranch abrs
   when (retry && length ps /= 1) $
     error' "--retry only for a single package"
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviewsAll allstates ReviewWithoutRepoReq
     else return ps
-  mapM_ (requestRepo retry mbrnchopts) pkgs
+  mapM_ (requestRepo retry mbrnchopts brs) pkgs
 
 -- FIXME also accept bugid instead
-requestRepo :: Bool -> Maybe BranchOpts -> String -> IO ()
-requestRepo retry mbrnchopts pkg = do
+requestRepo :: Bool -> Maybe BranchOpts -> [Branch] -> String -> IO ()
+requestRepo retry mbrnchopts brs pkg = do
   putStrLn pkg
   (bug,session) <- approvedReviewBugSession pkg
   putBug bug
@@ -63,8 +64,7 @@ requestRepo retry mbrnchopts pkg = do
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment
         putStrLn ""
-        brs <- branchingPrompt
-        branches <- getRequestedBranches mbrnchopts brs
+        branches <- getRequestedBranches
         forM_ branches $ \ br ->
           putStr (show br ++ " ") >>
           fedpkg_ "request-branch" ["--repo", pkg, show br]
@@ -93,3 +93,21 @@ requestRepo retry mbrnchopts pkg = do
         if "@" `T.isInfixOf` first
         then Nothing
         else Just first
+
+    getRequestedBranches :: IO [Branch]
+    getRequestedBranches = do
+      active <- getFedoraBranched
+      case mbrnchopts of
+        Nothing -> if null brs
+                   then branchingPrompt
+                   else return brs
+        Just request -> do
+          let requested = case request of
+                            AllBranches -> active
+                            AllFedora -> filter isFedoraBranch active
+                            AllEPEL -> filter isEPELBranch active
+                            ExcludeBranches xbrs -> active \\ xbrs
+          inp <- prompt $ "Confirm branches request [" ++ unwords (map show requested) ++ "]"
+          return $ if null inp
+                   then requested
+                   else map (readActiveBranch' active) $ words inp
