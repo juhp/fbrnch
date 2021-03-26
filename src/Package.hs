@@ -538,7 +538,7 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
         putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
       -- FIXME add newline at end?
       let action' p b = do
-            when (isJust mheader && length brs > 1) $ putPkgAnyBrnchHdr p b
+            when (isJust mheader && length branches > 1) $ putPkgAnyBrnchHdr p b
             action p b
       mapM_ (action' pkg) branches
       when (length branches /= 1) $
