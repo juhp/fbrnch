@@ -18,8 +18,8 @@ import Pagure
 import Prompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
-requestRepos :: Bool -> Bool -> Maybe BranchOpts -> [String] -> IO ()
-requestRepos allstates retry mbrnchopts args = do
+requestRepos :: Bool -> Bool -> Bool -> Maybe BranchOpts -> [String] -> IO ()
+requestRepos mock allstates retry mbrnchopts args = do
   (abrs,ps) <- splitBranchesPkgs True mbrnchopts True args
   let brs = map onlyRelBranch abrs
   when (retry && length ps /= 1) $
@@ -27,11 +27,11 @@ requestRepos allstates retry mbrnchopts args = do
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviewsAll allstates ReviewWithoutRepoReq
     else return ps
-  mapM_ (requestRepo retry mbrnchopts brs) pkgs
+  mapM_ (requestRepo mock retry mbrnchopts brs) pkgs
 
 -- FIXME also accept bugid instead
-requestRepo :: Bool -> Maybe BranchOpts -> [Branch] -> String -> IO ()
-requestRepo retry mbrnchopts brs pkg = do
+requestRepo :: Bool -> Bool -> Maybe BranchOpts -> [Branch] -> String -> IO ()
+requestRepo mock retry mbrnchopts brs pkg = do
   putStrLn pkg
   (bug,session) <- approvedReviewBugSession pkg
   putBug bug
@@ -65,8 +65,9 @@ requestRepo retry mbrnchopts brs pkg = do
         commentBug session bid comment
         putStrLn ""
         branches <- getRequestedBranches
-        forM_ branches $ \ br ->
-          putStr (show br ++ " ") >>
+        forM_ branches $ \ br -> do
+          when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
+          putStr (show br ++ " ")
           fedpkg_ "request-branch" ["--repo", pkg, show br]
   where
     existingRepoRequests :: IO [IssueTitleStatus]
