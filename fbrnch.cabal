@@ -90,7 +90,25 @@ executable fbrnch
                        Pagure
                        Paths_fbrnch
                        Prompt
+                       -- copr
+                       Web.Fedora.Copr
+                       Web.Fedora.Copr.API
+                       -- fedora-dists
+                       Distribution.Fedora
+                       Distribution.Fedora.Branch
+                       Distribution.Fedora.Products
+                       Distribution.Fedora.ReadProducts
+                       -- koji
+                       Fedora.Koji
+                       Fedora.Koji.Internal
+                       -- pdc
+                       Fedora.PDC
+
   hs-source-dirs:      src
+                       libs/copr-hs/src
+                       libs/fedora-dists/src
+                       libs/koji-hs/src
+                       libs/pdc-hs/src
   default-language:    Haskell2010
 
   build-depends:       aeson,
@@ -101,17 +119,16 @@ executable fbrnch
                        bugzilla-redhat >= 0.3,
                        bytestring,
                        config-ini,
-                       copr-internal,
+                       -- copr,
                        directory >= 1.2.3,
                        email-validate,
                        extra,
-                       -- > 2.0
-                       fedora-dists-internal,
+                       -- fedora-dists > 2.0,
                        filepath,
                        http-conduit,
                        http-directory >= 0.1.5,
                        http-query,
-                       koji-internal,
+                       -- koji,
                        network-uri,
                        optparse-applicative,
                        pagure-internal,
@@ -124,7 +141,13 @@ executable fbrnch
                        time,
                        typed-process >= 0.2.4.0,
                        utf8-string,
-                       xdg-basedir
+                       xdg-basedir,
+                       -- for copr:
+                       unordered-containers,
+                       -- for koji:
+                       haxr >= 3000.11.4,
+                       mtl
+
   if impl(ghc<8.0)
        build-depends: semigroups
 
@@ -170,73 +193,6 @@ library bodhi-internal
     ghc-options:       -Wmissing-export-lists
                        -Wpartial-fields
 
-library copr-internal
-  default-language:    Haskell2010
-  exposed-modules:     Web.Fedora.Copr
-                       Web.Fedora.Copr.API
-  hs-source-dirs:      libs/copr-hs/src
-  build-depends:
-                base >= 4.7 && <5,
-                aeson,
-                bytestring,
-                directory,
-                http-query,
-                text,
-                unordered-containers
-  ghc-options:         -Wall
-  if impl(ghc >= 8.0)
-    ghc-options:       -Wcompat
-                       -Widentities
-                       -Wincomplete-uni-patterns
-                       -Wincomplete-record-updates
-                       -Wredundant-constraints
-  if impl(ghc >= 8.2)
-    ghc-options:       -fhide-source-paths
-  if impl(ghc >= 8.4)
-    ghc-options:       -Wmissing-export-lists
-                       -Wpartial-fields
-
-library fedora-dists-internal
-  exposed-modules:     Distribution.Fedora
-                       Distribution.Fedora.Branch
-  other-modules:       Distribution.Fedora.Products
-                       Distribution.Fedora.ReadProducts
-  hs-source-dirs:      libs/fedora-dists/src
-  build-depends:       base >= 4.6 && < 5,
-                       aeson,
-                       bytestring,
-                       directory,
-                       filepath,
-                       pdc-internal,
-                       text,
-                       time
-  default-language:    Haskell2010
-  ghc-options:         -Wall
-  if impl(ghc >= 8.0)
-    ghc-options:       -Wcompat
-                       -Widentities
-                       -Wincomplete-uni-patterns
-                       -Wincomplete-record-updates
-                       -Wredundant-constraints
-  if impl(ghc >= 8.2)
-    ghc-options:       -fhide-source-paths
-  if impl(ghc >= 8.4)
-    ghc-options:       -Wmissing-export-lists
-                       -Wpartial-fields
-
-
-library koji-internal
-  hs-source-dirs:      libs/koji-hs/src
-  exposed-modules:     Fedora.Koji
-                       Fedora.Koji.Internal
-
-  build-depends:       base >= 4 && < 5,
-                       haxr >= 3000.11.4,
-                       mtl
-  default-language:    Haskell2010
-  default-extensions:  OverloadedStrings
-  ghc-options:         -Wall
-
 library pagure-internal
   build-depends:       aeson,
                        base >= 4 && < 5,
@@ -248,28 +204,6 @@ library pagure-internal
   default-extensions:  OverloadedStrings
   hs-source-dirs:      libs/pagure-hs/src
   exposed-modules:     Fedora.Pagure
-  ghc-options:         -Wall
-  if impl(ghc >= 8.0)
-    ghc-options:       -Wcompat
-                       -Widentities
-                       -Wincomplete-uni-patterns
-                       -Wincomplete-record-updates
-                       -Wredundant-constraints
-  if impl(ghc >= 8.2)
-    ghc-options:       -fhide-source-paths
-  if impl(ghc >= 8.4)
-    ghc-options:       -Wmissing-export-lists
-                       -Wpartial-fields
-
-library pdc-internal
-  build-depends:       aeson,
-                       base >= 4 && < 5,
-                       http-query,
-                       text,
-                       time
-  default-language:    Haskell2010
-  exposed-modules:     Fedora.PDC
-  hs-source-dirs:      libs/pdc-hs/src
   ghc-options:         -Wall
   if impl(ghc >= 8.0)
     ghc-options:       -Wcompat
