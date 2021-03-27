@@ -55,7 +55,7 @@ main = do
     , Subcommand "status" "Status package/branch status" $
       statusCmd <$> switchWith 'n' "no-fetch" "Do not git fetch to save time" <*> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesOpt <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
-      mergeCmd <$> nopromptOpt <*> branchesPackages
+      mergeCmd <$> nopromptOpt <*> branchesOpt <*> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
     , Subcommand "list" "List packages in pagure" $
