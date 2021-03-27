@@ -31,7 +31,6 @@ maybeTarget _ = Nothing
 -- (pkg, (sidetag, nvr))
 type Job = (String, Async (String, String))
 
--- FIXME only override if more packages to build
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources asap
@@ -62,7 +61,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
               error' "You must use --target/--sidetag to build package layers for this branch"
           when (length branches > 1) $
             putStrLn $ "# " ++ show rbr
-          targets <- mapM (parallelBuild rbr) layers
+          targets <- mapM (parallelBuild rbr) $ zip [(length layers - 1)..0] layers
           when (isJust msidetagTarget && null targets) $
             error' "No target was returned from jobs!"
           unless (isNothing msidetagTarget || null targets) $ do
@@ -76,7 +75,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do
       krbTicket
-      putStrLn $ "Building parallel " ++ show (length brs) ++ " branches:"
+      putStrLn $ "Building in parallel " ++ show (length brs) ++ " branches:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
       (failures,_mtarget) <- watchJobs Nothing [] jobs
@@ -85,16 +84,17 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
       where
         setupBranch :: Branch -> IO Job
         setupBranch br = do
-          job <- startBuild False br "." >>= async
+          job <- startBuild False False br "." >>= async
           unless dryrun $ sleep 5
           return (show br,job)
 
-    parallelBuild :: Branch -> [String] -> IO String
-    parallelBuild br layer =  do
+    parallelBuild :: Branch -> (Int,[String]) -> IO String
+    parallelBuild br (layersleft,layer) =  do
       krbTicket
       when (nopkgs > 1) $ do
         putStrLn $ "\nBuilding parallel layer of " ++ show nopkgs ++ " packages:"
         putStrLn $ unwords layer
+      putStrLn $ "(" ++ show layersleft ++ " more layers left)"
       jobs <- mapM setupBuild layer
       (failures,mtarget) <- watchJobs Nothing [] jobs
       unless (null failures) $
@@ -107,7 +107,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
 
         setupBuild :: String -> IO Job
         setupBuild pkg = do
-          job <- startBuild (nopkgs > 5) br pkg >>= async
+          job <- startBuild (layersleft > 0) (nopkgs > 5) br pkg >>= async
           unless dryrun $ sleep 5
           return (pkg,job)
 
@@ -128,8 +128,8 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
           watchJobs mtarget (pkg : fails) jobs
 
     -- FIXME prefix output with package name
-    startBuild :: Bool -> Branch -> String -> IO (IO (String,String))
-    startBuild background br pkgdir =
+    startBuild :: Bool -> Bool -> Branch -> String -> IO (IO (String,String))
+    startBuild morelayers background br pkgdir =
       withExistingDirectory pkgdir $ do
       gitSwitchBranch (RelBranch br)
       pkg <- getPackageName pkgdir
@@ -166,13 +166,14 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
       case buildstatus of
         Just BuildComplete -> do
           putStrLn $ nvr ++ " is " ++ color Green "already built"
-          when (br /= Rawhide && target == branchTarget br) $ do
+          when (br /= Rawhide && morelayers && target == branchTarget br) $ do
             tags <- kojiNVRTags nvr
             unless (dryrun || any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
               unlessM (checkAutoBodhiUpdate br) $
               bodhiCreateOverride nvr
           return $ do
             unless dryrun $
+              when morelayers $
               kojiWaitRepo target nvr
             return (target,nvr)
         Just BuildBuilding -> do
