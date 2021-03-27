@@ -461,7 +461,7 @@ withPackageByBranches mheader mgitopts mbrnchopts exists limitBranches action ar
   let mheader' =
         case mheader of
           Nothing -> Nothing
-          Just _ | length pkgs < 2 && length brs < 2 -> Nothing
+          Just _ | length pkgs < 2 && length brs < 2 && isNothing mbrnchopts -> Nothing
           _ -> mheader
   withPackageByBranches' mheader' mgitopts mbrnchopts limitBranches action (brs,pkgs)
   where
