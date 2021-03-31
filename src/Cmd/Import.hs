@@ -19,6 +19,7 @@ import Package
 import Prompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
+-- FIXME add --dryrun
 importCmd :: Bool -> [String] -> IO ()
 importCmd mock ps = do
   pkgs <- if null ps
@@ -72,7 +73,7 @@ importCmd mock ps = do
         gitPushSilent Nothing
         -- FIXME build more branches
         kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
-        putBugBuild session bid nvr
+        putBugBuild False session bid nvr
         existing <- fedoraBranchesNoRawhide localBranches
         when (null existing) $ do
           brs <- branchingPrompt

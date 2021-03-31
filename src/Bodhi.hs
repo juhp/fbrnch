@@ -17,6 +17,7 @@ import qualified Text.ParserCombinators.ReadPrec as RP
 
 
 import Branches
+import Common
 import Common.System
 import qualified Common.Text as T
 import Prompt
@@ -37,21 +38,22 @@ checkAutoBodhiUpdate br =
 
 -- FIXME should determine 3 days for branched devel release
 -- FIXME handle expired override?
-bodhiCreateOverride :: String -> IO ()
-bodhiCreateOverride nvr = do
+bodhiCreateOverride :: Bool -> String -> IO ()
+bodhiCreateOverride dryrun nvr = do
   putStrLn $ "Creating Bodhi Override for " ++ nvr ++ ":"
-  ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", "4", nvr]
-  if ok
-    then putStrLn $ "https://bodhi.fedoraproject.org/overrides/" ++ nvr
-    else do
-    moverride <- bodhiOverride nvr
-    case moverride of
-      Nothing -> do
-        putStrLn "bodhi override failed"
-        prompt_ "Press Enter to retry"
-        bodhiCreateOverride nvr
-      -- FIXME prettyprint
-      Just obj -> error' $ show obj
+  unless dryrun $ do
+    ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", "4", nvr]
+    if ok
+      then putStrLn $ "https://bodhi.fedoraproject.org/overrides/" ++ nvr
+      else do
+      moverride <- bodhiOverride nvr
+      case moverride of
+        Nothing -> do
+          putStrLn "bodhi override failed"
+          prompt_ "Press Enter to retry"
+          bodhiCreateOverride dryrun nvr
+        -- FIXME prettyprint
+        Just obj -> error' $ show obj
 
 data UpdateType =
   SecurityUpdate | BugfixUpdate | EnhancementUpdate | NewPackageUpdate

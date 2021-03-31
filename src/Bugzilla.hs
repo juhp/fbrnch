@@ -124,9 +124,10 @@ encodeParams [] = []
 encodeParams ((k,v):ps) =
   (B.pack k, fromString v) : encodeParams ps
 
-putBugBuild :: BugzillaSession -> BugId -> String -> IO ()
-putBugBuild session bid nvr = do
-  void $ updateBug session bid
+putBugBuild :: Bool -> BugzillaSession -> BugId -> String -> IO ()
+putBugBuild dryrun session bid nvr = do
+  unless dryrun $
+    void $ updateBug session bid
     [("cf_fixed_in", nvr), ("status", "MODIFIED")]
   putStrLn $ "build posted to review bug " ++ show bid
 

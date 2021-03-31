@@ -75,7 +75,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do
       krbTicket
-      putStrLn $ "Building in parallel " ++ show (length brs) ++ " branches:"
+      putStrLn $ "Building " ++ show (length brs) ++ " branches in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
       (failures,_mtarget) <- watchJobs Nothing [] jobs
@@ -168,13 +168,12 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
           putStrLn $ nvr ++ " is " ++ color Green "already built"
           when (br /= Rawhide && morelayers && target == branchTarget br) $ do
             tags <- kojiNVRTags nvr
-            unless (dryrun || any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
               unlessM (checkAutoBodhiUpdate br) $
-              bodhiCreateOverride nvr
+              bodhiCreateOverride dryrun nvr
           return $ do
-            unless dryrun $
-              when morelayers $
-              kojiWaitRepo target nvr
+            when morelayers $
+              kojiWaitRepo dryrun target nvr
             return (target,nvr)
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
@@ -207,24 +206,23 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
           if finish
             then putStrLn $ color Green $ nvr ++ " build success"
             else error' $ color Red $ nvr ++ " build failed"
-          unless dryrun $ do
-            autoupdate <- checkAutoBodhiUpdate br
-            if autoupdate then
-              when newpkg $ do
-              mBugSess <- do
-                (mbid, session) <- bzReviewSession
-                return $ case mbid of
-                  Just bid -> Just (bid,session)
-                  Nothing -> Nothing
-              whenJust mBugSess $
-                \ (bid,session) -> putBugBuild session bid nvr
-              else do
-              when (target == branchTarget br) $
-                -- -- FIXME: avoid prompt in
-                -- changelog <- getChangeLog spec
-                -- bodhiUpdate (fmap fst mBugSess) changelog nvr
-                bodhiCreateOverride nvr
-            kojiWaitRepo target nvr
+          autoupdate <- checkAutoBodhiUpdate br
+          if autoupdate then
+            when newpkg $ do
+            mBugSess <- do
+              (mbid, session) <- bzReviewSession
+              return $ case mbid of
+                Just bid -> Just (bid,session)
+                Nothing -> Nothing
+            whenJust mBugSess $
+              \ (bid,session) -> putBugBuild dryrun session bid nvr
+            else do
+            when (target == branchTarget br) $
+              -- -- FIXME: avoid prompt in
+              -- changelog <- getChangeLog spec
+              -- bodhiUpdate (fmap fst mBugSess) changelog nvr
+              bodhiCreateOverride dryrun nvr
+          kojiWaitRepo dryrun target nvr
           return (target,nvr)
 
     bodhiSidetagUpdate :: String -> String -> IO ()

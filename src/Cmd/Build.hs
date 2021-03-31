@@ -93,22 +93,17 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         error' "Please bump the spec file"
       when (br /= Rawhide && isNothing mtarget) $ do
         tags <- kojiNVRTags nvr
-        unless dryrun $
-          unlessM (checkAutoBodhiUpdate br) $ do
+        autoupdate <- checkAutoBodhiUpdate br
+        unless autoupdate $ do
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
-            mBugSess <- do
-              (mbid, session) <- bzReviewSession
-              return $ case mbid of
-                Just bid -> Just (bid,session)
-                Nothing -> Nothing
-            bodhiUpdate (fmap fst mBugSess) spec nvr
+            mbug <- fst <$>  bzReviewSession
+            bodhiUpdate dryrun mbug spec nvr
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
             when (buildoptOverride opts) $
-            bodhiCreateOverride nvr
-          when (isJust mlastpkg && mlastpkg /= Just pkg) $ do
-            autoupdate <- checkAutoBodhiUpdate br
-            when (buildoptOverride opts || autoupdate) $
-              kojiWaitRepo target nvr
+            bodhiCreateOverride dryrun nvr
+        when (isJust mlastpkg && mlastpkg /= Just pkg) $
+          when (buildoptOverride opts || autoupdate) $
+            kojiWaitRepo dryrun target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
       when (isJust mpush) $
@@ -157,33 +152,33 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             unlessM isGitDirClean $
               error' "local changes remain (dirty)"
             -- FIXME parse build output
-            unless dryrun $ do
+            unless dryrun $
               kojiBuildBranch target pkg mbuildref ["--fail-fast"]
-              mBugSess <-
-                if firstBuild
-                then do
-                (mbid, session) <- bzReviewSession
-                return $ case mbid of
-                  Just bid -> Just (bid,session)
-                  Nothing -> Nothing
-                else return Nothing
-              autoupdate <- checkAutoBodhiUpdate br
-              if autoupdate
-                then whenJust mBugSess $
-                     \ (bid,session) -> putBugBuild session bid nvr
-                else do
-                when (isNothing mtarget) $ do
-                  -- FIXME diff previous changelog?
-                  bodhiUpdate (fmap fst mBugSess) spec nvr
-                  -- FIXME prompt for override note
-                  when (buildoptOverride opts) $
-                    bodhiCreateOverride nvr
-              when (isJust mlastpkg && mlastpkg /= Just pkg) $
-                when (buildoptOverride opts || autoupdate) $
-                kojiWaitRepo target nvr
+            mBugSess <-
+              if firstBuild
+              then do
+              (mbid, session) <- bzReviewSession
+              return $ case mbid of
+                Just bid -> Just (bid,session)
+                Nothing -> Nothing
+              else return Nothing
+            autoupdate <- checkAutoBodhiUpdate br
+            if autoupdate
+              then whenJust mBugSess $
+                   \ (bid,session) -> putBugBuild dryrun session bid nvr
+              else do
+              when (isNothing mtarget) $ do
+                -- FIXME diff previous changelog?
+                bodhiUpdate dryrun (fmap fst mBugSess) spec nvr
+                -- FIXME prompt for override note
+                when (buildoptOverride opts) $
+                  bodhiCreateOverride dryrun nvr
+            when (isJust mlastpkg && mlastpkg /= Just pkg) $
+              when (buildoptOverride opts || autoupdate) $
+              kojiWaitRepo dryrun target nvr
   where
-    bodhiUpdate :: Maybe BugId -> FilePath -> String -> IO ()
-    bodhiUpdate mreview spec nvr = do
+    bodhiUpdate :: Bool -> Maybe BugId -> FilePath -> String -> IO ()
+    bodhiUpdate dryrun mreview spec nvr = do
       changelog <- if isJust mreview
                    then getSummaryURL spec
                    else getChangeLog spec
@@ -195,17 +190,18 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         Nothing -> return ()
         Just updateType -> do
           putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
-          cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
-          updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
-          case updatequery of
-            [] -> do
-              putStrLn "bodhi submission failed"
-              prompt_ "Press Enter to resubmit to Bodhi"
-              bodhiUpdate mreview spec nvr
-            [update] -> case lookupKey "url" update of
-              Nothing -> error' "Update created but no url"
-              Just uri -> putStrLn uri
-            _ -> error' $ "impossible happened: more than one update found for " ++ nvr
+          unless dryrun $ do
+            cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+            updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
+            case updatequery of
+              [] -> do
+                putStrLn "bodhi submission failed"
+                prompt_ "Press Enter to resubmit to Bodhi"
+                bodhiUpdate dryrun mreview spec nvr
+              [update] -> case lookupKey "url" update of
+                Nothing -> error' "Update created but no url"
+                Just uri -> putStrLn uri
+              _ -> error' $ "impossible happened: more than one update found for " ++ nvr
 
     extractBugReference :: String -> Maybe String
     extractBugReference clog =

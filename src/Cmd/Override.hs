@@ -25,9 +25,6 @@ overrideCmd dryrun =
       putStrLn nvr
       tags <- kojiNVRTags nvr
       unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-        unlessM (checkAutoBodhiUpdate br) $
-        if dryrun
-        then putStrLn $ "override " ++ nvr
-        else do
-          bodhiCreateOverride nvr
-          kojiWaitRepo (branchTarget br) nvr
+        unlessM (checkAutoBodhiUpdate br) $ do
+        bodhiCreateOverride dryrun nvr
+        kojiWaitRepo dryrun (branchTarget br) nvr

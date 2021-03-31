@@ -173,10 +173,11 @@ kojiBuildBranchNoWait target pkg mref args = do
   Left task <- kojiBuildBranch' False target pkg mref args
   return task
 
-kojiWaitRepo :: String -> String -> IO ()
-kojiWaitRepo target nvr = do
+kojiWaitRepo :: Bool -> String -> String -> IO ()
+kojiWaitRepo dryrun target nvr = do
   Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
-  waitRepo buildtag Nothing
+  unless dryrun $
+    waitRepo buildtag Nothing
   where
     waitRepo :: String -> Maybe Struct -> IO ()
     waitRepo buildtag moldrepo = do
