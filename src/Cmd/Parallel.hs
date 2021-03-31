@@ -40,35 +40,43 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
   (brs,pkgs) <- splitBranchesPkgs True mbrnchopts True args
   when (null brs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
-  branches <- listOfBranches True True mbrnchopts brs
+  branches <-
+    case pkgs of
+      [] -> listOfBranches True True mbrnchopts brs
+      [p] -> withExistingDirectory p $ listOfBranches True True mbrnchopts brs
+      _ -> if isJust mbrnchopts
+           then error' "parallel does not support branch options for multiple packages: please give an explicit list of branches instead"
+           else listOfBranches True True mbrnchopts brs
   let mtarget = maybeTarget msidetagTarget
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
-  if null pkgs
-    then do
-    unlessM isPkgGitRepo $
-      error' "Please specify at least one package"
-    parallelBranches $ map onlyRelBranch branches
-    else
-    forM_ branches $ \ br -> do
-      case br of
-        (RelBranch rbr) -> do
-          layers <- dependencyLayers pkgs
-          when (isNothing msidetagTarget && length layers > 1) $ do
-            unlessM (checkAutoBodhiUpdate rbr) $
-              error' "You must use --target/--sidetag to build package layers for this branch"
-          when (length branches > 1) $
-            putStrLn $ "# " ++ show rbr
-          targets <- mapM (parallelBuild rbr) $ zip [(length layers - 1)..0] layers
-          when (isJust msidetagTarget && null targets) $
-            error' "No target was returned from jobs!"
-          unless (isNothing msidetagTarget || null targets) $ do
-            let target = head targets
-            when (target /= branchTarget rbr) $ do
-              notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
-              bodhiSidetagUpdate target notes
-        (OtherBranch _) ->
-          error' "parallel builds only defined for release branches"
+  case pkgs of
+    [] -> do
+      unlessM isPkgGitRepo $
+        error' "Please specify at least one package"
+      parallelBranches $ map onlyRelBranch branches
+    [p] -> withExistingDirectory p $
+           parallelBranches $ map onlyRelBranch branches
+    _ ->
+      forM_ branches $ \ br -> do
+        case br of
+          (RelBranch rbr) -> do
+            layers <- dependencyLayers pkgs
+            when (isNothing msidetagTarget && length layers > 1) $ do
+              unlessM (checkAutoBodhiUpdate rbr) $
+                error' "You must use --target/--sidetag to build package layers for this branch"
+            when (length branches > 1) $
+              putStrLn $ "# " ++ show rbr
+            targets <- mapM (parallelBuild rbr) $ zip [(length layers - 1)..0] layers
+            when (isJust msidetagTarget && null targets) $
+              error' "No target was returned from jobs!"
+            unless (isNothing msidetagTarget || null targets) $ do
+              let target = head targets
+              when (target /= branchTarget rbr) $ do
+                notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
+                bodhiSidetagUpdate target notes
+          (OtherBranch _) ->
+            error' "parallel builds only defined for release branches"
   where
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do
@@ -92,7 +100,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
       when (nopkgs > 1) $ do
         putStrLn $ "\nBuilding parallel layer of " ++ show nopkgs ++ " packages:"
         putStrLn $ unwords layer
-      putStrLn $ "(" ++ show layersleft ++ " more layers left)"
+        putStrLn $ "(" ++ show layersleft ++ " more layers left)"
       jobs <- mapM setupBuild layer
       (failures,mtarget) <- watchJobs Nothing [] jobs
       unless (null failures) $
