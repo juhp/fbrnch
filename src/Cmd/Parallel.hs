@@ -223,12 +223,13 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
             whenJust mBugSess $
               \ (bid,session) -> putBugBuild dryrun session bid nvr
             else do
-            when (target == branchTarget br) $
+            when (target == branchTarget br && morelayers) $
               -- -- FIXME: avoid prompt in
               -- changelog <- getChangeLog spec
               -- bodhiUpdate (fmap fst mBugSess) changelog nvr
               bodhiCreateOverride dryrun nvr
-          kojiWaitRepo dryrun target nvr
+          when morelayers $
+            kojiWaitRepo dryrun target nvr
           return (target,nvr)
 
     bodhiSidetagUpdate :: String -> String -> IO ()
