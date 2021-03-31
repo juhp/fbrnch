@@ -10,9 +10,10 @@ import Git
 import Koji
 import Package
 
-bumpPkgs :: Maybe CommitOpt -> Maybe BranchOpts -> [String] -> IO ()
+bumpPkgs :: Maybe CommitOpt -> Maybe BranchOpts -> [AnyBranch] -> [String]
+         -> IO ()
 bumpPkgs mopt mbrnchopts =
-  withPackageByBranches (Just False) cleanGitFetchActive mbrnchopts True AnyNumber bumpPkg
+  withPackageByBranches (Just False) cleanGitFetchActive mbrnchopts AnyNumber bumpPkg
   where
     bumpPkg :: Package -> AnyBranch -> IO ()
     bumpPkg pkg br = do

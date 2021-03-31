@@ -9,22 +9,20 @@ import Common.System
 import Git
 import Package
 
-mockCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch -> [String] -> IO ()
-mockCmd dryrun noclean network noCleanAfter mroot args = do
-  (brs, pkgs) <- splitBranchesPkgs True Nothing True args
-  unless (null pkgs) $
-    whenM isPkgGitRepo $
-    error' "Cannot build multiple packages inside a package dir"
-  when (null brs && length pkgs > 1 && isNothing mroot) $
+-- FIXME handle non-release branches
+mockCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch -> [Branch]
+        -> [String] -> IO ()
+mockCmd dryrun noclean network noCleanAfter mroot brs ps = do
+  when (null brs && length ps > 1 && isNothing mroot) $
     error' "Must specific branch or --root chroot"
   branches <-
     if null brs
       then
-        if null pkgs
+        if null ps
           then pure <$> getReleaseBranch
           else pure <$> systemBranch
-      else map onlyRelBranch <$> listOfBranches False False Nothing brs
-  let packages = if null pkgs then ["."] else pkgs
+      else listOfBranches False False Nothing brs
+  let packages = if null ps then ["."] else ps
   mapM_ (mockBuildPkgs (null brs) packages) branches
   where
     mockBuildPkgs :: Bool -> [String] -> Branch -> IO ()

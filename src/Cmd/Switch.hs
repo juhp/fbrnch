@@ -1,13 +1,13 @@
 module Cmd.Switch (switchCmd) where
 
---import Branches
+import Branches
 import Git
 import Package
 
 -- FIXME noop when on branch already or drop cleanGit
-switchCmd :: [String] -> IO ()
-switchCmd =
+switchCmd :: AnyBranch -> [String] -> IO ()
+switchCmd br =
   -- FIXME use withBranchByPackages ?
-  withPackageByBranches Nothing dirtyGit Nothing True ExactlyOne dummy
+  withPackageByBranches Nothing dirtyGit Nothing ExactlyOne dummy [br]
   where
-    dummy _ br = gitSwitchBranch br
+    dummy _ _ = gitSwitchBranch br

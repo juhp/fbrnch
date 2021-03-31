@@ -21,9 +21,9 @@ import Common
 import Git
 import Package
 
-localCmd :: Maybe ForceShort -> [BCond] -> [String] -> IO ()
+localCmd :: Maybe ForceShort -> [BCond] -> [AnyBranch] -> [String] -> IO ()
 localCmd mforceshort bconds =
-  withPackageByBranches Nothing Nothing Nothing True ZeroOrOne localBuildPkg
+  withPackageByBranches Nothing Nothing Nothing ZeroOrOne localBuildPkg
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
     localBuildPkg pkg br = do
@@ -34,18 +34,18 @@ localCmd mforceshort bconds =
       buildRPMs False mforceshort bconds rpms br spec
 
 -- FIXME single branch
-installDepsCmd :: [String] -> IO ()
+installDepsCmd :: [AnyBranch] -> [String] -> IO ()
 installDepsCmd =
-  withPackageByBranches Nothing Nothing Nothing True ZeroOrOne installDepsPkg
+  withPackageByBranches Nothing Nothing Nothing ZeroOrOne installDepsPkg
   where
     installDepsPkg :: Package -> AnyBranch -> IO ()
     installDepsPkg pkg br =
       localBranchSpecFile pkg br >>= installDeps
 
 -- FIXME single branch
-srpmCmd :: Bool -> [String] -> IO ()
+srpmCmd :: Bool -> [AnyBranch] -> [String] -> IO ()
 srpmCmd force =
-  withPackageByBranches Nothing Nothing Nothing True ZeroOrOne srpmBuildPkg
+  withPackageByBranches Nothing Nothing Nothing ZeroOrOne srpmBuildPkg
   where
     srpmBuildPkg :: Package -> AnyBranch -> IO ()
     srpmBuildPkg pkg br = do
@@ -54,11 +54,10 @@ srpmCmd force =
 
 data RpmWith = RpmWith String | RpmWithout String
 
-sortCmd :: Maybe RpmWith -> [String] -> IO ()
-sortCmd _ [] = return ()
-sortCmd mrpmwith args = do
-  (brs,pkgs) <- splitBranchesPkgs False Nothing True args
-  withPackageByBranches' Nothing Nothing Nothing ExactlyOne dummy (brs,pkgs)
+sortCmd :: Maybe RpmWith -> [AnyBranch] -> [String] -> IO ()
+sortCmd _ _ [] = return ()
+sortCmd mrpmwith brs pkgs = do
+  withPackageByBranches Nothing Nothing Nothing ExactlyOne dummy brs pkgs
   let rpmopts = maybe [] toRpmOption mrpmwith
   packages <- dependencySortRpmOpts rpmopts $ reverse pkgs
   putStrLn $ unwords packages
@@ -70,13 +69,13 @@ sortCmd mrpmwith args = do
     toRpmOption (RpmWith opt) = ["--with=" ++ opt]
     toRpmOption (RpmWithout opt) = ["--without=" ++ opt]
 
-prepCmd :: [String] -> IO ()
+prepCmd :: [AnyBranch] -> [String] -> IO ()
 prepCmd =
-  withPackageByBranches Nothing Nothing Nothing True ZeroOrOne prepPackage
+  withPackageByBranches Nothing Nothing Nothing ZeroOrOne prepPackage
 
-nvrCmd :: Maybe BranchOpts -> [String] -> IO ()
+nvrCmd :: Maybe BranchOpts -> [AnyBranch] -> [String] -> IO ()
 nvrCmd mbrnchopts =
-  withPackageByBranches Nothing Nothing mbrnchopts True AnyNumber nvrBranch
+  withPackageByBranches Nothing Nothing mbrnchopts AnyNumber nvrBranch
   where
     nvrBranch :: Package -> AnyBranch -> IO ()
     nvrBranch pkg br = do
@@ -89,9 +88,10 @@ nvrCmd mbrnchopts =
           pkgNameVerRel' sbr spec
         >>= putStrLn
 
-commandCmd :: Bool -> String -> Maybe BranchOpts -> [String] -> IO ()
+commandCmd :: Bool -> String -> Maybe BranchOpts -> [AnyBranch] -> [String]
+           -> IO ()
 commandCmd ifoutput cs mbrnchopts =
-  withPackageByBranches (Just (not ifoutput)) Nothing mbrnchopts True AnyNumber cmdBranch
+  withPackageByBranches (Just (not ifoutput)) Nothing mbrnchopts AnyNumber cmdBranch
   where
     cmdBranch :: Package -> AnyBranch -> IO ()
     cmdBranch pkg br = do
@@ -110,7 +110,7 @@ commandCmd ifoutput cs mbrnchopts =
 
 renameMasterCmd :: [String] -> IO ()
 renameMasterCmd =
-  withPackageByBranches (Just False) dirtyGit Nothing True ZeroOrOne renameMasterBranch
+  withPackageByBranches (Just False) dirtyGit Nothing ZeroOrOne renameMasterBranch []
   where
   renameMasterBranch :: Package -> AnyBranch -> IO ()
   renameMasterBranch _pkg _br = do

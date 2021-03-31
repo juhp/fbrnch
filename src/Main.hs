@@ -49,70 +49,70 @@ main = do
     [ Subcommand "clone" "clone packages" $
       cloneCmd <$> optional branchOpt <*> cloneRequest
     , Subcommand "switch" "Switch branch" $
-      switchCmd <$> manyPkgs
+      switchCmd <$> anyBranchArg <*> manyPackages
     , Subcommand "nvr" "Print name-version-release" $
-      nvrCmd <$> branchesOpt <*> branchesPackages
+      nvrCmd <$> branchesOpt <*> manyBranches <*> manyPackages
     , Subcommand "status" "Status package/branch status" $
-      statusCmd <$> switchWith 'n' "no-fetch" "Do not git fetch to save time" <*> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesOpt <*> branchesPackages
+      statusCmd <$> switchWith 'n' "no-fetch" "Do not git fetch to save time" <*> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesOpt <*> many branchArg <*> manyPackages
     , Subcommand "merge" "Merge from newer branch" $
-      mergeCmd <$> nopromptOpt <*> branchesOpt <*> branchesPackages
+      mergeCmd <$> nopromptOpt <*> branchesOpt <*> manyBranches <*> manyPackages
     , Subcommand "build" "Build package(s) in Koji" $
-      buildCmd <$> buildOpts <*> branchesOpt <*> branchesPackages
+      buildCmd <$> buildOpts <*> branchesOpt <*> many branchArg <*> manyPackages
     , Subcommand "list" "List packages in pagure" $
       listCmd <$> switchWith 'c' "count" "Print number of packages" <*> optional packagerOpt <*> many (pkgArg "PKGPAT...")
     , Subcommand "branches" "List package branches" $
-      branchesCmd <$> switchWith 'd' "skip-dead" "Skip if dead.package exists" <*> switchWith 'a' "all" "List all branches" <*> switchWith 'm' "missing" "Show missing branches" <*> switchWith 'r' "remote" "List remote branches" <*> manyPkgs
+      branchesCmd <$> switchWith 'd' "skip-dead" "Skip if dead.package exists" <*> switchWith 'a' "all" "List all branches" <*> switchWith 'm' "missing" "Show missing branches" <*> switchWith 'r' "remote" "List remote branches" <*> manyBranches <*> manyPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
-      parallelBuildCmd <$> dryrunOpt <*> optional sidetagTargetOpt <*> updatetypeOpt <*> branchesOpt <*> branchesPackages
+      parallelBuildCmd <$> dryrunOpt <*> optional sidetagTargetOpt <*> updatetypeOpt <*> branchesOpt <*> many branchArg <*> manyPackages
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd <$> many branchArg
     , Subcommand "override" "Tag builds into buildroot override in Koji" $
-      overrideCmd <$> dryrunOpt <*> branchesPackages
+      overrideCmd <$> dryrunOpt <*> many branchArg <*> manyPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
-      scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> mtargetOpt <*> branchesPackages
+      scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> mtargetOpt <*> manyBranches <*> manyPackages
     , Subcommand "update" "Update package to newer version" $
-      updateCmd <$> many (pkgArg "[VERSION] [PKG...]")
+      updateCmd <$> manyBranches <*> manyPackages
     , Subcommand "sort" "Sort packages in build dependency order" $
-      sortCmd <$> optional rpmWithOpt <*> branchesPackages
+      sortCmd <$> optional rpmWithOpt <*> manyBranches <*> somePackages
     , Subcommand "prep" "Prep sources" $
-      prepCmd <$> branchesPackages
+      prepCmd <$> manyBranches <*> manyPackages
     , Subcommand "local" "Build locally" $
-      localCmd <$> optional forceshortOpt <*> many bcondOpt <*> branchesPackages
+      localCmd <$> optional forceshortOpt <*> many bcondOpt <*> manyBranches <*> manyPackages
     , Subcommand "srpm" "Build srpm" $
-      srpmCmd <$> switchWith 'f' "force" "regenerate even if spec older than existing srpm" <*> branchesPackages
+      srpmCmd <$> switchWith 'f' "force" "regenerate even if spec older than existing srpm" <*> manyBranches <*> manyPackages
     , Subcommand "diff" "Diff local changes" $
-      diffCmd <$> diffSpecOnly <*> diffWorkOpt <*> diffFormatOpt <*> diffBranchOpt <*> branchesPackages
+      diffCmd <$> diffSpecOnly <*> diffWorkOpt <*> diffFormatOpt <*> diffBranchOpt <*> manyBranches <*> manyPackages
     , Subcommand "log" "Show commits between branches" $
-      logCmd <$> switchWith 'l' "long" "show full commit log" <*> anyBranchArg <*> anyBranchArg <*> manyPkgs
+      logCmd <$> switchWith 'l' "long" "show full commit log" <*> anyBranchArg <*> anyBranchArg <*> manyPackages
     , Subcommand "mock" "Local mock build" $
-      mockCmd <$> switchWith 'd' "dry-run" "Do not build (but creates srpm)" <*> switchWith 'n' "no-clean" "Do not clean chroot before building a package" <*> switchWith 'w' "network" "Use network during build" <*> switchWith 'N' "no-clean-after" "Don't clean  chroot after building a package" <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> branchesPackages
+      mockCmd <$> switchWith 'd' "dry-run" "Do not build (but creates srpm)" <*> switchWith 'n' "no-clean" "Do not clean chroot before building a package" <*> switchWith 'w' "network" "Use network during build" <*> switchWith 'N' "no-clean-after" "Don't clean  chroot after building a package" <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> many branchArg <*> manyPackages
     , Subcommand "install-deps" "Install package build dependencies" $
-      installDepsCmd <$> branchesPackages
+      installDepsCmd <$> manyBranches <*> manyPackages
     , Subcommand "install" "Build locally and install package(s)" $
       -- FIXME drop --shortcircuit from install?
-      installCmd <$> switchWith 'r' "recurse" "build and install missing deps packages" <*> optional forceshortOpt <*> many bcondOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> branchesPackages
+      installCmd <$> switchWith 'r' "recurse" "build and install missing deps packages" <*> optional forceshortOpt <*> many bcondOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> manyBranches <*> manyPackages
     , Subcommand "not-installed" "Packages not installed locally" $
-      notInstalledCmd <$> branchesPackages
+      notInstalledCmd <$> manyBranches <*> manyPackages
     , Subcommand "bugs" "List package bugs" $
-      bugsCmd <$> optional (strOptionWith 's' "summary" "KEY" "Search for bugs containing keyword") <*> manyPkgs
+      bugsCmd <$> optional (strOptionWith 's' "summary" "KEY" "Search for bugs containing keyword") <*> manyPackages
     , Subcommand "bump" "Bump release for package" $
-      bumpPkgs <$> optional commitOpts <*> branchesOpt <*> branchesPackages
+      bumpPkgs <$> optional commitOpts <*> branchesOpt <*> manyBranches <*> manyPackages
     , Subcommand "commit" "Git commit packages" $
-      commitPkgs <$> optional commitOpts <*> manyPkgs
+      commitPkgs <$> optional commitOpts <*> manyPackages
     , Subcommand "pull" "Git pull packages" $
-      pullPkgs <$> branchesPackages
+      pullPkgs <$> manyBranches <*> manyPackages
     , Subcommand "create-review" "Create a Package Review request" $
-      createReview <$> noScratchBuild <*> mockOpt False <*> manyPkgs
+      createReview <$> noScratchBuild <*> mockOpt False <*> manyPackages
     , Subcommand "update-review" "Update a Package Review" $
       updateReview <$> noScratchBuild <*> mockOpt False <*> optional (strArg "SPECFILE")
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd <$> reviewShortOpt <*> reviewAllStatusOpt <*> switchWith 'T' "assigned-to" "List reviews assigned to user" <*> optional (strOptionWith 'U' "user" "USER" "Bugzilla user email") <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
-      requestRepos <$> mockOpt True <*> reviewAllStatusOpt <*> switchWith 'r' "retry" "Re-request repo" <*> branchesOpt <*> manyPkgs
+      requestRepos <$> mockOpt True <*> reviewAllStatusOpt <*> switchWith 'r' "retry" "Re-request repo" <*> branchesOpt <*> many branchArg <*> manyPackages
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
-      importCmd <$> mockOpt True <*> branchesPackages
+      importCmd <$> mockOpt True <*> branchesOpt <*> many branchArg <*> manyPackages
     , Subcommand "request-branches" "Request branches for approved created packages" $
-      requestBranches <$> mockOpt False <*> optional branchesRequestOpt <*> branchesPackages
+      requestBranches <$> mockOpt False <*> optional branchesRequestOpt <*> many branchArg <*> manyPackages
     , Subcommand "find-review" "Find package review bug" $
       findReview <$> pkgArg "PACKAGE"
     , Subcommand "review-package" "Run fedora-review on a package Review Request bug" $
@@ -120,15 +120,15 @@ main = do
 --    , Subcommand "test-bz-token" "Check bugzilla login status" $
 --      pure testBZlogin
     , Subcommand "command" "Run shell command in package dirs ($p)" $
-      commandCmd <$> switchWith 'o' "if-output" "only print if output" <*> commandOpt <*> branchesOpt <*> branchesPackages
+      commandCmd <$> switchWith 'o' "if-output" "only print if output" <*> commandOpt <*> branchesOpt <*> manyBranches <*> manyPackages
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
-      coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> pkgArg "PROJECT" <*> branchesOpt <*> branchesPackages
+      coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> pkgArg "PROJECT" <*> branchesOpt <*> many branchArg <*> manyPackages
     , Subcommand "rename-master" "Rename local master branch to rawhide" $
-      renameMasterCmd <$> manyPkgs
+      renameMasterCmd <$> manyPackages
     ]
   where
     cloneRequest :: Parser CloneRequest
-    cloneRequest = flagWith' (CloneUser Nothing) 'M' "mine" "Your packages" <|> CloneUser . Just <$> strOptionWith 'u' "user" "USER" "Packages of FAS user" <|> ClonePkgs <$> some (pkgArg "PACKAGE...")
+    cloneRequest = flagWith' (CloneUser Nothing) 'M' "mine" "Your packages" <|> CloneUser . Just <$> strOptionWith 'u' "user" "USER" "Packages of FAS user" <|> ClonePkgs <$> somePackages
 
     noScratchBuild = switchWith 'S' "no-scratch-build" "Skip Koji scratch build"
 
@@ -157,6 +157,9 @@ main = do
     anyBranchArg :: Parser AnyBranch
     anyBranchArg = argumentWith anyBranchM "BRANCH"
 
+    anyBranchOpt :: Parser AnyBranch
+    anyBranchOpt = optionWith anyBranchM 'b' "branch" "BRANCH" "branch"
+
     branchM :: ReadM Branch
     branchM = eitherReader eitherBranch'
 
@@ -166,8 +169,18 @@ main = do
     pkgArg :: String -> Parser String
     pkgArg lbl = removeSuffix "/" <$> strArg lbl
 
-    manyPkgs :: Parser [String]
-    manyPkgs =  many (pkgArg "PACKAGE...")
+    manyPackages :: Parser [String]
+    manyPackages =  many (pkgArg "PACKAGE...")
+
+    somePackages :: Parser [String]
+    somePackages = some (pkgArg "PACKAGE...")
+
+    manyBranches :: Parser [AnyBranch]
+    manyBranches = many anyBranchAO
+      where
+        anyBranchAO :: Parser AnyBranch
+        anyBranchAO =
+          RelBranch <$> branchArg <|> anyBranchOpt
 
     branchesOpt :: Parser (Maybe BranchOpts)
     branchesOpt =
@@ -178,9 +191,6 @@ main = do
 
     excludeBranchOpt :: Parser Branch
     excludeBranchOpt = optionWith branchM 'x' "exclude-branch" "BRANCH" "branch"
-
-    branchesPackages :: Parser [String]
-    branchesPackages = many (pkgArg "[BRANCH]... [PACKAGE]...")
 
     branchesRequestOpt :: Parser BranchOpts
     branchesRequestOpt =

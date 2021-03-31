@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Cmd.Copr (
@@ -28,11 +27,10 @@ coprServer = "copr.fedorainfracloud.org"
 -- FIXME repo config with a setup command?
 -- FIXME interact with copr dist-git
 -- FIXME parallel copr builds
-coprCmd ::
-  Bool -> BuildBy -> [String] -> String -> Maybe BranchOpts -> [String] -> IO ()
-coprCmd dryrun buildBy archs project mbrnchopts args = do
-  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts True args
-  chroots <- coprGetChroots brs
+coprCmd :: Bool -> BuildBy -> [String] -> String -> Maybe BranchOpts
+        -> [Branch] -> [String] -> IO ()
+coprCmd dryrun buildBy archs project mbrnchopts bs pkgs = do
+  chroots <- coprGetChroots bs
   if null pkgs then
     getPackageName "." >>= coprBuildPkg chroots
     else
@@ -46,11 +44,7 @@ coprCmd dryrun buildBy archs project mbrnchopts args = do
       branches <-
         if isNothing mbrnchopts && null brs
         then return $ (map (releaseBranch . T.pack) . nub . map removeArch) chroots
-        else do
-          brs' <- listOfBranches False False mbrnchopts brs
-          forM brs' $ \ case
-            OtherBranch obr -> error' $ "unknown copr target: " ++ obr
-            RelBranch rbr -> return rbr
+        else listOfBranches False False mbrnchopts brs
       let buildroots =
             reverseSort $
             if null archs

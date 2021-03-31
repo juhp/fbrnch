@@ -19,7 +19,7 @@ module Branches (
   getReleaseBranch,
   branchVersion,
   anyBranchToRelease,
-  branchingPrompt
+  getRequestedBranches
 ) where
 
 import Common
@@ -104,56 +104,53 @@ systemBranch :: IO Branch
 systemBranch =
   readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
 
-listOfBranches :: Bool -> Bool -> Maybe BranchOpts -> [AnyBranch] -> IO [AnyBranch]
+listOfBranches :: Bool -> Bool -> Maybe BranchOpts -> [Branch] -> IO [Branch]
 listOfBranches _ _active (Just AllBranches) (_:_) =
   error' "cannot specify branches with --all-branches"
 listOfBranches distgit _active (Just AllBranches) [] =
   if distgit
-  then map RelBranch <$> fedoraBranches localBranches
+  then fedoraBranches localBranches
   else error' "--all-branches only allowed for dist-git packages"
 listOfBranches _ _active (Just AllFedora) (_:_) =
   error' "cannot specify branches with --all-fedora"
 listOfBranches distgit _active (Just AllFedora) [] =
   if distgit
-  then map RelBranch . filter isFedoraBranch <$> fedoraBranches localBranches
+  then filter isFedoraBranch <$> fedoraBranches localBranches
   else error' "--all-fedora only allowed for dist-git packages"
 listOfBranches _ _active (Just AllEPEL) (_:_) =
   error' "cannot specify branches with --all-epel"
 listOfBranches distgit _active (Just AllEPEL) [] =
   if distgit
-  then map RelBranch . filter isEPELBranch <$> fedoraBranches localBranches
+  then filter isEPELBranch <$> fedoraBranches localBranches
   else error' "--all-epel only allowed for dist-git packages"
-listOfBranches distgit active Nothing brs =
-  if null brs
-  then
-    pure <$> if distgit
-             then gitCurrentBranch
-             else RelBranch <$> systemBranch
-  else do
-    activeBrs <- getFedoraBranches
-    forM_ brs $ \ br ->
-      case br of
-        RelBranch rbr -> do
-          if active
-            then when (rbr `notElem` activeBrs) $
-                 error' $ show br ++ " is not an active branch"
-            else
-            case rbr of
-              Fedora _ -> do
-                let latest = maximum (delete Rawhide activeBrs)
-                when (rbr > latest) $
-                  error' $ show rbr ++ " is newer than latest branch"
-              -- FIXME also check for too new EPEL
-              _ -> return ()
-        _ -> return ()
-    return brs
 listOfBranches _ _ (Just (ExcludeBranches _)) (_:_) =
   error' "cannot specify branches with exclude-branch"
 listOfBranches distgit _ (Just (ExcludeBranches brs)) [] = do
   branches <- if distgit
               then fedoraBranches localBranches
               else getFedoraBranches
-  return $ map RelBranch (branches \\ brs)
+  return $ branches \\ brs
+listOfBranches distgit active Nothing brs =
+  if null brs
+  then
+    pure <$> if distgit
+             then getReleaseBranch
+             else systemBranch
+  else do
+    activeBrs <- getFedoraBranches
+    forM_ brs $ \ br ->
+          if active
+            then when (br `notElem` activeBrs) $
+                 error' $ show br ++ " is not an active branch"
+            else
+            case br of
+              Fedora _ -> do
+                let latest = maximum (delete Rawhide activeBrs)
+                when (br > latest) $
+                  error' $ show br ++ " is newer than latest branch"
+              -- FIXME also check for too new EPEL
+              _ -> return ()
+    return brs
 
 getReleaseBranch :: IO Branch
 getReleaseBranch =
@@ -173,13 +170,32 @@ branchVersion Rawhide = "rawhide"
 branchVersion (Fedora n) = show n
 branchVersion (EPEL n) = show n
 
-branchingPrompt :: IO [Branch]
-branchingPrompt = do
-  inp <- prompt "Enter required branches [default: latest 2]"
-  if null inp
-    then return []
-    else
-    let brs = map anyBranch $ words inp
-    in if all isRelBranch brs
-       then return $ map onlyRelBranch brs
-       else branchingPrompt
+getRequestedBranches :: Maybe BranchOpts -> [Branch] -> IO [Branch]
+getRequestedBranches mbrnchopts brs = do
+  active <- getFedoraBranched
+  case mbrnchopts of
+    Nothing -> if null brs
+               then branchingPrompt
+               else return brs
+    Just request -> do
+      let requested = case request of
+                        AllBranches -> active
+                        AllFedora -> filter isFedoraBranch active
+                        AllEPEL -> filter isEPELBranch active
+                        ExcludeBranches xbrs -> active \\ xbrs
+      inp <- prompt $ "Confirm branches request [" ++ unwords (map show requested) ++ "]"
+      return $ if null inp
+               then requested
+               else map (readActiveBranch' active) $ words inp
+  where
+    branchingPrompt :: IO [Branch]
+    branchingPrompt = do
+      -- FIXME default may be wrong now
+      inp <- prompt "Enter required branches [default: latest 2]"
+      if null inp
+        then return []
+        else
+        let abrs = map anyBranch $ words inp
+        in if all isRelBranch abrs
+           then return $ map onlyRelBranch abrs
+           else branchingPrompt

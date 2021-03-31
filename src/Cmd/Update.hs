@@ -14,14 +14,15 @@ import Krb
 import Package
 
 -- FIXME branch arg?
-updateCmd :: [String] -> IO ()
-updateCmd args = do
+updateCmd :: [AnyBranch] -> [String] -> IO ()
+updateCmd brs args = do
   pkgGit <- isPkgGitRepo
-  let (mver,pkgs) =
-        if pkgGit
-        then (listToMaybe args, if length args > 1 then error' "cannot specify packages in a dist-git repo" else [])
-        else (Nothing, args)
-  withPackageByBranches (Just False) dirtyGitFetch Nothing True ZeroOrOne (updatePkg mver) pkgs
+  when (pkgGit && length args > 1) $
+    error' "cannot specify packages in a dist-git repo"
+  let (mver,pkgs) = case args of
+        [a] -> if pkgGit then (Just a,[]) else (Nothing,[a])
+        _ -> (Nothing,args)
+  withPackageByBranches (Just False) dirtyGitFetch Nothing ZeroOrOne (updatePkg mver) brs pkgs
   where
     updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
     updatePkg mver pkg br = do

@@ -34,19 +34,17 @@ type Job = (String, Async (String, String))
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources asap
-parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe UpdateType -> Maybe BranchOpts -> [String]
-                 -> IO ()
-parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
-  (brs,pkgs) <- splitBranchesPkgs True mbrnchopts True args
-  when (null brs && isNothing mbrnchopts) $
+parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe UpdateType -> Maybe BranchOpts -> [Branch] -> [String] -> IO ()
+parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts bs pkgs = do
+  when (null bs && isNothing mbrnchopts) $
     error' "Please specify at least one branch"
   branches <-
     case pkgs of
-      [] -> listOfBranches True True mbrnchopts brs
-      [p] -> withExistingDirectory p $ listOfBranches True True mbrnchopts brs
+      [] -> listOfBranches True True mbrnchopts bs
+      [p] -> withExistingDirectory p $ listOfBranches True True mbrnchopts bs
       _ -> if isJust mbrnchopts
            then error' "parallel does not support branch options for multiple packages: please give an explicit list of branches instead"
-           else listOfBranches True True mbrnchopts brs
+           else listOfBranches True True mbrnchopts bs
   let mtarget = maybeTarget msidetagTarget
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
@@ -54,29 +52,25 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
     [] -> do
       unlessM isPkgGitRepo $
         error' "Please specify at least one package"
-      parallelBranches $ map onlyRelBranch branches
+      parallelBranches branches
     [p] -> withExistingDirectory p $
-           parallelBranches $ map onlyRelBranch branches
+           parallelBranches branches
     _ ->
-      forM_ branches $ \ br -> do
-        case br of
-          (RelBranch rbr) -> do
-            layers <- dependencyLayers pkgs
-            when (isNothing msidetagTarget && length layers > 1) $ do
-              unlessM (checkAutoBodhiUpdate rbr) $
-                error' "You must use --target/--sidetag to build package layers for this branch"
-            when (length branches > 1) $
-              putStrLn $ "# " ++ show rbr
-            targets <- mapM (parallelBuild rbr) $ zip [(length layers - 1)..0] layers
-            when (isJust msidetagTarget && null targets) $
-              error' "No target was returned from jobs!"
-            unless (isNothing msidetagTarget || null targets) $ do
-              let target = head targets
-              when (target /= branchTarget rbr) $ do
-                notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
-                bodhiSidetagUpdate target notes
-          (OtherBranch _) ->
-            error' "parallel builds only defined for release branches"
+      forM_ branches $ \ rbr -> do
+      layers <- dependencyLayers pkgs
+      when (isNothing msidetagTarget && length layers > 1) $ do
+        unlessM (checkAutoBodhiUpdate rbr) $
+          error' "You must use --target/--sidetag to build package layers for this branch"
+      when (length branches > 1) $
+        putStrLn $ "# " ++ show rbr
+      targets <- mapM (parallelBuild rbr) $ zip [(length layers - 1)..0] layers
+      when (isJust msidetagTarget && null targets) $
+        error' "No target was returned from jobs!"
+      unless (isNothing msidetagTarget || null targets) $ do
+        let target = head targets
+        when (target /= branchTarget rbr) $ do
+          notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
+          bodhiSidetagUpdate target notes
   where
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do

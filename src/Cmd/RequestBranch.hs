@@ -13,12 +13,9 @@ import Krb
 import ListReviews
 import Package
 import Pagure
-import Prompt
 
-requestBranches :: Bool -> Maybe BranchOpts -> [String] -> IO ()
-requestBranches mock mbrnchopts args = do
-  (abrs,ps) <- splitBranchesPkgs True mbrnchopts True args
-  let brs = map onlyRelBranch abrs
+requestBranches :: Bool -> Maybe BranchOpts -> [Branch] -> [String] -> IO ()
+requestBranches mock mbrnchopts brs ps = do
   if null ps then
     ifM isPkgGitRepo
     (getDirectoryName >>= requestPkgBranches mock mbrnchopts brs . Package) $
@@ -32,7 +29,7 @@ requestPkgBranches :: Bool -> Maybe BranchOpts -> [Branch] -> Package -> IO ()
 requestPkgBranches mock mbrnchopts brs pkg = do
   putPkgHdr pkg
   git_ "fetch" []
-  branches <- getRequestedBranches
+  branches <- getRequestedBranches mbrnchopts brs
   newbranches <- filterExistingBranchRequests branches
   unless (null newbranches) $ do
     (mbid,session) <- bzReviewSession
@@ -75,21 +72,3 @@ requestPkgBranches mock mbrnchopts brs pkg = do
         putStrLn $ "Branch request already open for " ++ unPackage pkg ++ ":" ++ show br
         mapM_ printScmIssue pending
       return $ null pending
-
-    getRequestedBranches :: IO [Branch]
-    getRequestedBranches = do
-      active <- getFedoraBranched
-      case mbrnchopts of
-        Nothing -> if null brs
-                   then return $ take 2 active
-                   else return brs
-        Just request -> do
-          let requested = case request of
-                            AllBranches -> active
-                            AllFedora -> filter isFedoraBranch active
-                            AllEPEL -> filter isEPELBranch active
-                            ExcludeBranches xbrs -> active \\ xbrs
-          inp <- prompt $ "Confirm branches request [" ++ unwords (map show requested) ++ "]"
-          return $ if null inp
-                   then requested
-                   else map (readActiveBranch' active) $ words inp

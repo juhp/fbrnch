@@ -27,10 +27,10 @@ module Package (
   putPkgAnyBrnchHdr,
   withExistingDirectory,
   initialPkgRepo,
-  splitBranchesPkgs,
+--  splitBranchesPkgs,
 --  withBranchByPackages,
   withPackageByBranches,
-  withPackageByBranches',
+--  withPackageByBranches',
   LimitBranches(..),
   cleanGit,
   cleanGitFetch,
@@ -371,63 +371,63 @@ packageSpec pkg = unPackage pkg <.> "spec"
 data BrPkg = IsBr AnyBranch | Unknown String | IsPkg String
   deriving Show
 
-splitBranchesPkgs :: Bool -> Maybe BranchOpts -> Bool -> [String]
-                  -> IO ([AnyBranch], [String])
-splitBranchesPkgs release mbrnchopts exists args = do
-  pkggit <- isPkgGitRepo
-  brPkgs <- mapM (toBrPkg pkggit) args
-  let (brs,pkgs) = brPkgsToBranchesPkgs brPkgs
-  return $ case mbrnchopts of
-    Just _ | brs /= [] -> error' "cannot specify branches with branch options"
-    _ -> (brs,pkgs)
-  where
-    toBrPkg :: Bool -> String -> IO BrPkg
-    toBrPkg gitdir str =
-      case anyBranch str of
-        rbr@(RelBranch _) -> return (IsBr rbr)
-        abr@(OtherBranch p) -> if release then return (IsPkg p)
-               else
-                 ifM (isPath str)
-                 (return $ IsPkg str) $
-                 if gitdir
-                 then return (IsBr abr)
-                 else return $ if exists
-                               then IsBr abr
-                               else IsPkg str
-      where
-        isPath :: FilePath -> IO Bool
-        isPath fp =
-          if ".spec" `isExtensionOf` fp
-          then do
-            exists' <- doesFileExist fp
-            unless exists' $ error' $ fp ++ " file not found"
-            return True
-          else do
-            exists' <- doesDirectoryExist fp
-            let ispath = '/' `elem` fp
-            when (not exists' && ispath) $
-              error' $ fp ++ " directory not found"
-            return exists'
+-- splitBranchesPkgs :: Bool -> Maybe BranchOpts -> Bool -> [String]
+--                   -> IO ([AnyBranch], [String])
+-- splitBranchesPkgs release mbrnchopts exists args = do
+--   pkggit <- isPkgGitRepo
+--   brPkgs <- mapM (toBrPkg pkggit) args
+--   let (brs,pkgs) = brPkgsToBranchesPkgs brPkgs
+--   return $ case mbrnchopts of
+--     Just _ | brs /= [] -> error' "cannot specify branches with branch options"
+--     _ -> (brs,pkgs)
+--   where
+--     toBrPkg :: Bool -> String -> IO BrPkg
+--     toBrPkg gitdir str =
+--       case anyBranch str of
+--         rbr@(RelBranch _) -> return (IsBr rbr)
+--         abr@(OtherBranch p) -> if release then return (IsPkg p)
+--                else
+--                  ifM (isPath str)
+--                  (return $ IsPkg str) $
+--                  if gitdir
+--                  then return (IsBr abr)
+--                  else return $ if exists
+--                                then IsBr abr
+--                                else IsPkg str
+--       where
+--         isPath :: FilePath -> IO Bool
+--         isPath fp =
+--           if ".spec" `isExtensionOf` fp
+--           then do
+--             exists' <- doesFileExist fp
+--             unless exists' $ error' $ fp ++ " file not found"
+--             return True
+--           else do
+--             exists' <- doesDirectoryExist fp
+--             let ispath = '/' `elem` fp
+--             when (not exists' && ispath) $
+--               error' $ fp ++ " directory not found"
+--             return exists'
 
-    brPkgsToBranchesPkgs :: [BrPkg] -> ([AnyBranch], [String])
-    brPkgsToBranchesPkgs brpkgs =
-      let (pbrs,ppkgs) = span isBranch brpkgs
-      in (map toBranch pbrs, map toPackage ppkgs)
-      where
-        isBranch :: BrPkg -> Bool
-        isBranch (IsBr _) = True
-        isBranch (Unknown _) = True
-        isBranch (IsPkg _) = False
+--     brPkgsToBranchesPkgs :: [BrPkg] -> ([AnyBranch], [String])
+--     brPkgsToBranchesPkgs brpkgs =
+--       let (pbrs,ppkgs) = span isBranch brpkgs
+--       in (map toBranch pbrs, map toPackage ppkgs)
+--       where
+--         isBranch :: BrPkg -> Bool
+--         isBranch (IsBr _) = True
+--         isBranch (Unknown _) = True
+--         isBranch (IsPkg _) = False
 
-        toBranch :: BrPkg -> AnyBranch
-        toBranch (IsBr br) = br
-        toBranch (Unknown br) = OtherBranch br
-        toBranch (IsPkg p) = error' $ "can't map package to branch: " ++ p
+--         toBranch :: BrPkg -> AnyBranch
+--         toBranch (IsBr br) = br
+--         toBranch (Unknown br) = OtherBranch br
+--         toBranch (IsPkg p) = error' $ "can't map package to branch: " ++ p
 
-        toPackage :: BrPkg -> String
-        toPackage (IsPkg p) = p
-        toPackage (Unknown p) = p
-        toPackage (IsBr b) = error' $ "can't map branch to package: " ++ show b
+--         toPackage :: BrPkg -> String
+--         toPackage (IsPkg p) = p
+--         toPackage (Unknown p) = p
+--         toPackage (IsBr b) = error' $ "can't map branch to package: " ++ show b
 
 data GitOpts =
   GitOpts
@@ -448,34 +448,35 @@ data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
   deriving Eq
 
 -- do package over branches
-withPackageByBranches :: Maybe Bool
-                      -> Maybe GitOpts
-                      -> Maybe BranchOpts
-                      -> Bool
-                      -> LimitBranches
-                      -> (Package -> AnyBranch -> IO ())
-                      -> [String]
-                      -> IO ()
-withPackageByBranches mheader mgitopts mbrnchopts exists limitBranches action args = do
-  (brs,pkgs) <- splitBranchesPkgs (have gitOptActive) mbrnchopts exists args
-  let mheader' =
-        case mheader of
-          Nothing -> Nothing
-          Just _ | length pkgs < 2 && length brs < 2 && isNothing mbrnchopts -> Nothing
-          _ -> mheader
-  withPackageByBranches' mheader' mgitopts mbrnchopts limitBranches action (brs,pkgs)
-  where
-    have :: (GitOpts -> Bool) -> Bool
-    have opt = maybe False opt mgitopts
+-- withPackageByBranches :: Maybe Bool
+--                       -> Maybe GitOpts
+--                       -> Maybe BranchOpts
+--                       -> Bool
+--                       -> LimitBranches
+--                       -> (Package -> AnyBranch -> IO ())
+--                       -> [String]
+--                       -> IO ()
+-- withPackageByBranches mheader mgitopts mbrnchopts exists limitBranches action args = do
+--   (brs,pkgs) <- splitBranchesPkgs (have gitOptActive) mbrnchopts exists args
+--   let mheader' =
+--         case mheader of
+--           Nothing -> Nothing
+--           Just _ | length pkgs < 2 && length brs < 2 && isNothing mbrnchopts -> Nothing
+--           _ -> mheader
+--   withPackageByBranches' mheader' mgitopts mbrnchopts limitBranches action (brs,pkgs)
+--   where
+--     have :: (GitOpts -> Bool) -> Bool
+--     have opt = maybe False opt mgitopts
 
-withPackageByBranches' :: Maybe Bool
+withPackageByBranches :: Maybe Bool
                        -> Maybe GitOpts
                        -> Maybe BranchOpts
                        -> LimitBranches
                        -> (Package -> AnyBranch -> IO ())
-                       -> ([AnyBranch], [String])
+                       -> [AnyBranch]
+                       -> [String]
                        -> IO ()
-withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkgs) = do
+withPackageByBranches mheader mgitopts mbrnchopts limitBranches action brs pkgs = do
   case mbrnchopts of
     Just _ ->
       unless (null brs) $
@@ -533,7 +534,8 @@ withPackageByBranches' mheader mgitopts mbrnchopts limitBranches action (brs,pkg
       when haveGit $
         when (have gitOptClean) checkWorkingDirClean
       when fetch $ gitFetchSilent >> putStrLn ""
-      branches <- listOfBranches haveGit (have gitOptActive) mbrnchopts brs
+      -- FIXME!! no branch restriction
+      branches <- map RelBranch <$> listOfBranches haveGit (have gitOptActive) mbrnchopts (map onlyRelBranch brs)
       when (mbrnchopts == Just AllBranches) $
         putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
       -- FIXME add newline at end?

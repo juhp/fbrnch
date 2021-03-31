@@ -20,10 +20,10 @@ data DiffWork =
 
 -- FIXME diff other branches without switching
 -- FIXME --older/--newer branch
-diffCmd :: Bool -> DiffWork -> DiffFormat -> Maybe AnyBranch -> [String]
-        -> IO ()
+diffCmd :: Bool -> DiffWork -> DiffFormat -> Maybe AnyBranch -> [AnyBranch]
+        -> [String] -> IO ()
 diffCmd speconly work fmt mwbr =
-  withPackageByBranches Nothing dirtyGit Nothing True ZeroOrOne diffPkg
+  withPackageByBranches Nothing dirtyGit Nothing ZeroOrOne diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
     diffPkg pkg br = do

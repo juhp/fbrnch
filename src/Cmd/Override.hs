@@ -10,9 +10,10 @@ import Git
 import Koji
 import Package
 
-overrideCmd :: Bool -> [String] -> IO ()
-overrideCmd dryrun =
-  withPackageByBranches (Just False) cleanGitFetchActive Nothing True AnyNumber overrideBranch
+-- FIXME option to expire (all) overrides
+overrideCmd :: Bool -> [Branch] -> [String] -> IO ()
+overrideCmd dryrun brs =
+  withPackageByBranches (Just False) cleanGitFetchActive Nothing AnyNumber overrideBranch (map RelBranch brs)
   where
     overrideBranch :: Package -> AnyBranch -> IO ()
     overrideBranch _ (OtherBranch _) =

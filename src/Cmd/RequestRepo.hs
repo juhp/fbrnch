@@ -18,10 +18,9 @@ import Pagure
 import Prompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
-requestRepos :: Bool -> Bool -> Bool -> Maybe BranchOpts -> [String] -> IO ()
-requestRepos mock allstates retry mbrnchopts args = do
-  (abrs,ps) <- splitBranchesPkgs True mbrnchopts True args
-  let brs = map onlyRelBranch abrs
+requestRepos :: Bool -> Bool -> Bool -> Maybe BranchOpts -> [Branch]
+             -> [String] -> IO ()
+requestRepos mock allstates retry mbrnchopts brs ps = do
   when (retry && length ps /= 1) $
     error' "--retry only for a single package"
   pkgs <- if null ps
@@ -64,7 +63,7 @@ requestRepo mock retry mbrnchopts brs pkg = do
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment
         putStrLn ""
-        branches <- getRequestedBranches
+        branches <- getRequestedBranches mbrnchopts brs
         forM_ branches $ \ br -> do
           when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
           putStr (show br ++ " ")
@@ -94,21 +93,3 @@ requestRepo mock retry mbrnchopts brs pkg = do
         if "@" `T.isInfixOf` first
         then Nothing
         else Just first
-
-    getRequestedBranches :: IO [Branch]
-    getRequestedBranches = do
-      active <- getFedoraBranched
-      case mbrnchopts of
-        Nothing -> if null brs
-                   then branchingPrompt
-                   else return brs
-        Just request -> do
-          let requested = case request of
-                            AllBranches -> active
-                            AllFedora -> filter isFedoraBranch active
-                            AllEPEL -> filter isEPELBranch active
-                            ExcludeBranches xbrs -> active \\ xbrs
-          inp <- prompt $ "Confirm branches request [" ++ unwords (map show requested) ++ "]"
-          return $ if null inp
-                   then requested
-                   else map (readActiveBranch' active) $ words inp

@@ -12,17 +12,16 @@ import Package
 
 -- FIXME remote/pagures branch and --remote or --no-remote
 -- FIXME --local for existing local branches
-branchesCmd :: Bool -> Bool -> Bool -> Bool -> [String] -> IO ()
-branchesCmd skipdead allbrs missing remote args = do
-  (brs,pkgs) <- splitBranchesPkgs False Nothing (not remote) args
+branchesCmd :: Bool -> Bool -> Bool -> Bool -> [AnyBranch] -> [String] -> IO ()
+branchesCmd skipdead allbrs missing remote bs pkgs = do
   when allbrs $ do
-    unless (null brs) $
+    unless (null bs) $
       error' "cannot combine --all and branches"
     when missing $
       error' "cannot combine --all and --missing"
   if null pkgs
-    then branchesPkg brs "."
-    else mapM_ (branchesPkg brs) pkgs
+    then branchesPkg bs "."
+    else mapM_ (branchesPkg bs) pkgs
   where
     branchesPkg :: [AnyBranch] -> FilePath -> IO ()
     branchesPkg branches path = do
