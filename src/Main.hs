@@ -110,7 +110,7 @@ main = do
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
       requestRepos <$> mockOpt True <*> reviewAllStatusOpt <*> switchWith 'r' "retry" "Re-request repo" <*> branchesOpt <*> many (pkgArg "NEWPACKAGE...")
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
-      importCmd <$> mockOpt True <*> many (pkgArg "NEWPACKAGE...")
+      importCmd <$> mockOpt True <*> branchesPackages
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranches <$> mockOpt False <*> optional branchesRequestOpt <*> branchesPackages
     , Subcommand "find-review" "Find package review bug" $
