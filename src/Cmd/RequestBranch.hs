@@ -35,12 +35,14 @@ requestPkgBranches mock mbrnchopts brs pkg = do
   branches <- getRequestedBranches
   newbranches <- filterExistingBranchRequests branches
   unless (null newbranches) $ do
-    (bug,session) <- approvedReviewBugSession (unPackage pkg)
-    let bid = bugId bug
+    (mbid,session) <- bzReviewSession
     urls <- forM newbranches $ \ br -> do
       when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
       fedpkg "request-branch" [show br]
-    commentBug session bid $ unlines urls
+    case mbid of
+      Just bid -> commentBug session bid
+      Nothing -> putStrLn
+      $ unlines urls
   where
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests branches = do
