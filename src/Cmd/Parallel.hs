@@ -49,9 +49,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts args = do
     unlessM isPkgGitRepo $
       error' "Please specify at least one package"
     parallelBranches $ map onlyRelBranch branches
-    else do
-    whenM isPkgGitRepo $
-      error' "Cannot build multiple packages inside a package dir"
+    else
     forM_ branches $ \ br -> do
       case br of
         (RelBranch rbr) -> do
