@@ -31,6 +31,7 @@ module Package (
 --  withBranchByPackages,
   withPackageByBranches,
 --  withPackageByBranches',
+  withPackagesMaybeBranch,
   LimitBranches(..),
   cleanGit,
   cleanGitFetch,
@@ -444,7 +445,7 @@ cleanGitFetchActive = Just $ GitOpts True  True  True
 dirtyGit =            Just $ GitOpts False False False
 dirtyGitFetch =       Just $ GitOpts False True  False
 
-data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
+data LimitBranches = AnyNumber | ZeroOrOne | ExactlyOne
   deriving Eq
 
 -- do package over branches
@@ -468,42 +469,36 @@ data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
 --     have :: (GitOpts -> Bool) -> Bool
 --     have opt = maybe False opt mgitopts
 
+-- FIXME rename to withPackages*
 withPackageByBranches :: Maybe Bool
-                       -> Maybe GitOpts
-                       -> Maybe BranchOpts
-                       -> LimitBranches
-                       -> (Package -> AnyBranch -> IO ())
-                       -> [AnyBranch]
-                       -> [String]
-                       -> IO ()
-withPackageByBranches mheader mgitopts mbrnchopts limitBranches action brs pkgs = do
-  case mbrnchopts of
-    Just _ ->
-      unless (null brs) $
-      error' "cannot specify branches and branch option together"
-    Nothing ->
-      case limitBranches of
-        Zero | not (null brs) ->
-          error' $ "package not found: " ++ unwords (map show brs)
-        ZeroOrOne | length brs > 1 ->
-          -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
-          error' $ "more than one branch given or packages not found: " ++ unwords (tail (map show brs))
-        ExactlyOne | null brs ->
-          error' "please specify one branch"
-        ExactlyOne | length brs > 1 ->
-          error' "please only specify one branch"
-        _ -> return ()
+                      -> Maybe GitOpts
+                      -> LimitBranches
+                      -> (Package -> AnyBranch -> IO ())
+                      -> (BranchesReq,[String])
+                      -> IO ()
+withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) = do
+  haveGit <- isPkgGitRepo
+  brs <- listOfBranches haveGit (have gitOptActive) breq
+  case limitBranches of
+    ZeroOrOne | length brs > 1 ->
+      -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
+      error' $ "more than one branch given: " ++ unwords (map show brs)
+    ExactlyOne | null brs ->
+      error' "please specify one branch"
+    ExactlyOne | length brs > 1 ->
+      error' "please only specify one branch"
+    _ -> return ()
   if null pkgs
     then do
-    withPackageDir "."
+    withPackageDir brs "."
     else do
     when (length pkgs > 1 && null brs) $
       error' "At least one branch must be specified when there are multiple packages"
-    mapM_ withPackageDir pkgs
+    mapM_ (withPackageDir brs) pkgs
   where
     -- FIXME support arbitrary (module) branches
-    withPackageDir :: FilePath -> IO ()
-    withPackageDir path = do
+    withPackageDir :: [Branch] -> FilePath -> IO ()
+    withPackageDir brs path = do
      let dir =
            if ".spec" `isExtensionOf` path
            then takeDirectory path
@@ -529,25 +524,34 @@ withPackageByBranches mheader mgitopts mbrnchopts limitBranches action brs pkgs 
       let fetch = have gitOptFetch
       when ((isJust mheader || fetch) && dir /= ".") $
         case brs of
-          [br] -> when (fetch || mheader == Just True) $ putPkgAnyBrnchHdr pkg br
+          [br] -> when (fetch || mheader == Just True) $ putPkgBrnchHdr pkg br
           _ -> when (fetch || isJust mheader) $ putPkgHdr pkg
       when haveGit $
         when (have gitOptClean) checkWorkingDirClean
       when fetch $ gitFetchSilent >> putStrLn ""
       -- FIXME!! no branch restriction
-      branches <- map RelBranch <$> listOfBranches haveGit (have gitOptActive) mbrnchopts (map onlyRelBranch brs)
-      when (mbrnchopts == Just AllBranches) $
-        putStrLn $ "Branches: " ++ unwords (map show branches) ++ "\n"
+      when (breq == BranchOpt AllBranches) $
+        putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"
       -- FIXME add newline at end?
       let action' p b = do
-            when (isJust mheader && length branches > 1) $ putPkgAnyBrnchHdr p b
-            action p b
-      mapM_ (action' pkg) branches
-      when (length branches /= 1) $
+            when (isJust mheader && length brs > 1) $ putPkgBrnchHdr p b
+            action p (RelBranch b)
+      mapM_ (action' pkg) brs
+      when (length brs /= 1) $
         whenJust mcurrentbranch gitSwitchBranch
 
     have :: (GitOpts -> Bool) -> Bool
     have opt = maybe False opt mgitopts
+
+withPackagesMaybeBranch :: Maybe Bool
+                        -> Maybe GitOpts
+                        -> LimitBranches
+                        -> (Package -> AnyBranch -> IO ())
+                        -> Maybe Branch
+                        -> [String]
+                        -> IO ()
+withPackagesMaybeBranch mheader mgitopts limitBranches action mbr pkgs =
+  withPackageByBranches mheader mgitopts limitBranches action (Branches (maybeToList mbr),pkgs)
 
 -- -- do branch over packages
 -- withBranchByPackages :: (Branch -> [String] -> IO ()) -> (Branches,[String]) -> IO ()

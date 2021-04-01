@@ -20,8 +20,8 @@ import Prompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 -- FIXME add --dryrun
-importCmd :: Bool -> Maybe BranchOpts -> [Branch] -> [String] -> IO ()
-importCmd mock mbrnchopts brs ps = do
+importCmd :: Bool -> (BranchesReq,[String]) -> IO ()
+importCmd mock (breq, ps) = do
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviews ReviewRepoCreated
     else return ps
@@ -76,8 +76,8 @@ importCmd mock mbrnchopts brs ps = do
         putBugBuild False session bid nvr
         existing <- fedoraBranchesNoRawhide localBranches
         when (null existing) $ do
-          brs' <- getRequestedBranches mbrnchopts brs
-          requestPkgBranches mock Nothing brs' (Package pkg)
+          brs <- getRequestedBranches breq
+          requestPkgBranches mock (Branches brs) (Package pkg)
       when (pkg /= takeFileName dir) $
         setCurrentDirectory dir
       where

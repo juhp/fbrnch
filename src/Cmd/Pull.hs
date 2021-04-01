@@ -6,9 +6,9 @@ import Package
 
 -- FIXME pulling more than one branch
 -- FIXME print nvr after pulling or old -> new
-pullPkgs :: [AnyBranch] -> [String] -> IO ()
+pullPkgs :: (BranchesReq, [String]) -> IO ()
 pullPkgs =
-  withPackageByBranches (Just False) cleanGitFetch Nothing AnyNumber pullPkg
+  withPackageByBranches (Just False) cleanGitFetch AnyNumber pullPkg
   where
     pullPkg :: Package -> AnyBranch -> IO ()
     pullPkg _pkg _br =

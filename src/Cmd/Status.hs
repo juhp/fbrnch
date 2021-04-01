@@ -22,14 +22,13 @@ import Package
 -- FIXME --pending
 -- FIXME handle not cloned (remote only)
 -- FIXME silence fetching of new branches? (for --reviews etc)
-statusCmd :: Bool -> Bool -> Maybe BranchOpts -> [Branch] -> [String] -> IO ()
-statusCmd nofetch reviews mbrnchopts brs pkgs = do
+statusCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
+statusCmd nofetch reviews (breq, pkgs) = do
   reviewpkgs <- if reviews then
     map reviewBugToPackage <$> listReviewsAll True ReviewRepoCreated
     else return []
   -- FIXME dirty not okay for multiple branches?
-  withPackageByBranches (Just False) (if nofetch then dirtyGit else dirtyGitFetch) mbrnchopts AnyNumber statusBranch (map RelBranch brs)
-    (pkgs ++ reviewpkgs)
+  withPackageByBranches (Just False) (if nofetch then dirtyGit else dirtyGitFetch) AnyNumber statusBranch (breq, pkgs ++ reviewpkgs)
 
 -- FIXME note dirty when local changes
 statusBranch :: Package -> AnyBranch -> IO ()

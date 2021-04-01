@@ -12,6 +12,7 @@ module Branches (
   anyBranch,
   isRelBranch,
   onlyRelBranch,
+  partitionBranches,
   BranchOpts(..),
   listOfBranches,
   gitCurrentBranch,
@@ -19,11 +20,14 @@ module Branches (
   getReleaseBranch,
   branchVersion,
   anyBranchToRelease,
-  getRequestedBranches
+  getRequestedBranches,
+  BranchesReq(..)
 ) where
 
 import Common
 
+import Data.Either
+import Data.Tuple
 import Distribution.Fedora.Branch
 import SimpleCmd
 import SimpleCmd.Git
@@ -47,6 +51,10 @@ isRelBranch _ = False
 instance Show AnyBranch where
   show (RelBranch br) = show br
   show (OtherBranch obr) = obr
+
+partitionBranches :: [String] -> ([Branch],[String])
+partitionBranches args =
+  swap . partitionEithers $ map eitherBranch args
 
 activeBranches :: [Branch] -> [String] -> [Branch]
 activeBranches active =
@@ -104,33 +112,25 @@ systemBranch :: IO Branch
 systemBranch =
   readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
 
-listOfBranches :: Bool -> Bool -> Maybe BranchOpts -> [Branch] -> IO [Branch]
-listOfBranches _ _active (Just AllBranches) (_:_) =
-  error' "cannot specify branches with --all-branches"
-listOfBranches distgit _active (Just AllBranches) [] =
+listOfBranches :: Bool -> Bool -> BranchesReq -> IO [Branch]
+listOfBranches distgit _active (BranchOpt AllBranches) =
   if distgit
   then fedoraBranches localBranches
   else error' "--all-branches only allowed for dist-git packages"
-listOfBranches _ _active (Just AllFedora) (_:_) =
-  error' "cannot specify branches with --all-fedora"
-listOfBranches distgit _active (Just AllFedora) [] =
+listOfBranches distgit _active (BranchOpt AllFedora) =
   if distgit
   then filter isFedoraBranch <$> fedoraBranches localBranches
   else error' "--all-fedora only allowed for dist-git packages"
-listOfBranches _ _active (Just AllEPEL) (_:_) =
-  error' "cannot specify branches with --all-epel"
-listOfBranches distgit _active (Just AllEPEL) [] =
+listOfBranches distgit _active (BranchOpt AllEPEL) =
   if distgit
   then filter isEPELBranch <$> fedoraBranches localBranches
   else error' "--all-epel only allowed for dist-git packages"
-listOfBranches _ _ (Just (ExcludeBranches _)) (_:_) =
-  error' "cannot specify branches with exclude-branch"
-listOfBranches distgit _ (Just (ExcludeBranches brs)) [] = do
+listOfBranches distgit _ (BranchOpt (ExcludeBranches brs)) = do
   branches <- if distgit
               then fedoraBranches localBranches
               else getFedoraBranches
   return $ branches \\ brs
-listOfBranches distgit active Nothing brs =
+listOfBranches distgit active (Branches brs) =
   if null brs
   then
     pure <$> if distgit
@@ -170,14 +170,14 @@ branchVersion Rawhide = "rawhide"
 branchVersion (Fedora n) = show n
 branchVersion (EPEL n) = show n
 
-getRequestedBranches :: Maybe BranchOpts -> [Branch] -> IO [Branch]
-getRequestedBranches mbrnchopts brs = do
+getRequestedBranches :: BranchesReq -> IO [Branch]
+getRequestedBranches breq = do
   active <- getFedoraBranched
-  case mbrnchopts of
-    Nothing -> if null brs
-               then branchingPrompt
-               else return brs
-    Just request -> do
+  case breq of
+    Branches brs -> if null brs
+                    then branchingPrompt
+                    else return brs
+    BranchOpt request -> do
       let requested = case request of
                         AllBranches -> active
                         AllFedora -> filter isFedoraBranch active
@@ -199,3 +199,7 @@ getRequestedBranches mbrnchopts brs = do
         in if all isRelBranch abrs
            then return $ map onlyRelBranch abrs
            else branchingPrompt
+
+data BranchesReq =
+  BranchOpt BranchOpts | Branches [Branch]
+  deriving Eq

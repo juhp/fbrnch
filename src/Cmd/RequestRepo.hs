@@ -18,19 +18,18 @@ import Pagure
 import Prompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
-requestRepos :: Bool -> Bool -> Bool -> Maybe BranchOpts -> [Branch]
-             -> [String] -> IO ()
-requestRepos mock allstates retry mbrnchopts brs ps = do
+requestRepos :: Bool -> Bool -> Bool -> (BranchesReq, [String]) -> IO ()
+requestRepos mock allstates retry (breq, ps) = do
   when (retry && length ps /= 1) $
     error' "--retry only for a single package"
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviewsAll allstates ReviewWithoutRepoReq
     else return ps
-  mapM_ (requestRepo mock retry mbrnchopts brs) pkgs
+  mapM_ (requestRepo mock retry breq) pkgs
 
 -- FIXME also accept bugid instead
-requestRepo :: Bool -> Bool -> Maybe BranchOpts -> [Branch] -> String -> IO ()
-requestRepo mock retry mbrnchopts brs pkg = do
+requestRepo :: Bool -> Bool -> BranchesReq -> String -> IO ()
+requestRepo mock retry breq pkg = do
   putStrLn pkg
   (bug,session) <- approvedReviewBugSession pkg
   putBug bug
@@ -63,7 +62,7 @@ requestRepo mock retry mbrnchopts brs pkg = do
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment
         putStrLn ""
-        branches <- getRequestedBranches mbrnchopts brs
+        branches <- getRequestedBranches breq
         forM_ branches $ \ br -> do
           when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
           putStr (show br ++ " ")

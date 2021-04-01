@@ -10,20 +10,20 @@ import Git
 import Package
 
 -- FIXME handle non-release branches
-mockCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch -> [Branch]
-        -> [String] -> IO ()
-mockCmd dryrun noclean network noCleanAfter mroot brs ps = do
-  when (null brs && length ps > 1 && isNothing mroot) $
-    error' "Must specific branch or --root chroot"
+mockCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch
+        -> (BranchesReq, [String]) -> IO ()
+mockCmd dryrun noclean network noCleanAfter mroot (breq, ps) = do
   branches <-
-    if null brs
-      then
+    case breq of
+      Branches [] ->
         if null ps
-          then pure <$> getReleaseBranch
-          else pure <$> systemBranch
-      else listOfBranches False False Nothing brs
+        then pure <$> getReleaseBranch
+        else pure <$> systemBranch
+      _ ->  listOfBranches False False breq
+  when (null branches && length ps > 1 && isNothing mroot) $
+    error' "Must specific branch or --root chroot"
   let packages = if null ps then ["."] else ps
-  mapM_ (mockBuildPkgs (null brs) packages) branches
+  mapM_ (mockBuildPkgs (breq == Branches []) packages) branches
   where
     mockBuildPkgs :: Bool -> [String] -> Branch -> IO ()
     mockBuildPkgs noswitch pkgs br = do

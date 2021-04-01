@@ -12,8 +12,8 @@ import Package
 
 -- FIXME option to expire (all) overrides
 overrideCmd :: Bool -> [Branch] -> [String] -> IO ()
-overrideCmd dryrun brs =
-  withPackageByBranches (Just False) cleanGitFetchActive Nothing AnyNumber overrideBranch (map RelBranch brs)
+overrideCmd dryrun brs pkgs =
+  withPackageByBranches (Just False) cleanGitFetchActive AnyNumber overrideBranch (Branches brs, pkgs)
   where
     overrideBranch :: Package -> AnyBranch -> IO ()
     overrideBranch _ (OtherBranch _) =

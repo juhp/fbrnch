@@ -38,15 +38,15 @@ data BuildOpts = BuildOpts
 -- FIXME provide direct link to failed task/build.log
 -- FIXME default behaviour for build in pkg dir: all branches or current?
 -- FIXME --auto-override for deps in testing
-buildCmd :: BuildOpts -> Maybe BranchOpts -> [Branch] -> [String] -> IO ()
-buildCmd opts mbrnchopts brs pkgs = do
+buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
+buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptTarget opts)
                     then ZeroOrOne
                     else AnyNumber
   let mlastOfPkgs = if length pkgs > 1
                     then Just (Package (last pkgs))
                     else Nothing
-  withPackageByBranches (Just False) cleanGitFetchActive mbrnchopts singleBrnch (buildBranch mlastOfPkgs opts) (map RelBranch brs) pkgs
+  withPackageByBranches (Just False) cleanGitFetchActive singleBrnch (buildBranch mlastOfPkgs opts) (breq, pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()

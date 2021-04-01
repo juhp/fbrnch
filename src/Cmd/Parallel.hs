@@ -34,17 +34,17 @@ type Job = (String, Async (String, String))
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources asap
-parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe UpdateType -> Maybe BranchOpts -> [Branch] -> [String] -> IO ()
-parallelBuildCmd dryrun msidetagTarget mupdatetype mbrnchopts bs pkgs = do
-  when (null bs && isNothing mbrnchopts) $
-    error' "Please specify at least one branch"
+parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe UpdateType -> (BranchesReq, [String]) -> IO ()
+parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
   branches <-
     case pkgs of
-      [] -> listOfBranches True True mbrnchopts bs
-      [p] -> withExistingDirectory p $ listOfBranches True True mbrnchopts bs
-      _ -> if isJust mbrnchopts
-           then error' "parallel does not support branch options for multiple packages: please give an explicit list of branches instead"
-           else listOfBranches True True mbrnchopts bs
+      [] -> listOfBranches True True breq
+      [p] -> withExistingDirectory p $ listOfBranches True True breq
+      _ -> case breq of
+             Branches _ -> listOfBranches True True breq
+             _ -> error' "parallel does not support branch options for multiple packages: please give an explicit list of branches instead"
+  when (null branches) $
+    error' "Please specify at least one branch"
   let mtarget = maybeTarget msidetagTarget
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"

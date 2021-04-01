@@ -14,22 +14,22 @@ import ListReviews
 import Package
 import Pagure
 
-requestBranches :: Bool -> Maybe BranchOpts -> [Branch] -> [String] -> IO ()
-requestBranches mock mbrnchopts brs ps = do
+requestBranches :: Bool -> (BranchesReq,[String]) -> IO ()
+requestBranches mock (breq, ps) = do
   if null ps then
     ifM isPkgGitRepo
-    (getDirectoryName >>= requestPkgBranches mock mbrnchopts brs . Package) $
+    (getDirectoryName >>= requestPkgBranches mock breq . Package) $
     do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
-       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock mbrnchopts brs (Package p)) pkgs
+       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock breq (Package p)) pkgs
   else
-    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock mbrnchopts brs (Package p)) ps
+    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock breq (Package p)) ps
 
 -- FIXME add --yes, or skip prompt when args given
-requestPkgBranches :: Bool -> Maybe BranchOpts -> [Branch] -> Package -> IO ()
-requestPkgBranches mock mbrnchopts brs pkg = do
+requestPkgBranches :: Bool -> BranchesReq -> Package -> IO ()
+requestPkgBranches mock breq pkg = do
   putPkgHdr pkg
   git_ "fetch" []
-  branches <- getRequestedBranches mbrnchopts brs
+  branches <- getRequestedBranches breq
   newbranches <- filterExistingBranchRequests branches
   unless (null newbranches) $ do
     (mbid,session) <- bzReviewSession

@@ -17,9 +17,9 @@ data Archs = Archs [String] | ExcludedArchs [String]
 -- FIXME build from a specific git ref
 -- FIXME print message about uploading srpm
 scratchCmd :: Bool -> Bool -> Bool -> Maybe Archs -> Maybe String
-           -> [AnyBranch] -> [String] -> IO ()
+           -> (BranchesReq, [String]) -> IO ()
 scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
-  withPackageByBranches (Just False) Nothing Nothing AnyNumber scratchBuild
+  withPackageByBranches (Just False) Nothing AnyNumber scratchBuild
   where
     scratchBuild :: Package -> AnyBranch -> IO ()
     scratchBuild pkg br = do

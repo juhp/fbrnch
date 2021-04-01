@@ -9,9 +9,9 @@ import Package
 import Prompt
 
 -- add BranchOpts?
-mergeCmd :: Bool -> Maybe BranchOpts -> [AnyBranch] -> [String] -> IO ()
-mergeCmd noprompt mbrnchopts =
-  withPackageByBranches (Just False) cleanGitFetchActive mbrnchopts AnyNumber runMergeBranch
+mergeCmd :: Bool -> (BranchesReq,[String]) -> IO ()
+mergeCmd noprompt =
+  withPackageByBranches (Just False) cleanGitFetchActive AnyNumber runMergeBranch
   where
     runMergeBranch :: Package -> AnyBranch -> IO ()
     runMergeBranch _ (OtherBranch _) =

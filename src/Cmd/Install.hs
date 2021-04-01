@@ -11,11 +11,11 @@ import Package
 -- FIXME package countdown
 -- FIXME --ignore-uninstalled subpackages
 -- FIXME --check any/all of package installed
-installCmd :: Bool -> Maybe ForceShort -> [BCond] -> Bool -> [AnyBranch] -> [String] -> IO ()
-installCmd recurse mforceshort bconds reinstall = do
+installCmd :: Bool -> Maybe ForceShort -> [BCond] -> Bool -> Maybe Branch -> [String] -> IO ()
+installCmd recurse mforceshort bconds reinstall mbr pkgs = do
   when (recurse && isJust mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
-  withPackageByBranches Nothing Nothing Nothing ZeroOrOne installPkg
+  withPackagesMaybeBranch Nothing Nothing ZeroOrOne installPkg mbr pkgs
   where
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
@@ -41,7 +41,7 @@ installCmd recurse mforceshort bconds reinstall = do
                 mpkgdir <- lookForPkgDir rbr ".." dep
                 case mpkgdir of
                   Nothing -> putStrLn $ dep ++ " not known"
-                  Just pkgdir -> installCmd recurse mforceshort bconds reinstall [br] [pkgdir] >> putStrLn ""
+                  Just pkgdir -> installCmd recurse mforceshort bconds reinstall mbr [pkgdir] >> putStrLn ""
             else error' $ "missing deps:\n" ++ unlines missingdeps
           buildRPMs True mforceshort bconds rpms br spec
           putStrLn ""
@@ -83,9 +83,9 @@ installCmd recurse mforceshort bconds reinstall = do
 
         filterDebug = filter (\p -> not (any (`isInfixOf` p) ["-debuginfo-", "-debugsource-"]))
 
-notInstalledCmd :: [AnyBranch] -> [String] -> IO ()
+notInstalledCmd :: Maybe Branch -> [String] -> IO ()
 notInstalledCmd =
-  withPackageByBranches Nothing Nothing Nothing ZeroOrOne notInstalledPkg
+  withPackagesMaybeBranch Nothing Nothing ZeroOrOne notInstalledPkg
   where
     notInstalledPkg :: Package -> AnyBranch -> IO ()
     notInstalledPkg pkg br = do
