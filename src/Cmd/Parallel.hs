@@ -58,15 +58,15 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
     _ ->
       forM_ branches $ \ rbr -> do
       layers <- dependencyLayers pkgs
-      when (isNothing msidetagTarget && length layers > 1) $ do
+      when (isNothing msidetagTarget && length layers > 1) $
         unlessM (checkAutoBodhiUpdate rbr) $
           error' "You must use --target/--sidetag to build package layers for this branch"
       when (length branches > 1) $
         putStrLn $ "# " ++ show rbr
-      targets <- mapM (parallelBuild rbr) $ zip [(length layers - 1)..0] layers
-      when (isJust msidetagTarget && null targets) $
+      targets <- mapM (parallelBuild rbr) $ zip (reverse [0..(length layers - 1)]) layers
+      when (isJust msidetagTarget && null targets && not dryrun) $
         error' "No target was returned from jobs!"
-      unless (isNothing msidetagTarget || null targets) $ do
+      unless (isNothing msidetagTarget || null targets || dryrun) $ do
         let target = head targets
         when (target /= branchTarget rbr) $ do
           notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
