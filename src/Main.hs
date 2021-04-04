@@ -122,7 +122,7 @@ main = do
     , Subcommand "command" "Run shell command in package dirs ($p)" $
       commandCmd <$> switchWith 'o' "if-output" "only print if output" <*> commandOpt <*> branchesPackages
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
-      coprCmd <$> dryrunOpt <*> buildByOpt <*> many archOpt <*> pkgArg "PROJECT" <*> branchesPackages
+      coprCmd <$> dryrunOpt <*> switchWith 'l' "list-chroots" "Show project chroots" <*> buildByOpt <*> many archOpt <*> pkgArg "PROJECT" <*> branchesPackages
     , Subcommand "rename-master" "Rename local master branch to rawhide" $
       renameMasterCmd <$> manyPackages
     ]

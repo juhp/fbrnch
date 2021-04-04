@@ -27,14 +27,17 @@ coprServer = "copr.fedorainfracloud.org"
 -- FIXME repo config with a setup command?
 -- FIXME interact with copr dist-git
 -- FIXME parallel copr builds
-coprCmd :: Bool -> BuildBy -> [String] -> String -> (BranchesReq,[String])
-        -> IO ()
-coprCmd dryrun buildBy archs project (breq, pkgs) = do
+coprCmd :: Bool -> Bool -> BuildBy -> [String] -> String
+        -> (BranchesReq,[String]) -> IO ()
+coprCmd dryrun listchroots buildBy archs project (breq, pkgs) = do
   chroots <- coprGetChroots
-  if null pkgs then
-    getPackageName "." >>= coprBuildPkg chroots
+  if listchroots
+    then mapM_ putStrLn chroots
     else
-    mapM_ (\ p -> withExistingDirectory p $ coprBuildPkg chroots (Package p)) pkgs
+    if null pkgs then
+      getPackageName "." >>= coprBuildPkg chroots
+    else
+      mapM_ (\ p -> withExistingDirectory p $ coprBuildPkg chroots (Package p)) pkgs
   where
     coprGetChroots = do
       username <- getUsername
@@ -54,7 +57,7 @@ coprCmd dryrun buildBy archs project (breq, pkgs) = do
             then [chroot | chroot <- chroots, removeArch chroot `elem` map branchRelease branches]
             else [chroot | arch <- archs, br <- branches, let chroot = branchRelease br ++ "-" ++ arch, chroot `elem` chroots]
       if null buildroots
-        then error' "No chroots chosen"
+        then error' "No valid chroots"
         else return buildroots
 
     coprBuildPkg buildroots pkg = do
