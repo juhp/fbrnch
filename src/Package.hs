@@ -477,28 +477,17 @@ withPackageByBranches :: Maybe Bool
                       -> (BranchesReq,[String])
                       -> IO ()
 withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) = do
-  haveGit <- isPkgGitRepo
-  brs <- listOfBranches haveGit (have gitOptActive) breq
-  case limitBranches of
-    ZeroOrOne | length brs > 1 ->
-      -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
-      error' $ "more than one branch given: " ++ unwords (map show brs)
-    ExactlyOne | null brs ->
-      error' "please specify one branch"
-    ExactlyOne | length brs > 1 ->
-      error' "please only specify one branch"
-    _ -> return ()
   if null pkgs
     then do
-    withPackageDir brs "."
+    withPackageDir "."
     else do
-    when (length pkgs > 1 && null brs) $
+    when (length pkgs > 1 && breq == Branches []) $
       error' "At least one branch must be specified when there are multiple packages"
-    mapM_ (withPackageDir brs) pkgs
+    mapM_ withPackageDir pkgs
   where
     -- FIXME support arbitrary (module) branches
-    withPackageDir :: [Branch] -> FilePath -> IO ()
-    withPackageDir brs path = do
+    withPackageDir :: FilePath -> IO ()
+    withPackageDir path = do
      let dir =
            if ".spec" `isExtensionOf` path
            then takeDirectory path
@@ -521,6 +510,16 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) = do
         error' $ "Not a pkg git dir: " ++ unPackage pkg
       mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                         else return Nothing
+      brs <- listOfBranches haveGit (have gitOptActive) breq
+      case limitBranches of
+        ZeroOrOne | length brs > 1 ->
+          -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
+          error' $ "more than one branch given: " ++ unwords (map show brs)
+        ExactlyOne | null brs ->
+          error' "please specify one branch"
+        ExactlyOne | length brs > 1 ->
+          error' "please only specify one branch"
+        _ -> return ()
       let fetch = have gitOptFetch
       when ((isJust mheader || fetch) && dir /= ".") $
         case brs of
