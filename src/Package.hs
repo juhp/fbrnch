@@ -78,8 +78,8 @@ checkForSpecFile spec = do
   have <- doesFileExist spec
   unless have $ error' $ spec ++ " not found"
 
-getChangeLog :: FilePath -> IO String
-getChangeLog spec = do
+getChangeLog :: Maybe String -> FilePath -> IO String
+getChangeLog mcontext spec = do
   clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
   putStrLn ""
   putStrLn "```"
@@ -88,7 +88,7 @@ getChangeLog spec = do
   ifM (not <$> isTty)
     (return clog) $
     do
-      userlog <- prompt "Press Enter to use above or input change summary now"
+      userlog <- prompt $ "Press Enter to use above or input " ++ fromMaybe "change" mcontext ++ " summary now"
       return $ if null userlog then clog else userlog
 
 cleanChangelog :: String -> String

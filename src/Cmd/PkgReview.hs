@@ -77,7 +77,7 @@ updateReview noscratch mock mspec = do
     error' "This NVR was already posted on the review bug: please bump"
   mockRpmLint mock noscratch pkg spec srpm
   (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
-  changelog <- getChangeLog spec
+  changelog <- getChangeLog Nothing spec
   commentBug session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
   -- putStrLn "Review bug updated"
   where

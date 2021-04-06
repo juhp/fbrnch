@@ -219,7 +219,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
             else do
             when (target == branchTarget br && morelayers) $
               -- -- FIXME: avoid prompt in
-              -- changelog <- getChangeLog spec
+              -- changelog <- getChangeLog Nothing spec
               -- bodhiUpdate (fmap fst mBugSess) changelog nvr
               bodhiCreateOverride dryrun nvr
           when morelayers $
