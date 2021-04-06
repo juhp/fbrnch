@@ -18,6 +18,7 @@ import qualified System.Process.Typed as TP
 
 import Branches
 import Common
+import Common.System
 import Git
 import Package
 
@@ -86,12 +87,15 @@ nvrCmd =
           pkgNameVerRel' sbr spec
         >>= putStrLn
 
+-- FIXME option to require spec file?
 commandCmd :: Bool -> String -> (BranchesReq,[String]) -> IO ()
 commandCmd ifoutput cs =
   withPackageByBranches (Just (not ifoutput)) Nothing AnyNumber cmdBranch
   where
     cmdBranch :: Package -> AnyBranch -> IO ()
-    cmdBranch pkg br = do
+    cmdBranch pkg br =
+      ifM (doesFileExist "dead.package")
+      (putStrLn "dead.package") $ do
       curEnv <- getEnvironment
       if ifoutput then do
         out <- TP.readProcessInterleaved_ $
@@ -99,7 +103,7 @@ commandCmd ifoutput cs =
                     TP.shell cs
         unless (B.null out) $ do
           putPkgAnyBrnchHdr pkg br
-          B.putStrLn out
+          B.putStr out
         else do
         let p = (P.shell cs) { P.env = Just (("p",unPackage pkg):curEnv) }
         (_,_,_,h) <- P.createProcess p

@@ -273,7 +273,7 @@ main = do
 
     buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
 
-    commandOpt = strOptionWith 'c' "cmd" "COMMAND" "Shell command to run in $p"
+    commandOpt = strOptionWith 'c' "cmd" "SHELLCOMMAND" "Shell command to run in $p"
 
     sidetagTargetOpt :: Parser SideTagTarget
     sidetagTargetOpt =
