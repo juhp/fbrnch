@@ -39,7 +39,7 @@ branchesCmd skipdead allbrs missing remote (breq, pkgs) = do
         doBranchesPkg = do
           unless remote $
             unlessM isPkgGitRepo $
-            error' "not dist-git"
+            error' "not Fedora dist-git"
           pkg <- getPackageName path
           brs <- delete "main" <$>
                  if remote
