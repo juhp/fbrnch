@@ -224,8 +224,6 @@ It also makes use of:
 ## Installation
 fbrnch is packaged in Fedora: `sudo dnf install fbrnch`.
 
-There is also a [copr repo](https://copr.fedorainfracloud.org/coprs/petersen/fbrnch/).
-
 ## Build from source
 1. Install openssl-devel
 

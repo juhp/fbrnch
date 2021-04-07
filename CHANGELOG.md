@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.0 (2021-04-07)
+- 'request-repos' can now take branch args and --mock option (#18)
+- 'parallel': only override and waitrepo if more layers
+- extend --dryrun to bodhiCreateOverride, putBugBuild, bodhiUpdate, kojiWaitRepo
+- drop the restriction of no packages inside a pkg dir (#19)
+- 'switch': drop git clean requirement to prevent error when on branch
+- 'parallel': use parallelBranches for single package arg
+- 'request-branch': allow request with closed pkg review
+- major refactor of branch-package args handling together with branch options
+- 'copr': new --list-chroots option for project
+- 'command': skip dead.package's
+- 'build': clearer bodhi note prompt
+
 ## 0.7.3 (2021-03-23)
 - 'scratch': don't get sources for pushed git build
 - changes/improvements to package header output

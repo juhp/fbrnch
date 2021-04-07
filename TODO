@@ -1,8 +1,10 @@
 - check envr > any existing current package, before building
 
-- 'clean' command?
+? 'clean' command
 
 - merge rawhide pushes to local main?
+
+- tag builds locally
 
 - filter bz# out from bodhi notes
 
