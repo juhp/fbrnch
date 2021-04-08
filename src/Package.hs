@@ -488,56 +488,56 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) = do
     -- FIXME support arbitrary (module) branches
     withPackageDir :: FilePath -> IO ()
     withPackageDir path = do
-     let dir =
-           if ".spec" `isExtensionOf` path
-           then takeDirectory path
-           else path
-     withExistingDirectory dir $ do
-      mspec <- if ".spec" `isExtensionOf` path
-              then return $ Just $ takeFileName path
-              else maybeFindSpecfile
-      pkg <- Package <$>
-             case mspec of
-               -- FIXME fails if spec file can't be parsed and also is *slow*
-               -- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
-               -- For now assume spec filename = package name
-               Just spec -> return $ takeBaseName spec
-               Nothing -> getDirectoryName
-      unless (isNothing mspec || mspec == Just (unPackage pkg <.> "spec")) $
-        putStrLn  "Warning: package name and spec filename differ!"
-      haveGit <- isPkgGitRepo
-      when (isJust mgitopts && not haveGit) $
-        error' $ "Not a pkg git dir: " ++ unPackage pkg
-      mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
-                        else return Nothing
-      brs <- listOfBranches haveGit (have gitOptActive) breq
-      case limitBranches of
-        ZeroOrOne | length brs > 1 ->
-          -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
-          error' $ "more than one branch given: " ++ unwords (map show brs)
-        ExactlyOne | null brs ->
-          error' "please specify one branch"
-        ExactlyOne | length brs > 1 ->
-          error' "please only specify one branch"
-        _ -> return ()
-      let fetch = have gitOptFetch
-      when ((isJust mheader || fetch) && dir /= ".") $
-        case brs of
-          [br] -> when (fetch || mheader == Just True) $ putPkgBrnchHdr pkg br
-          _ -> when (fetch || isJust mheader) $ putPkgHdr pkg
-      when haveGit $
-        when (have gitOptClean) checkWorkingDirClean
-      when fetch $ gitFetchSilent >> putStrLn ""
-      -- FIXME!! no branch restriction
-      when (breq == BranchOpt AllBranches) $
-        putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"
-      -- FIXME add newline at end?
-      let action' p b = do
-            when (isJust mheader && length brs > 1) $ putPkgBrnchHdr p b
-            action p (RelBranch b)
-      mapM_ (action' pkg) brs
-      when (length brs /= 1) $
-        whenJust mcurrentbranch gitSwitchBranch
+      let dir =
+            if ".spec" `isExtensionOf` path
+            then takeDirectory path
+            else path
+      withExistingDirectory dir $ do
+        mspec <- if ".spec" `isExtensionOf` path
+                then return $ Just $ takeFileName path
+                else maybeFindSpecfile
+        pkg <- Package <$>
+               case mspec of
+                 -- FIXME fails if spec file can't be parsed and also is *slow*
+                 -- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+                 -- For now assume spec filename = package name
+                 Just spec -> return $ takeBaseName spec
+                 Nothing -> getDirectoryName
+        unless (isNothing mspec || mspec == Just (unPackage pkg <.> "spec")) $
+          putStrLn  "Warning: package name and spec filename differ!"
+        haveGit <- isPkgGitRepo
+        when (isJust mgitopts && not haveGit) $
+          error' $ "Not a pkg git dir: " ++ unPackage pkg
+        mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
+                          else return Nothing
+        brs <- listOfBranches haveGit (have gitOptActive) breq
+        case limitBranches of
+          ZeroOrOne | length brs > 1 ->
+            -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
+            error' $ "more than one branch given: " ++ unwords (map show brs)
+          ExactlyOne | null brs ->
+            error' "please specify one branch"
+          ExactlyOne | length brs > 1 ->
+            error' "please only specify one branch"
+          _ -> return ()
+        let fetch = have gitOptFetch
+        when ((isJust mheader || fetch) && dir /= ".") $
+          case brs of
+            [br] -> when (fetch || mheader == Just True) $ putPkgBrnchHdr pkg br
+            _ -> when (fetch || isJust mheader) $ putPkgHdr pkg
+        when haveGit $
+          when (have gitOptClean) checkWorkingDirClean
+        when fetch $ gitFetchSilent >> putStrLn ""
+        -- FIXME!! no branch restriction
+        when (breq == BranchOpt AllBranches) $
+          putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"
+        -- FIXME add newline at end?
+        let action' p b = do
+              when (isJust mheader && length brs > 1) $ putPkgBrnchHdr p b
+              action p (RelBranch b)
+        mapM_ (action' pkg) brs
+        when (length brs /= 1) $
+          whenJust mcurrentbranch gitSwitchBranch
 
     have :: (GitOpts -> Bool) -> Bool
     have opt = maybe False opt mgitopts
