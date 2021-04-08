@@ -38,11 +38,11 @@ checkAutoBodhiUpdate br =
 
 -- FIXME should determine 3 days for branched devel release
 -- FIXME handle expired override?
-bodhiCreateOverride :: Bool -> String -> IO ()
-bodhiCreateOverride dryrun nvr = do
+bodhiCreateOverride :: Bool -> Maybe Int -> String -> IO ()
+bodhiCreateOverride dryrun mduration nvr = do
   putStrLn $ "Creating Bodhi Override for " ++ nvr ++ ":"
   unless dryrun $ do
-    ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", "4", nvr]
+    ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", show (fromMaybe 4 mduration), nvr]
     if ok
       then putStrLn $ "https://bodhi.fedoraproject.org/overrides/" ++ nvr
       else do
@@ -51,7 +51,7 @@ bodhiCreateOverride dryrun nvr = do
         Nothing -> do
           putStrLn "bodhi override failed"
           prompt_ "Press Enter to retry"
-          bodhiCreateOverride dryrun nvr
+          bodhiCreateOverride dryrun mduration nvr
         -- FIXME prettyprint
         Just obj -> error' $ show obj
 

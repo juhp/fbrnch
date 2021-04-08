@@ -99,7 +99,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             bodhiUpdate dryrun mbug spec nvr
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
             when (buildoptOverride opts) $
-            bodhiCreateOverride dryrun nvr
+            bodhiCreateOverride dryrun Nothing nvr
         when (isJust mlastpkg && mlastpkg /= Just pkg) $
           when (buildoptOverride opts || autoupdate) $
             kojiWaitRepo dryrun target nvr
@@ -171,7 +171,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 bodhiUpdate dryrun (fmap fst mBugSess) spec nvr
                 -- FIXME prompt for override note
                 when (buildoptOverride opts) $
-                  bodhiCreateOverride dryrun nvr
+                  bodhiCreateOverride dryrun Nothing nvr
             when (isJust mlastpkg && mlastpkg /= Just pkg) $
               when (buildoptOverride opts || autoupdate) $
               kojiWaitRepo dryrun target nvr

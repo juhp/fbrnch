@@ -170,7 +170,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
             tags <- kojiNVRTags nvr
             unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
               unlessM (checkAutoBodhiUpdate br) $
-              bodhiCreateOverride dryrun nvr
+              bodhiCreateOverride dryrun Nothing nvr
           return $ do
             when morelayers $
               kojiWaitRepo dryrun target nvr
@@ -221,7 +221,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
               -- -- FIXME: avoid prompt in
               -- changelog <- getChangeLog Nothing spec
               -- bodhiUpdate (fmap fst mBugSess) changelog nvr
-              bodhiCreateOverride dryrun nvr
+              bodhiCreateOverride dryrun Nothing nvr
           when morelayers $
             kojiWaitRepo dryrun target nvr
           return (target,nvr)
