@@ -476,9 +476,9 @@ withPackageByBranches :: Maybe Bool
                       -> (Package -> AnyBranch -> IO ())
                       -> (BranchesReq,[String])
                       -> IO ()
-withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) = do
+withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
   if null pkgs
-    then do
+    then
     withPackageDir "."
     else do
     when (length pkgs > 1 && breq == Branches []) $
