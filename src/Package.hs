@@ -510,7 +510,7 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
           error' $ "Not a pkg git dir: " ++ unPackage pkg
         mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
                           else return Nothing
-        brs <- listOfBranches haveGit (have gitOptActive) breq
+        brs <- listOfAnyBranches haveGit (have gitOptActive) breq
         case limitBranches of
           ZeroOrOne | length brs > 1 ->
             -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
@@ -523,7 +523,7 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
         let fetch = have gitOptFetch
         when ((isJust mheader || fetch) && dir /= ".") $
           case brs of
-            [br] -> when (fetch || mheader == Just True) $ putPkgBrnchHdr pkg br
+            [br] -> when (fetch || mheader == Just True) $ putPkgAnyBrnchHdr pkg br
             _ -> when (fetch || isJust mheader) $ putPkgHdr pkg
         when haveGit $
           when (have gitOptClean) checkWorkingDirClean
@@ -533,8 +533,8 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
           putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"
         -- FIXME add newline at end?
         let action' p b = do
-              when (isJust mheader && length brs > 1) $ putPkgBrnchHdr p b
-              action p (RelBranch b)
+              when (isJust mheader && length brs > 1) $ putPkgAnyBrnchHdr p b
+              action p b
         mapM_ (action' pkg) brs
         when (length brs /= 1) $
           whenJust mcurrentbranch gitSwitchBranch

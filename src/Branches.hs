@@ -15,6 +15,7 @@ module Branches (
   partitionBranches,
   BranchOpts(..),
   listOfBranches,
+  listOfAnyBranches,
   gitCurrentBranch,
   systemBranch,
   getReleaseBranch,
@@ -151,6 +152,12 @@ listOfBranches distgit active (Branches brs) =
               -- FIXME also check for too new EPEL
               _ -> return ()
     return brs
+
+listOfAnyBranches :: Bool -> Bool -> BranchesReq -> IO [AnyBranch]
+listOfAnyBranches distgit active breq =
+  if breq == Branches [] && distgit
+  then pure <$> gitCurrentBranch
+  else fmap RelBranch <$> listOfBranches distgit active breq
 
 getReleaseBranch :: IO Branch
 getReleaseBranch =
