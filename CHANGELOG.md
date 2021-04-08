@@ -12,6 +12,7 @@
 - 'copr': new --list-chroots option for project
 - 'command': skip dead.package's
 - 'build': clearer bodhi note prompt
+- 'install': fix conflicting short options for --recurse and --reinstall
 
 ## 0.7.3 (2021-03-23)
 - 'scratch': don't get sources for pushed git build
