@@ -1,9 +1,9 @@
 # Changelog
 
-## 0.8.0 (2021-04-07)
+## 0.8.0 (2021-04-08)
 - 'request-repos' can now take branch args and --mock option (#18)
 - 'parallel': only override and waitrepo if more layers
-- extend --dryrun to bodhiCreateOverride, putBugBuild, bodhiUpdate, kojiWaitRepo
+- extend dryrun to bodhiCreateOverride, putBugBuild, bodhiUpdate, kojiWaitRepo
 - drop the restriction of no packages inside a pkg dir (#19)
 - 'switch': drop git clean requirement to prevent error when on branch
 - 'parallel': use parallelBranches for single package arg
