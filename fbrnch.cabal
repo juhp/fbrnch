@@ -78,6 +78,7 @@ executable fbrnch
                        Cmd.Status
                        Cmd.Switch
                        Cmd.Update
+                       Cmd.WaitRepo
                        Common
                        Common.System
                        Common.Text

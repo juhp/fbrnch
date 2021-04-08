@@ -42,7 +42,7 @@ bodhiCreateOverride :: Bool -> Maybe Int -> String -> IO ()
 bodhiCreateOverride dryrun mduration nvr = do
   putStrLn $ "Creating Bodhi Override for " ++ nvr ++ ":"
   unless dryrun $ do
-    ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", show (fromMaybe 4 mduration), nvr]
+    ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", show (fromMaybe 4 mduration), "--no-wait", nvr]
     if ok
       then putStrLn $ "https://bodhi.fedoraproject.org/overrides/" ++ nvr
       else do

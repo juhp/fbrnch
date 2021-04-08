@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 (pending)
+- 'override' --duration and run waitrepo after all overrides
+- new 'waitrepo' command
+
 ## 0.8.0 (2021-04-08)
 - 'request-repos' can now take branch args and --mock option (#18)
 - 'parallel': only override and waitrepo if more layers

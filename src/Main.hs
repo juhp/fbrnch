@@ -32,6 +32,7 @@ import Cmd.SideTags
 import Cmd.Status
 import Cmd.Switch
 import Cmd.Update
+import Cmd.WaitRepo
 
 import Branches
 import Common.System
@@ -67,7 +68,9 @@ main = do
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd <$> many branchArg
     , Subcommand "override" "Tag builds into buildroot override in Koji" $
-      overrideCmd <$> dryrunOpt <*> optional (optionWith auto 'd' "duration" "DAYS" "Number of days until expiry [default 4]") <*> many branchArg <*> manyPackages
+      overrideCmd <$> dryrunOpt <*> optional (optionWith auto 'd' "duration" "DAYS" "Number of days until expiry [default 4]") <*> switchWith 'w' "no-wait" "Skip waitrepo step" <*> branchesPackages
+    , Subcommand "waitrepo" "Wait for build to appear in Koji buildroot" $
+      waitrepoCmd <$> dryrunOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> mtargetOpt <*> branchesPackages
     , Subcommand "update" "Update package to newer version" $
