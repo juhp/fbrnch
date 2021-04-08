@@ -25,8 +25,8 @@ homepage:            https://github.com/juhp/fbrnch
 bug-reports:         https://github.com/juhp/fbrnch/issues
 license:             GPL-2
 license-file:        LICENSE
-author:              Jens Petersen
-maintainer:          petersen@fedoraproject.org
+author:              Jens Petersen <petersen@redhat.com>
+maintainer:          Jens Petersen <petersen@fedoraproject.org>
 copyright:           2019-2021 Jens Petersen
 category:            Distribution
 build-type:          Simple
