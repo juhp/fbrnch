@@ -27,8 +27,8 @@ import Data.Char (isDigit)
 
 import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Lazy.Char8 as B
-import Fedora.Koji
-import qualified Fedora.Koji.Internal as Koji
+import Distribution.Koji
+import qualified Distribution.Koji.API as Koji
 import System.Exit
 import System.Process.Typed
 

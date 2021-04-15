@@ -35,8 +35,7 @@
 - 'clone-deps'
 - 'remove-sidetag(s)'
 
-# release deps
-- koji (new)
+# release deps:
 - pagure (new)
 - bodhi (new)
 - copr (new)
