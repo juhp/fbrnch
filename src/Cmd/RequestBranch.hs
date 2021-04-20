@@ -17,7 +17,7 @@ import Pagure
 requestBranches :: Bool -> (BranchesReq,[String]) -> IO ()
 requestBranches mock (breq, ps) = do
   if null ps then
-    ifM isPkgGitRepo
+    ifM isPkgGitSshRepo
     (getDirectoryName >>= requestPkgBranches mock breq . Package) $
     do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
        mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock breq (Package p)) pkgs

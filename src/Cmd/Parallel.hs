@@ -50,7 +50,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
     error' "You can only specify target with one branch"
   case pkgs of
     [] -> do
-      unlessM isPkgGitRepo $
+      unlessM isPkgGitSshRepo $
         error' "Please specify at least one package"
       parallelBranches branches
     [p] -> withExistingDirectory p $

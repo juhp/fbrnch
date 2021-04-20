@@ -16,7 +16,7 @@ import Package
 -- FIXME branch arg?
 updateCmd :: Maybe Branch -> [String] -> IO ()
 updateCmd mbr args = do
-  pkgGit <- isPkgGitRepo
+  pkgGit <- isPkgGitSshRepo
   let (mver,pkgs) = case args of
         [a] -> if pkgGit then (Just a,[]) else (Nothing,[a])
         _ -> (Nothing,args)
@@ -39,7 +39,7 @@ updateCmd mbr args = do
         -- if newver < oldver
         --   then putStrLn $ "current" +-+ display oldver +-+ "is newer!"
         --   else do
-        pkgGit <- isPkgGitRepo
+        pkgGit <- isPkgGitSshRepo
         let (oldver,newver) =
               case mver of
                 Just nver -> (curver,nver)

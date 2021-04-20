@@ -16,6 +16,7 @@ module Git (
 --  checkIsPkgGitDir,
   isGitRepo,
   isPkgGitRepo,
+  isPkgGitSshRepo,
   checkWorkingDirClean,
   isGitDirClean,
   CommitOpt (..),
@@ -124,24 +125,27 @@ isGitRepo :: IO Bool
 isGitRepo = isGitDir "." ||^ doesFileExist ".git"
 
 isPkgGitRepo :: IO Bool
-isPkgGitRepo = grepGitConfig' "@\\(pkgs\\|src\\)\\."
-  where
-    -- adapted from SimpleCmd.Git
-    grepGitConfig' :: String -> IO Bool
-    grepGitConfig' key =
-      ifM (isGitDir ".")
-      (egrep_ key ".git/config") $
-      -- could be a worktree or absorbed submodule (#8)
-      ifM (not <$> doesFileExist ".git")
-      (return False) $ do
-      gitdir <- last . words <$> readFile ".git"
-      if "/worktrees/" `isInfixOf` gitdir
-        then egrep_ key (takeDirectory (takeDirectory gitdir) </> "config")
-        else
-        -- absorbed submodule: "gitdir: ../.git/modules/R-bit"
-        if "/modules/" `isInfixOf` gitdir then
-          egrep_ key $ gitdir </> "config"
-          else return False
+isPkgGitRepo = grepGitConfig' "\\(https://\\|@\\)\\(pkgs\\|src\\)\\."
+
+isPkgGitSshRepo :: IO Bool
+isPkgGitSshRepo = grepGitConfig' "@\\(pkgs\\|src\\)\\."
+
+-- adapted from SimpleCmd.Git
+grepGitConfig' :: String -> IO Bool
+grepGitConfig' key =
+  ifM (isGitDir ".")
+  (egrep_ key ".git/config") $
+  -- could be a worktree or absorbed submodule (#8)
+  ifM (not <$> doesFileExist ".git")
+  (return False) $ do
+  gitdir <- last . words <$> readFile ".git"
+  if "/worktrees/" `isInfixOf` gitdir
+    then egrep_ key (takeDirectory (takeDirectory gitdir) </> "config")
+    else
+    -- absorbed submodule: "gitdir: ../.git/modules/R-bit"
+    if "/modules/" `isInfixOf` gitdir then
+      egrep_ key $ gitdir </> "config"
+      else return False
 
 gitLines :: String -> [String] -> IO [String]
 gitLines c args = lines <$> git c args
