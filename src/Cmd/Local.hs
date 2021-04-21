@@ -111,7 +111,7 @@ commandCmd ifoutput cs =
 
 renameMasterCmd :: [String] -> IO ()
 renameMasterCmd pkgs =
-  withPackageByBranches (Just False) dirtyGit ZeroOrOne renameMasterBranch (Branches [], pkgs)
+  withPackageByBranches (Just False) dirtyGit Zero renameMasterBranch (Branches [], pkgs)
   where
   renameMasterBranch :: Package -> AnyBranch -> IO ()
   renameMasterBranch _pkg _br = do
