@@ -445,7 +445,7 @@ cleanGitFetchActive = Just $ GitOpts True  True  True
 dirtyGit =            Just $ GitOpts False False False
 dirtyGitFetch =       Just $ GitOpts False True  False
 
-data LimitBranches = AnyNumber | ZeroOrOne | ExactlyOne
+data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
   deriving Eq
 
 -- do package over branches
@@ -481,7 +481,7 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
     then
     withPackageDir "."
     else do
-    when (length pkgs > 1 && breq == Branches []) $
+    when (length pkgs > 1 && breq == Branches [] && limitBranches /= Zero) $
       error' "At least one branch must be specified when there are multiple packages"
     mapM_ withPackageDir pkgs
   where
