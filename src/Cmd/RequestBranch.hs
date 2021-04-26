@@ -24,10 +24,10 @@ requestBranches mock (breq, ps) = do
   else
     mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock breq (Package p)) ps
 
--- FIXME add --yes, or skip prompt when args given
 requestPkgBranches :: Bool -> BranchesReq -> Package -> IO ()
 requestPkgBranches mock breq pkg = do
-  putPkgHdr pkg
+  when (breq == Branches []) $
+    putPkgHdr pkg
   git_ "fetch" []
   branches <- getRequestedBranches breq
   newbranches <- filterExistingBranchRequests branches
