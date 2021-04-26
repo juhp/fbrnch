@@ -182,7 +182,7 @@ getRequestedBranches breq = do
   active <- getFedoraBranched
   case breq of
     Branches brs -> if null brs
-                    then branchingPrompt
+                    then branchingPrompt active
                     else return brs
     BranchOpt request -> do
       let requested = case request of
@@ -195,17 +195,16 @@ getRequestedBranches breq = do
                then requested
                else map (readActiveBranch' active) $ words inp
   where
-    branchingPrompt :: IO [Branch]
-    branchingPrompt = do
-      -- FIXME default may be wrong now
+    branchingPrompt :: [Branch] -> IO [Branch]
+    branchingPrompt active = do
       inp <- prompt "Enter required branches [default: latest 2]"
       if null inp
-        then return []
+        then return $ take 2 active
         else
         let abrs = map anyBranch $ words inp
         in if all isRelBranch abrs
            then return $ map onlyRelBranch abrs
-           else branchingPrompt
+           else branchingPrompt active
 
 data BranchesReq =
   BranchOpt BranchOpts | Branches [Branch]
