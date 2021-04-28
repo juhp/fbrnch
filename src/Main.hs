@@ -217,11 +217,14 @@ main = do
 
     rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
 
-    buildOpts = BuildOpts <$> nopromptOpt <*> noFailFastOpt <*> mtargetOpt <*> overrideOpt <*> dryrunOpt <*> updatetypeOpt
+    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> mtargetOpt <*> overrideOpt <*> dryrunOpt <*> updatetypeOpt
 
 --    yesOpt = switchWith 'y' "yes" "Assume yes for questions"
 
     nopromptOpt = switchWith 'm' "no-prompt" "Merge without prompt"
+
+    mergeOpt = optional (flagWith' True 'm' "merge" "Merge without prompt" <|>
+                         flagWith' False 'M' "no-merge" "No merging")
 
     noFailFastOpt = switchWith 'f' "no-fast-fail" "Do not --fast-fail"
 

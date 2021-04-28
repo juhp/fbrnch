@@ -23,7 +23,7 @@ import Package
 import Prompt
 
 data BuildOpts = BuildOpts
-  { buildoptNoPrompt :: Bool
+  { buildoptMerge :: Maybe Bool
   , buildoptNoFailFast :: Bool
   , buildoptTarget :: Maybe String
   , buildoptOverride :: Bool
@@ -38,7 +38,6 @@ data BuildOpts = BuildOpts
 -- FIXME provide direct link to failed task/build.log
 -- FIXME default behaviour for build in pkg dir: all branches or current?
 -- FIXME --auto-override for deps in testing
--- FIXME --no-merge
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptTarget opts)
@@ -61,9 +60,13 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   (ancestor,unmerged) <- mergeable br
   -- FIXME if already built or failed, also offer merge
   merged <-
-    if buildoptNoPrompt opts || newrepo || tty
-    then mergeBranch True (buildoptNoPrompt opts) (ancestor,unmerged) br >> return True
-    else return False
+    case buildoptMerge opts of
+      Just False -> return False
+      Just True -> mergeBranch True True (ancestor,unmerged) br >> return True
+      Nothing ->
+        if newrepo || tty
+        then mergeBranch True False (ancestor,unmerged) br >> return True
+        else return False
   let spec = packageSpec pkg
   checkForSpecFile spec
   checkSourcesMatch spec
