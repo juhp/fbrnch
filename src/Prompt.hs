@@ -13,7 +13,6 @@ import System.IO
 -- FIXME promptNonEmpty
 prompt :: String -> IO String
 prompt s = do
-  _ <- getContents
   putStr $ s ++ ": "
   tty <- openFile "/dev/tty" ReadMode
   inp <- hGetLine tty
