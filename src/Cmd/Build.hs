@@ -38,6 +38,7 @@ data BuildOpts = BuildOpts
 -- FIXME provide direct link to failed task/build.log
 -- FIXME default behaviour for build in pkg dir: all branches or current?
 -- FIXME --auto-override for deps in testing
+-- FIXME --no-merge
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptTarget opts)
@@ -54,7 +55,7 @@ buildBranch _ _ _ (OtherBranch _) =
   error' "build only defined for release branches"
 buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   gitSwitchBranch rbr
-  gitMergeOrigin rbr
+  gitMergeOrigin br
   newrepo <- initialPkgRepo
   tty <- isTty
   (ancestor,unmerged) <- mergeable br

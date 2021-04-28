@@ -39,15 +39,16 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
-gitMergeable :: String -> IO (Bool,[String])
-gitMergeable ref = do
+gitMergeable :: Branch -> IO (Bool,[String])
+gitMergeable br = do
+  let ref = "origin/" ++ show br
   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
   commits <- gitShortLog ("HEAD.." ++ ref)
   return (ancestor, commits)
 
-gitMergeOrigin :: AnyBranch -> IO ()
+gitMergeOrigin :: Branch -> IO ()
 gitMergeOrigin br = do
-  (ancestor,commits) <- gitMergeable $ "origin" </> show br
+  (ancestor,commits) <- gitMergeable br
   if ancestor then
     unless (null commits) $ do
     rebase <- git "rebase" []

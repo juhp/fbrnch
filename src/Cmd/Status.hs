@@ -53,7 +53,7 @@ statusBranch pkg rbr@(RelBranch br) = do
         --   newerBr <- newerBranch br <$> getFedoraBranches
         --   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", show newerBr]
         --   when ancestor $ do
-        --     unmerged <- gitShortLog $ "HEAD.." ++ show newerBr
+        --     unmerged <- gitShortLog $ "HEAD..origin/" ++ show newerBr
         --     unless (null unmerged) $ do
         --       putStrLn $ "Newer commits in " ++ show newerBr ++ ":"
         --       mapM_ putStrLn unmerged

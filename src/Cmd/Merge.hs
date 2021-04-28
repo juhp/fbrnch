@@ -18,7 +18,7 @@ mergeCmd noprompt =
       error' "merge only defined for release branches"
     runMergeBranch _pkg rbr@(RelBranch br) = do
       gitSwitchBranch rbr
-      gitMergeOrigin rbr
+      gitMergeOrigin br
       unmerged <- mergeable br
       mergeBranch False noprompt unmerged br
 
@@ -36,9 +36,7 @@ getNewerBranch br = do
 -- FIXME newer branch might not exist (eg epel8):
    -- restrict to local branches
 mergeable :: Branch -> IO (Bool,[String])
-mergeable br = do
-  newerBr <- getNewerBranch br
-  gitMergeable $ show newerBr
+mergeable br = getNewerBranch br >>= gitMergeable
 
 -- FIXME return merged ref
 mergeBranch :: Bool -> Bool -> (Bool,[String]) -> Branch -> IO ()

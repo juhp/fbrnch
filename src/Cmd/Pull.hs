@@ -12,4 +12,4 @@ pullPkgs =
   where
     pullPkg :: Package -> AnyBranch -> IO ()
     pullPkg _pkg _br =
-      gitCurrentBranch >>= gitMergeOrigin
+      getReleaseBranch >>= gitMergeOrigin
