@@ -8,12 +8,15 @@ module Prompt (
 import Common
 
 import Data.Char
+import System.IO
 
 -- FIXME promptNonEmpty
 prompt :: String -> IO String
 prompt s = do
+  _ <- getContents
   putStr $ s ++ ": "
-  inp <- getLine
+  tty <- openFile "/dev/tty" ReadMode
+  inp <- hGetLine tty
   putStrLn ""
   return inp
 
