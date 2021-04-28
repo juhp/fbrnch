@@ -28,8 +28,7 @@ isTty :: IO Bool
 isTty = hIsTerminalDevice stdin
 
 setNoBuffering :: IO ()
-setNoBuffering = do
-  hSetBuffering stdin NoBuffering
+setNoBuffering =
   hSetBuffering stdout NoBuffering
 
 getDirectoryName :: IO String
