@@ -14,8 +14,11 @@ import qualified Common.Text as T
 import Package
 
 import Data.Ini.Config
+import Network.HTTP.Query (lookupKey, lookupKey')
 import System.Environment.XDG.BaseDir (getUserConfigDir)
-import Web.Fedora.Copr (coprChroots)
+import System.Time.Extra (sleep)
+import Web.Fedora.Copr (coprChroots, fedoraCopr)
+import Web.Fedora.Copr.API (coprGetBuild)
 
 data BuildBy = SingleBuild | ValidateByRelease | ValidateByArch | BuildByRelease
   deriving (Eq)
@@ -141,16 +144,36 @@ coprBuild dryrun project srpm buildroots = do
   unless dryrun $ do
     output <- cmd "copr" buildargs
     putStrLn output
-    let bid = last $ words $ last $ lines output
-    ok <- cmdBool "copr" ["watch-build", bid]
+    let bid = read $ last $ words $ last $ lines output
+    ok <- coprWatchBuild bid Nothing
     unless ok $
       error' $ "Failed: copr " ++ unwords buildargs
 
-#if !MIN_VERSION_simple_cmd(0,1,4)
-error' :: String -> a
-#if MIN_VERSION_base(4,9,0)
-error' = errorWithoutStackTrace
-#else
-error' = error
-#endif
-#endif
+coprWatchBuild :: Int -> Maybe String -> IO Bool
+coprWatchBuild bid mstate = do
+  res <- coprGetBuild fedoraCopr bid
+  case lookupKey "state" res of
+    Just state ->
+      if mstate == Just state
+      then sleep 20 >> coprWatchBuild bid mstate
+      else do
+        logMsg $ "Build " ++ show bid ++ " " ++ state
+        case state of
+          "succeeded" -> return True
+          "skipped" -> return True
+          "canceled" -> return False
+          "failed" -> return False
+          _ -> coprWatchBuild bid (Just state)
+    Nothing -> do
+      let err = lookupKey' "error" res
+      logMsg $ "Error: " ++ err
+      return False
+
+-- #if !MIN_VERSION_simple_cmd(0,1,4)
+-- error' :: String -> a
+-- #if MIN_VERSION_base(4,9,0)
+-- error' = errorWithoutStackTrace
+-- #else
+-- error' = error
+-- #endif
+-- #endif
