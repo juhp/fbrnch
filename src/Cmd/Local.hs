@@ -40,7 +40,7 @@ installDepsCmd =
   where
     installDepsPkg :: Package -> AnyBranch -> IO ()
     installDepsPkg pkg br =
-      localBranchSpecFile pkg br >>= installDeps
+      localBranchSpecFile pkg br >>= installDeps False
 
 srpmCmd :: Bool -> Maybe Branch -> [String] -> IO ()
 srpmCmd force =

@@ -234,7 +234,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
   if not needBuild then
     putStrLn "Existing rpms are newer than spec file (use --force to rebuild)"
     else do
-    installDeps spec
+    installDeps True spec
     void $ getSources spec
     dist <- getBranchDist br
     cwd <- getCurrentDirectory
@@ -256,13 +256,15 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
     unless ok $
       error' $ "build failed for: " ++ takeBaseName spec
 
-installDeps :: FilePath -> IO ()
-installDeps spec = do
+-- FIXME print unavailable deps
+installDeps :: Bool -> FilePath -> IO ()
+installDeps strict spec = do
   missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
   unless (null missingdeps) $ do
     putStrLn $ "Need: " ++ unwords missingdeps
     putStr "Running dnf builddep... "
-    cmdSilent "/usr/bin/sudo" $ "/usr/bin/dnf":["builddep", "--assumeyes", spec]
+    -- FIXME less silent
+    cmdSilent "/usr/bin/sudo" $ "/usr/bin/dnf":"builddep": ["--skip-unavailable" | not strict] ++ ["--assumeyes", spec]
     putStrLn "done"
 
 prepPackage :: Package -> AnyBranch -> IO ()
