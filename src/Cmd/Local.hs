@@ -68,6 +68,7 @@ sortCmd mrpmwith mbr pkgs = do
     toRpmOption (RpmWith opt) = ["--with=" ++ opt]
     toRpmOption (RpmWithout opt) = ["--without=" ++ opt]
 
+-- FIXME option to clone package
 prepCmd :: Maybe Branch -> [String] -> IO ()
 prepCmd =
   withPackagesMaybeBranch Nothing Nothing ZeroOrOne prepPackage

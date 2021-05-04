@@ -11,6 +11,7 @@ import Package
 
 -- FIXME package countdown
 -- FIXME --ignore-uninstalled subpackages
+-- FIXME --skip-unavailable
 -- FIXME --check any/all of package installed
 installCmd :: Bool -> Maybe ForceShort -> [BCond] -> Bool -> Maybe Branch -> [String] -> IO ()
 installCmd recurse mforceshort bconds reinstall mbr pkgs = do
@@ -44,6 +45,7 @@ installCmd recurse mforceshort bconds reinstall mbr pkgs = do
                 case mpkgdir of
                   Nothing -> putStrLn $ dep ++ " not known"
                   Just pkgdir -> installCmd recurse mforceshort bconds reinstall mbr [pkgdir] >> putStrLn ""
+              -- FIXME option to install missing deps
             else error' $ "missing deps:\n" ++ unlines missingdeps
           buildRPMs True mforceshort bconds rpms br spec
           putStrLn ""

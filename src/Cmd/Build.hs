@@ -33,11 +33,11 @@ data BuildOpts = BuildOpts
 
 -- FIXME --add-to-update nvr
 -- FIXME vertical vs horizontal builds (ie by package or branch)
--- FIXME --rpmlint (only run for master?)
+-- FIXME --rpmlint (only run for rawhide?)
 -- FIXME support --wait-build=NVR
 -- FIXME provide direct link to failed task/build.log
--- FIXME default behaviour for build in pkg dir: all branches or current?
 -- FIXME --auto-override for deps in testing
+-- FIXME -B fails to find new branches
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptTarget opts)

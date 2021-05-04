@@ -123,6 +123,8 @@ mockRpmLint mock noscratch pkg spec srpm = do
   void $ cmdBool "rpmlint" $ spec:srpm:rpms
   prompt_ $ "Press Enter to " ++ if noscratch then "upload" else "submit"
 
+-- FIXME does not work with pkg dir/spec:
+-- 'fbrnch: No spec file found'
 reviewPackage :: Maybe String -> IO ()
 reviewPackage mpkg = do
   -- FIXME if spec file exists use it directly
