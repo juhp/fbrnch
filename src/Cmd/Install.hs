@@ -6,6 +6,7 @@ module Cmd.Install (
 import Branches
 import Common
 import Common.System
+import Git
 import Package
 
 -- FIXME package countdown
@@ -19,6 +20,7 @@ installCmd recurse mforceshort bconds reinstall mbr pkgs = do
   where
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
+      whenJust mbr $ gitSwitchBranch . RelBranch
       spec <- localBranchSpecFile pkg br
       rpms <- builtRpms br spec
       -- removing arch
