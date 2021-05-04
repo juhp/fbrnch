@@ -149,6 +149,7 @@ coprBuild dryrun project srpm buildroots = do
     unless ok $
       error' $ "Failed: copr " ++ unwords buildargs
 
+-- FIXME idea: Maybe Seconds to increment sleep
 coprWatchBuild :: Int -> Maybe String -> IO Bool
 coprWatchBuild bid mstate = do
   res <- coprGetBuild fedoraCopr bid
@@ -163,7 +164,7 @@ coprWatchBuild bid mstate = do
           "skipped" -> return True
           "canceled" -> return False
           "failed" -> return False
-          _ -> coprWatchBuild bid (Just state)
+          _ -> sleep 1 >> coprWatchBuild bid (Just state)
     Nothing -> do
       let err = lookupKey' "error" res
       logMsg $ "Error: " ++ err
