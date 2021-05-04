@@ -62,7 +62,7 @@ main = do
     , Subcommand "list" "List packages in pagure" $
       listCmd <$> switchWith 'c' "count" "Print number of packages" <*> optional packagerOpt <*> many (pkgArg "PKGPAT...")
     , Subcommand "branches" "List package branches" $
-      branchesCmd <$> switchWith 'd' "skip-dead" "Skip if dead.package exists" <*> switchWith 'a' "all" "List all branches" <*> switchWith 'm' "missing" "Show missing branches" <*> switchWith 'r' "remote" "List remote branches" <*> branchesPackages
+      branchesCmd <$> switchWith 'd' "skip-dead" "Skip if dead.package exists" <*> switchWith 'a' "all" "List all branches" <*> switchWith 'm' "missing" "Show missing branches" <*> branchesModeOpt <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd <$> dryrunOpt <*> optional sidetagTargetOpt <*> updatetypeOpt <*> branchesPackages
     , Subcommand "sidetags" "List user's side-tags" $
@@ -292,3 +292,8 @@ main = do
 
     bcondOpt = BuildWith <$> strOptionWith 'w' "with" "FEATURE" "Turn on package FEATURE for build" <|>
                BuildWithout <$> strOptionWith 'W' "without" "FEATURE" "Turn off package FEATURE for build"
+
+    branchesModeOpt :: Parser BranchesMode
+    branchesModeOpt =
+      flagWith' Remote 'r' "remote" "List remote branches" <|>
+      flagWith Local Current 'c' "current" "Show current branch"
