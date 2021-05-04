@@ -14,7 +14,7 @@ import Package
 -- FIXME --check any/all of package installed
 installCmd :: Bool -> Maybe ForceShort -> [BCond] -> Bool -> Maybe Branch -> [String] -> IO ()
 installCmd recurse mforceshort bconds reinstall mbr pkgs = do
-  when (recurse && isJust mforceshort) $
+  when (recurse && mforceshort == Just ShortCircuit) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch Nothing Nothing ZeroOrOne installPkg mbr pkgs
   where
