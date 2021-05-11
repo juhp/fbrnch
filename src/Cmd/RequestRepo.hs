@@ -41,7 +41,6 @@ requestRepo mock retry breq pkg = do
     if created
       then putStrLn "scm repo was already created"
       else do
-      -- show comments?
       requests <- existingRepoRequests
       unless (null requests) $ do
         putStrLn "Request exists:"
@@ -51,13 +50,19 @@ requestRepo mock retry breq pkg = do
           error' "The last repo request was already successfully Processed"
       when (null requests || retry) $ do
         checkNoPagureRepo
+        putStrLn ""
+        comments <- getComments session bid
+        mapM_ showComment comments
+        putStrLn ""
+        prompt_ "Press Enter to continue"
+        -- FIXME check api key is still valid or open pagure ticket directly
         url <- fedpkg "request-repo" [pkg, show bid]
-        putStrLn $ url ++ "\n"
         let assignee = userRealName (bugAssignedToDetail bug)
         let draft = "Thank you for the review" ++ maybe "" ((", " ++) . T.unpack) (getFirstname assignee)
         putStrLn "```"
         putStrLn draft
         putStrLn "```"
+        putStrLn $ url ++ "\n"
         input <- prompt "Press Enter to post above comment, or input now"
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment

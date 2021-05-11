@@ -46,9 +46,9 @@ importCmd mock (breq, ps) = do
         checkWorkingDirClean
         -- FIXME get session from importPkgs
         (bid,session) <- approvedReviewBugIdSession pkg
-        comments <- getComments session bid
         putBugId bid
         putStrLn ""
+        comments <- getComments session bid
         mapM_ showComment comments
         putStrLn ""
         putStr "Review bug: "
