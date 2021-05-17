@@ -70,7 +70,7 @@ branchesCmd skipdead allbrs missing mode (breq, pkgs) = do
             brs <- delete "main" <$>
                    if mode == Remote
                    then pagurePkgBranches (unPackage pkg)
-                   else localBranches
+                   else localBranches False
             if allbrs then do
               putStrLn $ unPackage pkg ++ ": " ++ unwords brs
               else do

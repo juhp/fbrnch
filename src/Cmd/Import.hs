@@ -74,7 +74,7 @@ importCmd mock (breq, ps) = do
         -- FIXME build more branches
         kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
         putBugBuild False session bid nvr
-        existing <- fedoraBranchesNoRawhide localBranches
+        existing <- fedoraBranchesNoRawhide (localBranches False)
         when (null existing) $ do
           brs <- getRequestedBranches breq
           requestPkgBranches mock (Branches brs) (Package pkg)

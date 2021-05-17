@@ -43,7 +43,7 @@ requestPkgBranches mock breq pkg = do
   where
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests branches = do
-      existing <- fedoraBranchesNoRawhide localBranches
+      existing <- fedoraBranchesNoRawhide (localBranches True)
       forM_ branches $ \ br ->
         when (br `elem` existing) $
         putStrLn $ show br ++ " branch already exists"

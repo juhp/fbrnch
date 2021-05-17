@@ -81,11 +81,15 @@ isEPELBranch :: Branch -> Bool
 isEPELBranch (EPEL _) = True
 isEPELBranch _ = False
 
--- FIXME misnamed
-localBranches :: IO [String]
-localBranches = do
-  origins <- filter ("origin/" `isPrefixOf`) <$> cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-2)"]
-  return $ map (removePrefix "origin/") origins \\ ["HEAD", "master"]
+localBranches :: Bool -> IO [String]
+localBranches local =
+  if local
+  then do
+    locals <- cmdLines "git" ["branch", "--list", "--format=%(refname:lstrip=-1)"]
+    return $ locals \\ ["HEAD", "master"]
+  else do
+    origins <- filter ("origin/" `isPrefixOf`) <$> cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-2)"]
+    return $ map (removePrefix "origin/") origins \\ ["HEAD", "master"]
 
 pagurePkgBranches :: String -> IO [String]
 pagurePkgBranches pkg = do
@@ -116,19 +120,19 @@ systemBranch =
 listOfBranches :: Bool -> Bool -> BranchesReq -> IO [Branch]
 listOfBranches distgit _active (BranchOpt AllBranches) =
   if distgit
-  then fedoraBranches localBranches
+  then fedoraBranches (localBranches False)
   else error' "--all-branches only allowed for dist-git packages"
 listOfBranches distgit _active (BranchOpt AllFedora) =
   if distgit
-  then filter isFedoraBranch <$> fedoraBranches localBranches
+  then filter isFedoraBranch <$> fedoraBranches (localBranches False)
   else error' "--all-fedora only allowed for dist-git packages"
 listOfBranches distgit _active (BranchOpt AllEPEL) =
   if distgit
-  then filter isEPELBranch <$> fedoraBranches localBranches
+  then filter isEPELBranch <$> fedoraBranches (localBranches False)
   else error' "--all-epel only allowed for dist-git packages"
 listOfBranches distgit _ (BranchOpt (ExcludeBranches brs)) = do
   branches <- if distgit
-              then fedoraBranches localBranches
+              then fedoraBranches (localBranches False)
               else getFedoraBranches
   return $ branches \\ brs
 listOfBranches distgit active (Branches brs) =

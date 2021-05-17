@@ -25,7 +25,7 @@ mergeCmd noprompt =
 getNewerBranch :: Branch -> IO Branch
 getNewerBranch Rawhide = return Rawhide
 getNewerBranch br = do
-  branches <- fedoraBranches localBranches
+  branches <- fedoraBranches (localBranches False)
   let newer = newerBranch br branches
   return $ if newer > br then newer
     -- FIXME this can be dropped with next fedora-dists
@@ -36,7 +36,10 @@ getNewerBranch br = do
 -- FIXME newer branch might not exist (eg epel8):
    -- restrict to local branches
 mergeable :: Branch -> IO (Bool,[String])
-mergeable br = getNewerBranch br >>= gitMergeable
+mergeable br = do
+  newer <- getNewerBranch br
+  locals <- localBranches True
+  gitMergeable (show newer `notElem` locals) newer
 
 -- FIXME return merged ref
 mergeBranch :: Bool -> Bool -> (Bool,[String]) -> Branch -> IO ()
