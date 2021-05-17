@@ -6,7 +6,6 @@ import Common
 import qualified Common.Text as T
 
 import Network.HTTP.Directory (httpExists, httpManager)
-import Network.HTTP.Query ((+/+))
 import SimpleCmd
 
 import Branches

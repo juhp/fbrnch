@@ -182,7 +182,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
             maybe (error' $ "Task for " ++ nvr ++ " not found")
             (kojiWaitTaskAndRepo (isNothing mlatest) nvr target)
         _ -> do
-          buildref <- git "show-ref" ["--hash", "origin" </> show br]
+          buildref <- git "show-ref" ["--hash", "origin/" ++ show br]
           opentasks <- kojiOpenTasks pkg (Just buildref) target
           case opentasks of
             [task] -> do

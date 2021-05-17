@@ -115,7 +115,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       -- FIXME do override
     _ -> do
       mbuildref <- case mpush of
-        Nothing -> Just <$> git "show-ref" ["--hash", "origin" </> show br]
+        Nothing -> Just <$> git "show-ref" ["--hash", "origin/" ++ show br]
         _ -> return $ join mpush
       opentasks <- kojiOpenTasks pkg mbuildref target
       case opentasks of
@@ -149,7 +149,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             whenJust mpush $ \ mref ->
               unless dryrun $
               gitPushSilent $ fmap (++ ":" ++ show br) mref
-            unlessM (null <$> gitShortLog ("origin" </> show br ++ "..HEAD")) $
+            unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
               when (mpush == Just Nothing && not dryrun) $
               error' "Unpushed changes remain"
             unlessM isGitDirClean $

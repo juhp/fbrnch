@@ -170,7 +170,7 @@ gitSwitchBranch br = do
       name <- getDirectoryName
       error' $ name ++ " " ++ show br ++ " branch does not exist!"
       else
-      git_ "checkout" ["-q", "-b", show br, "--track", "origin" </> show br]
+      git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]
   where
     checkIfRemoteBranchExists =
       gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]

@@ -154,7 +154,7 @@ kojiWatchTaskQuiet task =
 
 kojiSource :: Package -> String -> String
 kojiSource pkg ref =
-  "git+https://" ++ srcfpo ++ "/rpms" </> unPackage pkg ++ ".git#" ++ ref
+  "git+https://" ++ srcfpo ++ "/rpms" +/+ unPackage pkg ++ ".git#" ++ ref
 
 kojiBuildBranch' :: Bool -> String -> Package -> Maybe String -> [String]
                  -> IO KojiBuildTask
