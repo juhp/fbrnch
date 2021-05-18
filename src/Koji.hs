@@ -17,7 +17,7 @@ module Koji (
   kojiTagArchs,
   kojiWaitRepo,
   kojiWatchTask,
-  kojiWatchTaskQuiet,
+  kojiWaitTask,
   TaskID,
   displayID,
   fedoraHub
@@ -31,6 +31,7 @@ import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
 import System.Exit
 import System.Process.Typed
+import System.Time.Extra (sleep)
 
 import Branches
 import Common
@@ -123,6 +124,7 @@ kojiBuild' wait target args = do
 --   return url
 
 -- FIXME filter/simplify output
+-- FIXME implement native watchTask
 kojiWatchTask :: TaskID -> IO ()
 kojiWatchTask task = do
   -- FIXME can error:
@@ -138,19 +140,21 @@ kojiWatchTask task = do
     Just TaskCanceled -> return ()
     _ -> kojiWatchTask task
 
-kojiWatchTaskQuiet :: TaskID -> IO Bool
-kojiWatchTaskQuiet task =
-  ifM (cmdBool "koji" ["watch-task", "--quiet", displayID task])
-  (return True) $
-  do
-    -- FIXME can error:
-    -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
-    -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
-    mst <- kojiGetTaskState fedoraHub task
-    case mst of
-      Just TaskClosed -> return True
-      Just TaskFailed -> return False
-      _ -> kojiWatchTaskQuiet task
+kojiWaitTask :: TaskID -> IO Bool
+kojiWaitTask task = do
+  -- FIXME can error:
+  -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
+  -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
+  mst <- kojiGetTaskState fedoraHub task
+  case mst of
+    Just ts ->
+      if ts `elem` openTaskStates
+      then do
+        sleep 20
+        kojiWaitTask task
+      else return $ ts == TaskClosed
+    Nothing -> do
+      error $ "failed to get info for koji task " ++ displayID task
 
 kojiSource :: Package -> String -> String
 kojiSource pkg ref =

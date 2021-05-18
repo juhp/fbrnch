@@ -202,7 +202,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
       where
         kojiWaitTaskAndRepo :: Bool -> String -> String -> TaskID -> IO (String,String)
         kojiWaitTaskAndRepo newpkg nvr target task = do
-          finish <- kojiWatchTaskQuiet task
+          finish <- kojiWaitTask task
           if finish
             then putStrLn $ color Green $ nvr ++ " build success"
             else error' $ color Red $ nvr ++ " build failed"
