@@ -3,6 +3,7 @@
 module Cmd.PkgReview (
   createReview,
   updateReview,
+  ScratchOption(..),
   reviewPackage
   ) where
 
@@ -20,10 +21,12 @@ import Krb
 import Package
 import Prompt
 
+data ScratchOption = ScratchBuild | ScratchTask Int | SkipScratch
+  deriving Eq
+
 -- FIXME add --dependent pkgreview
--- FIXME reference existing/previous scratch build
-createReview :: Bool -> Bool -> [FilePath] -> IO ()
-createReview noscratch mock pkgs =
+createReview :: ScratchOption -> Bool -> [FilePath] -> IO ()
+createReview scratchOpt mock pkgs =
   withPackageByBranches (Just True) Nothing Zero createPkgReview (Branches [], pkgs)
   where
     createPkgReview :: Package -> AnyBranch -> IO ()
@@ -40,8 +43,8 @@ createReview noscratch mock pkgs =
         -- FIXME abort if open review (unless --force?)
         prompt_ "Press Enter to continue"
       srpm <- generateSrpm Nothing spec
-      mockRpmLint mock noscratch pkg spec srpm
-      (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
+      mockRpmLint mock (scratchOpt == ScratchBuild) pkg spec srpm
+      (mkojiurl,specSrpmUrls) <- buildAndUpload scratchOpt srpm pkg spec
       bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
       putStrLn "Review request posted:"
       putBugId bugid
@@ -57,16 +60,18 @@ createReview noscratch mock pkgs =
             , ("summary", "Review Request: " <> pkg <> " - " <> summary)
             , ("description", specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl)]
 
-buildAndUpload :: Bool -> String -> String -> FilePath
+buildAndUpload :: ScratchOption -> String -> String -> FilePath
                -> IO (Maybe String, String)
-buildAndUpload noscratch srpm pkg spec = do
-  mkojiurl <- if noscratch then return Nothing
-    else Just <$> kojiScratchBuild "rawhide" [] srpm
+buildAndUpload scratchOpt srpm pkg spec = do
+  mkojiurl <- case scratchOpt of
+                ScratchBuild -> Just <$> kojiScratchBuild "rawhide" [] srpm
+                ScratchTask tid -> return $ Just ("https://koji.fedoraproject.org/koji/taskinfo?taskID=" ++ show tid)
+                SkipScratch -> return Nothing
   specSrpmUrls <- uploadPkgFiles pkg spec srpm
   return (mkojiurl, specSrpmUrls)
 
-updateReview :: Bool -> Bool -> Maybe FilePath -> IO ()
-updateReview noscratch mock mspec = do
+updateReview :: ScratchOption -> Bool -> Maybe FilePath -> IO ()
+updateReview scratchOpt mock mspec = do
   spec <- maybe findSpecfile checkLocalFile mspec
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   (bid,session) <- reviewBugIdSession pkg
@@ -75,8 +80,8 @@ updateReview noscratch mock mspec = do
   submitted <- checkForComment session bid (T.pack srpm)
   when submitted $
     error' "This NVR was already posted on the review bug: please bump"
-  mockRpmLint mock noscratch pkg spec srpm
-  (mkojiurl,specSrpmUrls) <- buildAndUpload noscratch srpm pkg spec
+  mockRpmLint mock (scratchOpt == ScratchBuild) pkg spec srpm
+  (mkojiurl,specSrpmUrls) <- buildAndUpload scratchOpt srpm pkg spec
   changelog <- getChangeLog Nothing spec
   commentBug session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
   -- putStrLn "Review bug updated"
@@ -110,7 +115,7 @@ uploadPkgFiles pkg spec srpm = do
           unless okay $ error' $ "Could not access: " ++ url
 
 mockRpmLint :: Bool -> Bool -> String -> FilePath -> FilePath -> IO ()
-mockRpmLint mock noscratch pkg spec srpm = do
+mockRpmLint mock scratch pkg spec srpm = do
   rpms <-
     if mock then do
       -- FIXME check that mock is installed
@@ -121,7 +126,7 @@ mockRpmLint mock noscratch pkg spec srpm = do
       builtRpms (RelBranch Rawhide) spec >>= filterM doesFileExist
   -- FIXME parse # of errors/warnings
   void $ cmdBool "rpmlint" $ spec:srpm:rpms
-  prompt_ $ "Press Enter to " ++ if noscratch then "upload" else "submit"
+  prompt_ $ "Press Enter to " ++ if scratch then "submit" else "upload"
 
 -- FIXME does not work with pkg dir/spec:
 -- 'fbrnch: No spec file found'

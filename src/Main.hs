@@ -105,9 +105,9 @@ main = do
     , Subcommand "pull" "Git pull packages" $
       pullPkgs <$> branchesPackages
     , Subcommand "create-review" "Create a Package Review request" $
-      createReview <$> noScratchBuild <*> mockOpt False <*> manyPackages
+      createReview <$> scratchOpt <*> mockOpt False <*> manyPackages
     , Subcommand "update-review" "Update a Package Review" $
-      updateReview <$> noScratchBuild <*> mockOpt False <*> optional (strArg "SPECFILE")
+      updateReview <$> scratchOpt <*> mockOpt False <*> optional (strArg "SPECFILE")
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd <$> reviewShortOpt <*> reviewAllStatusOpt <*> switchWith 'T' "assigned-to" "List reviews assigned to user" <*> optional (strOptionWith 'U' "user" "USER" "Bugzilla user email") <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
@@ -132,8 +132,6 @@ main = do
   where
     cloneRequest :: Parser CloneRequest
     cloneRequest = flagWith' (CloneUser Nothing) 'M' "mine" "Your packages" <|> CloneUser . Just <$> strOptionWith 'u' "user" "USER" "Packages of FAS user" <|> ClonePkgs <$> somePackages
-
-    noScratchBuild = switchWith 'S' "no-scratch-build" "Skip Koji scratch build"
 
     reviewShortOpt :: Parser Bool
     reviewShortOpt = switchWith 's' "short" "Only output the package name"
@@ -297,3 +295,8 @@ main = do
     branchesModeOpt =
       flagWith' Remote 'r' "remote" "List remote branches" <|>
       flagWith Local Current 'c' "current" "Show current branch"
+
+    scratchOpt :: Parser ScratchOption
+    scratchOpt =
+      ScratchTask <$> optionWith auto 's' "scratch-build" "TASKID" "Existing scratch build taskid" <|>
+      flagWith ScratchBuild SkipScratch 'S' "no-scratch" "Skip scratch build"
