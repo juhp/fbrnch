@@ -215,11 +215,14 @@ kojiTagArchs tag = do
   st <- Koji.getTag fedoraHub (Koji.InfoString tag) Nothing
   return $ maybe [] words $ lookupStruct "arches" st
 
-kojiUserSideTags :: Branch -> IO [String]
-kojiUserSideTags br = do
-  mtags <- kojiBuildTarget fedoraHub (branchTarget br)
-  case mtags of
-    Nothing -> return []
-    Just (buildtag,_desttag) -> do
-      user <- fasIdFromKrb
-      kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)
+kojiUserSideTags :: Maybe Branch -> IO [String]
+kojiUserSideTags mbr = do
+  user <- fasIdFromKrb
+  case mbr of
+    Nothing -> kojiListSideTags fedoraKojiHub Nothing (Just user)
+    Just br -> do
+      mtags <- kojiBuildTarget fedoraHub (branchTarget br)
+      case mtags of
+        Nothing -> return []
+        Just (buildtag,_desttag) -> do
+          kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)

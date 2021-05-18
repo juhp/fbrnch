@@ -5,12 +5,10 @@ import Koji
 
 sideTagsCmd :: [Branch] -> IO ()
 sideTagsCmd brs = do
-  branches <-
-    if null brs
-    then getFedoraBranches
-    else return brs
-  mapM_ sideTagsBranch branches
+  if null brs
+    then kojiUserSideTags Nothing >>= mapM_ putStrLn
+    else mapM_ sideTagsBranch brs
   where
     sideTagsBranch :: Branch -> IO ()
     sideTagsBranch br =
-      kojiUserSideTags br >>= mapM_ putStrLn
+      kojiUserSideTags (Just br) >>= mapM_ putStrLn

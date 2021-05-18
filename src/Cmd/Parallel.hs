@@ -148,7 +148,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
                   Nothing -> return $ branchTarget br
                   Just (Target t) -> return t
                   Just SideTag -> do
-                    tags <- map (head . words) <$> kojiUserSideTags br
+                    tags <- map (head . words) <$> kojiUserSideTags (Just br)
                     case tags of
                       [] -> do
                         out <- head . lines <$> fedpkg "request-side-tag" []
