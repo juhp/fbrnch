@@ -37,7 +37,7 @@ importCmd mock (breq, ps) = do
         clonePkg True Nothing pkg
         putStrLn ""
         setCurrentDirectory pkg
-        -- FIXME: check branch is master
+        -- FIXME: check branch is rawhide
       unlessM isGitRepo $ error' "Not a git repo"
       newrepo <- initialPkgRepo
       if not newrepo

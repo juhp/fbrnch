@@ -627,7 +627,7 @@ repoquery :: Branch -> [String] -> IO String
 repoquery br args =
   cmd "dnf" (["repoquery", "--quiet", "--releasever=" ++ branchVersion br] ++ args)
 
--- FIXME could be more strict about dist tag (eg .fcNN only)
+-- FIXME should be more strict about dist tag (eg .fcNN only)
 equivNVR :: String -> String -> Bool
 equivNVR nvr1 nvr2
   | nvr1 == nvr2 = True
