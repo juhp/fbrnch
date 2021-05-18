@@ -43,12 +43,14 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
           if clean then
             null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
             else return False
-        putStrLn $ "koji scratch " ++ (if pushed then "" else "srpm ") ++ "build for " ++ target
+        rbr <- anyBranchToRelease br
+        nvr <- pkgNameVerRel' rbr spec
+        putStrLn $ "koji scratch build of " ++ nvr ++ (if pushed then "" else ".src.rpm") ++ " for " ++ target
         unless dryrun $ do
           if pushed
             then kojiBuildBranch target pkg Nothing $ "--scratch" : kojiargs
             else srpmBuild target kojiargs spec
-          else srpmBuild target kojiargs spec
+        else srpmBuild target kojiargs spec
       where
         srpmBuild :: FilePath -> [String] -> String -> IO ()
         srpmBuild target kojiargs spec =
