@@ -26,13 +26,12 @@ module Koji (
 import Data.Char (isDigit)
 
 import Control.Concurrent (threadDelay)
-import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as B
 import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
 import System.Exit
 import System.Process.Typed
-import System.Time.Extra (sleep)
+import System.Time.Extra (sleep, timeout)
 
 import Branches
 import Common
@@ -146,15 +145,12 @@ kojiWaitTask task = do
   -- FIXME can error:
   -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
   -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
-  emst <- try $ kojiGetTaskState fedoraHub task
-  case emst of
-    Left (SomeException e) ->
-      if "(Connection timed out)" `isSuffixOf` displayException e
-      then do
-        warning "Connection timed out: retrying"
-        kojiWaitTask task
-      else error $ displayException e
-    Right mst ->
+  mmst <- timeout 45 $ kojiGetTaskState fedoraHub task
+  case mmst of
+    Nothing -> do
+      warning "Connection timed out: retrying"
+      kojiWaitTask task
+    Just mst ->
       case mst of
         Just ts ->
           if ts `elem` openTaskStates
@@ -230,15 +226,12 @@ kojiUserSideTags mbr = do
   user <- fasIdFromKrb
   case mbr of
     Nothing -> do
-      eres <- try $ kojiListSideTags fedoraKojiHub Nothing (Just user)
-      case eres of
-        Left (SomeException e) ->
-          if "(Connection timed out)" `isSuffixOf` displayException e
-            then do
-            warning "Connection timed out: retrying"
-            kojiUserSideTags mbr
-          else error $ displayException e
-        Right tags -> return tags
+      mres <- timeout 55 $ kojiListSideTags fedoraKojiHub Nothing (Just user)
+      case mres of
+        Nothing -> do
+          warning "Connection timed out: retrying"
+          kojiUserSideTags mbr
+        Just tags -> return tags
     Just br -> do
       mtags <- kojiBuildTarget fedoraHub (branchTarget br)
       case mtags of
