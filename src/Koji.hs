@@ -20,7 +20,8 @@ module Koji (
   kojiWaitTask,
   TaskID,
   displayID,
-  fedoraHub
+  fedoraHub,
+  maybeTimeout
   ) where
 
 import Data.Char (isDigit)
@@ -145,22 +146,17 @@ kojiWaitTask task = do
   -- FIXME can error:
   -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
   -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
-  mmst <- timeout 45 $ kojiGetTaskState fedoraHub task
-  case mmst of
+  mst <- maybeTimeout 45 $ kojiGetTaskState fedoraHub task
+  case mst of
+    Just ts ->
+      if ts `elem` openTaskStates
+      then do
+        putChar '.'
+        sleep 20
+        kojiWaitTask task
+      else return $ ts == TaskClosed
     Nothing -> do
-      warning "Connection timed out: retrying"
-      kojiWaitTask task
-    Just mst ->
-      case mst of
-        Just ts ->
-          if ts `elem` openTaskStates
-          then do
-            putChar '.'
-            sleep 20
-            kojiWaitTask task
-          else return $ ts == TaskClosed
-        Nothing -> do
-          error $ "failed to get info for koji task " ++ displayID task
+      error $ "failed to get info for koji task " ++ displayID task
 
 kojiSource :: Package -> String -> String
 kojiSource pkg ref =
@@ -226,15 +222,19 @@ kojiUserSideTags mbr = do
   user <- fasIdFromKrb
   case mbr of
     Nothing -> do
-      mres <- timeout 55 $ kojiListSideTags fedoraKojiHub Nothing (Just user)
-      case mres of
-        Nothing -> do
-          warning "Connection timed out: retrying"
-          kojiUserSideTags mbr
-        Just tags -> return tags
+      maybeTimeout 55 $ kojiListSideTags fedoraKojiHub Nothing (Just user)
     Just br -> do
       mtags <- kojiBuildTarget fedoraHub (branchTarget br)
       case mtags of
         Nothing -> return []
         Just (buildtag,_desttag) -> do
           kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)
+
+maybeTimeout :: Double -> IO a -> IO a
+maybeTimeout secs act = do
+  mres <- timeout secs act
+  case mres of
+    Nothing -> do
+      warning "Connection timed out: retrying"
+      maybeTimeout (secs + 5) act
+    Just res -> return res

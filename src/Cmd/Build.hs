@@ -86,7 +86,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
       else return $ Just Nothing
   let dryrun = buildoptDryrun opts
-  buildstatus <- kojiBuildStatus nvr
+  buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
   let mtarget = buildoptTarget opts
       target = fromMaybe (branchTarget br) mtarget
   case buildstatus of
@@ -95,7 +95,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       when (isJust mpush) $
         error' "Please bump the spec file"
       when (br /= Rawhide && isNothing mtarget) $ do
-        tags <- kojiNVRTags nvr
+        tags <- maybeTimeout 30 $ kojiNVRTags nvr
         autoupdate <- checkAutoBodhiUpdate br
         unless autoupdate $ do
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
