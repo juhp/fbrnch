@@ -41,6 +41,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
       [] -> listOfBranches True True breq
       [p] -> withExistingDirectory p $ listOfBranches True True breq
       _ -> case breq of
+             Branches [] -> error' "please specify a branch"
              Branches _ -> listOfBranches True True breq
              _ -> error' "parallel does not support branch options for multiple packages: please give an explicit list of branches instead"
   when (null branches) $
