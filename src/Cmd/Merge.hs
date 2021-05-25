@@ -1,4 +1,8 @@
-module Cmd.Merge (mergeCmd, mergeable, mergeBranch) where
+module Cmd.Merge (
+  mergeCmd,
+  mergeable,
+  mergeBranch)
+where
 
 import Common
 import Common.System
@@ -42,9 +46,10 @@ mergeable br = do
   gitMergeable (show newer `notElem` locals) newer
 
 -- FIXME return merged ref
-mergeBranch :: Bool -> Bool -> (Bool,[String]) -> Branch -> IO ()
+mergeBranch :: Bool -> Bool -> (Bool,[String]) -- (ancestor,unmerged)
+            -> Branch -> IO ()
 mergeBranch _ _ _ Rawhide = return ()
-mergeBranch _ _ (True,[]) _ = return ()
+mergeBranch _ _ (_,[]) _ = return ()
 mergeBranch build noprompt (True, unmerged) br = do
   newerBr <- getNewerBranch br
   isnewrepo <- initialPkgRepo
