@@ -9,6 +9,7 @@ module Git (
   gitMergeOrigin,
   gitFetchSilent,
   gitPushSilent,
+  gitRepoName,
   gitShortLog,
   gitShortLogN,
   gitShortLog1,
@@ -92,10 +93,15 @@ gitPushSilent mref = do
   out <- cmdQuiet "git" $ ["push", "--quiet", "origin"] ++ maybeToList mref
   putStrLn $ if null out then "done\n" else "\n" ++ out
 
+-- FIXME use this in more places
+gitRepoName :: IO String
+gitRepoName =
+  dropSuffix ".git" . takeFileName <$> git "remote" ["get-url", "origin"]
+
 -- FIXME flag for really silent?
 gitFetchSilent :: IO ()
 gitFetchSilent = do
-  name <- getDirectoryName
+  name <- gitRepoName
   putStr $ "git fetching " ++ name ++ "... "
   (ok, out, err) <- cmdFull "git" ["fetch"] ""
   unless (null out) $ putStrLn out
