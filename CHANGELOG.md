@@ -1,8 +1,25 @@
 # Changelog
 
-## 0.8.1 (pending)
+## 0.8.1 (2021-05-28)
 - 'override' --duration and run waitrepo after all overrides
 - new 'waitrepo' command
+- 'create-review','rename-master': take no branches
+- branchPrompt now correctly defaults to two branches
+- prompts now reset stdin (#20)
+- 'build': add --no-merge and rename --no-prompt to --merge
+- 'copr': native watch-build
+- 'install-deps': use --skip-unavailable for dnf buildeps
+- 'install': switches to specified branch; allow --recurse & --rebuild
+- 'branches': add --current and support --missing
+- 'request-repo': show review comments and prompt to continue
+- merge handling improvements
+- 'scratch': display nvr before building
+- 'parallel': native koji waitTask
+- 'sidetags': default to all user's sidetags
+- 'create-review','update-review': --scratch-build TASKID option
+- Koji: timeouts to handle for network connection failures
+- 'parallel': error if no branch given
+- gitFetchSilent: show git reponame instead of dirname
 
 ## 0.8.0 (2021-04-08)
 - 'request-repos' can now take branch args and --mock option (#18)

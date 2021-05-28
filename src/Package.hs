@@ -111,7 +111,7 @@ getSummaryURL spec = do
       usernote <- prompt "Press Enter to use above or input notes"
       return $ if null usernote then notes else usernote
 
--- FIXME maybe check spec filename/%name more carefully
+-- FIXME check spec filename/%name more carefully
 getPackageName :: FilePath -> IO Package
 getPackageName pkgdir =
   if pkgdir == "."

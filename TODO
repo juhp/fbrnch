@@ -1,3 +1,5 @@
+- use rpm-pkg-hs: eg for nameOfNVR and takeNVRName
+
 - check envr > any existing current package, before building
 
 ? 'clean' command
@@ -8,10 +10,6 @@
 
 - filter bz# out from bodhi notes
 
-- fbrnch build
-  == gtk2hs-buildtools f32 ==
-  fatal: Not a valid object name f33
-
 - use +/+ for urls instead of </>
 
 - pull creating new branches and/or clone --all?
@@ -21,7 +19,7 @@
 - stash and restore
 
 - merge koji-progress
-- install from koji
+- install from koji (koji-install)
 
 # new commands
 - 'unpushed' command, etc (from f-h-t)
@@ -35,7 +33,7 @@
 - 'clone-deps'
 - 'remove-sidetag(s)'
 
-# release deps:
+# release deps on hackage:
 - pagure (new)
 - bodhi (new)
 - copr (new)
