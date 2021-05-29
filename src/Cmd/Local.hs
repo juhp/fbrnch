@@ -4,14 +4,11 @@ module Cmd.Local (
   localCmd,
   nvrCmd,
   prepCmd,
-  sortCmd,
-  RpmWith(..),
   srpmCmd,
   renameMasterCmd
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
-import Distribution.RPM.Build.Order (dependencySortRpmOpts)
 import System.Environment
 import qualified System.Process as P
 import qualified System.Process.Typed as TP
@@ -50,23 +47,6 @@ srpmCmd force =
     srpmBuildPkg pkg br = do
       spec <- localBranchSpecFile pkg br
       void $ generateSrpm' force (Just br) spec
-
-data RpmWith = RpmWith String | RpmWithout String
-
-sortCmd :: Maybe RpmWith -> Maybe Branch -> [String] -> IO ()
-sortCmd _ _ [] = return ()
-sortCmd mrpmwith mbr pkgs = do
-  withPackagesMaybeBranch Nothing Nothing ExactlyOne dummy mbr pkgs
-  let rpmopts = maybe [] toRpmOption mrpmwith
-  packages <- dependencySortRpmOpts rpmopts $ reverse pkgs
-  putStrLn $ unwords packages
-  where
-    dummy _pkg br =
-      whenM isPkgGitRepo $ gitSwitchBranch br
-
-    toRpmOption :: RpmWith -> [String]
-    toRpmOption (RpmWith opt) = ["--with=" ++ opt]
-    toRpmOption (RpmWithout opt) = ["--without=" ++ opt]
 
 -- FIXME option to clone package
 prepCmd :: Maybe Branch -> [String] -> IO ()

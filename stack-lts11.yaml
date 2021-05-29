@@ -1,9 +1,11 @@
-resolver: lts-13.30
+resolver: lts-11.22
 
 extra-deps:
-  - config-ini-0.2.4.0
+  - http-directory-0.1.5
+  - typed-process-0.2.4.0
   - simple-cmd-0.2.0
   - HaXml-1.25.5
+  - polyparse-1.12.1
   - haxr-3000.11.4
   - simple-cmd-args-0.1.6
   - bugzilla-redhat-0.3.0
@@ -11,4 +13,5 @@ extra-deps:
   - rpmbuild-order-0.4.5
   - pretty-terminal-0.1.0.0
   - http-query-0.1.0
-  - graphviz-2999.20.0.3
+  - fgl-5.5.4.0
+  - graphviz-2999.19.0.0

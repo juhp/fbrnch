@@ -74,6 +74,7 @@ executable fbrnch
                        Cmd.Reviews
                        Cmd.Scratch
                        Cmd.SideTags
+                       Cmd.Sort
                        Cmd.Status
                        Cmd.Switch
                        Cmd.Update
@@ -130,7 +131,7 @@ executable fbrnch
                        pagure-internal,
                        pretty-terminal,
                        process,
-                       rpmbuild-order >= 0.4.2,
+                       rpmbuild-order >= 0.4.5,
                        simple-cmd >= 0.2.0,
                        simple-cmd-args >= 0.1.6,
                        text,

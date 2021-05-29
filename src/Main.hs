@@ -29,6 +29,7 @@ import Cmd.RequestRepo
 import Cmd.Reviews
 import Cmd.Scratch
 import Cmd.SideTags
+import Cmd.Sort
 import Cmd.Status
 import Cmd.Switch
 import Cmd.Update
@@ -128,6 +129,8 @@ main = do
       coprCmd <$> dryrunOpt <*> switchWith 'l' "list-chroots" "Show project chroots" <*> buildByOpt <*> many archOpt <*> pkgArg "PROJECT" <*> branchesPackages
     , Subcommand "rename-master" "Rename local master branch to rawhide" $
       renameMasterCmd <$> manyPackages
+    , Subcommand "graph" "Output dependency graph" $
+      graphCmd <$> switchWith 'o' "output" "Output graph in gv/dot format" <*> optional rpmWithOpt <*> optional branchOpt <*> somePackages
     ]
   where
     cloneRequest :: Parser CloneRequest

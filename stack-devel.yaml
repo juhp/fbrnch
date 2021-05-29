@@ -12,7 +12,7 @@ extra-deps:
 #    commit: 5ad5f162fb60e8cba72d7cde0257496bbb309481
   # - git: https://github.com/juhp/koji-hs.git
   #   commit: c28f0c40095b925c5cf38f892d0fed8926d12219
-#  - rpmbuild-order-0.4.2
+#  - rpmbuild-order-0.4.5
   # - git: https://github.com/juhp/rpmbuild-order.git
   #   commit: c05a0ab10e13ff258bff37eae017f896e7369460
   # in lts16:

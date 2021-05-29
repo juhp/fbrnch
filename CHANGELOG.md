@@ -20,6 +20,8 @@
 - Koji: timeouts to handle for network connection failures
 - 'parallel': error if no branch given
 - gitFetchSilent: show git reponame instead of dirname
+- new 'graph' command renders dependency graph using graphviz
+  (using rpmbuild-order-0.4.5)
 
 ## 0.8.0 (2021-04-08)
 - 'request-repos' can now take branch args and --mock option (#18)
