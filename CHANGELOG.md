@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.1 (2021-05-28)
+## 0.9 (2021-05-30)
 - 'override' --duration and run waitrepo after all overrides
 - new 'waitrepo' command
 - 'create-review','rename-master': take no branches
@@ -22,6 +22,8 @@
 - gitFetchSilent: show git reponame instead of dirname
 - new 'graph' command renders dependency graph using graphviz
   (using rpmbuild-order-0.4.5)
+- fix handling of optional branch args
+- merge: improve output when not mergeable
 
 ## 0.8.0 (2021-04-08)
 - 'request-repos' can now take branch args and --mock option (#18)

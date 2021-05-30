@@ -1,6 +1,6 @@
 cabal-version:       2.0
 name:                fbrnch
-version:             0.8.1
+version:             0.9
 synopsis:            Build and create Fedora package repos and branches
 description:
             fbrnch is a convenient packaging tool for Fedora Packagers,
