@@ -13,14 +13,13 @@ import InterleaveOutput (cmdSilent')
 import Krb
 import Package
 
--- FIXME branch arg?
-updateCmd :: Maybe Branch -> [String] -> IO ()
-updateCmd mbr args = do
+updateCmd :: (Maybe Branch,[String]) -> IO ()
+updateCmd (mbr,args) = do
   pkgGit <- isPkgGitSshRepo
   let (mver,pkgs) = case args of
         [a] -> if pkgGit then (Just a,[]) else (Nothing,[a])
         _ -> (Nothing,args)
-  withPackagesMaybeBranch (Just False) dirtyGitFetch ZeroOrOne (updatePkg mver) mbr pkgs
+  withPackagesMaybeBranch (Just False) dirtyGitFetch ZeroOrOne (updatePkg mver) (mbr, pkgs)
   where
     updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
     updatePkg mver pkg br = do

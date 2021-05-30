@@ -75,28 +75,28 @@ main = do
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> mtargetOpt <*> branchesPackages
     , Subcommand "update" "Update package to newer version" $
-      updateCmd <$> optional branchArg <*> manyPackages
+      updateCmd <$> maybeBranchPackages False
     , Subcommand "sort" "Sort packages in build dependency order" $
-      sortCmd <$> optional rpmWithOpt <*> optional branchArg <*> somePackages
+      sortCmd <$> optional rpmWithOpt <*> maybeBranchPackages True
     , Subcommand "prep" "Prep sources" $
-      prepCmd <$> optional branchArg <*> manyPackages
+      prepCmd <$> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
       localCmd <$> optional forceshortOpt <*> many bcondOpt <*> branchesPackages
     , Subcommand "srpm" "Build srpm" $
-      srpmCmd <$> switchWith 'f' "force" "regenerate even if spec older than existing srpm" <*> optional branchArg <*> manyPackages
+      srpmCmd <$> switchWith 'f' "force" "regenerate even if spec older than existing srpm" <*> maybeBranchPackages False
     , Subcommand "diff" "Diff local changes" $
-      diffCmd <$> diffSpecOnly <*> diffWorkOpt <*> diffFormatOpt <*> diffBranchOpt <*> optional branchArg <*> manyPackages
+      diffCmd <$> diffSpecOnly <*> diffWorkOpt <*> diffFormatOpt <*> diffBranchOpt <*> maybeBranchPackages False
     , Subcommand "log" "Show commits between branches" $
       logCmd <$> switchWith 'l' "long" "show full commit log" <*> anyBranchArg <*> anyBranchArg <*> manyPackages
     , Subcommand "mock" "Local mock build" $
       mockCmd <$> switchWith 'd' "dry-run" "Do not build (but creates srpm)" <*> switchWith 'n' "no-clean" "Do not clean chroot before building a package" <*> switchWith 'w' "network" "Use network during build" <*> switchWith 'N' "no-clean-after" "Don't clean  chroot after building a package" <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use") <*> branchesPackages
     , Subcommand "install-deps" "Install package build dependencies" $
-      installDepsCmd <$> optional branchArg <*> manyPackages
+      installDepsCmd <$> maybeBranchPackages False
     , Subcommand "install" "Build locally and install package(s)" $
       -- FIXME drop --shortcircuit from install?
-      installCmd <$> switchWith 'R' "recurse" "build and install missing deps packages" <*> optional forceshortOpt <*> many bcondOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> optional branchArg <*> manyPackages
+      installCmd <$> switchWith 'R' "recurse" "build and install missing deps packages" <*> optional forceshortOpt <*> many bcondOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> maybeBranchPackages False
     , Subcommand "not-installed" "Packages not installed locally" $
-      notInstalledCmd <$> optional branchArg <*> manyPackages
+      notInstalledCmd <$> maybeBranchPackages False
     , Subcommand "bugs" "List package bugs" $
       bugsCmd <$> optional (strOptionWith 's' "summary" "KEY" "Search for bugs containing keyword") <*> manyPackages
     , Subcommand "bump" "Bump release for package" $
@@ -130,7 +130,7 @@ main = do
     , Subcommand "rename-master" "Rename local master branch to rawhide" $
       renameMasterCmd <$> manyPackages
     , Subcommand "graph" "Output dependency graph" $
-      graphCmd <$> switchWith 'o' "output" "Output graph in gv/dot format" <*> optional rpmWithOpt <*> optional branchOpt <*> somePackages
+      graphCmd <$> switchWith 'o' "output" "Output graph in gv/dot format" <*> optional rpmWithOpt <*> maybeBranchPackages True
     ]
   where
     cloneRequest :: Parser CloneRequest
@@ -193,6 +193,21 @@ main = do
     -- branchesRequestOpt =
     --   flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|>
     --   ExcludeBranches <$> some excludeBranchOpt
+
+    maybeBranchPackages :: Bool -> Parser (Maybe Branch,[String])
+    maybeBranchPackages oneplus =
+      maybeBranchesPkgs <$>
+      if oneplus
+      then some (pkgArg "[BRANCH] PACKAGE...")
+      else many (pkgArg "[BRANCH] [PACKAGE]...")
+      where
+        maybeBranchesPkgs :: [String] -> (Maybe Branch,[String])
+        maybeBranchesPkgs args =
+          let (brs,pkgs) = partitionBranches args
+          in case brs of
+            [] -> (Nothing, pkgs)
+            [br] -> (Just br,pkgs)
+            _ -> error' $ "cannot have more than one branch: " ++ unwords (map show brs)
 
     branchesPackages :: Parser (BranchesReq, [String])
     branchesPackages =

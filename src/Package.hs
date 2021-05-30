@@ -483,8 +483,11 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
     then
     withPackageDir "."
     else do
-    when (length pkgs > 1 && breq == Branches [] && limitBranches /= Zero) $
-      error' "At least one branch must be specified when there are multiple packages"
+    when (length pkgs > 1 && breq == Branches []) $
+      case limitBranches of
+        Zero -> return ()
+        ZeroOrOne -> warning "Better to specify an explicit branch for multiple packages"
+        _ -> error' "At least one branch must be specified when there are multiple packages"
     mapM_ withPackageDir pkgs
   where
     -- FIXME support arbitrary (module) branches
@@ -548,10 +551,9 @@ withPackagesMaybeBranch :: Maybe Bool
                         -> Maybe GitOpts
                         -> LimitBranches
                         -> (Package -> AnyBranch -> IO ())
-                        -> Maybe Branch
-                        -> [String]
+                        -> (Maybe Branch,[String])
                         -> IO ()
-withPackagesMaybeBranch mheader mgitopts limitBranches action mbr pkgs =
+withPackagesMaybeBranch mheader mgitopts limitBranches action (mbr, pkgs) =
   withPackageByBranches mheader mgitopts limitBranches action (Branches (maybeToList mbr),pkgs)
 
 -- -- do branch over packages

@@ -31,7 +31,7 @@ localCmd mforceshort bconds =
               else builtRpms br spec
       buildRPMs False mforceshort bconds rpms br spec
 
-installDepsCmd :: Maybe Branch -> [String] -> IO ()
+installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd =
   withPackagesMaybeBranch Nothing Nothing ZeroOrOne installDepsPkg
   where
@@ -39,7 +39,7 @@ installDepsCmd =
     installDepsPkg pkg br =
       localBranchSpecFile pkg br >>= installDeps False
 
-srpmCmd :: Bool -> Maybe Branch -> [String] -> IO ()
+srpmCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 srpmCmd force =
   withPackagesMaybeBranch Nothing Nothing ZeroOrOne srpmBuildPkg
   where
@@ -49,7 +49,7 @@ srpmCmd force =
       void $ generateSrpm' force (Just br) spec
 
 -- FIXME option to clone package
-prepCmd :: Maybe Branch -> [String] -> IO ()
+prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd =
   withPackagesMaybeBranch Nothing Nothing ZeroOrOne prepPackage
 
