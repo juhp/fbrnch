@@ -72,8 +72,10 @@ mergeBranch build noprompt (True, unmerged) br = do
                 Just hash -> hash
     git_ "merge" ["--quiet", ref]
 mergeBranch build noprompt (False,unmerged) br = do
-  putStrLn "Branch is not directly mergeable:"
+  newer <- getNewerBranch br
+  putStrLn $ show newer ++ " branch is not directly mergeable:"
   mapM_ putStrLn unmerged
+  putStrLn ""
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"
