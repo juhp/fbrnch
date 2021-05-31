@@ -24,6 +24,7 @@
   (using rpmbuild-order-0.4.5)
 - fix handling of optional branch args
 - merge: improve output when not mergeable
+- srpm: regenerate if any sources newer than existing srpm file
 
 ## 0.8.0 (2021-04-08)
 - 'request-repos' can now take branch args and --mock option (#18)

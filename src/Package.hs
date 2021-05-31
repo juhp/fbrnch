@@ -165,7 +165,7 @@ generateSrpm = generateSrpm' False
 
 generateSrpm' :: Bool -> Maybe AnyBranch -> FilePath -> IO FilePath
 generateSrpm' force mbr spec = do
-  getSources spec
+  srcs <- getSources spec
   distopt <- case mbr of
                Nothing -> return []
                Just br -> do
@@ -192,15 +192,14 @@ generateSrpm' force mbr spec = do
     if not exists
       then buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
       else do
-      -- FIXME also compare source tarball timestamps
-      specTime <- getModificationTime spec
       srpmTime <- getModificationTime srpm
-      if srpmTime > specTime
-        then do
+      fileTimes <- mapM getModificationTime (spec:srcs)
+      if any (srpmTime <) fileTimes
+        then buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
+        else do
         -- pretty print with ~/
         putStrLn $ srpm ++ " is up to date"
         return srpm
-        else buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
   where
     buildSrpm opts = do
       srpm <- last . words <$> cmd "rpmbuild" (opts ++ ["-bs", spec])
@@ -276,7 +275,7 @@ prepPackage pkg br =
     unlessM (doesFileExist spec) $
       error' $ spec ++ " not found"
     cwd <- getCurrentDirectory
-    getSources spec
+    void $ getSources spec
     gitDir <- isGitRepo
     let rpmdirs =
           [ "--define="++ mcr +-+ cwd | gitDir,
@@ -301,7 +300,7 @@ checkSourcesMatch spec = do
     prompt_ $ color Red $ src ++ " not in sources, please fix"
     checkSourcesMatch spec
 
-getSources :: FilePath -> IO ()
+getSources :: FilePath -> IO [FilePath]
 getSources spec = do
     gitDir <- isGitRepo
     srcdir <- getSourceDir gitDir
@@ -324,6 +323,7 @@ getSources spec = do
           cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
           unlessM (doesFileExist (srcdir </> src)) $
             error' $ "download failed: " ++ src
+    return srcs
   where
     sourceFieldFile :: String -> Maybe FilePath
     sourceFieldFile field =
