@@ -7,8 +7,9 @@
 A tool to help Fedora Packagers build package branches and add new packages.
 
 Fedora developers use a lot of time building packages across releases
-and workflow for adding new packages, etc. The motivation for fbrnch is
-to help to (semi-)automate common workflows to save time and effort.
+and workflow for adding new packages, etc.
+fbrnch was made to help (semi-)automate common workflows to save time
+and effort.
 
 fbrnch is distributed under the GPL license version 2 or later.
 
@@ -42,11 +43,11 @@ and open a Review Request in Bugzilla (similar to fedora-create-review).
 ```
 $ fbrnch update-review [my-new-package]
 ```
-Similar to create-review: uploads to fedorapeople and posts
-updated package links to the open package review.
+Similar to create-review: it uploads the updated files to fedorapeople
+and posts the updated package urls to the open package review.
 
 #### List open package reviews
-This lists one's open package reviews:
+To list one's open package reviews:
 ```
 $ fbrnch reviews
 ```
