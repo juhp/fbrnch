@@ -92,10 +92,14 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
     parallelBuild :: Branch -> (Int,[String]) -> IO String
     parallelBuild br (layersleft,layer) =  do
       krbTicket
-      when (nopkgs > 1) $ do
-        putStrLn $ "\nBuilding parallel layer of " ++ show nopkgs ++ " packages:"
-        putStrLn $ unwords layer
-        putStrLn $ "(" ++ show layersleft ++ " more layers left)"
+      putStrLn $ "\nBuilding parallel layer of" ++
+        if nopkgs > 1
+        then " " ++ show nopkgs ++ " packages:"
+        else ":"
+      putStrLn $ unwords layer
+      putStrLn $ "(" ++ show layersleft ++ " more layer" ++
+        if layersleft > 1 then "s" else ""
+        ++ " left)"
       jobs <- mapM setupBuild layer
       (failures,mtarget) <- watchJobs Nothing [] jobs
       unless (null failures) $
