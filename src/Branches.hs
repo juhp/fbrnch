@@ -201,14 +201,17 @@ getRequestedBranches breq = do
   where
     branchingPrompt :: [Branch] -> IO [Branch]
     branchingPrompt active = do
-      inp <- prompt "Enter required branches [default: latest 2]"
+      inp <- prompt "Enter required branches [default: latest 2], or no/none"
       if null inp
         then return $ take 2 active
         else
-        let abrs = map anyBranch $ words inp
-        in if all isRelBranch abrs
-           then return $ map onlyRelBranch abrs
-           else branchingPrompt active
+        if lower (trim inp) `elem` ["no", "none"]
+        then return []
+        else
+          let abrs = map anyBranch $ words inp
+          in if all isRelBranch abrs
+             then return $ map onlyRelBranch abrs
+             else branchingPrompt active
 
 data BranchesReq =
   BranchOpt BranchOpts | Branches [Branch]
