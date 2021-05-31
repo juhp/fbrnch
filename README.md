@@ -62,32 +62,32 @@ Once a review has been approved
 ```
 $ fbrnch request-repos
 ```
-will request repos for approved package(s).
+will request repos for approved package(s) and offer to request branches.
 
 #### Import a new package
 With fbrnch this can be done in one step - no need to clone first.
 ```
-$ fbrnch import [my-new-package]
+$ fbrnch import
 ```
-will offer to import the srpm from the approved review
-(similar to `fedpkg import`).
-Without any arguments it will offer to import any approved package reviews
-one by one.
-The imported package is then built in Koji Rawhide,
+will offer to import approved packages into created repos.
+
+It imports the srpm from the approved review (similar to `fedpkg import`),
+but pulls it directly from the package review's latest url.
+
+The imported package can then be built in Koji Rawhide,
 and the package review updated.
 
 #### Request branches
-Finally you can request branches with
+Once the repo is created you can also request branches with
 ```
 $ fbrnch request-branches
 ```
 which will confirm which branches you want, unless given.
 
-Optionally a mock build can be done first.
+Optionally a mock build per branch can be done first.
 
 
-### Building
-#### Cloning and switching branch
+### Cloning and switching branch
 ```
 $ fbrnch clone [package] ...
 ```
@@ -101,7 +101,21 @@ You can also git pull:
 ```
 $ fbrnch pull [package] ...
 ```
-#### Package status
+
+### List packages and branches
+You can list packages in dist-git pagure with
+```
+$ fbrnch list PATTERN
+```
+with globbing.
+
+Branches of a package can be listed:
+```
+$ fbrnch branches -B [package] ...
+```
+You can use `--remote` option if you don't have the package checked out.
+
+### Package status
 ```
 $ fbrnch status -B [package]
 ```
@@ -109,12 +123,17 @@ outputs information about the status of each branch.
 The status command can also be used with `--reviews`
 to check the build status of new packages.
 
+You can output package's nvr's from local git:
+```
+$ fbrnch nvr -B [package]
+```
+
 List package bugs:
 ```
 $ fbrnch bugs [package]
 ```
 
-#### Commit, Merging and Building in Koji
+### Commit, Merging and Building in Koji
 You can commit to the current branch:
 ```
 $ fbrnch commit
@@ -139,6 +158,14 @@ You can also build all branches:
 ```
 $ fbrnch build -B package
 ```
+or all fedora branches:
+```
+$ fbrnch build -F package
+```
+or all epel branches:
+```
+$ fbrnch build -E package
+```
 
 Scratch builds can also be done:
 ```
@@ -162,10 +189,22 @@ $ fbrnch local
 ```
 this works in the current package dir like other commands
 and one can also specify package.
+It will try to install any missing dependencies with `sudo dnf builddep`.
 
 Locally build and install:
 ```
 $ fbrnch install package1 package2 package3 ...
+```
+
+You can use:
+```
+$ fbrnch install-deps [package]
+```
+to only install the dependencies of a package.
+
+To rename an old master branch locally to rawhide:
+```
+$ fbrnch rename-master [package]
 ```
 
 ### Parallel building
@@ -182,7 +221,7 @@ Note it requires a sidetag in general, so you need to manage and select them
 if using more than one per branch with `--target`.
 
 ### Other commands
-There are more commands like `nvr`, `install-deps`, `copr`.
+There are more commands like `install-deps`, `copr`, `graph`.
 
 See `fbrnch --help` for details and the full list.
 

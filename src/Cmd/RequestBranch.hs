@@ -14,6 +14,7 @@ import ListReviews
 import Package
 import Pagure
 
+-- FIXME option to do koji scratch build instead of mock
 requestBranches :: Bool -> (BranchesReq,[String]) -> IO ()
 requestBranches mock (breq, ps) = do
   if null ps then
