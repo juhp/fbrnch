@@ -74,7 +74,7 @@ main = do
       waitrepoCmd <$> dryrunOpt <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd <$> dryrunOpt <*> rebuildSrpmOpt <*> noFailFastOpt <*> optional archesOpt <*> mtargetOpt <*> branchesPackages
-    , Subcommand "update" "Update package to newer version" $
+    , Subcommand "update" "Update package in dist-git to newer version" $
       updateCmd <$> maybeBranchPackages False
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd <$> optional rpmWithOpt <*> maybeBranchPackages True
