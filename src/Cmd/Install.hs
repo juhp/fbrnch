@@ -13,9 +13,9 @@ import Package
 -- FIXME --ignore-uninstalled subpackages
 -- FIXME --skip-unavailable
 -- FIXME --check any/all of package installed
-installCmd :: Bool -> Maybe ForceShort -> [BCond] -> Bool
+installCmd :: Bool -> Bool -> Maybe ForceShort -> [BCond] -> Bool
            -> (Maybe Branch,[String]) -> IO ()
-installCmd recurse mforceshort bconds reinstall (mbr, pkgs) = do
+installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
   when (recurse && mforceshort == Just ShortCircuit) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch Nothing Nothing ZeroOrOne installPkg (mbr, pkgs)
@@ -45,10 +45,10 @@ installCmd recurse mforceshort bconds reinstall (mbr, pkgs) = do
                 mpkgdir <- lookForPkgDir rbr ".." dep
                 case mpkgdir of
                   Nothing -> putStrLn $ dep ++ " not known"
-                  Just pkgdir -> installCmd recurse mforceshort bconds reinstall (mbr, [pkgdir]) >> putStrLn ""
+                  Just pkgdir -> installCmd verbose recurse mforceshort bconds reinstall (mbr, [pkgdir]) >> putStrLn ""
               -- FIXME option to install missing deps
             else error' $ "missing deps:\n" ++ unlines missingdeps
-          buildRPMs True mforceshort bconds rpms br spec
+          buildRPMs (not verbose) mforceshort bconds rpms br spec
           putStrLn ""
           unless (mforceshort == Just ShortCircuit) $
             if reinstall then do

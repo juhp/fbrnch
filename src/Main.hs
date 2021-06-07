@@ -94,7 +94,7 @@ main = do
       installDepsCmd <$> maybeBranchPackages False
     , Subcommand "install" "Build locally and install package(s)" $
       -- FIXME drop --shortcircuit from install?
-      installCmd <$> switchWith 'R' "recurse" "build and install missing deps packages" <*> optional forceshortOpt <*> many bcondOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> maybeBranchPackages False
+      installCmd <$> switchWith 'v' "verbose" "verbose rpmbuild output" <*> switchWith 'R' "recurse" "build and install missing deps packages" <*> optional forceshortOpt <*> many bcondOpt <*> switchWith 'r' "reinstall" "reinstall rpms" <*> maybeBranchPackages False
     , Subcommand "not-installed" "Packages not installed locally" $
       notInstalledCmd <$> maybeBranchPackages False
     , Subcommand "bugs" "List package bugs" $
