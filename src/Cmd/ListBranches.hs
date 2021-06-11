@@ -82,7 +82,7 @@ branchesCmd skipdead allbrs missing mode (breq, pkgs) = do
                 putStrLn $ (unwords . map show) result
                 else do
                 branches <- listOfBranches True False breq
-                let havebrs = filter (`elem` branches) $ map readBranch' brs
+                let havebrs = filter (`elem` branches) $ mapMaybe readBranch brs
                     result = if missing then branches \\ havebrs else havebrs
                 unless (null result) $ do
                   putStr $ unPackage pkg ++ ": "
