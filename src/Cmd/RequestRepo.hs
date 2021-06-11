@@ -71,6 +71,7 @@ requestRepo mock retry breq pkg = do
           when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
           putStr (show br ++ " ")
           fedpkg_ "request-branch" ["--repo", pkg, show br]
+        putStrLn ""
   where
     existingRepoRequests :: IO [IssueTitleStatus]
     existingRepoRequests = do
