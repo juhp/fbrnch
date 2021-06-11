@@ -24,6 +24,7 @@ import Cmd.Override
 import Cmd.Parallel
 import Cmd.PkgReview
 import Cmd.Pull
+import Cmd.Repoquery
 import Cmd.RequestBranch
 import Cmd.RequestRepo
 import Cmd.Reviews
@@ -56,6 +57,8 @@ main = do
       nvrCmd <$> branchesPackages
     , Subcommand "status" "Status package/branch status" $
       statusCmd <$> switchWith 'n' "no-fetch" "Do not git fetch to save time" <*> switchWith 'r' "reviews" "Status of reviewed packages" <*> branchesPackages
+    , Subcommand "repoquery" "Repoquery branches (put repoquery options after '--')" $
+      repoqueryCmd <$> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd <$> nopromptOpt <*> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
