@@ -77,7 +77,7 @@ importCmd mock (breq, ps) = do
         existing <- fedoraBranchesNoRawhide (localBranches False)
         when (null existing) $ do
           brs <- getRequestedBranches breq
-          requestPkgBranches mock (Branches brs) (Package pkg)
+          requestPkgBranches False mock (Branches brs) (Package pkg)
       when (pkg /= takeFileName dir) $
         setCurrentDirectory dir
       where

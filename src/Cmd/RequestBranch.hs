@@ -17,16 +17,18 @@ import Pagure
 -- FIXME option to do koji scratch build instead of mock
 requestBranches :: Bool -> (BranchesReq,[String]) -> IO ()
 requestBranches mock (breq, ps) = do
-  if null ps then
-    ifM isPkgGitSshRepo
-    (getDirectoryName >>= requestPkgBranches mock breq . Package) $
-    do pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
-       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock breq (Package p)) pkgs
+  if null ps then do
+    isPkgGit <- isPkgGitSshRepo
+    if isPkgGit
+      then getDirectoryName >>= requestPkgBranches False mock breq . Package
+      else do
+      pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
+      mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches (length pkgs > 1) mock breq (Package p)) pkgs
   else
-    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches mock breq (Package p)) ps
+    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches (length ps > 1) mock breq (Package p)) ps
 
-requestPkgBranches :: Bool -> BranchesReq -> Package -> IO ()
-requestPkgBranches mock breq pkg = do
+requestPkgBranches :: Bool -> Bool -> BranchesReq -> Package -> IO ()
+requestPkgBranches multiple mock breq pkg = do
   when (breq == Branches []) $
     putPkgHdr pkg
   git_ "fetch" []
@@ -36,6 +38,8 @@ requestPkgBranches mock breq pkg = do
     (mbid,session) <- bzReviewSession
     urls <- forM newbranches $ \ br -> do
       when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
+      when multiple $ putStr (unPackage pkg ++ " ")
+      when (length newbranches > 1) $ putStr (show br ++ " ")
       fedpkg "request-branch" [show br]
     case mbid of
       Just bid -> commentBug session bid
