@@ -310,19 +310,20 @@ getSources spec = do
       createDirectoryIfMissing True srcdir
     forM_ srcs $ \ src ->
       unlessM (doesFileExist (srcdir </> src)) $ do
-        uploaded <-
-          if gitDir then do
-            have_sources <- doesFileExist "sources"
-            if have_sources then
-              grep_ src "sources"
-              else return False
-          else return False
-        if uploaded
-          then cmd_ "fedpkg" ["sources"]
-          else do
-          cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
-          unlessM (doesFileExist (srcdir </> src)) $
-            error' $ "download failed: " ++ src
+      uploaded <-
+        if gitDir then do
+          have_sources <- doesFileExist "sources"
+          if have_sources then
+            grep_ src "sources"
+            else return False
+        else return False
+      mfedpkg <- findExecutable "fedpkg"
+      if uploaded && isJust mfedpkg
+        then cmd_ "fedpkg" ["sources"]
+        else do
+        cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
+        unlessM (doesFileExist (srcdir </> src)) $
+          error' $ "download failed: " ++ src
     return srcs
   where
     sourceFieldFile :: String -> Maybe FilePath
