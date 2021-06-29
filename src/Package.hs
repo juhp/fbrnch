@@ -253,7 +253,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
       when res $ putStrLn "done"
       return res
     unless ok $
-      error' $ "build failed for: " ++ takeBaseName spec
+      error' $ takeBaseName spec ++ " failed to build"
 
 -- FIXME print unavailable deps
 installDeps :: Bool -> FilePath -> IO ()
@@ -284,7 +284,8 @@ prepPackage pkg br =
     case br of
       RelBranch rbr -> do
         nvr <- pkgNameVerRel' rbr spec
-        putStr $ "Prepping " ++ nvr ++ ": "
+        -- newline avoids error starting on same line
+        putStrLn $ "Prepping " ++ nvr ++ ": "
       _ -> return ()
     cmdSilent' "rpmbuild" args
     putStrLn "done"
