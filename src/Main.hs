@@ -1,7 +1,11 @@
+{-# LANGUAGE CPP #-}
+
 module Main (main) where
 
 import Distribution.Fedora.Branch
+#if !MIN_VERSION_simple_cmd_args(0,1,7)
 import Options.Applicative (maybeReader, ReadM)
+#endif
 import SimpleCmdArgs
 
 -- commands
