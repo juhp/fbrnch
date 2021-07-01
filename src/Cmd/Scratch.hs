@@ -33,7 +33,7 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
             Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
             tagArchs <- kojiTagArchs buildtag
             return $ tagArchs \\ as
-      let kojiargs = ["--arch-override=" ++ intercalate "," archs | notNull archs] ++ ["--fail-fast" | not nofailfast] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
+      let kojiargs = ["--arch-override=" ++ intercalate "," archs | notNull archs] ++ ["--fail-fast" | not nofailfast && length archs /= 1] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
       pkggit <- isPkgGitRepo
       if pkggit
         then do
