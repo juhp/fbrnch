@@ -245,7 +245,7 @@ main = do
     mergeOpt = optional (flagWith' True 'm' "merge" "Merge without prompt" <|>
                          flagWith' False 'M' "no-merge" "No merging")
 
-    noFailFastOpt = switchWith 'f' "no-fast-fail" "Do not --fast-fail"
+    noFailFastOpt = switchWith 'f' "no-fail-fast" "Do not --fail-fast"
 
     excludeArch :: Parser String
     excludeArch = strOptionWith 'X' "exclude-arch" "ARCH[,ARCH].." "build without arch(s)"
