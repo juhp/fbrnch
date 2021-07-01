@@ -131,7 +131,7 @@ maybeFindSpecfile = fileWithExtension ".spec"
     -- looks in dir for a unique file with given extension
     fileWithExtension :: String -> IO (Maybe FilePath)
     fileWithExtension ext = do
-      files <- filter ((== ext) . takeExtension) <$> listDirectory "."
+      files <- filter (ext `isExtensionOf`) <$> listDirectory "."
       case files of
         [] -> return Nothing
         [spec] -> return $ Just spec
