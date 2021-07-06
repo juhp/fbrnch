@@ -19,7 +19,6 @@ module Package (
   ForceShort(..),
   buildRPMs,
   installDeps,
-  prepPackage,
   checkSourcesMatch,
   getSources,
   putPkgHdr,
@@ -264,30 +263,6 @@ installDeps strict spec = do
   unless (null missingdeps) $ do
     putStr $ "Running dnf builddep " ++ unwords missingdeps
     cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"--quiet":"builddep": ["--skip-unavailable" | not strict] ++ ["--assumeyes", spec]
-    putStrLn "done"
-
-prepPackage :: Package -> AnyBranch -> IO ()
-prepPackage pkg br =
-  ifM (doesFileExist "dead.package")
-    (putStrLn "dead.package") $
-    do
-    spec <- localBranchSpecFile pkg br
-    unlessM (doesFileExist spec) $
-      error' $ spec ++ " not found"
-    cwd <- getCurrentDirectory
-    void $ getSources spec
-    gitDir <- isGitRepo
-    let rpmdirs =
-          [ "--define="++ mcr +-+ cwd | gitDir,
-            mcr <- ["_builddir", "_sourcedir"]]
-        args = rpmdirs ++ ["-bp", spec]
-    case br of
-      RelBranch rbr -> do
-        nvr <- pkgNameVerRel' rbr spec
-        -- newline avoids error starting on same line
-        putStrLn $ "Prepping " ++ nvr ++ ": "
-      _ -> return ()
-    cmdSilent' "rpmbuild" args
     putStrLn "done"
 
 checkSourcesMatch :: FilePath -> IO ()

@@ -17,8 +17,10 @@ import Branches
 import Common
 import Common.System
 import Git
+import InterleaveOutput (cmdSilent')
 import Package
 
+-- FIXME generate build.log files
 localCmd :: Maybe ForceShort -> [BCond] -> (BranchesReq, [String]) -> IO ()
 localCmd mforceshort bconds =
   withPackageByBranches Nothing Nothing ZeroOrOne localBuildPkg
@@ -52,6 +54,30 @@ srpmCmd force =
 prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd =
   withPackagesMaybeBranch Nothing Nothing ZeroOrOne prepPackage
+  where
+    prepPackage :: Package -> AnyBranch -> IO ()
+    prepPackage pkg br =
+      ifM (doesFileExist "dead.package")
+        (putStrLn "dead.package") $
+        do
+        spec <- localBranchSpecFile pkg br
+        unlessM (doesFileExist spec) $
+          error' $ spec ++ " not found"
+        cwd <- getCurrentDirectory
+        void $ getSources spec
+        gitDir <- isGitRepo
+        let rpmdirs =
+              [ "--define="++ mcr +-+ cwd | gitDir,
+                mcr <- ["_builddir", "_sourcedir"]]
+            args = rpmdirs ++ ["-bp", spec]
+        case br of
+          RelBranch rbr -> do
+            nvr <- pkgNameVerRel' rbr spec
+            -- newline avoids error starting on same line
+            putStrLn $ "Prepping " ++ nvr ++ ": "
+          _ -> return ()
+        cmdSilent' "rpmbuild" args
+        putStrLn "done"
 
 nvrCmd :: (BranchesReq, [String]) -> IO ()
 nvrCmd =
