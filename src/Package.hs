@@ -260,10 +260,8 @@ installDeps :: Bool -> FilePath -> IO ()
 installDeps strict spec = do
   missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
   unless (null missingdeps) $ do
-    putStrLn $ "Need: " ++ unwords missingdeps
-    putStr "Running dnf builddep... "
-    -- FIXME less silent
-    cmdSilent "/usr/bin/sudo" $ "/usr/bin/dnf":"builddep": ["--skip-unavailable" | not strict] ++ ["--assumeyes", spec]
+    putStr $ "Running dnf builddep " ++ unwords missingdeps
+    cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"--quiet":"builddep": ["--skip-unavailable" | not strict] ++ ["--assumeyes", spec]
     putStrLn "done"
 
 prepPackage :: Package -> AnyBranch -> IO ()
