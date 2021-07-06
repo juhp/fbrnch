@@ -46,7 +46,6 @@ module Package (
   notInstalled,
   pkgInstalled,
   repoquery,
-  systemBranch,
   equivNVR,
   takeNVRName,
   nameOfNVR
@@ -245,13 +244,16 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
             mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
         args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++ buildopt ++ map show bconds ++ [spec]
     ok <-
-      if not quiet || shortcircuit then
-      cmdBool "rpmbuild" args
+      if not quiet || shortcircuit
+      then do
+        rbr <- anyBranchToRelease br
+        nvr <- pkgNameVerRel' rbr spec
+        pipeBool ("rpmbuild", args) ("tee", [".build-" ++ nvr <.> "log"])
       else do
-      putStr $ "Building " ++ takeBaseName spec ++ " locally: "
-      res <- cmdSilentBool "rpmbuild" args
-      when res $ putStrLn "done"
-      return res
+        putStr $ "Building " ++ takeBaseName spec ++ " locally: "
+        res <- cmdSilentBool "rpmbuild" args
+        when res $ putStrLn "done"
+        return res
     unless ok $
       error' $ takeBaseName spec ++ " failed to build"
 
