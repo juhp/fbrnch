@@ -104,7 +104,7 @@ commandCmd ifoutput cs =
       unlessM (doesFileExist "dead.package") $ do
       curEnv <- getEnvironment
       if ifoutput then do
-        out <- TP.readProcessInterleaved_ $
+        (_ret,out) <- TP.readProcessInterleaved $
                     TP.setEnv (("p",unPackage pkg):curEnv) $
                     TP.shell cs
         unless (B.null out) $ do
