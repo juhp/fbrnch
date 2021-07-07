@@ -95,8 +95,9 @@ nvrCmd =
         >>= putStrLn
 
 -- FIXME option to require spec file?
-commandCmd :: Bool -> String -> (BranchesReq,[String]) -> IO ()
-commandCmd ifoutput cs =
+-- FIXME --continue to ignore errors (currently ignored)
+commandCmd :: Bool -> Bool -> String -> (BranchesReq,[String]) -> IO ()
+commandCmd ifoutput compact cs =
   withPackageByBranches (Just (not ifoutput)) Nothing AnyNumber cmdBranch
   where
     cmdBranch :: Package -> AnyBranch -> IO ()
@@ -108,7 +109,9 @@ commandCmd ifoutput cs =
                     TP.setEnv (("p",unPackage pkg):curEnv) $
                     TP.shell cs
         unless (B.null out) $ do
-          putPkgAnyBrnchHdr pkg br
+          if compact
+            then putStr $ unPackage pkg ++ ": "
+            else putPkgAnyBrnchHdr pkg br
           B.putStr out
         else do
         let p = (P.shell cs) { P.env = Just (("p",unPackage pkg):curEnv) }
