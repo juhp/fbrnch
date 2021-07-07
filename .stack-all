@@ -1,3 +1,5 @@
 [versions]
-# bugzilla fails: setRequestCheckStatus
+# nightly no HaXml/haxr/koji
+newest = lts-18
+# bugzilla fails: missing setRequestCheckStatus
 oldest = lts-11
