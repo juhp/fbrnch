@@ -101,8 +101,7 @@ commandCmd ifoutput cs =
   where
     cmdBranch :: Package -> AnyBranch -> IO ()
     cmdBranch pkg br =
-      ifM (doesFileExist "dead.package")
-      (putStrLn "dead.package") $ do
+      unlessM (doesFileExist "dead.package") $ do
       curEnv <- getEnvironment
       if ifoutput then do
         out <- TP.readProcessInterleaved_ $
