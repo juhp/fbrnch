@@ -133,7 +133,8 @@ main = do
     , Subcommand "command" "Run shell command in package dirs ($p)" $
       commandCmd
       <$> switchWith 'o' "if-output" "only print if output"
-      <*> switchWith 'k' "compact" "print package on same line as output"
+      <*> switchWith '1' "compact" "print package on same line as output"
+      <*> switchWith 'k' "continue" "keep going after an error"
       <*> commandOpt
       <*> branchesPackages
     , Subcommand "copr" "Build package(s) in Fedora Copr" $

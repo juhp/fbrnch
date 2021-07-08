@@ -12,6 +12,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import System.Environment
 import qualified System.Process as P
 import qualified System.Process.Typed as TP
+import System.Exit
 
 import Branches
 import Common
@@ -95,28 +96,32 @@ nvrCmd =
         >>= putStrLn
 
 -- FIXME option to require spec file?
--- FIXME --continue to ignore errors (currently ignored)
-commandCmd :: Bool -> Bool -> String -> (BranchesReq,[String]) -> IO ()
-commandCmd ifoutput compact cs =
+commandCmd :: Bool -> Bool -> Bool -> String -> (BranchesReq,[String])
+           -> IO ()
+commandCmd ifoutput compact continue cs =
   withPackageByBranches (Just (not ifoutput)) Nothing AnyNumber cmdBranch
   where
     cmdBranch :: Package -> AnyBranch -> IO ()
     cmdBranch pkg br =
       unlessM (doesFileExist "dead.package") $ do
       curEnv <- getEnvironment
-      if ifoutput then do
-        (_ret,out) <- TP.readProcessInterleaved $
-                    TP.setEnv (("p",unPackage pkg):curEnv) $
-                    TP.shell cs
-        unless (B.null out) $ do
-          if compact
-            then putStr $ unPackage pkg ++ ": "
-            else putPkgAnyBrnchHdr pkg br
-          B.putStr out
-        else do
-        let p = (P.shell cs) { P.env = Just (("p",unPackage pkg):curEnv) }
-        (_,_,_,h) <- P.createProcess p
-        void $ P.waitForProcess h
+      ret <-
+        if ifoutput then do
+          (ret,out) <- TP.readProcessInterleaved $
+                       TP.setEnv (("p",unPackage pkg):curEnv) $
+                       TP.shell cs
+          unless (B.null out) $ do
+            if compact
+              then putStr $ unPackage pkg ++ ": "
+              else putPkgAnyBrnchHdr pkg br
+            B.putStr out
+          return ret
+          else do
+          let p = (P.shell cs) { P.env = Just (("p",unPackage pkg):curEnv) }
+          (_,_,_,h) <- P.createProcess p
+          P.waitForProcess h
+      unless (continue || ret == ExitSuccess)
+        exitFailure
 
 renameMasterCmd :: [String] -> IO ()
 renameMasterCmd pkgs =
