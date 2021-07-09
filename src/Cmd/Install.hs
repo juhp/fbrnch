@@ -46,8 +46,8 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
                 case mpkgdir of
                   Nothing -> putStrLn $ dep ++ " not known"
                   Just pkgdir -> installCmd verbose recurse mforceshort bconds reinstall (mbr, [pkgdir]) >> putStrLn ""
-              -- FIXME option to install missing deps
-            else error' $ "missing deps:\n" ++ unlines missingdeps
+              -- FIXME option to enable/disable installing missing deps
+            else installDeps True spec
           buildRPMs (not verbose) mforceshort bconds rpms br spec
           putStrLn ""
           unless (mforceshort == Just ShortCircuit) $
