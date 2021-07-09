@@ -263,7 +263,6 @@ installDeps strict spec = do
   unless (null missingdeps) $ do
     putStr $ "Running dnf builddep " ++ unwords missingdeps
     cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"--quiet":"builddep": ["--skip-unavailable" | not strict] ++ ["--assumeyes", spec]
-    putStrLn "done"
 
 checkSourcesMatch :: FilePath -> IO ()
 checkSourcesMatch spec = do

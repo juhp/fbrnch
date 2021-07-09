@@ -33,7 +33,7 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
         else putStrLn $ unwords installed ++ " already installed!\n"
       where
         doInstallPkg spec rpms installed = do
-          putStrLn $ "# " ++ takeBaseName (head rpms) ++ "\n"
+          putStrLn $ "# " ++ takeBaseName (head rpms)
           missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
           unless (null missingdeps) $
             if recurse
@@ -49,7 +49,6 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
               -- FIXME option to enable/disable installing missing deps
             else installDeps True spec
           buildRPMs (not verbose) mforceshort bconds rpms br spec
-          putStrLn ""
           unless (mforceshort == Just ShortCircuit) $
             if reinstall then do
               let reinstalls = filter (\ f -> takeNVRName f `elem` installed) rpms
