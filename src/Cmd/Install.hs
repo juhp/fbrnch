@@ -33,7 +33,7 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
         else putStrLn $ unwords installed ++ " already installed!\n"
       where
         doInstallPkg spec rpms installed = do
-          putStrLn $ takeBaseName (head rpms) ++ "\n"
+          putStrLn $ "# " ++ takeBaseName (head rpms) ++ "\n"
           missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
           unless (null missingdeps) $
             if recurse
