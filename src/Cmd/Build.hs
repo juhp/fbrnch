@@ -38,6 +38,8 @@ data BuildOpts = BuildOpts
 -- FIXME provide direct link to failed task/build.log
 -- FIXME --auto-override for deps in testing
 -- FIXME -B fails to find new branches
+-- FIXME --no-wait
+-- FIXME --ignore-dirty??
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptTarget opts)

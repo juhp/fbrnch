@@ -447,7 +447,9 @@ data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
 --     have :: (GitOpts -> Bool) -> Bool
 --     have opt = maybe False opt mgitopts
 
+
 -- FIXME rename to withPackages*
+-- FIXME countdown packages
 withPackageByBranches :: Maybe Bool
                       -> Maybe GitOpts
                       -> LimitBranches
