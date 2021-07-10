@@ -249,7 +249,8 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
         nvr <- pkgNameVerRel' rbr spec
         pipeBool ("rpmbuild", args) ("tee", [".build-" ++ nvr <.> "log"])
       else do
-        putStr $ "Building " ++ takeBaseName spec ++ " locally: "
+        date <- cmd "date" ["+%T"]
+        putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
         res <- cmdSilentBool "rpmbuild" args
         when res $ putStrLn "done"
         return res
