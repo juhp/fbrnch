@@ -1,0 +1,3 @@
+resolver: lts-18.1
+extra-deps:
+  - rpm-nvr-0.1.0

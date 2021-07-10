@@ -3,6 +3,8 @@ module Cmd.Mock
   )
 where
 
+import Data.RPM
+
 import Branches
 import Common
 import Common.System
@@ -34,7 +36,7 @@ mockCmd dryrun noclean network noCleanAfter mroot (breq, ps) = do
             case pkgs of
               [] -> error' "cannot build zero packages"
               [_] ->
-                let verrel = joinPath $ takeEnd 2 $ splitOn "-" $ takeNVRName (head srpms)
+                let verrel = showPkgVerRel . readNVRA $ head srpms
                  in ["--resultdir=results" </> verrel]
               _ -> []
       let command = if length pkgs > 1 then "--chain" else "--rebuild"

@@ -44,15 +44,16 @@ module Package (
   buildRequires,
   notInstalled,
   pkgInstalled,
+  rpmInstalled,
   repoquery,
   equivNVR,
-  takeNVRName,
   nameOfNVR
   ) where
 
 import Common
 import Common.System
 
+import Data.RPM
 import Distribution.Fedora
 import SimpleCmd.Rpm
 import System.Console.Pretty
@@ -247,7 +248,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
       then do
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
-        pipeBool ("rpmbuild", args) ("tee", [".build-" ++ nvr <.> "log"])
+        pipeBool ("rpmbuild", args) ("tee", [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"])
       else do
         date <- cmd "date" ["+%T"]
         putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
@@ -601,6 +602,10 @@ notInstalled :: String -> IO Bool
 notInstalled pkg =
   not <$> cmdBool "rpm" ["--quiet", "-q", "--whatprovides", pkg]
 
+rpmInstalled :: NVRA -> IO Bool
+rpmInstalled rpm =
+  cmdBool "rpm" ["--quiet", "-q", showNVRA rpm]
+
 pkgInstalled :: String -> IO Bool
 pkgInstalled pkg =
   cmdBool "rpm" ["--quiet", "-q", pkg]
@@ -625,11 +630,7 @@ equivNVR nvr1 nvr2
            -- allow differing dist
            in length r1 == length r2 && r1' == r2'
 
--- FIXME?
--- n-v-r.src.rpm -> n-v-r
-takeNVRName :: FilePath -> String
-takeNVRName = takeBaseName . takeBaseName
-
+-- FIXME: obsolete by using NVR
 -- n-v-r -> n
 nameOfNVR :: String -> String
 nameOfNVR = removeSeg . removeSeg
@@ -641,3 +642,7 @@ isExtensionOf :: String -> FilePath -> Bool
 isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
 isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
 #endif
+
+-- FIXME: drop when rpm-nvr has nvrVerRel
+showNVRVerRel :: NVR -> String
+showNVRVerRel (NVR _n vr) = showVerRel vr

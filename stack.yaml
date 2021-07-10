@@ -1,6 +1,1 @@
-resolver: lts-16.31
-
-extra-deps:
-  - bugzilla-redhat-0.3.0@rev:1
-  - koji-0.0.1
-  - rpmbuild-order-0.4.5
+stack-lts16.yaml

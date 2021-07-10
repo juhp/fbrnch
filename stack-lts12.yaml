@@ -13,3 +13,4 @@ extra-deps:
   - rpmbuild-order-0.4.5
   - pretty-terminal-0.1.0.0
   - http-query-0.1.0
+  - rpm-nvr-0.1.0

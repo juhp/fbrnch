@@ -3,6 +3,8 @@ module Cmd.Install (
   notInstalledCmd
   ) where
 
+import Data.RPM
+
 import Branches
 import Common
 import Common.System
@@ -29,11 +31,11 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
       spec <- localBranchSpecFile pkg br
       rpms <- builtRpms br spec
       -- removing arch
-      let packages = map takeNVRName rpms
-      installed <- filterM pkgInstalled packages
+      let packages = map (readNVRA . takeFileName) rpms
+      installed <- filterM rpmInstalled packages
       if isJust mforceshort || null installed || reinstall
         then doInstallPkg spec rpms installed
-        else putStrLn $ unwords installed ++ " already installed!\n"
+        else putStrLn $ unwords (map showNVRA installed) ++ " already installed!\n"
       where
         doInstallPkg spec rpms installed = do
           putStrLn $ "# " ++ takeBaseName (head rpms)
@@ -105,10 +107,10 @@ notInstalledCmd =
       unless dead $ do
         spec <- findSpecfile
         rpms <- builtRpms br spec
-        let packages = map takeBaseName rpms
-        installed <- filterM pkgInstalled packages
+        let packages = map readNVRA rpms
+        installed <- filterM rpmInstalled packages
         when (null installed) $ do
-          let pkgnames = map nameOfNVR packages
+          let pkgnames = map rpmName packages
           older <- filterM pkgInstalled pkgnames
           if null older
             then putStrLn $ unPackage pkg
