@@ -18,6 +18,8 @@ installCmd :: Bool -> Bool -> Maybe ForceShort -> [BCond] -> Bool
 installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
   when (recurse && mforceshort == Just ShortCircuit) $
     error' "cannot use --recurse and --shortcircuit"
+  when (length pkgs > 3) $
+    putStrLn $ show (length pkgs) ++ " packages"
   withPackagesMaybeBranch Nothing Nothing ZeroOrOne installPkg (mbr, pkgs)
   where
     installPkg :: Package -> AnyBranch -> IO ()
