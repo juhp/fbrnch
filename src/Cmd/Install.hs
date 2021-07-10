@@ -8,6 +8,7 @@ import Common
 import Common.System
 import Git
 import Package
+import Prompt
 
 -- FIXME package countdown
 -- FIXME --ignore-uninstalled subpackages
@@ -50,16 +51,21 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
                   Just pkgdir -> installCmd verbose recurse mforceshort bconds reinstall (mbr, [pkgdir]) >> putStrLn ""
               -- FIXME option to enable/disable installing missing deps
             else installDeps True spec
-          buildRPMs (not verbose) mforceshort bconds rpms br spec
+          wasbuilt <- buildRPMs (not verbose) mforceshort bconds rpms br spec
           unless (mforceshort == Just ShortCircuit) $
-            if reinstall then do
-              let reinstalls = filter (\ f -> takeNVRName f `elem` installed) rpms
+            if reinstall
+            then do
+              let reinstalls = filter (\ f -> readNVRA f `elem` installed) rpms
               unless (null reinstalls) $
                 sudo_ "/usr/bin/dnf" $ "reinstall" : "-q" : "-y" : reinstalls
               let remaining = filterDebug $ rpms \\ reinstalls
               unless (null remaining) $
                 sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
-              else sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : filterDebug rpms
+            else do
+              ok <- cmdBool "sudo" $ "/usr/bin/dnf" : "install" : "-q" : "-y" : filterDebug rpms
+              unless (ok || wasbuilt) $ do
+                prompt_ "Press Enter to rebuild package"
+                installCmd verbose recurse (Just ForceBuild) bconds reinstall (mbr, [unPackage pkg])
 
         lookForPkgDir :: Branch -> FilePath -> String -> IO (Maybe FilePath)
         lookForPkgDir rbr topdir p = do

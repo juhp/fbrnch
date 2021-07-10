@@ -217,7 +217,7 @@ instance Show BCond where
 -- Note does not check if bcond changed
 -- FIXME check tarball timestamp
 buildRPMs :: Bool -> Maybe ForceShort -> [BCond] -> [FilePath] -> AnyBranch
-          -> FilePath -> IO ()
+          -> FilePath -> IO Bool
 buildRPMs quiet mforceshort bconds rpms br spec = do
   needBuild <-
     if isJust mforceshort
@@ -256,6 +256,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
         return res
     unless ok $
       error' $ takeBaseName spec ++ " failed to build"
+  return needBuild
 
 -- FIXME print unavailable deps
 installDeps :: Bool -> FilePath -> IO ()

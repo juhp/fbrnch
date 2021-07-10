@@ -32,7 +32,7 @@ localCmd mforceshort bconds =
       rpms <- if isJust mforceshort
               then return []
               else builtRpms br spec
-      buildRPMs False mforceshort bconds rpms br spec
+      void $ buildRPMs False mforceshort bconds rpms br spec
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd =
