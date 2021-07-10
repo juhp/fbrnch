@@ -1,4 +1,4 @@
-resolver: lts-17.9
+resolver: lts-17.15
 
 extra-deps:
   # - git: https://github.com/juhp/hsbugzilla.git
