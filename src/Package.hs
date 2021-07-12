@@ -264,7 +264,7 @@ installDeps :: Bool -> FilePath -> IO ()
 installDeps strict spec = do
   missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
   unless (null missingdeps) $ do
-    putStr $ "Running dnf builddep " ++ unwords missingdeps
+    putStrLn $ "Running dnf builddep " ++ unwords missingdeps
     cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"--quiet":"builddep": ["--skip-unavailable" | not strict] ++ ["--assumeyes", spec]
 
 checkSourcesMatch :: FilePath -> IO ()
