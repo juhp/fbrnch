@@ -118,6 +118,7 @@ main = do
       <*> noFailFastOpt
       <*> optional archesOpt
       <*> mtargetOpt
+      <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
     , Subcommand "update" "Update package in dist-git to newer version" $
       updateCmd

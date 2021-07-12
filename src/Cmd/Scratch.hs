@@ -7,6 +7,7 @@ module Cmd.Scratch (
 
 import Branches
 import Common
+import Common.System
 import Git
 import Koji
 import Package
@@ -17,8 +18,8 @@ data Archs = Archs [String] | ExcludedArchs [String]
 -- FIXME build from a specific git ref
 -- FIXME print message about uploading srpm
 scratchCmd :: Bool -> Bool -> Bool -> Maybe Archs -> Maybe String
-           -> (BranchesReq, [String]) -> IO ()
-scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
+           -> Maybe String -> (BranchesReq, [String]) -> IO ()
+scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget mref =
   withPackageByBranches (Just False) Nothing AnyNumber scratchBuild
   where
     scratchBuild :: Package -> AnyBranch -> IO ()
@@ -39,16 +40,23 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget =
         then do
         gitSwitchBranch br
         pushed <- do
-          clean <- isGitDirClean
-          if clean then
-            null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
-            else return False
+          case mref of
+            Just ref ->
+              if length ref < 6
+              then error' $ "please use a longer ref: " ++ ref
+              -- FIXME print commit log
+              else return True
+            Nothing -> do
+              clean <- isGitDirClean
+              if clean then
+                null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
+                else return False
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
-        putStrLn $ "koji scratch build of " ++ nvr ++ (if pushed then "" else ".src.rpm") ++ " for " ++ target
+        putStrLn $ "koji scratch build of " ++ fromMaybe nvr mref ++ (if pushed then "" else ".src.rpm") ++ " for " ++ target
         unless dryrun $ do
           if pushed
-            then kojiBuildBranch target pkg Nothing $ "--scratch" : kojiargs
+            then kojiBuildBranch target pkg mref $ "--scratch" : kojiargs
             else srpmBuild target kojiargs spec
         else srpmBuild target kojiargs spec
       where
