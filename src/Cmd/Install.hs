@@ -23,7 +23,7 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
     error' "cannot use --recurse and --shortcircuit"
   when (length pkgs > 3) $
     putStrLn $ show (length pkgs) ++ " packages"
-  withPackagesMaybeBranch Nothing Nothing ZeroOrOne installPkg (mbr, pkgs)
+  withPackagesMaybeBranch (Just (length pkgs > 1)) Nothing ZeroOrOne installPkg (mbr, pkgs)
   where
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
@@ -34,11 +34,11 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
       let packages = map (readNVRA . takeFileName) rpms
       installed <- filterM rpmInstalled packages
       if isJust mforceshort || null installed || reinstall
-        then doInstallPkg spec rpms installed
+        then doInstallPkg mforceshort spec rpms installed
         else putStrLn $ unwords (map showNVRA installed) ++ " already installed!\n"
       where
-        doInstallPkg spec rpms installed = do
-          putStrLn $ "# " ++ takeBaseName (head rpms)
+        doInstallPkg mforceshort' spec rpms installed = do
+          putStrLn $ (showNVR . dropArch . readNVRA . takeFileName) (head rpms)
           missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
           unless (null missingdeps) $
             if recurse
@@ -53,11 +53,11 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
                   Just pkgdir -> installCmd verbose recurse mforceshort bconds reinstall (mbr, [pkgdir]) >> putStrLn ""
               -- FIXME option to enable/disable installing missing deps
             else installDeps True spec
-          wasbuilt <- buildRPMs (not verbose) mforceshort bconds rpms br spec
-          unless (mforceshort == Just ShortCircuit) $
-            if reinstall
+          wasbuilt <- buildRPMs (not verbose) mforceshort' bconds rpms br spec
+          unless (mforceshort' == Just ShortCircuit) $
+            if reinstall || mforceshort' == Just ForceBuild
             then do
-              let reinstalls = filter (\ f -> readNVRA f `elem` installed) rpms
+              let reinstalls = filter (\ f -> (readNVRA . takeFileName) f `elem` installed) rpms
               unless (null reinstalls) $
                 sudo_ "/usr/bin/dnf" $ "reinstall" : "-q" : "-y" : reinstalls
               let remaining = filterDebug $ rpms \\ reinstalls
@@ -67,7 +67,7 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
               ok <- cmdBool "sudo" $ "/usr/bin/dnf" : "install" : "-q" : "-y" : filterDebug rpms
               unless (ok || wasbuilt) $ do
                 prompt_ "Press Enter to rebuild package"
-                installCmd verbose recurse (Just ForceBuild) bconds reinstall (mbr, [unPackage pkg])
+                doInstallPkg (Just ForceBuild) spec rpms installed
 
         lookForPkgDir :: Branch -> FilePath -> String -> IO (Maybe FilePath)
         lookForPkgDir rbr topdir p = do
@@ -107,7 +107,7 @@ notInstalledCmd =
       unless dead $ do
         spec <- findSpecfile
         rpms <- builtRpms br spec
-        let packages = map readNVRA rpms
+        let packages = map (readNVRA . takeFileName) rpms
         installed <- filterM rpmInstalled packages
         when (null installed) $ do
           let pkgnames = map rpmName packages
