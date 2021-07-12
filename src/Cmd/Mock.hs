@@ -33,10 +33,10 @@ mockCmd dryrun noclean network noCleanAfter mroot (breq, ps) = do
       putStrLn ""
       rootBr <- maybe getReleaseBranch return mroot
       let resultdir =
-            case pkgs of
+            case srpms of
               [] -> error' "cannot build zero packages"
-              [_] ->
-                let verrel = showPkgVerRel . readNVRA $ head srpms
+              [srpm] ->
+                let verrel = showPkgVerRel . readNVRA $ srpm
                  in ["--resultdir=results" </> verrel]
               _ -> []
       let command = if length pkgs > 1 then "--chain" else "--rebuild"
