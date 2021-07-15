@@ -53,6 +53,8 @@ module Package (
 import Common
 import Common.System
 
+import Data.Char (isDigit)
+import Data.Either (partitionEithers)
 import Data.RPM
 import Distribution.Fedora
 import SimpleCmd.Rpm
@@ -280,39 +282,47 @@ checkSourcesMatch spec = do
 
 getSources :: FilePath -> IO [FilePath]
 getSources spec = do
-    gitDir <- isGitRepo
-    srcdir <- getSourceDir gitDir
-    srcs <- mapMaybe sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
-    unless gitDir $
-      unlessM (doesDirectoryExist srcdir) $
-      createDirectoryIfMissing True srcdir
-    forM_ srcs $ \ src ->
-      unlessM (doesFileExist (srcdir </> src)) $ do
-      uploaded <-
-        if gitDir then do
-          have_sources <- doesFileExist "sources"
-          if have_sources then
-            grep_ src "sources"
-            else return False
-        else return False
-      mfedpkg <- findExecutable "fedpkg"
-      if uploaded && isJust mfedpkg
-        then cmd_ "fedpkg" ["sources"]
-        else do
-        cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
-        unlessM (doesFileExist (srcdir </> src)) $
-          error' $ "download failed: " ++ src
-    return srcs
+  gitDir <- isGitRepo
+  srcdir <- getSourceDir gitDir
+  (srcs,patches) <- partitionEithers . map sourceFieldFile
+                    <$> cmdLines "spectool" ["-a", spec]
+  unless gitDir $
+    unlessM (doesDirectoryExist srcdir) $
+    createDirectoryIfMissing True srcdir
+  forM_ srcs $ \ src ->
+    unlessM (doesFileExist (srcdir </> src)) $ do
+    uploaded <-
+      if gitDir then do
+        have_sources <- doesFileExist "sources"
+        if have_sources then
+          grep_ src "sources"
+          else return False
+      else return False
+    mfedpkg <- findExecutable "fedpkg"
+    if uploaded && isJust mfedpkg
+      then cmd_ "fedpkg" ["sources"]
+      else do
+      cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
+      unlessM (doesFileExist (srcdir </> src)) $
+        error' $ "download failed: " ++ src
+  forM_ patches $ \patch ->
+    unlessM (doesFileExist (srcdir </> patch)) $ do
+    cmd_ "spectool" ["-g", "-P", "-C", srcdir, spec]
+    unlessM (doesFileExist (srcdir </> patch)) $
+      error' $ "missing patch: " ++ patch
+  return $ srcs ++ patches
   where
-    sourceFieldFile :: String -> Maybe FilePath
+    sourceFieldFile :: String -> Either FilePath FilePath
     sourceFieldFile field =
-      case words field of
-        [f,v] ->
-          -- workaround rpmdevtools 9.3 (spectool -S lists patches)
-          if "source" `isPrefixOf` lower f
-          then Just $ takeFileName v
-          else Nothing
-        _ -> error $ "bad source field!: " ++ field
+      case word1 field of
+        (f,v) ->
+          -- rpmdevtools 9.3 (spectool always lists --all)
+          -- "Source0:" or "Patch1:"
+          (case lower (dropWhileEnd isDigit (init f)) of
+             "source" -> Right
+             "patch" -> Left
+             _ -> error' $! "illegal field: " ++ f)
+          $ takeFileName v
 
     getSourceDir :: Bool -> IO FilePath
     getSourceDir gitDir =
