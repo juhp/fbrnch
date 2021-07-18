@@ -291,15 +291,13 @@ It also makes use of:
 - git
 - ssh & scp (for uploading package reviews)
 
-## Contributing
-Bug reports, feedback, and fixes are welcome.
+## Contribute
+Bug reports, feedback, and pull requests welcome.
 
-Please report any unsupported or unintuitive parts of workflows.
+Do report any unsupported or unintuitive workflow steps.
 
 See the TODO list and also the FIXME comments scattered across the source.
-Please ask before embarking on large changes.
-
-Thanks to the awesome people who already contributed!
+Please open an issue before embarking on large changes.
 
 <a href="https://github.com/juhp/fbrnch/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=juhp/fbrnch" />
