@@ -53,14 +53,18 @@ srpmCmd force =
 
 -- FIXME option to clone package
 prepCmd :: (Maybe Branch,[String]) -> IO ()
-prepCmd =
-  withPackagesMaybeBranch Nothing Nothing ZeroOrOne prepPackage
+prepCmd (breq,pkgs) =
+  withPackagesMaybeBranch Nothing Nothing ZeroOrOne prepPackage (breq,pkgs)
   where
     prepPackage :: Package -> AnyBranch -> IO ()
-    prepPackage pkg br =
-      ifM (doesFileExist "dead.package")
-        (putStrLn "dead.package") $
-        do
+    prepPackage pkg br = do
+      dead <- doesFileExist "dead.package"
+      if dead
+        then do
+        when (length pkgs > 1)$
+          putStr $ unPackage pkg ++ ": "
+        putStrLn "dead.package"
+        else do
         spec <- localBranchSpecFile pkg br
         unlessM (doesFileExist spec) $
           error' $ spec ++ " not found"
