@@ -45,6 +45,7 @@ module Bugzilla (
   getComments,
   --
   reviewBugToPackage,
+  sortBugsByID,
   sortBugsByProduct,
   sortBugsByStatus,
   -- output
@@ -328,6 +329,9 @@ readIniConfig :: FilePath -> IniParser a -> (a -> b) -> IO b
 readIniConfig inifile iniparser fn = do
   ini <- T.readFile inifile
   return $ either error fn $ parseIniFile ini iniparser
+
+sortBugsByID :: [Bug] -> [Bug]
+sortBugsByID = sortOn bugId
 
 sortBugsByStatus :: [Bug] -> [Bug]
 sortBugsByStatus = sortOn (bugStatusEnum . bugStatus)

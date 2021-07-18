@@ -12,7 +12,7 @@ import ListReviews
 reviewsCmd :: Bool -> Bool -> Bool -> Maybe String -> ReviewStatus -> IO ()
 reviewsCmd short allstates assignee muser status = do
   listReviewsFull assignee muser allstates status >>=
-    mapM_ (putReviewBug short) . sortBugsByStatus
+    mapM_ (putReviewBug short) . sortBugsByStatus . sortBugsByID
   when short $ putStrLn ""
 
 findReview :: String -> IO ()
