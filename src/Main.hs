@@ -200,6 +200,9 @@ main = do
       <$> scratchOpt
       <*> mockOpt False
       <*> optional (strArg "SPECFILE")
+    , Subcommand "review-package" "Run fedora-review on a package Review Request bug" $
+      reviewPackage
+      <$> optional (pkgArg "PACKAGE/BZID")
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd
       <$> reviewShortOpt
@@ -224,9 +227,6 @@ main = do
     , Subcommand "find-review" "Find package review bug" $
       findReview
       <$> pkgArg "PACKAGE"
-    , Subcommand "review-package" "Run fedora-review on a package Review Request bug" $
-      reviewPackage
-      <$> optional (pkgArg "PACKAGE/BZID")
 --    , Subcommand "test-bz-token" "Check bugzilla login status" $
 --      pure testBZlogin
     , Subcommand "command" "Run shell command in package dirs ($p)" $
