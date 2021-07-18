@@ -19,11 +19,13 @@ data Archs = Archs [String] | ExcludedArchs [String]
 -- FIXME print message about uploading srpm
 scratchCmd :: Bool -> Bool -> Bool -> Maybe Archs -> Maybe String
            -> Maybe String -> (BranchesReq, [String]) -> IO ()
-scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget mref =
-  withPackageByBranches (Just False) Nothing AnyNumber scratchBuild
+scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget mref (breq,pkgs) =
+  withPackageByBranches (Just False) Nothing AnyNumber scratchBuild (breq,pkgs)
   where
     scratchBuild :: Package -> AnyBranch -> IO ()
     scratchBuild pkg br = do
+      when (isJust mref && length pkgs > 1) $
+        error' "--ref is not supported for multiple packages"
       spec <- localBranchSpecFile pkg br
       let target = fromMaybe (anyTarget br) mtarget
       archs <- case marchopts of
