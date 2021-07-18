@@ -75,7 +75,7 @@ prepCmd =
           RelBranch rbr -> do
             nvr <- pkgNameVerRel' rbr spec
             -- newline avoids error starting on same line
-            putStrLn $ "Prepping " ++ nvr ++ ": "
+            putStr $ "Prepping " ++ nvr ++ ": "
           _ -> return ()
         cmdSilent' "rpmbuild" args
         putStrLn "done"
