@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.9.1 (2021-07-18)
+- 'prep': cleaner output
+- 'reviews': pre-sort by bug id
+- 'scratch': --ref to specify a commit other than HEAD to build
+- 'scratch': correct --no-fast-fail to --no-fail-fast
+- 'install': header if multiple pkgs and reinstall if force
+- 'install': better output and show number of packages
+- 'install': dnf builddep for missing (non-local) deps
+- 'install': add --verbose to show buildlog
+- 'command': --continue/-k (rename -k/--compact to -1)
+- 'command': --compact outputs package name on same line
+- 'command': also continue through errors for --if-output
+- 'command': ignore dead.package's completely
+- 'diff': fix help string for --stats
+- 'request-repos': newline between packages
+- 'request-branches': print package and/or branch, when multiple
+- 'branches': use readBranch to avoid error for fc6
+- 'repoquery': new experimental command
+- buildRPMs: pipe to tee for build.log
+- Package: getSources now checks for and downloads patches too
+- Package: buildRPMs timestamp for build
+- Package: installDeps simplify output and use --quiet
+- Package: improve output messages for prep and rpm build failures
+- Package: getSources check if fedpkg available when pulling sources
+
 ## 0.9 (2021-05-30)
 - 'override' --duration and run waitrepo after all overrides
 - new 'waitrepo' command

@@ -1,23 +1,15 @@
-- use rpm-pkg-hs: eg for nameOfNVR and takeNVRName
-
-- check envr > any existing current package, before building
-
-? 'clean' command
-
-- merge rawhide pushes to local main?
-
 - tag builds locally
-
 - filter bz# out from bodhi notes
 
+- check envr > any existing current package, before building
+- use rpm-pkg-hs: eg for nameOfNVR
+- 'clean' command
+- merge rawhide pushes to local main?
 - use +/+ for urls instead of </>
-
 - pull creating new branches and/or clone --all?
-
-- push/build a commit (eg if one doesn't want to build HEAD yet)
-
 - stash and restore
 
+- push/build a commit (eg if one doesn't want to build HEAD yet)
 - merge koji-progress
 - install from koji (koji-install)
 
@@ -63,9 +55,8 @@
 - list builds not pushed to bodhi
 - status when no local dir/checkout
 
-- (future feature) rpminspect
-- (use hs-git)
-
 # longterm ideas
 - "fbrnch todo" list
 - local state caching
+- use hs-git
+- rpminspect

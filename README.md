@@ -294,11 +294,13 @@ It also makes use of:
 ## Contributing
 Bug reports, feedback, and fixes are welcome.
 
+Please report any unsupported or unintuitive parts of workflows.
+
 See the TODO list and also the FIXME comments scattered across the source.
 Please ask before embarking on large changes.
 
-## Usual disclaimer
-fbrnch comes without an warranty.
-It is still actively being developed.
+Thanks to the awesome people who already contributed!
 
-Please report any unsupported or unintuitive parts of workflows.
+<a href="https://github.com/juhp/fbrnch/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=juhp/fbrnch" />
+</a>
