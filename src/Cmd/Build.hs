@@ -35,6 +35,7 @@ data BuildOpts = BuildOpts
 -- FIXME vertical vs horizontal builds (ie by package or branch)
 -- FIXME --rpmlint (only run for rawhide?)
 -- FIXME support --wait-build=NVR
+-- FIXME build from ref
 -- FIXME provide direct link to failed task/build.log
 -- FIXME --auto-override for deps in testing
 -- FIXME -B fails to find new branches
@@ -158,7 +159,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               error' "local changes remain (dirty)"
             -- FIXME parse build output
             unless dryrun $
-              kojiBuildBranch target pkg mbuildref ["--fail-fast"]
+              kojiBuildBranch target pkg mbuildref ["--fail-fast" | not (buildoptNoFailFast opts)]
             mBugSess <-
               if firstBuild
               then do

@@ -5,6 +5,7 @@
 - 'reviews': pre-sort by bug id
 - 'scratch': --ref to specify a commit other than HEAD to build
 - 'scratch': correct --no-fast-fail to --no-fail-fast
+- 'build': --no-fast-fail now works
 - 'install': header if multiple pkgs and reinstall if force
 - 'install': better output and show number of packages
 - 'install': dnf builddep for missing (non-local) deps
