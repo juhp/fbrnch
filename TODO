@@ -1,4 +1,5 @@
 - tag builds locally
+- scratch/build: show total build times
 - filter bz# out from bodhi notes
 
 - check envr > any existing current package, before building

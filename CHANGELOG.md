@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.1 (2021-07-18)
+## 0.9.1 (2021-07-29)
 - 'prep': cleaner output
 - 'reviews': pre-sort by bug id
 - 'scratch': --ref to specify a commit other than HEAD to build
