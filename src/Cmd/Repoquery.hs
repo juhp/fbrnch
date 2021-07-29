@@ -3,14 +3,11 @@ module Cmd.Repoquery
 where
 
 import Branches
-import Common
 import Common.System
 import Package
 
 repoqueryCmd :: (BranchesReq, [String]) -> IO ()
 repoqueryCmd (breq, pkgs) = do
-  when (breq == Branches []) $
-    error' "no branch specified"
   query <- if null pkgs
            then pure <$> getDirectoryName
            else return pkgs
