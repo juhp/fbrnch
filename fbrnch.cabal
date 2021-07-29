@@ -20,7 +20,7 @@ description:
             .
             - progressive copr builds
             .
-            - and many more commands.
+            and many more commands.
 homepage:            https://github.com/juhp/fbrnch
 bug-reports:         https://github.com/juhp/fbrnch/issues
 license:             GPL-2
