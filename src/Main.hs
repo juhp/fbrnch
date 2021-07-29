@@ -107,6 +107,7 @@ main = do
     , Subcommand "waitrepo" "Wait for build to appear in Koji buildroot" $
       waitrepoCmd
       <$> dryrunOpt
+      <*> mtargetOpt
       <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd
