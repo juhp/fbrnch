@@ -18,7 +18,6 @@
 - 'request-repos': newline between packages
 - 'request-branches': print package and/or branch, when multiple
 - 'branches': use readBranch to avoid error for fc6
-- 'repoquery': new experimental command
 - buildRPMs: pipe to tee for build.log
 - Package: getSources now checks for and downloads patches too
 - Package: buildRPMs timestamp for build
