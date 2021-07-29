@@ -287,7 +287,7 @@ for pushing packages.
 It also makes use of:
 - curl
 - rpmbuild & rpmspec
-- klist
+- klist and fkinit
 - git
 - ssh & scp (for uploading package reviews)
 
@@ -299,7 +299,7 @@ Do report any unsupported or unintuitive workflow steps.
 See the TODO list and also the FIXME comments scattered across the source.
 Please open an issue before embarking on large changes.
 
-Maintainer and contributors so far:
+Committers so far:
 
 <a href="https://github.com/juhp/fbrnch/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=juhp/fbrnch" />
