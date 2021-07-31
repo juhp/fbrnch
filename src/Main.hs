@@ -207,6 +207,7 @@ main = do
       <*> reviewAllStatusOpt
       <*> switchWith 'T' "assigned-to" "List reviews assigned to user"
       <*> optional (strOptionWith 'U' "user" "USER" "Bugzilla user email")
+      <*> optional (strOptionWith 'p' "pattern" "PKGPREFIX" "Package pattern prefix")
       <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
       requestRepos

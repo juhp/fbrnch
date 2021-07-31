@@ -15,6 +15,7 @@ module Bugzilla (
   approvedReviewBugSession,
   pkgBugs,
   pkgReviews,
+  pkgReviewsPrefix,
   listBzUsers,
   emailIsValid,
 --  testBZlogin,
@@ -270,6 +271,11 @@ reviewApproved =
 pkgReviews :: String -> SearchExpression
 pkgReviews pkg =
   SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
+  packageReview
+
+pkgReviewsPrefix :: String -> SearchExpression
+pkgReviewsPrefix prefix =
+  SummaryField `contains` T.pack ("Review Request: " ++ prefix) .&&.
   packageReview
 
 pkgBugs :: String -> SearchExpression

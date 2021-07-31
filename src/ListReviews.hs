@@ -28,10 +28,11 @@ listReviews :: ReviewStatus -> IO [Bug]
 listReviews = listReviewsAll False
 
 listReviewsAll :: Bool -> ReviewStatus -> IO [Bug]
-listReviewsAll = listReviewsFull False Nothing
+listReviewsAll = listReviewsFull False Nothing Nothing
 
-listReviewsFull :: Bool -> Maybe String -> Bool -> ReviewStatus-> IO [Bug]
-listReviewsFull assignee muser allopen status = do
+listReviewsFull :: Bool -> Maybe String -> Maybe String -> Bool
+                -> ReviewStatus-> IO [Bug]
+listReviewsFull assignee muser mpat allopen status = do
   (session,user) <- bzLoginSession
   accountid <- do
     case muser of
@@ -45,7 +46,7 @@ listReviewsFull assignee muser allopen status = do
             [obj] -> return $ T.pack $ lookupKey' "email" obj
             objs -> error' $ "Found multiple user matches: " ++
                     unwords (map (lookupKey' "email") objs)
-  let reviews = (if assignee then assigneeIs else reporterIs) accountid .&&. packageReview
+  let reviews = (if assignee then assigneeIs else reporterIs) accountid .&&. maybe packageReview pkgReviewsPrefix mpat
       open = if allopen
         then statusOpen else
         case status of
