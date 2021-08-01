@@ -197,6 +197,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         Just updateType -> do
           putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
           unless dryrun $ do
+            -- use cmdLog to debug, but notes are not quoted
             cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
             updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
             case updatequery of
