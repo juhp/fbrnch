@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1.1 (2021-08-01)
+- getSources: fix mixup between sources and patches
+- 'reviews': add --pattern for package prefix
+
 ## 0.9.1 (2021-07-29)
 - 'prep': cleaner output
 - 'reviews': pre-sort by bug id
