@@ -1,5 +1,8 @@
 # Changelog
 
+## next
+- 'repoquery': new experimental command
+
 ## 0.9.1.1 (2021-08-01)
 - getSources: fix mixup between sources and patches
 - 'reviews': add --pattern for package prefix

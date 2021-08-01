@@ -28,7 +28,7 @@ import Cmd.Override
 import Cmd.Parallel
 import Cmd.PkgReview
 import Cmd.Pull
---import Cmd.Repoquery
+import Cmd.Repoquery
 import Cmd.RequestBranch
 import Cmd.RequestRepo
 import Cmd.Reviews
@@ -250,9 +250,9 @@ main = do
       graphCmd
       <$> switchWith 'o' "output" "Output graph in gv/dot format"
       <*> optional rpmWithOpt <*> maybeBranchPackages True
-    -- , Subcommand "repoquery" "Repoquery branches (put repoquery options after '--')" $
-    --   repoqueryCmd
-    --   <$> branchesPackages
+    , Subcommand "repoquery" "Repoquery branches (put repoquery options after '--')" $
+      repoqueryCmd
+      <$> branchesPackages
     ]
   where
     cloneRequest :: Parser CloneRequest
