@@ -284,7 +284,7 @@ getSources :: FilePath -> IO [FilePath]
 getSources spec = do
   gitDir <- isGitRepo
   srcdir <- getSourceDir gitDir
-  (srcs,patches) <- partitionEithers . map sourceFieldFile
+  (patches,srcs) <- partitionEithers . map sourceFieldFile
                     <$> cmdLines "spectool" ["-a", spec]
   unless gitDir $
     unlessM (doesDirectoryExist srcdir) $
