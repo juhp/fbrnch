@@ -50,7 +50,7 @@ import Paths_fbrnch (version)
 main :: IO ()
 main = do
   setNoBuffering
-  simpleCmdArgs (Just version) "Fedora package branch building tool"
+  simpleCmdArgs (Just version) "Fedora branch building tool"
     "This tool helps with updating and building package branches" $
     subcommands
     [ Subcommand "clone" "clone packages" $

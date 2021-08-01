@@ -3,8 +3,8 @@ name:                fbrnch
 version:             0.9.1.1
 synopsis:            Build and create Fedora package repos and branches
 description:
-            fbrnch is a convenient packaging tool for Fedora Packagers,
-            with integration for Bugzilla, Koji, and Bodhi.
+            fbrnch (fedora branch) is a convenient packaging tool for
+            Fedora Packagers, with integration for Bugzilla, Koji, and Bodhi.
             .
             Features include:
             .

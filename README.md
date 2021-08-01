@@ -1,4 +1,4 @@
-# fbrnch - "Fed Brunch"
+# fbrnch (fedora branch) packager tool
 
 [![GPL-2+ license](https://img.shields.io/badge/license-GPL--2+-blue.svg)](LICENSE)
 [![GitHub CI](https://github.com/juhp/fbrnch/workflows/build/badge.svg)](https://github.com/juhp/fbrnch/actions)
@@ -21,7 +21,7 @@ like:
 - automated parallel builds of sets of packages in dependency order
 - creating, updating and listing package reviews
 - requesting new repos and branches
-- importing new packages
+- importing new packages and updating packages
 - progressive copr builds
 - rename master branches to rawhide
 
@@ -231,7 +231,62 @@ if using more than one per branch with `--target`.
 ### Other commands
 There are more commands like `copr` and `graph`.
 
-See `fbrnch --help` for details and the full list.
+```
+$ fbrnch --version
+0.9.1.1
+$ fbrnch --help
+Fedora package branch building tool
+
+Usage: fbrnch [--version] COMMAND
+  This tool helps with updating and building package branches
+
+Available options:
+  -h,--help                Show this help text
+  --version                Show version
+
+Available commands:
+  clone                    clone packages
+  switch                   Switch branch
+  nvr                      Print name-version-release
+  status                   Status package/branch status
+  merge                    Merge from newer branch
+  build                    Build package(s) in Koji
+  list                     List packages in pagure
+  branches                 List package branches
+  parallel                 Parallel build packages in Koji
+  sidetags                 List user's side-tags
+  override                 Tag builds into buildroot override in Koji
+  waitrepo                 Wait for build to appear in Koji buildroot
+  scratch                  Scratch build package in Koji
+  update                   Update package in dist-git to newer version
+  sort                     Sort packages in build dependency order
+  prep                     Prep sources
+  local                    Build locally
+  srpm                     Build srpm
+  diff                     Diff local changes
+  log                      Show commits between branches
+  mock                     Local mock build
+  install-deps             Install package build dependencies
+  install                  Build locally and install package(s)
+  not-installed            Packages not installed locally
+  bugs                     List package bugs
+  bump                     Bump release for package
+  commit                   Git commit packages
+  pull                     Git pull packages
+  create-review            Create a Package Review request
+  update-review            Update a Package Review
+  review-package           Run fedora-review on a package Review Request bug
+  reviews                  List package reviews
+  request-repos            Request dist git repo for new approved packages
+  import                   Import new approved created packages from bugzilla
+                           review
+  request-branches         Request branches for approved created packages
+  find-review              Find package review bug
+  command                  Run shell command in package dirs ($p)
+  copr                     Build package(s) in Fedora Copr
+  rename-master            Rename local master branch to rawhide
+  graph                    Output dependency graph
+```
 
 ## Known issues
 - parallel builds will push local package commits without asking
@@ -294,12 +349,12 @@ It also makes use of:
 ## Contribute
 Bug reports, feedback, and pull requests welcome.
 
-Do report any unsupported or unintuitive workflow steps.
+Please report any unsupported or unintuitive workflow steps.
 
 See the TODO list and also the FIXME comments scattered across the source.
-Please open an issue before embarking on large changes.
+Do open an issue before embarking on large changes.
 
-Committers so far:
+People who have committed:
 
 <a href="https://github.com/juhp/fbrnch/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=juhp/fbrnch" />
