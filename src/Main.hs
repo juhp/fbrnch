@@ -396,7 +396,8 @@ main = do
     diffFormatOpt =
       DiffContext <$> optionWith auto 'u' "unified" "CONTEXT" "Lines of context" <|>
       flagWith' DiffMinimal 'm' "minimal" "Minimize diff noise" <|>
-      flagWith' DiffStats 's' "stats" "Only show diff stats" <|>
+      flagWith' DiffStatus 'n' "status" "Show diff --name-status" <|>
+      flagWith' DiffStats 's' "stats" "Show diff --stat" <|>
       flagWith DiffDefault DiffQuiet 'q' "quiet" "Just output package name"
 
     diffSpecOnly :: Parser Bool

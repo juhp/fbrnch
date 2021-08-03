@@ -11,7 +11,7 @@ import Git
 import Package
 
 data DiffFormat =
-  DiffDefault | DiffQuiet | DiffContext Int | DiffMinimal | DiffStats
+  DiffDefault | DiffQuiet | DiffContext Int | DiffMinimal | DiffStatus | DiffStats
   deriving (Eq)
 
 data DiffWork =
@@ -28,45 +28,55 @@ diffCmd speconly work fmt mwbr =
     diffPkg :: Package -> AnyBranch -> IO ()
     diffPkg pkg br = do
       gitSwitchBranch br
-      let contxt = case fmt of
-                     DiffContext n -> ["--unified=" ++ show n]
-                     DiffMinimal -> ["--unified=0"]
-                     -- FIXME hide "files changed" and "insertions" summary
-                     DiffStats -> ["--compact-summary"]
-                     _ -> []
-          (workOpts,workArgs) =
-            case work of
-              DiffWorkAll -> ([],["HEAD" | isNothing mwbr])
-              DiffWorkUnstage -> ([],[])
-              DiffWorkStaged -> (["--cached"],[])
-          file = [packageSpec pkg | speconly]
-      withBranch <-
-        case mwbr of
-          Nothing -> return []
-          Just wbr ->
-            let brn = show wbr in
-              if '/' `elem` brn
-              then return [brn]
-              else do
-                localbrs <- gitLines "branch" ["--format=%(refname:short)"]
-                if brn `elem` localbrs
-                  then return [brn]
-                  else return ["origin/" ++ brn]
-      let revdiff = case mwbr of
-            Nothing -> []
-            Just wbr -> case (wbr,br) of
-              (RelBranch rwbr, RelBranch rbr) -> ["-R" | rwbr > rbr]
-              _ -> []
-      diff <- git "diff" $ contxt ++ workOpts ++ revdiff ++ withBranch ++ workArgs ++ file
-      unless (null diff) $
-        case fmt of
-          DiffQuiet -> putStrLn $ unPackage pkg
-          DiffMinimal -> do
-            putPkgAnyBrnchHdr pkg br
-            putStr $ minifyDiff diff
-          _ -> do
-            putPkgAnyBrnchHdr pkg br
-            putStrLn diff
+      speconlyNone <-
+        if speconly
+        then notM $ doesFileExist $ packageSpec pkg
+        else return False
+      if speconlyNone
+        then do
+        dead <- doesFileExist "dead.package"
+        unless dead $ putStrLn $ "no " ++ packageSpec pkg
+        else do
+        let contxt = case fmt of
+                       DiffContext n -> ["--unified=" ++ show n]
+                       DiffMinimal -> ["--unified=0"]
+                       DiffStatus -> ["--name-status"]
+                       -- FIXME hide "files changed" and "insertions" summary
+                       DiffStats -> ["--compact-summary"]
+                       _ -> []
+            (workOpts,workArgs) =
+              case work of
+                DiffWorkAll -> ([],["HEAD" | isNothing mwbr])
+                DiffWorkUnstage -> ([],[])
+                DiffWorkStaged -> (["--cached"],[])
+            file = [packageSpec pkg | speconly]
+        withBranch <-
+          case mwbr of
+            Nothing -> return []
+            Just wbr ->
+              let brn = show wbr in
+                if '/' `elem` brn
+                then return [brn]
+                else do
+                  localbrs <- gitLines "branch" ["--format=%(refname:short)"]
+                  if brn `elem` localbrs
+                    then return [brn]
+                    else return ["origin/" ++ brn]
+        let revdiff = case mwbr of
+              Nothing -> []
+              Just wbr -> case (wbr,br) of
+                (RelBranch rwbr, RelBranch rbr) -> ["-R" | rwbr > rbr]
+                _ -> []
+        diff <- git "diff" $ contxt ++ workOpts ++ revdiff ++ withBranch ++ workArgs ++ file
+        unless (null diff) $
+          case fmt of
+            DiffQuiet -> putStrLn $ unPackage pkg
+            DiffMinimal -> do
+              putPkgAnyBrnchHdr pkg br
+              putStr $ minifyDiff diff
+            _ -> do
+              putPkgAnyBrnchHdr pkg br
+              putStrLn diff
         where
           minifyDiff =
             unlines . maybeRemoveDiffGit . filterCommon . lines
