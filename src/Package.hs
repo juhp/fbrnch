@@ -546,7 +546,7 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
             _ -> when (fetch || isJust mheader) $ putPkgHdr pkg
         when haveGit $
           when (have gitOptClean) checkWorkingDirClean
-        when fetch $ gitFetchSilent >> putStrLn ""
+        when fetch $ gitFetchSilent
         -- FIXME!! no branch restriction
         when (breq == BranchOpt AllBranches) $
           putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"
