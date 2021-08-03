@@ -146,6 +146,7 @@ executable fbrnch
                        time,
                        typed-process >= 0.2.4.0,
                        utf8-string,
+                       unix,
                        xdg-basedir,
                        -- for copr:
                        unordered-containers,

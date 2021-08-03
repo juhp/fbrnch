@@ -59,6 +59,7 @@ import Data.RPM
 import Distribution.Fedora
 import SimpleCmd.Rpm
 import System.Console.Pretty
+import System.Posix.Files
 
 import Branches
 import Git
@@ -161,6 +162,11 @@ rpmEval s = do
   res <- cmd "rpm" ["--eval", s]
   return $ if null res || res == s then Nothing else Just res
 
+-- rpmEval' :: String -> IO String
+-- rpmEval' s = do
+--   mres <- rpmEval s
+--   fromMaybe (error' (show s ++ " undefined!")) mres
+
 generateSrpm :: Maybe AnyBranch -> FilePath -> IO FilePath
 generateSrpm = generateSrpm' False
 
@@ -173,34 +179,24 @@ generateSrpm' force mbr spec = do
                  dist <- getBranchDist br
                  return ["--define", "dist " ++ rpmDistTag dist]
   srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", "%{name}-%{version}-%{release}.src.rpm", spec]
-  srcrpmdir <-
-    ifM isPkgGitRepo
-      (return ".") $
-      rpmEval "%{_srcrpmdir}" >>= maybe (error' "%_srcrpmdir undefined!") return
-  let srpm = srcrpmdir </> srpmfile
-      srpmdiropt = if null srcrpmdir then []
-                   else ["--define", "_srcrpmdir " ++ srcrpmdir]
-  sourcedir <-
-    ifM isPkgGitRepo
-      (return ".") $
-      rpmEval "%{_sourcedir}" >>= maybe (error' "%_sourcedir undefined!") return
-  let sourcediropt = if null sourcedir then []
-                     else ["--define", "_sourcedir " ++ sourcedir]
+  cwd <- getCurrentDirectory
+  let srpmdiropt = ["--define", "_srcrpmdir " ++ cwd]
+      sourcediropt = ["--define", "_sourcedir " ++ cwd]
   if force then
     buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
     else do
-    exists <- doesFileExist srpm
+    exists <- doesFileExist srpmfile
     if not exists
       then buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
       else do
-      srpmTime <- getModificationTime srpm
+      srpmTime <- getModificationTime srpmfile
       fileTimes <- mapM getModificationTime (spec:srcs)
       if any (srpmTime <) fileTimes
         then buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
         else do
         -- pretty print with ~/
-        putStrLn $ srpm ++ " is up to date"
-        return srpm
+        putStrLn $ srpmfile ++ " is up to date"
+        return srpmfile
   where
     buildSrpm opts = do
       srpm <- last . words <$> cmd "rpmbuild" (opts ++ ["-bs", spec])
@@ -283,33 +279,55 @@ checkSourcesMatch spec = do
 getSources :: FilePath -> IO [FilePath]
 getSources spec = do
   gitDir <- isGitRepo
-  srcdir <- getSourceDir gitDir
+  cwd <- getCurrentDirectory
+  -- FIXME fallback to ~/rpmbuild/SOURCES?
+  msrcdir <- do
+    msourcedir <- rpmEval "%{_sourcedir}"
+    case msourcedir of
+      Nothing -> return Nothing
+      Just srcdir ->
+        if msourcedir == Just cwd
+        then return Nothing
+        else do
+          dir <- doesDirectoryExist srcdir
+          if dir
+            then return msourcedir
+            else return Nothing
   (patches,srcs) <- partitionEithers . map sourceFieldFile
                     <$> cmdLines "spectool" ["-a", spec]
-  unless gitDir $
-    unlessM (doesDirectoryExist srcdir) $
-    createDirectoryIfMissing True srcdir
-  forM_ srcs $ \ src ->
-    unlessM (doesFileExist (srcdir </> src)) $ do
-    uploaded <-
-      if gitDir then do
-        have_sources <- doesFileExist "sources"
-        if have_sources then
-          grep_ src "sources"
+  forM_ srcs $ \ src -> do
+    exists <- doesFileExist src
+    inSrcdir <- doesSourceDirFileExist msrcdir src
+    unless exists $ do
+      if inSrcdir
+        then maybeSourceDir createLink msrcdir src
+        else do
+        uploaded <-
+          if gitDir then do
+            have_sources <- doesFileExist "sources"
+            if have_sources then
+              grep_ src "sources"
+              else return False
           else return False
-      else return False
-    mfedpkg <- findExecutable "fedpkg"
-    if uploaded && isJust mfedpkg
-      then cmd_ "fedpkg" ["sources"]
-      else do
-      cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
-      unlessM (doesFileExist (srcdir </> src)) $
-        error' $ "download failed: " ++ src
+        mfedpkg <- findExecutable "fedpkg"
+        if uploaded && isJust mfedpkg
+          then cmd_ "fedpkg" ["sources"]
+          else do
+          cmd_ "spectool" ["-g", "-S", spec]
+          unlessM (doesSourceDirFileExist msrcdir src) $
+            error' $ "download failed: " ++ src
+    unless inSrcdir $
+      whenJust msrcdir $ \srcdir ->
+      createLink src (srcdir </> src)
   forM_ patches $ \patch ->
-    unlessM (doesFileExist (srcdir </> patch)) $ do
-    cmd_ "spectool" ["-g", "-P", "-C", srcdir, spec]
-    unlessM (doesFileExist (srcdir </> patch)) $
-      error' $ "missing patch: " ++ patch
+    unlessM (doesFileExist patch) $ do
+    inSrcdir <- doesSourceDirFileExist msrcdir patch
+    if inSrcdir
+      then maybeSourceDir copyFile msrcdir patch
+      else do
+      cmd_ "spectool" ["-g", "-P", spec]
+      unlessM (doesSourceDirFileExist msrcdir patch) $
+        error' $ "missing patch: " ++ patch
   return $ srcs ++ patches
   where
     sourceFieldFile :: String -> Either FilePath FilePath
@@ -324,11 +342,16 @@ getSources spec = do
              _ -> error' $! "illegal field: " ++ f)
           $ takeFileName v
 
-    getSourceDir :: Bool -> IO FilePath
-    getSourceDir gitDir =
-      if gitDir
-        then getCurrentDirectory
-        else fromJust <$> rpmEval "%{_sourcedir}"
+    maybeSourceDir :: (FilePath -> FilePath -> IO ())
+                  -> Maybe FilePath -> FilePath -> IO ()
+    maybeSourceDir act mdir file =
+      whenJust mdir $ \dir ->
+      act (dir </> file) file
+
+    doesSourceDirFileExist :: Maybe FilePath -> FilePath -> IO Bool
+    doesSourceDirFileExist Nothing _ = return False
+    doesSourceDirFileExist (Just srcdir) file =
+      doesFileExist (srcdir </> file)
 
 withExistingDirectory :: FilePath -> IO a -> IO a
 withExistingDirectory dir act =
