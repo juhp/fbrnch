@@ -47,10 +47,16 @@ updateCmd (mbr,args) = do
                     [old,new] -> (old,new)
                     _ -> error' "complex version change"
         putStrLn $ oldver ++ " ->\n" ++ newver
-        when (curver /= newver) $ do
+        if curver /= newver
+          then do
           editSpecField "Version" newver spec
           editSpecField "Release" "0%{?dist}" spec
           cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
+          else do
+          entries <- lines <$> getChangeLog Nothing spec
+          let missing = null entries || (newver ++ "-") `isInfixOf` head entries
+          when missing $
+            cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
         when pkgGit $ do
           sources <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
           cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
