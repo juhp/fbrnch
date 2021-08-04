@@ -20,9 +20,9 @@ data DiffWork =
 
 -- FIXME diff other branches without switching
 -- FIXME --older/--newer branch
-diffCmd :: Bool -> DiffWork -> DiffFormat -> Maybe AnyBranch
+diffCmd :: Bool -> DiffWork -> DiffFormat -> Maybe String -> Maybe AnyBranch
         -> (Maybe Branch,[String]) -> IO ()
-diffCmd speconly work fmt mwbr =
+diffCmd speconly work fmt mpatt mwbr =
   withPackagesMaybeBranch Nothing dirtyGit ZeroOrOne diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
@@ -67,19 +67,17 @@ diffCmd speconly work fmt mwbr =
               Just wbr -> case (wbr,br) of
                 (RelBranch rwbr, RelBranch rbr) -> ["-R" | rwbr > rbr]
                 _ -> []
-        diff <- git "diff" $ contxt ++ workOpts ++ revdiff ++ withBranch ++ workArgs ++ file
+        diff <- gitLines "diff" $ contxt ++ workOpts ++ revdiff ++ withBranch ++ workArgs ++ file
         unless (null diff) $
-          case fmt of
-            DiffQuiet -> putStrLn $ unPackage pkg
-            DiffMinimal -> do
-              putPkgAnyBrnchHdr pkg br
-              putStr $ minifyDiff diff
-            _ -> do
-              putPkgAnyBrnchHdr pkg br
-              putStrLn diff
+          if fmt == DiffQuiet
+          then putStrLn $ unPackage pkg
+          else do
+            putPkgAnyBrnchHdr pkg br
+            mapM_ putStrLn $
+              (maybe id grep2 mpatt . if fmt == DiffMinimal then minifyDiff else id) diff
         where
           minifyDiff =
-            unlines . maybeRemoveDiffGit . filterCommon . lines
+            maybeRemoveDiffGit . filterCommon
             where
               filterCommon =
                 -- flist is from swish
@@ -93,3 +91,7 @@ diffCmd speconly work fmt mwbr =
                   if gitDiffs == [specDiffGit]
                   then delete specDiffGit ls
                   else ls
+
+grep2 :: String -> [String] -> [String]
+grep2 pat xs =
+  filter (pat `isInfixOf`) xs

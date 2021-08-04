@@ -142,6 +142,7 @@ main = do
       <$> diffSpecOnly
       <*> diffWorkOpt
       <*> diffFormatOpt
+      <*> optional (strOptionWith 'f' "filter" "PATTERN" "filter diff with pattern")
       <*> diffBranchOpt
       <*> maybeBranchPackages False
     , Subcommand "log" "Show commits between branches" $
