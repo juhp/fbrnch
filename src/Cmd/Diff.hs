@@ -1,5 +1,6 @@
 module Cmd.Diff (
   diffCmd,
+  DiffFilter(..),
   DiffFormat(..),
   DiffWork(..)
   ) where
@@ -11,18 +12,22 @@ import Git
 import Package
 
 data DiffFormat =
-  DiffDefault | DiffQuiet | DiffContext Int | DiffMinimal | DiffStatus | DiffStats
-  deriving (Eq)
+  DiffDefault | DiffContext Int | DiffMinimal | DiffStatus | DiffStats
+  deriving Eq
 
 data DiffWork =
   DiffWorkAll | DiffWorkUnstage | DiffWorkStaged
-  deriving (Eq)
+  deriving Eq
+
+data DiffFilter =
+  DiffMatch String | DiffNotMatch String
+  deriving Eq
 
 -- FIXME diff other branches without switching
 -- FIXME --older/--newer branch
-diffCmd :: Bool -> DiffWork -> DiffFormat -> Maybe String -> Maybe AnyBranch
+diffCmd :: Bool -> DiffWork -> DiffFormat -> Bool -> Maybe DiffFilter -> Maybe AnyBranch
         -> (Maybe Branch,[String]) -> IO ()
-diffCmd speconly work fmt mpatt mwbr =
+diffCmd speconly work fmt quiet mpatt mwbr =
   withPackagesMaybeBranch Nothing dirtyGit ZeroOrOne diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
@@ -68,16 +73,18 @@ diffCmd speconly work fmt mpatt mwbr =
                 (RelBranch rwbr, RelBranch rbr) -> ["-R" | rwbr > rbr]
                 _ -> []
         diff <- gitLines "diff" $ contxt ++ workOpts ++ revdiff ++ withBranch ++ workArgs ++ file
-        unless (null diff) $
-          if fmt == DiffQuiet
+        let diffout = (maybe id filterPattern mpatt . simplifyDiff fmt) diff
+        -- FIXME: sometimes we may want to list even if diff but no diffout
+        unless (null diffout) $
+          if quiet
           then putStrLn $ unPackage pkg
           else do
             putPkgAnyBrnchHdr pkg br
-            mapM_ putStrLn $
-              (maybe id grep2 mpatt . if fmt == DiffMinimal then minifyDiff else id) diff
+            mapM_ putStrLn diffout
         where
-          minifyDiff =
-            maybeRemoveDiffGit . filterCommon
+          simplifyDiff :: DiffFormat -> [String] -> [String]
+          simplifyDiff DiffMinimal ds =
+            (maybeRemoveDiffGit . filterCommon) ds
             where
               filterCommon =
                 -- flist is from swish
@@ -91,7 +98,11 @@ diffCmd speconly work fmt mpatt mwbr =
                   if gitDiffs == [specDiffGit]
                   then delete specDiffGit ls
                   else ls
+          -- drop "2 files changed, 113 insertions(+)"
+          simplifyDiff DiffStats ds = if null ds then ds else init ds
+          simplifyDiff _ ds = ds
 
-grep2 :: String -> [String] -> [String]
-grep2 pat xs =
-  filter (pat `isInfixOf`) xs
+          filterPattern :: DiffFilter -> [String] -> [String]
+          filterPattern (DiffMatch patt) = filter (patt `isInfixOf`)
+          filterPattern (DiffNotMatch patt) = filter (not . (patt `isInfixOf`))
+            --  void $ runProcess $ setStderr nullStream $ proc "grep" [pat, file]

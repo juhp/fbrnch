@@ -139,11 +139,12 @@ main = do
       <*> maybeBranchPackages False
     , Subcommand "diff" "Diff local changes" $
       diffCmd
-      <$> diffSpecOnly
+      <$> switchWith 'o' "spec-only" "Only diff spec file"
       <*> diffWorkOpt
       <*> diffFormatOpt
-      <*> optional (strOptionWith 'f' "filter" "PATTERN" "filter diff with pattern")
-      <*> diffBranchOpt
+      <*> switchWith 'q' "quiet" "Just output package name"
+      <*> optional diffFilterOpt
+      <*> optional (optionWith anyBranchM 'w' "with-branch" "BRANCH" "branch")
       <*> maybeBranchPackages False
     , Subcommand "log" "Show commits between branches" $
       logCmd
@@ -398,19 +399,16 @@ main = do
       DiffContext <$> optionWith auto 'u' "unified" "CONTEXT" "Lines of context" <|>
       flagWith' DiffMinimal 'm' "minimal" "Minimize diff noise" <|>
       flagWith' DiffStatus 'n' "status" "Show diff --name-status" <|>
-      flagWith' DiffStats 's' "stats" "Show diff --stat" <|>
-      flagWith DiffDefault DiffQuiet 'q' "quiet" "Just output package name"
+      flagWith DiffDefault DiffStats 's' "stats" "Show diff --stat"
 
-    diffSpecOnly :: Parser Bool
-    diffSpecOnly = switchWith 'o' "spec-only" "Only diff spec file"
+    diffFilterOpt :: Parser DiffFilter
+    diffFilterOpt =
+      DiffMatch <$> strOptionWith 'f' "filter" "PATTERN" "filter diff with pattern" <|> DiffNotMatch <$> strOptionWith 'F' "filter-not" "PATTERN" "negative filter for diff with pattern"
 
     diffWorkOpt :: Parser DiffWork
     diffWorkOpt =
       flagWith' DiffWorkStaged 'S' "staged" "Diff staged changes (git diff --cached)" <|>
       flagWith DiffWorkAll DiffWorkUnstage 'U' "unstaged" "Diff unstaged changes (git diff) [default is 'git diff HEAD']"
-
-    diffBranchOpt :: Parser (Maybe AnyBranch)
-    diffBranchOpt = optional (optionWith anyBranchM 'w' "with-branch" "BRANCH" "branch")
 
     commitOpts :: Parser CommitOpt
     commitOpts =
@@ -426,9 +424,7 @@ main = do
       Target <$> targetOpt <|>
       flagWith' SideTag 's' "sidetag" "Use the existing branch side-tag to build or creates one for you (with 'fedpkg request-side-tag --base-tag')"
 
-    packagerOpt = Owner <$> ownerOpt <|> Committer <$> usernameOpt
-    usernameOpt = strOptionWith 'u' "username" "USERNAME" "Packages user can commit to"
-    ownerOpt = strOptionWith 'o' "owner" "OWNER" "Package owner"
+    packagerOpt = Owner <$> strOptionWith 'o' "owner" "OWNER" "Package owner" <|> Committer <$> strOptionWith 'u' "username" "USERNAME" "Packages user can commit to"
 
     bcondOpt = BuildWith <$> strOptionWith 'w' "with" "FEATURE" "Turn on package FEATURE for build" <|>
                BuildWithout <$> strOptionWith 'W' "without" "FEATURE" "Turn off package FEATURE for build"
