@@ -167,7 +167,7 @@ gitSwitchBranch br = do
     current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
     when (current /= show br) $
       -- cmdSilent
-      git_ "checkout" ["-q", show br]
+      git_ "switch" ["-q", show br]
     else do
     -- check remote branch exists
     remotebranch <-
