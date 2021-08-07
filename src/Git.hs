@@ -158,6 +158,9 @@ gitLines :: String -> [String] -> IO [String]
 gitLines c args = lines <$> git c args
 
 gitSwitchBranch :: AnyBranch -> IO ()
+gitSwitchBranch (OtherBranch "HEAD") = do
+  dir <- getDirectoryName
+  error' $ dir ++ ": HEAD is not a branch"
 gitSwitchBranch br = do
   localbranches <- gitLines "branch" ["--format=%(refname:short)"]
   if show br `elem` localbranches then do
