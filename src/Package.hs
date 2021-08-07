@@ -8,10 +8,10 @@ module Package (
   checkForSpecFile,
   cleanChangelog,
   getChangeLog,
-  getDirectoryName,
   getPackageName,
   getSummaryURL,
   findSpecfile,
+  maybeFindSpecfile,
   localBranchSpecFile,
   generateSrpm,
   generateSrpm',
@@ -125,7 +125,9 @@ findSpecfile = do
   mspec <- maybeFindSpecfile
   case mspec of
     Just spec -> return spec
-    Nothing -> error' "No spec file found"
+    Nothing -> do
+      dir <- getDirectoryName
+      error' $ "No spec file found in: " ++ dir
 
 maybeFindSpecfile :: IO (Maybe FilePath)
 maybeFindSpecfile = fileWithExtension ".spec"
@@ -154,7 +156,7 @@ localBranchSpecFile pkg br = do
           Just spc -> do
             putStrLn $ "Warning: directory name differs from " ++ spc ++ "\n"
             return spc
-          Nothing -> error' "No spec file"
+          Nothing -> error' $ "No spec file for: " ++ unPackage pkg
     else findSpecfile
 
 rpmEval :: String -> IO (Maybe String)
