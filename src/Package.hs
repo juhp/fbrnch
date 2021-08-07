@@ -273,9 +273,9 @@ checkSourcesMatch spec = do
   sourcefiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
   sources <- lines <$> readFile "sources"
   gitfiles <- gitLines "ls-files" []
-  forM_ sourcefiles $ \ src ->
-    unless (isJust (find (src `isInfixOf`) sources) || src `elem` gitfiles) $ do
-    prompt_ $ color Red $ src ++ " not in sources, please fix"
+  let missing = filter (\src -> (isNothing (find (src `isInfixOf`) sources) && src `notElem` gitfiles)) sourcefiles
+  unless (null missing) $ do
+    prompt_ $ color Red $ unwords missing ++ " not in sources, please fix"
     checkSourcesMatch spec
 
 getSources :: FilePath -> IO [FilePath]
