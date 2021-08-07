@@ -2,8 +2,10 @@
 - scratch/build: show total build times
 - filter bz# out from bodhi notes
 
+- config option to cache tarballs in ~/rpmbuild/SOURCES if it exists when _sourcedir is cwd
+
 - check envr > any existing current package, before building
-- use rpm-pkg-hs: eg for nameOfNVR
+- use rpm-nvr: eg for nameOfNVR
 - 'clean' command
 - merge rawhide pushes to local main?
 - use +/+ for urls instead of </>
