@@ -55,7 +55,7 @@ branchesCmd skipdead allbrs missing mode (breq, pkgs) = do
           pkg <- getPackageName path
           if mode == Current
             then do
-            br <- gitCurrentBranch
+            br <- gitCurrentBranch'
             let onbranch =
                   case br of
                     RelBranch rbr -> Branches [rbr] == breq

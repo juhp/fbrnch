@@ -17,6 +17,7 @@ module Branches (
   listOfBranches,
   listOfAnyBranches,
   gitCurrentBranch,
+  gitCurrentBranch',
   systemBranch,
   getReleaseBranch,
   branchVersion,
@@ -26,11 +27,11 @@ module Branches (
 ) where
 
 import Common
+import Common.System
 
 import Data.Either
 import Data.Tuple
 import Distribution.Fedora.Branch
-import SimpleCmd
 import SimpleCmd.Git
 
 import Pagure
@@ -168,7 +169,16 @@ getReleaseBranch =
   gitCurrentBranch >>= anyBranchToRelease
 
 gitCurrentBranch :: IO AnyBranch
-gitCurrentBranch =
+gitCurrentBranch = do
+  br <- gitCurrentBranch'
+  if br == OtherBranch "HEAD"
+    then do
+    dir <- getDirectoryName
+    error' $ dir ++ ": HEAD is not a branch"
+    else return br
+
+gitCurrentBranch' :: IO AnyBranch
+gitCurrentBranch' = do
   anyBranch <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
 
 anyBranchToRelease :: AnyBranch -> IO Branch
