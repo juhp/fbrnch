@@ -1,5 +1,6 @@
 module Cmd.Local (
   commandCmd,
+  countCmd,
   installDepsCmd,
   localCmd,
   nvrCmd,
@@ -139,3 +140,21 @@ renameMasterCmd pkgs =
       git_ "branch" ["--move", "master", "rawhide"]
       git_ "remote" ["set-head", "origin", "rawhide"]
       git_ "branch" ["--set-upstream-to", "origin/rawhide", "rawhide"]
+
+countCmd :: (Maybe Branch,[String]) -> IO ()
+countCmd (mbr,pkgs) =
+  foldM countPkg 0 pkgs >>= print
+  where
+    -- FIXME dead.package?
+    countPkg :: Int -> String ->  IO Int
+    countPkg n path =
+      withExistingDirectory path $ do
+      whenJust mbr $ gitSwitchBranch . RelBranch
+      mspec <- if ".spec" `isExtensionOf` path
+               then return $ Just $ takeFileName path
+               else maybeFindSpecfile
+      case mspec of
+        Just spec -> do
+          exists <- doesFileExist spec
+          return $ n + if exists then 1 else 0
+        Nothing -> return n

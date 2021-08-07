@@ -248,6 +248,9 @@ main = do
     , Subcommand "rename-master" "Rename local master branch to rawhide" $
       renameMasterCmd
       <$> manyPackages
+    , Subcommand "count" "Count number of living packages" $
+      countCmd
+      <$> maybeBranchPackages True
     , Subcommand "graph" "Output dependency graph" $
       graphCmd
       <$> switchWith 'o' "output" "Output graph in gv/dot format"
