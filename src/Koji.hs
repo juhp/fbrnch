@@ -151,7 +151,8 @@ kojiWaitTask task = do
     Just ts ->
       if ts `elem` openTaskStates
       then do
-        putChar '.'
+        -- this makes parallel too noisy
+        --putChar '.'
         sleep 20
         kojiWaitTask task
       else return $ ts == TaskClosed
