@@ -135,6 +135,12 @@ renameMasterCmd pkgs =
   renameMasterBranch :: Package -> AnyBranch -> IO ()
   renameMasterBranch _pkg _br = do
     locals <- gitLines "branch" ["--format=%(refname:short)"]
+    -- FIXME dangling warning in current output:
+      -- From ssh://pkgs.fedoraproject.org/rpms/hedgewars
+      --  - [deleted]         (none)     -> origin/master
+      --    (refs/remotes/origin/HEAD has become dangling)
+      -- Branch 'rawhide' set up to track remote branch 'rawhide' from 'origin'.
+    -- compare commands with github rename
     when ("rawhide" `notElem` locals) $ do
       git_ "fetch" ["--prune"]
       git_ "branch" ["--move", "master", "rawhide"]
