@@ -42,8 +42,7 @@ branchesCmd skipdead allbrs missing mode (breq, pkgs) = do
         else
         withExistingDirectory path $
         if skipdead then
-          ifM (doesFileExist "dead.package")
-          (return ())
+          unlessM (doesFileExist "dead.package")
           doBranchesPkg
         else doBranchesPkg
       where
