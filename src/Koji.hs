@@ -206,7 +206,7 @@ kojiWaitRepo dryrun target nvr = do
                 if latest == Just nvr
                   then if isNothing moldrepo
                        then putStrLn $ nvr ++ " is in " ++ buildtag
-                       else putStrLn "done"
+                       else putStrLn $ nvr ++ " appeared"
                   else do
                   when (isNothing moldrepo) $ do
                     cmd_ "date" []
