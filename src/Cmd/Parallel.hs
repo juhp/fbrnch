@@ -69,7 +69,9 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
       when (length branches > 1) $
         putStrLn $ "# " ++ show rbr
       -- FIXME: pass remaining layers for failure error
-      targets <- mapM (parallelBuild rbr) $ zip3 [firstlayer..length allLayers] (reverse [0..(length layers - 1)]) layers
+      targets <- mapM (parallelBuild rbr)
+                 $ zip [firstlayer..length allLayers]
+                 $ init $ tails layers -- tails ends in []
       when (isJust msidetagTarget && null targets && not dryrun) $
         error' "No target was returned from jobs!"
       unless (isNothing msidetagTarget || null targets || dryrun) $ do
@@ -94,8 +96,9 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
           unless dryrun $ sleep 5
           return (show br,job)
 
-    parallelBuild :: Branch -> (Int,Int,[String]) -> IO String
-    parallelBuild br (layernum, layersleft, layer) =  do
+    parallelBuild :: Branch -> (Int,[[String]]) -> IO String
+    parallelBuild _ (_,[]) = return "" -- should not reach here
+    parallelBuild br (layernum, (layer:nextLayers)) =  do
       krbTicket
       putStrLn $ "\nBuilding parallel layer #" ++ show layernum ++ " of" ++
         if nopkgs > 1
@@ -107,13 +110,16 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
         ++ " left)"
       jobs <- mapM setupBuild layer
       (failures,mtarget) <- watchJobs Nothing [] jobs
+      -- FIXME prompt to continue?
       unless (null failures) $
-        error' $ "Build failures: " ++ unwords failures
+        error' $ "Build failures: " ++ unwords failures ++ "\n\nPending packages" ++
+                       intercalate " " (map unwords nextLayers)
       when (null jobs) $
         error' "No jobs run"
       return $ fromMaybe (error' "No target determined") mtarget
       where
         nopkgs = length layer
+        layersleft = length nextLayers
 
         setupBuild :: String -> IO Job
         setupBuild pkg = do
