@@ -38,7 +38,10 @@ parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe UpdateType -> (Branches
 parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
   branches <-
     case pkgs of
-      [] -> listOfBranches True True breq
+      [] -> do
+        unlessM isPkgGitSshRepo $
+          error' "Please specify at least one package"
+        listOfBranches True True breq
       [p] -> withExistingDirectory p $ listOfBranches True True breq
       _ -> case breq of
              Branches [] -> error' "please specify a branch"
@@ -50,10 +53,7 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   case pkgs of
-    [] -> do
-      unlessM isPkgGitSshRepo $
-        error' "Please specify at least one package"
-      parallelBranches branches
+    [] -> parallelBranches branches
     [p] -> withExistingDirectory p $
            parallelBranches branches
     _ ->
