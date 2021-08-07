@@ -181,7 +181,8 @@ main = do
       <*> manyPackages
     , Subcommand "bump" "Bump release for package" $
       bumpPkgs
-      <$> optional commitOpts
+      <$> switchWith 'l' "local" "Use local origin rather than checking latest koji"
+      <*> optional commitOpts
       <*> branchesPackages
     , Subcommand "commit" "Git commit packages" $
       commitPkgs
