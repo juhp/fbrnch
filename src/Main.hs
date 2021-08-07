@@ -92,6 +92,7 @@ main = do
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd
       <$> dryrunOpt
+      <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
       <*> optional sidetagTargetOpt
       <*> updatetypeOpt
       <*> branchesPackages

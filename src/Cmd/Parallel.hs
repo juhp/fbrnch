@@ -33,9 +33,12 @@ type Job = (String, Async (String, String))
 
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
--- FIXME check sources asap
-parallelBuildCmd :: Bool -> Maybe SideTagTarget -> Maybe UpdateType -> (BranchesReq, [String]) -> IO ()
-parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
+-- FIXME check sources as early as possible
+-- FIXME print pending packages after failure
+-- FIXME Haskell subpackages require release bump even with version bump
+parallelBuildCmd :: Bool -> Int -> Maybe SideTagTarget -> Maybe UpdateType
+                 -> (BranchesReq, [String]) -> IO ()
+parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
   branches <-
     case pkgs of
       [] -> do
@@ -58,13 +61,15 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
            parallelBranches branches
     _ ->
       forM_ branches $ \ rbr -> do
-      layers <- dependencyLayers pkgs
-      when (isNothing msidetagTarget && length layers > 1) $
+      allLayers <- dependencyLayers pkgs
+      let layers = drop firstlayer allLayers
+      when (isNothing msidetagTarget && length allLayers > 1) $
         unlessM (checkAutoBodhiUpdate rbr) $
           error' "You must use --target/--sidetag to build package layers for this branch"
       when (length branches > 1) $
         putStrLn $ "# " ++ show rbr
-      targets <- mapM (parallelBuild rbr) $ zip (reverse [0..(length layers - 1)]) layers
+      -- FIXME: pass remaining layers for failure error
+      targets <- mapM (parallelBuild rbr) $ zip3 [firstlayer..length allLayers] (reverse [0..(length layers - 1)]) layers
       when (isJust msidetagTarget && null targets && not dryrun) $
         error' "No target was returned from jobs!"
       unless (isNothing msidetagTarget || null targets || dryrun) $ do
@@ -89,10 +94,10 @@ parallelBuildCmd dryrun msidetagTarget mupdatetype (breq, pkgs) = do
           unless dryrun $ sleep 5
           return (show br,job)
 
-    parallelBuild :: Branch -> (Int,[String]) -> IO String
-    parallelBuild br (layersleft,layer) =  do
+    parallelBuild :: Branch -> (Int,Int,[String]) -> IO String
+    parallelBuild br (layernum, layersleft, layer) =  do
       krbTicket
-      putStrLn $ "\nBuilding parallel layer of" ++
+      putStrLn $ "\nBuilding parallel layer #" ++ show layernum ++ " of" ++
         if nopkgs > 1
         then " " ++ show nopkgs ++ " packages:"
         else ":"
