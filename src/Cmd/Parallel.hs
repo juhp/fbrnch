@@ -128,11 +128,9 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
       case status of
         Nothing -> sleep 1 >> watchJobs mtarget fails (jobs ++ [job])
         Just (Right (target,nvr)) -> do
-          putStrLn ""
           putStrLn $ nvr ++ " job " ++ color Yellow "completed" ++  " (" ++ show (length jobs) ++ " jobs left)"
           watchJobs (Just target) fails jobs
         Just (Left except) -> do
-          putStrLn ""
           print except
           let pkg = fst job
           putStrLn $ "** " ++ pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " jobs left)"
