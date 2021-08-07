@@ -124,10 +124,9 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
     watchJobs :: Maybe String -> [String] -> [Job] -> IO ([String],Maybe String)
     watchJobs mtarget fails [] = return (fails,mtarget)
     watchJobs mtarget fails (job:jobs) = do
-      sleep 1
       status <- poll (snd job)
       case status of
-        Nothing -> watchJobs mtarget fails (jobs ++ [job])
+        Nothing -> sleep 1 >> watchJobs mtarget fails (jobs ++ [job])
         Just (Right (target,nvr)) -> do
           putStrLn ""
           putStrLn $ nvr ++ " job " ++ color Yellow "completed" ++  " (" ++ show (length jobs) ++ " jobs left)"
