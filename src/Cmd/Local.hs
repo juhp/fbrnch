@@ -53,8 +53,8 @@ srpmCmd force =
 
 -- FIXME option to clone package
 prepCmd :: (Maybe Branch,[String]) -> IO ()
-prepCmd (breq,pkgs) =
-  withPackagesMaybeBranch Nothing Nothing ZeroOrOne prepPackage (breq,pkgs)
+prepCmd (mbr,pkgs) =
+  withPackagesMaybeBranch Nothing Nothing ZeroOrOne prepPackage (mbr,pkgs)
   where
     prepPackage :: Package -> AnyBranch -> IO ()
     prepPackage pkg br = do
