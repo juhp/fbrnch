@@ -146,7 +146,7 @@ main = do
       <*> optional diffFilterOpt
       <*> optional (optionWith anyBranchM 'w' "with-branch" "BRANCH" "branch")
       <*> maybeBranchPackages False
-    , Subcommand "log" "Show commits between branches" $
+    , Subcommand "compare" "Show commits between branches" $
       logCmd
       <$> switchWith 'l' "long" "show full commit log"
       <*> anyBranchArg
