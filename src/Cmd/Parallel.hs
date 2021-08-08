@@ -83,7 +83,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do
       krbTicket
-      putStrLn $ "Building " ++ show (length brs) ++ " branches in parallel:"
+      putStrLn $ "= Building " ++ show (length brs) ++ " branches in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
       (failures,_mtarget) <- watchJobs Nothing [] jobs
@@ -100,19 +100,18 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
     parallelBuild _ (_,[]) = return "" -- should not reach here
     parallelBuild br (layernum, (layer:nextLayers)) =  do
       krbTicket
-      putStrLn $ "\nBuilding parallel layer #" ++ show layernum ++ " of" ++
+      putStrLn $ "\n= Building parallel layer #" ++ show layernum ++
         if nopkgs > 1
-        then " " ++ show nopkgs ++ " packages:"
+        then " (" ++ show nopkgs ++ " packages):"
         else ":"
       putStrLn $ unwords layer
-      putStrLn $ "(" ++ show layersleft ++ " more layer" ++
-        if layersleft > 1 then "s" else ""
-        ++ " left)"
+      putStrLn $ show layersleft ++ " more layer" ++
+        (if layersleft > 1 then "s" else "") ++ ": " ++ show (map length nextLayers)
       jobs <- mapM setupBuild layer
       (failures,mtarget) <- watchJobs Nothing [] jobs
       -- FIXME prompt to continue?
       unless (null failures) $
-        error' $ "Build failures: " ++ unwords failures ++ "\n\nPending packages" ++
+        error' $ "Build failures in layer " ++ show layernum ++ ": " ++ unwords failures ++ "\n\nPending packages:\n" ++
                        intercalate " " (map unwords nextLayers)
       when (null jobs) $
         error' "No jobs run"
@@ -172,7 +171,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
                           else error' "'fedpkg request-side-tag' failed"
                       [tag] -> return tag
                       _ -> error' $ "More than one user side-tag found for " ++ show br
-      putStrLn $ nvr ++ " (" ++ target ++ ")\n"
+      putStrLn $ nvr ++ " (" ++ target ++ ")"
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
@@ -218,9 +217,9 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
         kojiWaitTaskAndRepo :: Bool -> String -> String -> TaskID -> IO (String,String)
         kojiWaitTaskAndRepo newpkg nvr target task = do
           finish <- kojiWaitTask task
-          putStrLn ""
           if finish
             then putStrLn $ color Green $ nvr ++ " build success"
+            -- FIXME print koji task url
             else error' $ color Red $ nvr ++ " build failed"
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then
