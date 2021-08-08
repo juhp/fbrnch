@@ -685,12 +685,6 @@ nameOfNVR = removeSeg . removeSeg
   where
     removeSeg = init . dropWhileEnd (/= '-')
 
-#if !MIN_VERSION_filepath(1,4,2)
-isExtensionOf :: String -> FilePath -> Bool
-isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
-isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
-#endif
-
 -- FIXME: drop when rpm-nvr has nvrVerRel
 showNVRVerRel :: NVR -> String
 showNVRVerRel (NVR _n vr) = showVerRel vr

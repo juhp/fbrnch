@@ -7,11 +7,17 @@ module Common.System (
   getDirectoryName,
   isTty,
   setNoBuffering,
+#if !MIN_VERSION_filepath(1,4,2)
+  isExtensionOf,
+#endif
 #if !MIN_VERSION_simple_cmd(0,2,3)
   cmdFull
 #endif
   ) where
 
+#if !MIN_VERSION_filepath(1,4,2)
+import Data.List
+#endif
 import SimpleCmd
 #if MIN_VERSION_simple_cmd(0,2,1)
   hiding (ifM,whenM)
@@ -47,4 +53,10 @@ cmdFull c args input = do
       if last str == '\n'
       then init str
       else str
+#endif
+
+#if !MIN_VERSION_filepath(1,4,2)
+isExtensionOf :: String -> FilePath -> Bool
+isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
+isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
 #endif
