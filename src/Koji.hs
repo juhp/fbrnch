@@ -28,11 +28,13 @@ import Data.Char (isDigit)
 
 import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.Fixed (Micro)
 import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
 import System.Exit
 import System.Process.Typed
-import System.Time.Extra (sleep, timeout)
+import System.Timeout (timeout)
+import System.Time.Extra (sleep)
 
 import Branches
 import Common
@@ -188,7 +190,7 @@ kojiWaitRepo dryrun target nvr = do
     waitRepo :: String -> Maybe Struct -> IO ()
     waitRepo buildtag moldrepo = do
       when (isJust moldrepo) $ do
-        threadDelay (50 * 1000 * 1000) -- 50s
+        threadDelay (fromEnum (50 :: Micro)) -- 50s
       mrepo <- kojiGetRepo fedoraHub buildtag Nothing Nothing
       case mrepo of
         Nothing -> error' $ "failed to find koji repo for " ++ buildtag
@@ -229,9 +231,9 @@ kojiUserSideTags mbr = do
         Just (buildtag,_desttag) -> do
           kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)
 
-maybeTimeout :: Double -> IO a -> IO a
+maybeTimeout :: Micro -> IO a -> IO a
 maybeTimeout secs act = do
-  mres <- timeout secs act
+  mres <- timeout (fromEnum secs) act
   case mres of
     Nothing -> do
       warning "Connection timed out: retrying"
