@@ -13,8 +13,12 @@ import InterleaveOutput (cmdSilent')
 import Krb
 import Package
 
-updateCmd :: (Maybe Branch,[String]) -> IO ()
-updateCmd (mbr,args) = do
+import Data.RPM.VerCmp
+
+-- FIXME check EVR increased
+-- FIXME if multiple sources might need to bump release
+updateCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
+updateCmd onlysources (mbr,args) = do
   pkgGit <- isPkgGitSshRepo
   let (mver,pkgs) = case args of
         [a] -> if pkgGit then (Just a,[]) else (Nothing,[a])
@@ -26,19 +30,19 @@ updateCmd (mbr,args) = do
       spec <- localBranchSpecFile pkg br
       (curver,_) <- pkgVerRel spec
       vdiff <- filter ("Version:" `isInfixOf`) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
-      when (isNothing mver) $ do
-        when (null vdiff) $
-          error' "please specify version or edit in spec file"
-        unless (length vdiff == 2) $
-          error' $ "diff contains complex version change:\n" ++ unlines vdiff
-      if Just curver == mver
-        then putStrLn $ "already new version " ++ curver
-        else do
-        --FIXME: compare rpm versions
-        -- if newver < oldver
-        --   then putStrLn $ "current" +-+ display oldver +-+ "is newer!"
-        --   else do
-        pkgGit <- isPkgGitSshRepo
+      unless (length vdiff `elem` [0,2]) $
+        error' $ "diff contains complex version change:\n" ++ unlines vdiff
+      case mver of
+        Nothing -> do
+          when (null vdiff && not onlysources) $
+            error' "specify or edit version to update"
+          putStrLn $ "current version: " ++ curver
+        Just nver -> do
+          when (length vdiff == 2) $
+            error' $ "spec version already bumped to " ++ curver
+          when (curver == nver) $
+            putStrLn $ "already new version " ++ curver
+      unless onlysources $ do
         let (oldver,newver) =
               case mver of
                 Just nver -> (curver,nver)
@@ -46,33 +50,39 @@ updateCmd (mbr,args) = do
                   case map (last . words) vdiff of
                     [old,new] -> (old,new)
                     _ -> error' "complex version change"
+        -- FIXME take epoch into account
+        when (rpmVerCompare oldver newver == GT) $
+          putStrLn $ "current" +-+ oldver +-+ "is newer!"
         putStrLn $ oldver ++ " ->\n" ++ newver
         if curver /= newver
           then do
           editSpecField "Version" newver spec
           editSpecField "Release" "0%{?dist}" spec
           cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
+          cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
           else do
           entries <- lines <$> getChangeLog Nothing spec
           let missing = null entries || (newver ++ "-") `isInfixOf` head entries
-          when missing $
+          when missing $ do
             cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
-        when pkgGit $ do
-          sources <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
-          cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
-          allExist <- and <$> mapM doesFileExist sources
-          unless allExist $ do
-            cmd_ "fedpkg" ["sources"]
-            cmd_ "spectool" ["-g", "-S", spec]
-          krbTicket
-          copyFile "sources" "sources.fbrnch"
-          cmd_ "fedpkg" $ "new-sources" : filter (".tar." `isInfixOf`) sources
-          shell_ $ "cat sources.fbrnch >>" +-+ "sources"
-          removeFile "sources.fbrnch"
-          putStr "Prepping... "
-          cmdSilent' "rpmbuild" ["-bp", spec]
-          putStrLn "done"
-          cmd_ "git" ["commit", "-a", "-m", "update to " ++ newver]
+            git_ "commit" ["-a", "-m", "update to " ++ newver]
+      whenM isPkgGitSshRepo $ do
+        -- FIXME forM_
+        sources <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
+        allExist <- and <$> mapM doesFileExist sources
+        unless allExist $ do
+          cmd_ "fedpkg" ["sources"]
+          -- FIXME only if not all exist
+          cmd_ "spectool" ["-g", "-S", spec]
+        krbTicket
+        copyFile "sources" "sources.fbrnch"
+        cmd_ "fedpkg" $ "new-sources" : filter (".tar." `isInfixOf`) sources
+        --shell_ $ "cat sources.fbrnch >>" +-+ "sources"
+        removeFile "sources.fbrnch"
+        putStr "Prepping... "
+        cmdSilent' "rpmbuild" ["-bp", spec]
+        putStrLn "done"
+        -- FIXME git amend (if previous commit was update)
 
     sourceFieldFile :: String -> FilePath
     sourceFieldFile field =

@@ -121,7 +121,8 @@ main = do
       <*> branchesPackages
     , Subcommand "update" "Update package in dist-git to newer version" $
       updateCmd
-      <$> maybeBranchPackages False
+      <$> switchWith 's' "sources-only" "Only update sources"
+      <*> maybeBranchPackages False
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd
       <$> optional rpmWithOpt
