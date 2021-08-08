@@ -34,7 +34,6 @@ type Job = (String, Async (String, String))
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources as early as possible
--- FIXME print pending packages after failure
 -- FIXME Haskell subpackages require release bump even with version bump
 parallelBuildCmd :: Bool -> Int -> Maybe SideTagTarget -> Maybe UpdateType
                  -> (BranchesReq, [String]) -> IO ()
@@ -105,14 +104,18 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
         then " (" ++ show nopkgs ++ " packages):"
         else ":"
       putStrLn $ unwords layer
+      -- FIXME print total pending packages
       putStrLn $ show layersleft ++ " more layer" ++
         (if layersleft > 1 then "s" else "") ++ ": " ++ show (map length nextLayers)
       jobs <- mapM setupBuild layer
       (failures,mtarget) <- watchJobs Nothing [] jobs
       -- FIXME prompt to continue?
-      unless (null failures) $
-        error' $ "Build failures in layer " ++ show layernum ++ ": " ++ unwords failures ++ "\n\nPending packages:\n" ++
-                       intercalate " " (map unwords nextLayers)
+      unless (null failures) $ do
+        let pending = sum $ map length nextLayers
+        error' $ "Build failures in layer " ++ show layernum ++ ": " ++
+          unwords failures ++ "\n\n" ++
+          show pending ++ " pending packages:\n" ++
+          intercalate " " (map unwords nextLayers)
       when (null jobs) $
         error' "No jobs run"
       return $ fromMaybe (error' "No target determined") mtarget
