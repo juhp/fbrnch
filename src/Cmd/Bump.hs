@@ -14,6 +14,7 @@ import System.IO.Extra
 
 -- FIXME --force
 -- FIXME --target
+-- FIXME detect rpmautospec and add empty commit
 bumpPkgs :: Bool -> Maybe CommitOpt -> (BranchesReq,[String]) -> IO ()
 bumpPkgs local mopt =
   withPackageByBranches (Just local) (if local then cleanGit else cleanGitFetchActive)
@@ -51,6 +52,7 @@ bumpPkgs local mopt =
                 case mopt of
                   Just (CommitMsg msg) -> msg
                   _ -> "rebuild"
+          -- FIXME check for rpmautospec first
           cmd_ "rpmdev-bumpspec" ["-c", clmsg, spec]
           let copts =
                 case mopt of
