@@ -3,8 +3,6 @@ module Cmd.Update
   )
 where
 
-import SimpleCmd
-
 import Branches
 import Common
 import Common.System
