@@ -93,7 +93,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
         setupBranch :: Branch -> IO Job
         setupBranch br = do
           job <- startBuild False False br "." >>= async
-          unless dryrun $ sleep 5
+          unless dryrun $ sleep 3
           return (show br,job)
 
     parallelBuild :: Branch -> (Int,[[String]]) -> IO String
@@ -123,7 +123,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
         setupBuild :: String -> IO Job
         setupBuild pkg = do
           job <- startBuild (layersleft > 0) (nopkgs > 5) br pkg >>= async
-          unless dryrun $ sleep 5
+          unless dryrun $ sleep 3
           return (pkg,job)
 
     watchJobs :: Maybe String -> [String] -> [Job] -> IO ([String],Maybe String)
