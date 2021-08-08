@@ -276,6 +276,7 @@ checkSourcesMatch spec = do
   let missing = filter (\src -> (isNothing (find (src `isInfixOf`) sources) && src `notElem` gitfiles)) sourcefiles
   unless (null missing) $ do
     prompt_ $ color Red $ unwords missing ++ " not in sources, please fix"
+    checkOnBranch
     checkSourcesMatch spec
 
 getSources :: FilePath -> IO [FilePath]

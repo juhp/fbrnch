@@ -18,6 +18,7 @@ module Branches (
   listOfAnyBranches,
   gitCurrentBranch,
   gitCurrentBranch',
+  checkOnBranch,
   systemBranch,
   getReleaseBranch,
   branchVersion,
@@ -174,12 +175,16 @@ gitCurrentBranch = do
   if br == OtherBranch "HEAD"
     then do
     dir <- getDirectoryName
-    error' $ dir ++ ": HEAD is not a branch"
+    prompt_ $ dir ++ ": HEAD is not a branch, please fix"
+    gitCurrentBranch
     else return br
 
 gitCurrentBranch' :: IO AnyBranch
 gitCurrentBranch' = do
   anyBranch <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
+
+checkOnBranch :: IO ()
+checkOnBranch = void $ gitCurrentBranch
 
 anyBranchToRelease :: AnyBranch -> IO Branch
 anyBranchToRelease (RelBranch rbr) = return rbr

@@ -89,6 +89,7 @@ simplifyCommitLog = unwords . shortenHash . words
 
 gitPushSilent :: Maybe String -> IO ()
 gitPushSilent mref = do
+  checkOnBranch
   putStr "git pushing... "
   out <- cmdQuiet "git" $ ["push", "--quiet", "origin"] ++ maybeToList mref
   putStrLn $ if null out then "done\n" else "\n" ++ out
@@ -164,9 +165,8 @@ gitSwitchBranch (OtherBranch "HEAD") = do
 gitSwitchBranch br = do
   localbranches <- gitLines "branch" ["--format=%(refname:short)"]
   if show br `elem` localbranches then do
-    current <- git "rev-parse" ["--abbrev-ref", "HEAD"]
-    when (current /= show br) $
-      -- cmdSilent
+    current <- gitCurrentBranch
+    when (current /= br) $
       git_ "switch" ["-q", show br]
     else do
     -- check remote branch exists
