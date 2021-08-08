@@ -37,6 +37,7 @@ module Package (
   cleanGitFetchActive,
   dirtyGit,
   dirtyGitFetch,
+  dirtyGitHEAD,
   Package(..),
   packageSpec,
   pkgNameVerRel,
@@ -452,15 +453,17 @@ data GitOpts =
   { gitOptClean :: Bool
   , gitOptFetch :: Bool
   , gitOptActive :: Bool
+  , gitOptHEAD :: Bool -- allow detached head/rebase state
   }
 
-cleanGit, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitFetch :: Maybe GitOpts
---                                   clean fetch active
-cleanGit =            Just $ GitOpts True  False False
-cleanGitFetch =       Just $ GitOpts True  True  False
-cleanGitFetchActive = Just $ GitOpts True  True  True
-dirtyGit =            Just $ GitOpts False False False
-dirtyGitFetch =       Just $ GitOpts False True  False
+cleanGit, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitFetch, dirtyGitHEAD :: Maybe GitOpts
+--                                   clean fetch active HEAD
+cleanGit =            Just $ GitOpts True  False False  False
+cleanGitFetch =       Just $ GitOpts True  True  False  False
+cleanGitFetchActive = Just $ GitOpts True  True  True   False
+dirtyGit =            Just $ GitOpts False False False  False
+dirtyGitFetch =       Just $ GitOpts False True  False  False
+dirtyGitHEAD =        Just $ GitOpts False False False  True
 
 data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
   deriving Eq
@@ -530,9 +533,18 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
         haveGit <- isPkgGitRepo
         when (isJust mgitopts && not haveGit) $
           error' $ "Not a pkg git dir: " ++ unPackage pkg
-        mcurrentbranch <- if haveGit then Just <$> gitCurrentBranch
-                          else return Nothing
-        brs <- listOfAnyBranches haveGit (have gitOptActive) breq
+        mcurrentbranch <-
+          if haveGit
+          then
+            if have gitOptHEAD
+            then do
+              cur <- gitCurrentBranch'
+              if cur == OtherBranch "HEAD"
+                then warning "detached HEAD" >> return Nothing
+                else return $ Just cur
+            else Just <$> gitCurrentBranch
+          else return Nothing
+        brs <- listOfAnyBranches (haveGit && not (have gitOptHEAD)) (have gitOptActive) breq
         case limitBranches of
           ZeroOrOne | length brs > 1 ->
             -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)

@@ -17,17 +17,19 @@ import Data.RPM.VerCmp
 
 -- FIXME check EVR increased
 -- FIXME if multiple sources might need to bump release
-updateCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
-updateCmd onlysources (mbr,args) = do
+updateCmd :: Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
+updateCmd onlysources allowHEAD (mbr,args) = do
   pkgGit <- isPkgGitSshRepo
   let (mver,pkgs) = case args of
         [a] -> if pkgGit then (Just a,[]) else (Nothing,[a])
         _ -> (Nothing,args)
-  withPackagesMaybeBranch (Just False) dirtyGitFetch ZeroOrOne (updatePkg mver) (mbr, pkgs)
+  withPackagesMaybeBranch (Just False) (if allowHEAD then dirtyGitHEAD else dirtyGitFetch) ZeroOrOne (updatePkg mver) (mbr, pkgs)
   where
     updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
     updatePkg mver pkg br = do
-      spec <- localBranchSpecFile pkg br
+      spec <- if allowHEAD
+              then findSpecfile
+              else localBranchSpecFile pkg br
       (curver,_) <- pkgVerRel spec
       vdiff <- filter ("Version:" `isInfixOf`) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
       unless (length vdiff `elem` [0,2]) $
