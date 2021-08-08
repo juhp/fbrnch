@@ -93,7 +93,6 @@ type KojiBuildTask = Either TaskID String
 kojiBuild' :: Bool -> String -> [String] -> IO KojiBuildTask
 kojiBuild' wait target args = do
   krbTicket
-  cmd_ "date" []
   let srpm = if null args
              then error' "no args passed to koji build"
              else ".src.rpm" `isSuffixOf` last args
@@ -104,16 +103,16 @@ kojiBuild' wait target args = do
   -- [ERROR] koji: AuthError: unable to obtain a session
   -- readCreateProcess: koji "build" "--nowait" "f33-build-side-25385" "--fail-fast" "--background" ... (exit 1): failed
   (ret,out) <- readProcessStdout $ proc "koji" $ ["build", "--nowait", target] ++ args
-  B.putStrLn $ if srpm
-    -- drop uploading line until doing tee
-    then (B.unlines . tail . B.lines) out
-    else out
+    -- for srpm: drop uploading line until doing tee
+    -- for git: drop "Created task: "
+    -- init to drop final newline
+  logMsg $ (B.unpack . B.init . B.unlines . tail . B.lines) out
   if ret == ExitSuccess then do
     let kojiurl = B.unpack $ last $ B.words out
         task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
     when wait $ do
       kojiWatchTask task
-      cmd_ "date" []
+      cmd_ "date" ["+%T"]
     return $ if wait then Right kojiurl else Left task
     else do
     prompt_ "Press Enter to resubmit Koji build"
@@ -190,7 +189,6 @@ kojiWaitRepo dryrun target nvr = do
     waitRepo buildtag moldrepo = do
       when (isJust moldrepo) $ do
         threadDelay (50 * 1000 * 1000) -- 50s
-        putChar '.'
       mrepo <- kojiGetRepo fedoraHub buildtag Nothing Nothing
       case mrepo of
         Nothing -> error' $ "failed to find koji repo for " ++ buildtag
@@ -204,13 +202,13 @@ kojiWaitRepo dryrun target nvr = do
               Just event -> do
                 latest <- kojiLatestNVRRepo buildtag event (nameOfNVR nvr)
                 if latest == Just nvr
-                  then if isNothing moldrepo
-                       then putStrLn $ nvr ++ " is in " ++ buildtag
-                       else putStrLn $ nvr ++ " appeared"
+                  then logMsg $ nvr ++
+                       if isNothing moldrepo
+                       then " is in " ++ buildtag
+                       else " appeared"
                   else do
-                  when (isNothing moldrepo) $ do
-                    cmd_ "date" []
-                    putStrLn $ "Waiting for " ++ buildtag ++ " to have " ++ nvr
+                  when (isNothing moldrepo) $
+                    logMsg $ "Waiting for " ++ buildtag ++ " to have " ++ nvr
                   waitRepo buildtag mrepo
 
 kojiTagArchs :: String -> IO [String]
