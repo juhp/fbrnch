@@ -44,7 +44,8 @@ bumpPkgs local mopt =
                   kojiLatestNVR tag $ unPackage pkg
               -- FIXME fallback to local?
               _ -> return Nothing
-        if equivNVR newnvr (fromMaybe "" moldnvr) then do
+        if equivNVR newnvr (fromMaybe "" moldnvr)
+          then do
           git_ "log" ["origin..HEAD", "--pretty=oneline"]
           let clmsg =
                 case mopt of
