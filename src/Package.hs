@@ -544,7 +544,7 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
           when (have gitOptClean) checkWorkingDirClean
         when fetch $ gitFetchSilent
         -- FIXME!! no branch restriction
-        when (breq == BranchOpt AllBranches) $
+        when (breq `elem` map BranchOpt [AllBranches,AllFedora,AllEPEL]) $
           putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"
         -- FIXME add newline at end?
         let action' p b = do
