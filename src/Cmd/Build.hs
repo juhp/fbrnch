@@ -132,7 +132,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           let tag = fromMaybe (branchDestTag br) mtarget
           mlatest <- kojiLatestNVR tag $ unPackage pkg
           if equivNVR nvr (fromMaybe "" mlatest)
-            then error' $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
+            then putStrLn $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
             else do
             firstBuild <- do
               mtestingRepo <- bodhiTestingRepo br
