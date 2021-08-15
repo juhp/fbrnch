@@ -33,9 +33,10 @@ refPrompt commits txt = do
       then return $ Just (Just ref)
       else refPrompt commits txt
 
+-- FIXME also include branch
 conflictPrompt :: [String] -> String -> IO (Maybe String)
 conflictPrompt commits txt = do
-  let commitrefs = tail $ map (head . words) commits
+  let commitrefs = map (head . words) commits
   ref <- prompt txt
   if null ref then return Nothing
     else if ref `elem` commitrefs
