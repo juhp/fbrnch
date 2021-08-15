@@ -83,7 +83,7 @@ checkForSpecFile spec = do
 
 getChangeLog :: Maybe String -> FilePath -> IO String
 getChangeLog mcontext spec = do
-  clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
+  clog <- cleanChangelog spec
   putStrLn ""
   putStrLn "```"
   putStrLn clog
@@ -94,12 +94,12 @@ getChangeLog mcontext spec = do
       userlog <- prompt $ "Press Enter to use above or input " ++ fromMaybe "change" mcontext ++ " summary now"
       return $ if null userlog then clog else userlog
 
-cleanChangelog :: String -> String
-cleanChangelog [] = error' "empty changelog" -- should not happen
-cleanChangelog cs =
+cleanChangelog :: FilePath -> IO String
+cleanChangelog spec = do
+  cs <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
   let ls = lines cs
       no = length $ filter ("- " `isPrefixOf`) ls
-  in if no == 1 then removePrefix "- " cs else cs
+  return $ if no == 1 then removePrefix "- " cs else cs
 
 getSummaryURL :: FilePath -> IO String
 getSummaryURL spec = do

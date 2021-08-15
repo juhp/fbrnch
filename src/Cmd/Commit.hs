@@ -4,7 +4,6 @@ module Cmd.Commit
 where
 
 import Common
-import Common.System
 import Git
 import Package
 import Prompt
@@ -30,7 +29,7 @@ commitPkgs mopt args =
             Nothing -> do
               changelog <- do
                 spec <- findSpecfile
-                clog <- cleanChangelog <$> cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
+                clog <- cleanChangelog spec
                 when (length (lines clog) > 1) $
                   putStrLn clog
                 diff <- git "diff" ["-U0", "HEAD"]
