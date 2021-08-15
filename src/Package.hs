@@ -27,10 +27,7 @@ module Package (
   putPkgAnyBrnchHdr,
   withExistingDirectory,
   initialPkgRepo,
---  splitBranchesPkgs,
---  withBranchByPackages,
   withPackageByBranches,
---  withPackageByBranches',
   withPackagesMaybeBranch,
   LimitBranches(..),
   cleanGit,
@@ -473,28 +470,6 @@ dirtyGitHEAD =        Just $ GitOpts False False False  True
 
 data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
   deriving Eq
-
--- do package over branches
--- withPackageByBranches :: Maybe Bool
---                       -> Maybe GitOpts
---                       -> Maybe BranchOpts
---                       -> Bool
---                       -> LimitBranches
---                       -> (Package -> AnyBranch -> IO ())
---                       -> [String]
---                       -> IO ()
--- withPackageByBranches mheader mgitopts mbrnchopts exists limitBranches action args = do
---   (brs,pkgs) <- splitBranchesPkgs (have gitOptActive) mbrnchopts exists args
---   let mheader' =
---         case mheader of
---           Nothing -> Nothing
---           Just _ | length pkgs < 2 && length brs < 2 && isNothing mbrnchopts -> Nothing
---           _ -> mheader
---   withPackageByBranches' mheader' mgitopts mbrnchopts limitBranches action (brs,pkgs)
---   where
---     have :: (GitOpts -> Bool) -> Bool
---     have opt = maybe False opt mgitopts
-
 
 -- FIXME rename to withPackages*
 -- FIXME countdown packages
