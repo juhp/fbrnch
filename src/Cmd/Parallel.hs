@@ -104,9 +104,9 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
         then " (" ++ show nopkgs ++ " packages):"
         else ":"
       putStrLn $ unwords layer
-      -- FIXME print total pending packages
-      putStrLn $ show layersleft ++ " more layer" ++
-        (if layersleft > 1 then "s" else "") ++ ": " ++ show (map length nextLayers)
+      -- maybe print total pending packages
+      unless (null nextLayers) $
+        putStrLn $ show layersleft ++ " more layer" ++ (if layersleft == 1 then "" else "s") ++ "left with " ++ unwords (map (show . length) nextLayers) ++ " packages"
       jobs <- mapM setupBuild layer
       (failures,mtarget) <- watchJobs Nothing [] jobs
       -- FIXME prompt to continue?
