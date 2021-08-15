@@ -136,12 +136,12 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
       case status of
         Nothing -> sleep 1 >> watchJobs mtarget fails (jobs ++ [job])
         Just (Right (target,nvr)) -> do
-          putStrLn $ nvr ++ " job " ++ color Yellow "completed" ++  " (" ++ show (length jobs) ++ " jobs left)"
+          putStrLn $ color Yellow nvr ++ " job completed (" ++ show (length jobs) ++ " jobs left)"
           watchJobs (Just target) fails jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
-          putStrLn $ "** " ++ pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " jobs left)"
+          putStrLn $ "** " ++ color Magenta pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " jobs left)"
           watchJobs mtarget (pkg : fails) jobs
 
     -- FIXME prefix output with package name
@@ -182,7 +182,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
       mlatest <- kojiLatestNVR tag $ unPackage pkg
       case buildstatus of
         Just BuildComplete -> do
-          putStrLn $ nvr ++ " is " ++ color Green "already built"
+          putStrLn $ color Green nvr ++ " is " ++ color Green "already built"
           when (br /= Rawhide && morelayers && target == branchTarget br) $ do
             tags <- kojiNVRTags nvr
             unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
