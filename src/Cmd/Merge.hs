@@ -85,5 +85,6 @@ mergeBranch build noprompt (False,unmerged) br = do
     else conflictPrompt unmerged $ "Press Enter to skip merge" ++ (if build then " and build" else "") ++ "; or give a ref to attempt merge"
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
-  whenJust mmerge $ \ ref ->
+  whenJust mmerge $ \ ref -> do
     git_ "merge" [ref]
+    git_ "rebase" []
