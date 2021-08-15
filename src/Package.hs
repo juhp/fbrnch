@@ -321,7 +321,7 @@ getSources spec = do
           then cmd_ "fedpkg" ["sources"]
           else do
           cmd_ "spectool" ["-g", "-S", spec]
-          unlessM (doesSourceDirFileExist msrcdir src) $
+          unlessM (doesFileExist src) $
             error' $ "download failed: " ++ src
     unless inSrcdir $
       whenJust msrcdir $ \srcdir ->
@@ -333,7 +333,7 @@ getSources spec = do
       then maybeSourceDir copyFile msrcdir patch
       else do
       cmd_ "spectool" ["-g", "-P", spec]
-      unlessM (doesSourceDirFileExist msrcdir patch) $
+      unlessM (doesFileExist patch) $
         error' $ "missing patch: " ++ patch
   return $ srcs ++ patches
   where
