@@ -61,10 +61,11 @@ updateCmd onlysources allowHEAD (mbr,args) = do
           cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
           cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
           else do
-          entries <- lines <$> getChangeLog Nothing spec
-          let missing = null entries || (newver ++ "-") `isInfixOf` head entries
+          versions <- changelogVersions spec
+          let missing = null versions || not ((newver ++ "-") `isPrefixOf` head versions)
           when missing $ do
             cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
+            -- FIXME need to commit after add sources
             git_ "commit" ["-a", "-m", "update to " ++ newver]
       whenM isPkgGitSshRepo $ do
         -- FIXME forM_

@@ -7,6 +7,7 @@ module Package (
   fedpkg_,
   checkForSpecFile,
   cleanChangelog,
+  changelogVersions,
   getChangeLog,
   getPackageName,
   getSummaryURL,
@@ -93,6 +94,11 @@ getChangeLog mcontext spec = do
     do
       userlog <- prompt $ "Press Enter to use above or input " ++ fromMaybe "change" mcontext ++ " summary now"
       return $ if null userlog then clog else userlog
+
+changelogVersions :: FilePath -> IO [String]
+changelogVersions spec = do
+  ns <- cmdLines "rpmspec" ["-q", "--srpm", "--qf", "%{changelogname}", spec]
+  return $ map (removePrefix "- " . dropWhile (/= '-')) ns
 
 cleanChangelog :: FilePath -> IO String
 cleanChangelog spec = do
