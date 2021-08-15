@@ -34,6 +34,7 @@ type Job = (String, Async (String, String))
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources as early as possible
+-- FIXME --single-layer to build packages at once regardless
 -- FIXME Haskell subpackages require release bump even with version bump
 parallelBuildCmd :: Bool -> Int -> Maybe SideTagTarget -> Maybe UpdateType
                  -> (BranchesReq, [String]) -> IO ()
