@@ -138,6 +138,7 @@ executable fbrnch
                        -- pagure,
                        pretty-terminal,
                        process,
+                       -- regex-tdfa,
                        rpmbuild-order >= 0.4.5,
                        rpm-nvr,
                        simple-cmd >= 0.2.0,

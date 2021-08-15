@@ -21,6 +21,7 @@ data DiffWork =
 
 data DiffFilter =
   DiffMatch String | DiffNotMatch String
+  -- | DiffRegex String | DiffNotRegex String
   deriving Eq
 
 -- FIXME diff other branches without switching
