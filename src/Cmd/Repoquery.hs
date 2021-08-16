@@ -12,8 +12,9 @@ repoqueryCmd (breq, pkgs) = do
            then pure <$> getDirectoryName
            else return pkgs
   brs <- listOfBranches True False breq
-  mapM_ (repoquery_ query) brs
+  sysbr <- systemBranch
+  mapM_ (repoquery_ sysbr query) brs
   where
-    repoquery_ :: [String] -> Branch -> IO ()
-    repoquery_ query br =
-      repoquery br query >>= putStrLn
+    repoquery_ :: Branch -> [String] -> Branch -> IO ()
+    repoquery_ sysbr query br =
+      repoquery sysbr br query >>= putStrLn

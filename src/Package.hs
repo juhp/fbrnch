@@ -55,7 +55,7 @@ import Common.System
 import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 import Data.RPM
-import Distribution.Fedora
+import Distribution.Fedora hiding (Fedora,EPEL)
 import SimpleCmd.Rpm
 import System.Console.Pretty
 import System.Posix.Files
@@ -246,7 +246,8 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
         rpmdirs =
           [ "--define="++ mcr +-+ cwd | gitDir,
             mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
-        args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++ buildopt ++ map show bconds ++ [spec]
+        args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++
+               buildopt ++ map show bconds ++ [spec]
     ok <-
       if not quiet || shortcircuit
       then do
@@ -639,9 +640,20 @@ pkgInstalled :: String -> IO Bool
 pkgInstalled pkg =
   cmdBool "rpm" ["--quiet", "-q", pkg]
 
-repoquery :: Branch -> [String] -> IO String
-repoquery br args =
-  cmd "dnf" (["repoquery", "--quiet", "--releasever=" ++ branchVersion br] ++ args)
+repoquery :: Branch -> Branch -> [String] -> IO String
+repoquery sysbr br args = do
+  let brOpts =
+        if sysbr == br
+        then []
+        else
+          case br of
+            Rawhide -> ["--disablerepo=*", "--enablerepo=rawhide"]
+            Fedora _ -> ["--disablerepo=*", "--enablerepo=fedora",
+                         "--enablerepo=updates",
+                         "--releasever=" ++ branchVersion br]
+            EPEL _ -> ["--disablerepo=*", "--enablerepo=epel",
+                         "--releasever=" ++ branchVersion br]
+  cmd "dnf" (["repoquery", "--quiet"] ++ brOpts ++ args)
 
 -- FIXME should be more strict about dist tag (eg .fcNN only)
 equivNVR :: String -> String -> Bool

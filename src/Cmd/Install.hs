@@ -93,7 +93,8 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
 
             repoquerySrc = do
               putStrLn $ "Repoquerying" +-+ p
-              repoquery rbr ["--qf=%{source_name}", "--whatprovides", p]
+              sysbr <- systemBranch
+              repoquery sysbr rbr ["--qf=%{source_name}", "--whatprovides", p]
 
         filterDebug = filter (\p -> not (any (`isInfixOf` p) ["-debuginfo-", "-debugsource-"]))
 
