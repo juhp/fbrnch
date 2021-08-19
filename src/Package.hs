@@ -567,19 +567,6 @@ withPackagesMaybeBranch :: Maybe Bool
 withPackagesMaybeBranch mheader mgitopts limitBranches action (mbr, pkgs) =
   withPackageByBranches mheader mgitopts limitBranches action (Branches (maybeToList mbr),pkgs)
 
--- -- do branch over packages
--- withBranchByPackages :: (Branch -> [String] -> IO ()) -> (Branches,[String]) -> IO ()
--- withBranchByPackages action (brs,pkgs) = do
---   when (null brs) $
---     error' "Please specify at least one branch"
---   when (null pkgs) $
---     error' "Please give at least one package"
---   forM_ brs $ \ br ->
---     -- forM_ (map packagePath pkgs) $ \ (dir,pkg) ->
---     -- withExistingDirectory dir $ do
---     -- void $ setupGit False pkg True
---     action br pkgs
-
 clonePkg :: Bool -> Maybe Branch -> String -> IO ()
 clonePkg quiet mbr pkg =
   ifM (doesDirectoryExist pkg)
