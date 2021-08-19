@@ -27,6 +27,7 @@ import Cmd.Mock
 import Cmd.Override
 import Cmd.Parallel
 import Cmd.PkgReview
+import Cmd.Prep
 import Cmd.Pull
 import Cmd.Repoquery
 import Cmd.RequestBranch
