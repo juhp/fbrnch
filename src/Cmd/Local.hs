@@ -45,7 +45,7 @@ installDepsCmd =
 
 srpmCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 srpmCmd force =
-  withPackagesMaybeBranch Nothing Nothing ZeroOrOne srpmBuildPkg
+  withPackagesMaybeBranchNoHeadergit ZeroOrOne srpmBuildPkg
   where
     srpmBuildPkg :: Package -> AnyBranch -> IO ()
     srpmBuildPkg pkg br = do
@@ -55,7 +55,7 @@ srpmCmd force =
 -- FIXME option to clone package
 prepCmd :: (Maybe Branch,[String]) -> IO ()
 prepCmd (mbr,pkgs) =
-  withPackagesMaybeBranch Nothing Nothing ZeroOrOne prepPackage (mbr,pkgs)
+  withPackagesMaybeBranchNoHeadergit ZeroOrOne prepPackage (mbr,pkgs)
   where
     prepPackage :: Package -> AnyBranch -> IO ()
     prepPackage pkg br = do

@@ -29,6 +29,7 @@ module Package (
   initialPkgRepo,
   withPackageByBranches,
   withPackagesMaybeBranch,
+  withPackagesMaybeBranchNoHeadergit,
   LimitBranches(..),
   cleanGit,
   cleanGitFetch,
@@ -566,6 +567,13 @@ withPackagesMaybeBranch :: Maybe Bool
                         -> IO ()
 withPackagesMaybeBranch mheader mgitopts limitBranches action (mbr, pkgs) =
   withPackageByBranches mheader mgitopts limitBranches action (Branches (maybeToList mbr),pkgs)
+
+withPackagesMaybeBranchNoHeadergit :: LimitBranches
+                                       -> (Package -> AnyBranch -> IO ())
+                                       -> (Maybe Branch,[String])
+                                       -> IO ()
+withPackagesMaybeBranchNoHeadergit =
+  withPackagesMaybeBranch Nothing Nothing
 
 clonePkg :: Bool -> Maybe Branch -> String -> IO ()
 clonePkg quiet mbr pkg =

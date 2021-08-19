@@ -100,7 +100,7 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
 
 notInstalledCmd :: (Maybe Branch,[String]) -> IO ()
 notInstalledCmd =
-  withPackagesMaybeBranch Nothing Nothing ZeroOrOne notInstalledPkg
+  withPackagesMaybeBranchNoHeadergit ZeroOrOne notInstalledPkg
   where
     notInstalledPkg :: Package -> AnyBranch -> IO ()
     notInstalledPkg pkg br = do
