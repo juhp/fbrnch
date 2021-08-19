@@ -16,6 +16,7 @@ import qualified System.Process.Typed as TP
 import System.Exit
 
 import Branches
+import Cmd.Clone
 import Common
 import Common.System
 import Git
@@ -52,9 +53,10 @@ srpmCmd force =
       spec <- localBranchSpecFile pkg br
       void $ generateSrpm' force (Just br) spec
 
--- FIXME option to clone package
-prepCmd :: (Maybe Branch,[String]) -> IO ()
-prepCmd (mbr,pkgs) =
+prepCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
+prepCmd clone (mbr,pkgs) = do
+  when clone $
+    cloneCmd mbr (ClonePkgs pkgs)
   withPackagesMaybeBranchNoHeadergit ZeroOrOne prepPackage (mbr,pkgs)
   where
     prepPackage :: Package -> AnyBranch -> IO ()

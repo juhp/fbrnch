@@ -130,7 +130,8 @@ main = do
       <*> maybeBranchPackages True
     , Subcommand "prep" "Prep sources" $
       prepCmd
-      <$> maybeBranchPackages False
+      <$> switchWith 'c' "clone" "Try to clone package repo first"
+      <*> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
       localCmd
       <$> optional forceshortOpt
