@@ -29,6 +29,7 @@
 - 'check-deps'
 - 'clone-deps'
 - 'remove-sidetag(s)'
+- 'retire': more than one branch pre-release branch with merge
 
 # release deps on hackage:
 - pagure (new)
