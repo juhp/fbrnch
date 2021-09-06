@@ -30,6 +30,9 @@ coprServer = "copr.fedorainfracloud.org"
 -- FIXME repo config with a setup command?
 -- FIXME interact with copr dist-git
 -- FIXME parallel copr builds
+-- FIXME --exclude-arch
+-- FIXME skip existing builds
+-- FIXME distless srpm
 coprCmd :: Bool -> Bool -> BuildBy -> [String] -> String
         -> (BranchesReq,[String]) -> IO ()
 coprCmd dryrun listchroots buildBy archs project (breq, pkgs) = do

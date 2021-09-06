@@ -38,7 +38,7 @@ data BuildOpts = BuildOpts
 -- FIXME build from ref
 -- FIXME provide direct link to failed task/build.log
 -- FIXME --auto-override for deps in testing
--- FIXME -B fails to find new branches
+-- FIXME -B fails to find new branches (fixed?)
 -- FIXME --no-wait
 -- FIXME --ignore-dirty??
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
