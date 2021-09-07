@@ -29,6 +29,7 @@ data BuildOpts = BuildOpts
   , buildoptOverride :: Bool
   , buildoptDryrun :: Bool
   , buildoptUpdateType :: Maybe UpdateType
+  , buildoptUseChangelog :: Bool
   }
 
 -- FIXME --add-to-update nvr
@@ -187,7 +188,9 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
     bodhiUpdate dryrun mreview spec nvr = do
       changelog <- if isJust mreview
                    then getSummaryURL spec
-                   else changeLogPrompt (Just "update") spec
+                   else if buildoptUseChangelog opts
+                        then cleanChangelog spec
+                        else changeLogPrompt (Just "update") spec
       let cbugs = mapMaybe extractBugReference $ lines changelog
           bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
             if null bids then [] else ["--bugs", intercalate "," bids]
