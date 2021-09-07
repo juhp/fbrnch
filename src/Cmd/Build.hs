@@ -187,7 +187,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
     bodhiUpdate dryrun mreview spec nvr = do
       changelog <- if isJust mreview
                    then getSummaryURL spec
-                   else getChangeLog (Just "update") spec
+                   else changeLogPrompt (Just "update") spec
       let cbugs = mapMaybe extractBugReference $ lines changelog
           bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
             if null bids then [] else ["--bugs", intercalate "," bids]

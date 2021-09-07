@@ -8,7 +8,7 @@ module Package (
   checkForSpecFile,
   cleanChangelog,
   changelogVersions,
-  getChangeLog,
+  changeLogPrompt,
   getPackageName,
   getSummaryURL,
   findSpecfile,
@@ -80,18 +80,20 @@ checkForSpecFile spec = do
   have <- doesFileExist spec
   unless have $ error' $ spec ++ " not found"
 
-getChangeLog :: Maybe String -> FilePath -> IO String
-getChangeLog mcontext spec = do
+changeLogPrompt :: Maybe String -> FilePath -> IO String
+changeLogPrompt mcontext spec = do
   clog <- cleanChangelog spec
   putStrLn ""
   putStrLn "```"
   putStrLn clog
   putStrLn "```"
-  ifM (not <$> isTty)
-    (return clog) $
-    do
-      userlog <- prompt $ "Press Enter to use above or input " ++ fromMaybe "change" mcontext ++ " summary now"
-      return $ if null userlog then clog else userlog
+  -- FIXME is this actually useful?
+  tty <- isTty
+  if not tty
+    then return clog
+    else do
+    userlog <- prompt $ "Press Enter to use above or input " ++ fromMaybe "change" mcontext ++ " summary now"
+    return $ if null userlog then clog else userlog
 
 changelogVersions :: FilePath -> IO [String]
 changelogVersions spec = do
