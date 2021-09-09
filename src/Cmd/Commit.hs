@@ -4,6 +4,7 @@ module Cmd.Commit
 where
 
 import Common
+import Common.System
 import Git
 import Package
 import Prompt
@@ -29,19 +30,28 @@ commitPkgs mopt staged args =
             Nothing -> do
               changelog <- do
                 spec <- findSpecfile
-                clog <- cleanChangelog spec
-                when (length (lines clog) > 1) $
-                  putStrLn clog
-                diff <- git "diff" ["-U0", "HEAD"]
-                if ("+- " ++ clog) `elem` lines diff
-                  then putStrLn clog >> return clog
-                  else putStrLn diff >> readCommitMsg
+                clog <- lines <$> cleanChangelog spec
+                case clog of
+                  [] -> readCommitMsg
+                  [msg] -> putStrLn msg >> return msg
+                  _ -> do
+                    diff <- git "diff" ["-U0", "HEAD"]
+                    let newlogs =
+                          filter (\c -> ("+" ++ c) `elem` lines diff) clog
+                    case newlogs of
+                      [] -> putStrLn diff >> readCommitMsg
+                      [msg] -> putStrLn msg >> return (removePrefix "- " msg)
+                      _ -> mapM_ putStrLn newlogs >> readCommitMsg
               return ["-m", changelog]
           git_ "commit" $ ["-a" | not staged] ++ opts
 
 readCommitMsg :: IO String
 readCommitMsg = do
-  clog <- prompt "\nPlease input the commit message"
-  if null clog
-    then readCommitMsg
-    else return clog
+  tty <- isTty
+  if tty
+    then do
+    clog <- prompt "\nPlease input the commit message"
+    if null clog
+      then readCommitMsg
+      else return clog
+    else error' "please input commit message in a terminal"
