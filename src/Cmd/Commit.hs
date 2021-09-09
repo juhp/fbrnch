@@ -9,8 +9,8 @@ import Package
 import Prompt
 
 -- FIXME use branches after all?
-commitPkgs :: Maybe CommitOpt -> [String] -> IO ()
-commitPkgs mopt args =
+commitPkgs :: Maybe CommitOpt -> Bool -> [String] -> IO ()
+commitPkgs mopt staged args =
   if null args
     then commitPkg "."
     else mapM_ commitPkg args
@@ -37,7 +37,7 @@ commitPkgs mopt args =
                   then putStrLn clog >> return clog
                   else putStrLn diff >> readCommitMsg
               return ["-m", changelog]
-          git_ "commit" $ "-a" : opts
+          git_ "commit" $ ["-a" | not staged] ++ opts
 
 readCommitMsg :: IO String
 readCommitMsg = do

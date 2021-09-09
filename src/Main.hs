@@ -192,6 +192,7 @@ main = do
     , Subcommand "commit" "Git commit packages" $
       commitPkgs
       <$> optional commitOpts
+      <*> switchWith 's' "staged" "only commit staged changes"
       <*> manyPackages
     , Subcommand "pull" "Git pull packages" $
       pullPkgs
