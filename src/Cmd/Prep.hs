@@ -30,6 +30,7 @@ prepCmd clone (mbr,pkgs) = do
           error' $ spec ++ " not found"
         cwd <- getCurrentDirectory
         void $ getSources spec
+        installMissingMacros spec
         gitDir <- isGitRepo
         let rpmdirs =
               [ "--define="++ mcr +-+ cwd | gitDir,
@@ -43,3 +44,22 @@ prepCmd clone (mbr,pkgs) = do
           _ -> return ()
         cmdSilent' "rpmbuild" args
         putStrLn "done"
+
+
+srpmMacros :: [(String,String)]
+srpmMacros =
+  [("%gometa", "go-rpm-macros"),
+   ("fontpkgname", "fonts-rpm-macros"),
+   ("%cargo_prep", "rust-packaging")]
+
+needSrpmMacro :: FilePath -> (String,String) -> IO (Maybe String)
+needSrpmMacro spec (meta, macros) = do
+  contents <- readFile spec
+  return $ if meta `isInfixOf` contents then (Just macros) else Nothing
+
+installMissingMacros :: FilePath -> IO ()
+installMissingMacros spec = do
+  macros <- mapMaybeM (needSrpmMacro spec) srpmMacros
+  missing <- filterM notInstalled macros
+  unless (null missing) $
+    cmd_ "/usr/bin/sudo" $ ["/usr/bin/dnf", "install", "--assumeyes"] ++ missing
