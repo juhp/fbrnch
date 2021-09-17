@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP #-}
-
 module InterleaveOutput (cmdSilent', cmdSilentBool) where
 
 import Data.ByteString.Lazy.UTF8 as B
