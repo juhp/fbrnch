@@ -6,7 +6,7 @@ module Branches (
   isEPELBranch,
   localBranches,
   pagurePkgBranches,
-  mockConfig,
+  mockRoot,
   module Distribution.Fedora.Branch,
   AnyBranch(..),
   anyBranch,
@@ -34,6 +34,7 @@ import Data.Either
 import Data.Tuple
 import Distribution.Fedora.Branch
 import SimpleCmd.Git
+import System.Info (arch)
 
 import Pagure
 import Prompt
@@ -101,10 +102,12 @@ pagurePkgBranches pkg = do
   where
     include p e = e ++ ": " ++ p
 
-mockConfig :: Branch -> String
-mockConfig Rawhide = "fedora-rawhide-x86_64"
-mockConfig (Fedora n) = "fedora-" ++ show n ++ "-x86_64"
-mockConfig (EPEL n) = "epel-" ++ show n ++ "-x86_64"
+mockRoot :: Branch -> String
+mockRoot br = do
+  case br of
+    Rawhide -> "fedora-rawhide-" ++ arch
+    Fedora n -> "fedora-" ++ show n ++ "-" ++ arch
+    EPEL n -> "epel-" ++ show n ++ "-" ++ arch
 
 ------
 

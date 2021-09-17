@@ -120,7 +120,7 @@ mockRpmLint mock scratch pkg spec srpm = do
     if mock then do
       -- FIXME check that mock is installed
       let resultsdir = "results_" ++ pkg
-      cmd_ "mock" ["--root", mockConfig Rawhide, "--resultdir=" ++ resultsdir, srpm]
+      cmd_ "mock" ["--root", mockRoot Rawhide, "--resultdir=" ++ resultsdir, srpm]
       map (resultsdir </>) . filter ((== ".rpm") . takeExtension) <$> listDirectory resultsdir
     else
       builtRpms (RelBranch Rawhide) spec >>= filterM doesFileExist

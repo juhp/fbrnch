@@ -68,7 +68,7 @@ requestRepo mock retry breq pkg = do
         putStrLn ""
         branches <- getRequestedBranches breq
         forM_ branches $ \ br -> do
-          when mock $ fedpkg_ "mockbuild" ["--root", mockConfig br]
+          when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
           putStr (show br ++ " ")
           fedpkg_ "request-branch" ["--repo", pkg, show br]
         putStrLn ""

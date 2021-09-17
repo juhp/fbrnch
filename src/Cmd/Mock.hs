@@ -11,7 +11,7 @@ import Common.System
 import Git
 import Package
 
--- FIXME handle non-release branches
+-- FIXME handle non-release branches (on-branch works)
 mockCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch
         -> (BranchesReq, [String]) -> IO ()
 mockCmd dryrun noclean network noCleanAfter mroot (breq, ps) = do
@@ -40,7 +40,7 @@ mockCmd dryrun noclean network noCleanAfter mroot (breq, ps) = do
                  in ["--resultdir=results" </> verrel]
               _ -> []
       let command = if length pkgs > 1 then "--chain" else "--rebuild"
-      (if dryrun then cmdN else cmd_) "mock" $ [command, "--root", mockConfig rootBr] ++ ["--no-clean" | noclean] ++ ["--no-clean-after" | noCleanAfter] ++ ["--config-opts=cleanup_on_failure=False" | not noCleanAfter] ++ ["--enable-network" | network] ++ resultdir ++ srpms
+      (if dryrun then cmdN else cmd_) "mock" $ [command, "--root", mockRoot rootBr] ++ ["--no-clean" | noclean] ++ ["--no-cleanup-after" | noCleanAfter] ++ ["--config-opts=cleanup_on_failure=False" | not noCleanAfter] ++ ["--enable-network" | network] ++ resultdir ++ srpms
       where
         prepSrpm :: AnyBranch -> FilePath -> IO FilePath
         prepSrpm rbr pkgdir =
