@@ -56,7 +56,6 @@ module Bugzilla (
   putBugId,
   -- request
   newBzRequest,
-  intAsText,
   makeTextItem
   ) where
 
@@ -378,11 +377,11 @@ checkForComment session bid text = do
 
 putReviewBug :: Bool -> Bug -> IO ()
 putReviewBug short bug = do
-  if short then putStr $ reviewBugToPackage bug ++ " "
+  if short
+    then putStr $ reviewBugToPackage bug ++ " "
     else do
-    putStrLn $ reviewBugToPackage bug ++ " (" ++ T.unpack (bugStatus bug) ++ ")"
+    putStr $ T.unpack (bugStatus bug) ++ " " ++ reviewBugToPackage bug ++ ": "
     putBugId $ bugId bug
-    putStrLn ""
 
 putBug :: Bug -> IO ()
 putBug bug = do
@@ -398,8 +397,8 @@ putBugVer bug = do
     prodVersion = T.unwords (bugVersion bug)
 
 putBugId :: BugId -> IO ()
-putBugId =
-  T.putStrLn . (("https://" <> brc <> "/show_bug.cgi?id=") <>) . intAsText
+putBugId bid =
+  putStrLn $ "https://" <> T.unpack brc <> "/show_bug.cgi?id=" <> show bid
 
 -- uniq for lists
 dropDuplicates :: Eq a => [a] -> [a]
