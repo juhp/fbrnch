@@ -15,8 +15,8 @@ import Data.RPM.VerCmp
 
 -- FIXME check EVR increased
 -- FIXME if multiple sources might need to bump release
-updateCmd :: Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
-updateCmd onlysources allowHEAD (mbr,args) = do
+updateCmd :: Bool -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
+updateCmd onlysources force allowHEAD (mbr,args) = do
   pkgGit <- isPkgGitSshRepo
   let (mver,pkgs) = case args of
         [a] -> if pkgGit then (Just a,[]) else (Nothing,[a])
@@ -70,14 +70,18 @@ updateCmd onlysources allowHEAD (mbr,args) = do
       whenM isPkgGitSshRepo $ do
         -- FIXME forM_
         sources <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
-        allExist <- and <$> mapM doesFileExist sources
-        unless allExist $ do
+        existing <- filterM doesFileExist sources
+        unless (existing == sources) $ do
           cmd_ "fedpkg" ["sources"]
           -- FIXME only if not all exist
           cmd_ "spectool" ["-g", "-S", spec]
+        when force $ do
+          let archives = filter isArchiveFile existing
+          forM_ archives removeFile
+          cmd_ "spectool" ["-g", "-S", spec]
         krbTicket
         copyFile "sources" "sources.fbrnch"
-        cmd_ "fedpkg" $ "new-sources" : filter (".tar." `isInfixOf`) sources
+        cmd_ "fedpkg" $ "new-sources" : filter isArchiveFile sources
         --shell_ $ "cat sources.fbrnch >>" +-+ "sources"
         removeFile "sources.fbrnch"
         putStr "Prepping... "
@@ -91,6 +95,10 @@ updateCmd onlysources allowHEAD (mbr,args) = do
         -- should be impossible
         error "empty source field!"
       else (takeFileName . last . words) field
+
+    isArchiveFile :: FilePath -> Bool
+    isArchiveFile f =
+      ".tar." `isInfixOf` f || ".zip" `isSuffixOf` f
 
 pkgVerRel :: FilePath -> IO (String,String)
 pkgVerRel spec = do

@@ -123,6 +123,7 @@ main = do
     , Subcommand "update" "Update package in dist-git to newer version" $
       updateCmd
       <$> switchWith 's' "sources-only" "Only update sources"
+      <*> switchWith 'f' "force" "Download upstream sources even if they exist locally"
       <*> switchWith 'H' "allow-head" "For updating inside rebase"
       <*> maybeBranchPackages False
     , Subcommand "sort" "Sort packages in build dependency order" $
