@@ -193,6 +193,7 @@ main = do
     , Subcommand "commit" "Git commit packages" $
       commitPkgs
       <$> optional commitOpts
+      <*> switchWith '1' "first-line" "use first line of changelog"
       <*> switchWith 's' "staged" "only commit staged changes"
       <*> manyPackages
     , Subcommand "pull" "Git pull packages" $
