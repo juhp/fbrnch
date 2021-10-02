@@ -8,8 +8,10 @@ module Bugzilla (
   BugzillaSession,
   bugIdsSession,
   bugsSession,
+  bzAnonSession,
   bzLoginSession,
   bzReviewSession,
+  getBzUser,
   reviewBugIdSession,
   approvedReviewBugIdSession,
   approvedReviewBugSession,
@@ -150,6 +152,30 @@ newtype BzUserRC = BzUserRC {rcUserEmail :: UserEmail}
 emailIsValid :: String -> Bool
 emailIsValid = Email.isValid . B.pack
 
+getBzUser :: IO UserEmail
+getBzUser = do
+  home <- getEnv "HOME"
+  let rc = home </> ".bugzillarc"
+  -- FIXME assumption if file exists then it has b.r.c user
+  ifM (doesFileExist rc)
+    (readIniConfig rc rcParser rcUserEmail) $
+    do
+    -- FIXME: option to override email
+    email <- prompt "Bugzilla Username"
+    when (emailIsValid email) $ do
+      T.writeFile rc $ "[" <> brc <> "]\nuser = " <> T.pack email <> "\n"
+      putStrLn $ "Saved in " ++ rc
+    getBzUser
+  where
+    rcParser :: IniParser BzUserRC
+    rcParser =
+      section brc $
+      BzUserRC <$> fieldOf "user" string
+
+bzAnonSession :: IO BugzillaSession
+bzAnonSession =
+  AnonymousSession <$> newBugzillaContext brc
+
 -- FIXME support bugzilla API key
 bzLoginSession :: IO (BugzillaSession, UserEmail)
 bzLoginSession = do
@@ -158,26 +184,6 @@ bzLoginSession = do
   session <- getBzLoginSession ctx user
   return (session,user)
   where
-    getBzUser :: IO UserEmail
-    getBzUser = do
-      home <- getEnv "HOME"
-      let rc = home </> ".bugzillarc"
-      -- FIXME assumption if file exists then it has b.r.c user
-      ifM (doesFileExist rc)
-        (readIniConfig rc rcParser rcUserEmail) $
-        do
-        -- FIXME: option to override email
-        email <- prompt "Bugzilla Username"
-        when (emailIsValid email) $ do
-          T.writeFile rc $ "[" <> brc <> "]\nuser = " <> T.pack email <> "\n"
-          putStrLn $ "Saved in " ++ rc
-        getBzUser
-      where
-        rcParser :: IniParser BzUserRC
-        rcParser =
-          section brc $
-          BzUserRC <$> fieldOf "user" string
-
     getBzLoginSession :: BugzillaContext -> UserEmail -> IO BugzillaSession
     getBzLoginSession ctx user = do
       cache <- getUserCacheFile "python-bugzilla" "bugzillatoken"

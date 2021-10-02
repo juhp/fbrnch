@@ -34,10 +34,10 @@ listReviewsAll = listReviewsFull False Nothing Nothing
 listReviewsFull :: Bool -> Maybe String -> Maybe String -> Bool
                 -> ReviewStatus-> IO [Bug]
 listReviewsFull assignee muser mpat allopen status = do
-  (session,user) <- bzLoginSession
+  session <- bzAnonSession
   accountid <- do
     case muser of
-      Nothing -> return user
+      Nothing -> getBzUser
       Just userid ->
         if emailIsValid userid then return $ T.pack userid
         else do
