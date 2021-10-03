@@ -307,7 +307,7 @@ getSources spec = do
   (patches,srcs) <- partitionEithers . map sourceFieldFile
                     <$> cmdLines "spectool" ["-a", spec]
   forM_ srcs $ \ src -> do
-    exists <- doesFileExist src
+    exists <- doesFileExist src &&^ checkCompression src
     inSrcdir <- doesSourceDirFileExist msrcdir src
     unless exists $ do
       if inSrcdir
@@ -353,8 +353,18 @@ getSources spec = do
              _ -> error' $! "illegal field: " ++ f)
           $ takeFileName v
 
+    checkCompression :: FilePath -> IO Bool
+    checkCompression file =
+      case takeExtension file of
+        ".gz" -> cmdBool "gzip" ["-t", file]
+        ".tgz" -> cmdBool "gzip" ["-t", file]
+        ".bz2" -> cmdBool "bzip2" ["-t", file]
+        ".xz" -> cmdBool "xz" ["-t", file]
+        ".lz" -> cmdBool "lzip" ["-t", file]
+        _ -> return False
+
     maybeSourceDir :: (FilePath -> FilePath -> IO ())
-                  -> Maybe FilePath -> FilePath -> IO ()
+                   -> Maybe FilePath -> FilePath -> IO ()
     maybeSourceDir act mdir file =
       whenJust mdir $ \dir ->
       act (dir </> file) file
