@@ -74,21 +74,22 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   let spec = packageSpec pkg
   checkForSpecFile spec
   checkSourcesMatch spec
-  nvr <- pkgNameVerRel' br spec
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
-  unless (null unpushed) $
-    putStrLn $ "\n" ++ nvr ++ "\n"
-  when (not merged || br == Rawhide) $
-    unless (null unpushed) $ do
-      putStrLn "Local commits:"
-      mapM_ putStrLn unpushed
+  nvr <- pkgNameVerRel' br spec
+  putStrLn ""
   mpush <-
     if null unpushed then return Nothing
-    else
+    else do
+      when (not merged || br == Rawhide) $ do
+        putStrLn $ nvr ++ "\n"
+        putStrLn "Local commits:"
+        mapM_ putStrLn unpushed
+        putStrLn ""
       -- see mergeBranch for: unmerged == 1 (774b5890)
       if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
-      then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
-      else return $ Just Nothing
+        then do
+        refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
+        else return $ Just Nothing
   let dryrun = buildoptDryrun opts
   buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
   let mtarget = buildoptTarget opts
@@ -135,6 +136,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           if equivNVR nvr (fromMaybe "" mlatest)
             then putStrLn $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
             else do
+            when (null unpushed || merged && br /= Rawhide) $ do
+              putStrLn $ nvr ++ "\n"
             firstBuild <- do
               mtestingRepo <- bodhiTestingRepo br
               case mtestingRepo of
