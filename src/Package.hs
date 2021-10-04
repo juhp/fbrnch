@@ -605,10 +605,18 @@ clonePkg quiet mbr pkg =
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
 pkgNameVerRel br spec = do
-  dist <- branchDist br
+  disttag <- rpmDistTag <$> branchDist br
   -- workaround dist with bootstrap
   hostdist <- cmd "rpm" ["--eval", "%{dist}"]
-  fmap (replace hostdist (rpmDistTag dist)) . listToMaybe <$> rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
+  -- FIXME more precise regexp with "Release:"
+  autorelease <- grep_ " %autorelease" spec
+  fmap (replace hostdist disttag) . listToMaybe <$>
+    if autorelease
+    then do
+      -- FIXME use  ?
+      autorel <- last . words <$> cmd "rpmautospec" ["calculate-release", spec]
+      rpmspec ["--srpm"] (Just ("%{name}-%{version}-" ++ autorel ++ disttag)) spec
+    else rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
 
 pkgNameVerRel' :: Branch -> FilePath -> IO String
 pkgNameVerRel' br spec = do
