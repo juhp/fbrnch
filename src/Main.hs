@@ -251,7 +251,7 @@ main = do
       <$> dryrunOpt
       <*> switchWith 'l' "list-chroots" "Show project chroots"
       <*> buildByOpt
-      <*> many archOpt
+      <*> optional archesOpt
       <*> pkgArg "PROJECT"
       <*> branchesPackages
     , Subcommand "rename-master" "Rename local master branch to rawhide" $

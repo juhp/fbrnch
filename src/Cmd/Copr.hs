@@ -12,6 +12,7 @@ import Common
 import Common.System
 import qualified Common.Text as T
 import Package
+import Types (Archs(..))
 
 import Data.Ini.Config
 import Network.HTTP.Query (lookupKey, lookupKey')
@@ -33,9 +34,9 @@ coprServer = "copr.fedorainfracloud.org"
 -- FIXME --exclude-arch
 -- FIXME skip existing builds
 -- FIXME distless srpm
-coprCmd :: Bool -> Bool -> BuildBy -> [String] -> String
+coprCmd :: Bool -> Bool -> BuildBy -> Maybe Archs -> String
         -> (BranchesReq,[String]) -> IO ()
-coprCmd dryrun listchroots buildBy archs project (breq, pkgs) = do
+coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
   chroots <- coprGetChroots
   if listchroots
     then mapM_ putStrLn chroots
@@ -59,9 +60,13 @@ coprCmd dryrun listchroots buildBy archs project (breq, pkgs) = do
           _ -> listOfBranches False False breq
       let buildroots =
             reverseSort $
-            if null archs
-            then [chroot | chroot <- chroots, removeArch chroot `elem` map branchRelease branches]
-            else [chroot | arch <- archs, br <- branches, let chroot = branchRelease br ++ "-" ++ arch, chroot `elem` chroots]
+            case marchs of
+              Nothing ->
+                [chroot | chroot <- chroots, removeArch chroot `elem` map branchRelease branches]
+              Just (Archs archs) ->
+                [chroot | arch <- archs, br <- branches, let chroot = branchRelease br ++ "-" ++ arch, chroot `elem` chroots]
+              Just (ExcludedArchs exarchs) ->
+                [chroot | chroot <- chroots, takeArch chroot `notElem` exarchs, removeArch chroot `elem` map branchRelease branches]
       if null buildroots
         then error' "No valid chroots"
         else return buildroots
@@ -95,6 +100,7 @@ coprCmd dryrun listchroots buildBy archs project (breq, pkgs) = do
           staggerBuilds srpm initialChroots remainingChroots
 
     removeArch relarch = init $ dropWhileEnd (/= '-') relarch
+    takeArch relarch = takeWhileEnd (/= '-') relarch
 
     staggerBuilds srpm initialChroots remainingChroots = do
       mapM_ (coprBuild dryrun project srpm) initialChroots

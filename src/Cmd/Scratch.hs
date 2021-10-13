@@ -11,8 +11,7 @@ import Common.System
 import Git
 import Koji
 import Package
-
-data Archs = Archs [String] | ExcludedArchs [String]
+import Types (Archs(..))
 
 -- FIXME default to rawhide/main?
 -- FIXME build from a specific git ref

@@ -93,6 +93,7 @@ executable fbrnch
                        Pagure
                        Paths_fbrnch
                        Prompt
+                       Types
                        -- copr
                        Web.Fedora.Copr
                        Web.Fedora.Copr.API
