@@ -3,6 +3,41 @@
 ## next
 - 'repoquery': new experimental command
 
+## 0.9.2 (2021-10-14)
+- rpm's _sourcedir is now acts as a source cache directory:
+  sources are in the package dir, but may be hardlinks to _sourcedir
+- getSources checks compression integrity to re-download partial tarballs
+  and missing sources entries now only prompt once
+- initial support for %autorelease (#24)
+- 'build': consolidate nvr output
+- 'build': skip branch if already built
+- 'build': --changelog-notes to use spec changelog for Bodhi notes
+- 'bump': new --local switch
+- 'commit': --first-line to only use 1st line from changelog
+- 'commit': --staged to only commit staged changes
+- 'commit': extract incremental commit message from diff
+- 'copr': --exclude-arch option
+- 'count': new command to count packages with .spec files
+- 'diff': new --status, --filter and --filter-not options
+- 'log' renamed to 'compare'
+- 'mock': use system arch, not hardcoded to x86_64
+- 'parallel': more compact and precise output
+- 'parallel': only sleep 3s for job start and 1s when job still pending
+- 'parallel': error with pending package layers and number of packages
+- 'parallel': new --skip-to-layer option for restarting after failure
+- 'prep': --clone option
+- 'prep': install any required srpm macros (golang, rust, fonts)
+- 'reviews': output one line per package
+- 'switch': informative error when detached and use "git switch"
+- 'update': --source-only to update sources without version bump
+- 'update': add --force to re-download sources from upstream
+- 'update': check changelog versions before bumping
+- 'update': use --allow-head for updating a detached rebase
+- error with package name when no .spec file found
+- Merge: rebase after non-ancestor merge
+- ListReviews: use anonymous bugzilla queries
+- checkOnBranch and gitCurrentBranch now prompt if detached HEAD
+
 ## 0.9.1.1 (2021-08-01)
 - getSources: fix mixup between sources and patches
 - 'reviews': add --pattern for package prefix
