@@ -1,7 +1,7 @@
 - tag builds locally
 - scratch/build: show total build times
 - filter bz# out from bodhi notes
-- convert: to rpmautospec
+- rpmautospec: conversion command
 - layers command to print
 
 - config option to cache tarballs in ~/rpmbuild/SOURCES if it exists when _sourcedir is cwd
