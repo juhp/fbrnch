@@ -254,7 +254,7 @@ main = do
       <*> optional archesOpt
       <*> pkgArg "PROJECT"
       <*> branchesPackages
-    , Subcommand "rename-master" "Rename local master branch to rawhide" $
+    , Subcommand "rename-rawhide" "Rename local 'master' branch to 'rawhide'" $
       renameMasterCmd
       <$> manyPackages
     , Subcommand "count" "Count number of living packages" $
