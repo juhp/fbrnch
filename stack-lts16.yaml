@@ -4,4 +4,4 @@ extra-deps:
   - bugzilla-redhat-0.3.0@rev:1
   - koji-0.0.1
   - rpmbuild-order-0.4.5
-  - rpm-nvr-0.1.0
+  - rpm-nvr-0.1.1
