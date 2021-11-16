@@ -30,6 +30,7 @@ data BuildOpts = BuildOpts
   , buildoptDryrun :: Bool
   , buildoptUpdateType :: Maybe UpdateType
   , buildoptUseChangelog :: Bool
+  , buildoptByPackage :: Bool
   }
 
 -- FIXME --add-to-update nvr
@@ -50,7 +51,13 @@ buildCmd opts (breq, pkgs) = do
   let mlastOfPkgs = if length pkgs > 1
                     then Just (Package (last pkgs))
                     else Nothing
-  withPackageByBranches (Just False) cleanGitFetchActive singleBrnch (buildBranch mlastOfPkgs opts) (breq, pkgs)
+  brs <- listOfBranches True True breq
+  if not (buildoptByPackage opts) && length brs > 1
+    then
+    forM_ brs $ \br ->
+      withPackageByBranches (Just False) cleanGitFetchActive singleBrnch (buildBranch mlastOfPkgs opts) (Branches [br], pkgs)
+    else
+    withPackageByBranches (Just False) cleanGitFetchActive singleBrnch (buildBranch mlastOfPkgs opts) (breq, pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()

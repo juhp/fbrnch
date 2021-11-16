@@ -369,7 +369,7 @@ main = do
 
     rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
 
-    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> mtargetOpt <*> overrideOpt <*> dryrunOpt <*> updatetypeOpt <*> useChangelogOpt
+    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> mtargetOpt <*> overrideOpt <*> dryrunOpt <*> updatetypeOpt <*> useChangelogOpt <*> switchWith 'p' "by-package" "Build by each package across brs"
 
     useChangelogOpt = switchWith 'c' "changelog-notes" "Use spec changelog for Bodhi notes"
 
