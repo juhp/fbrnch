@@ -361,7 +361,7 @@ getSources spec = do
         ".bz2" -> cmdBool "bzip2" ["-t", file]
         ".xz" -> cmdBool "xz" ["-t", file]
         ".lz" -> cmdBool "lzip" ["-t", file]
-        _ -> return False
+        _ -> return True
 
     maybeSourceDir :: (FilePath -> FilePath -> IO ())
                    -> Maybe FilePath -> FilePath -> IO ()
