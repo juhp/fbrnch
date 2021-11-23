@@ -355,13 +355,18 @@ getSources spec = do
 
     checkCompression :: FilePath -> IO Bool
     checkCompression file =
-      case takeExtension file of
-        ".gz" -> cmdBool "gzip" ["-t", file]
-        ".tgz" -> cmdBool "gzip" ["-t", file]
-        ".bz2" -> cmdBool "bzip2" ["-t", file]
-        ".xz" -> cmdBool "xz" ["-t", file]
-        ".lz" -> cmdBool "lzip" ["-t", file]
-        _ -> return True
+      case
+        case takeExtension file of
+          ".gz" -> Just "gzip"
+          ".tgz" -> Just "gzip"
+          ".bz2" -> Just "bzip2"
+          ".xz" -> Just "xz"
+          ".lz" -> Just "lzip"
+          ".zstd" -> Just "zstd"
+          _ -> Nothing
+      of
+        Just prog -> cmdBool prog ["-t", file]
+        Nothing -> return True
 
     maybeSourceDir :: (FilePath -> FilePath -> IO ())
                    -> Maybe FilePath -> FilePath -> IO ()
