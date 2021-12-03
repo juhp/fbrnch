@@ -57,6 +57,8 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
             if null brs
             then return $ (map (releaseBranch . T.pack) . nub . map removeArch) chroots
             else listOfBranches False False breq
+          BranchOpt AllFedora -> filter isFedoraBranch <$> getFedoraBranches
+          BranchOpt AllEPEL -> filter isEPELBranch <$> getFedoraBranched
           _ -> listOfBranches False False breq
       let buildroots =
             reverseSort $
