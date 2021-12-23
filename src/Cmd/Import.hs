@@ -34,7 +34,7 @@ importCmd mock (breq, ps) = do
       dir <- getCurrentDirectory
       when (pkg /= takeFileName dir) $ do
         -- FIXME check git repo exists
-        clonePkg True Nothing pkg
+        clonePkg True UserClone Nothing pkg
         putStrLn ""
         setCurrentDirectory pkg
         -- FIXME: check branch is rawhide

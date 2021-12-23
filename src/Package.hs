@@ -3,6 +3,7 @@
 module Package (
   builtRpms,
   clonePkg,
+  CloneUser(..),
   fedpkg,
   fedpkg_,
   checkForSpecFile,
@@ -608,21 +609,29 @@ withPackagesMaybeBranchNoHeadergit :: LimitBranches
 withPackagesMaybeBranchNoHeadergit =
   withPackagesMaybeBranch Nothing Nothing
 
-clonePkg :: Bool -> Maybe Branch -> String -> IO ()
-clonePkg quiet mbr pkg =
-  ifM (doesDirectoryExist pkg)
-    {-then-} (putStrLn $ pkg ++ "/ already exists") $
-    {-else-} do
-      let mbranch = case mbr of
-            Nothing -> []
-            Just br -> ["--branch", show br]
-      fasid <- fasIdFromKrb
-      putStr $
-        if quiet
-        then "cloning..."
-        else "Cloning: " ++ pkg
-      git_ "clone" $ ["--quiet"] ++ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg]
-      putStrLn ""
+data CloneUser = AnonClone | UserClone
+
+clonePkg :: Bool -> CloneUser -> Maybe Branch -> String -> IO ()
+clonePkg quiet cloneuser mbr pkg = do
+  exists <- doesDirectoryExist pkg
+  if exists
+    then putStrLn $ pkg ++ "/ already exists"
+    else do
+    let mbranch = case mbr of
+          Nothing -> []
+          Just br -> ["--branch", show br]
+    case cloneuser of
+      AnonClone -> do
+        msgout
+        git_ "clone" $ ["--quiet"] ++ mbranch ++ ["https://src.fedoraproject.org/rpms/" ++ pkg <.> "git"]
+      UserClone -> do
+        fasid <- fasIdFromKrb
+        msgout
+        git_ "clone" $ ["--quiet"] ++ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg <.> "git"]
+    putStrLn ""
+  where
+    msgout =
+      putStr $ if quiet then "cloning..." else "Cloning: " ++ pkg
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
 pkgNameVerRel br spec = do

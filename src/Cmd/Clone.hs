@@ -11,7 +11,7 @@ import Pagure
 data CloneRequest = CloneUser (Maybe String) | ClonePkgs [String]
 
 -- FIXME allow pagure repo wildcard
--- FIXME --anonymous (detect commit rights? or a ssh key?)
+-- FIXME (detect commit rights or a ssh key?)
 cloneCmd :: Maybe Branch -> CloneRequest -> IO ()
 cloneCmd mbr request = do
   pkgs <- case request of
@@ -20,4 +20,6 @@ cloneCmd mbr request = do
               map (takeFileName . T.unpack) <$> pagureUserRepos srcfpo userid
             -- FIXME detect/prevent "path/dir"
             ClonePkgs ps -> return ps
-  mapM_ (clonePkg False mbr) pkgs
+  mfas <- maybeFasIdFromKrb
+  let cloneuser = maybe AnonClone (const UserClone) mfas
+  mapM_ (clonePkg False cloneuser mbr) pkgs
