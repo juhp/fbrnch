@@ -174,7 +174,9 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
                     case tags of
                       [] -> do
                         out <- head . lines <$> fedpkg "request-side-tag" []
-                        if "Side tag '" `isPrefixOf` out then
+                        if "Side tag '" `isPrefixOf` out
+                          then do
+                          putStrLn out
                           return $ init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
                           else error' "'fedpkg request-side-tag' failed"
                       [tag] -> return tag
