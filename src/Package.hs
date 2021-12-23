@@ -57,6 +57,7 @@ import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 import Data.RPM
 import Distribution.Fedora hiding (Fedora,EPEL)
+import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import SimpleCmd.Rpm
 import System.Console.Pretty
 import System.Posix.Files
@@ -286,6 +287,21 @@ checkSourcesMatch spec = do
     prompt_ $ color Red $ unwords missing ++ " not in sources, please fix"
     checkOnBranch
     checkSourcesMatch spec
+  mgr <- httpManager
+  let pkg = takeBaseName spec
+  mapM_ (checkLookasideCache mgr pkg) sources
+  where
+    checkLookasideCache :: Manager -> String -> String -> IO ()
+    checkLookasideCache mgr pkg source = do
+      case words source of
+        ("SHA512":('(':fileparen):"=":[hash]) -> do
+          let file = dropSuffix ")" fileparen
+              url = "https://src.fedoraproject.org/lookaside/pkgs" +/+ pkg +/+ file +/+ hash +/+ file
+          unlessM (httpExists mgr url) $ do
+            putStrLn $ url ++ " not found"
+            putStrLn $ "uploading " ++ file ++ " to lookaside source repo"
+            fedpkg_ "upload" [file]
+        _ -> error' $ "invalid/unknown source:\n" ++ source
 
 getSources :: FilePath -> IO [FilePath]
 getSources spec = do
