@@ -98,7 +98,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
 
     parallelBuild :: Branch -> (Int,[[String]]) -> IO String
     parallelBuild _ (_,[]) = return "" -- should not reach here
-    parallelBuild br (layernum, (layer:nextLayers)) =  do
+    parallelBuild br (layernum, layer:nextLayers) =  do
       krbTicket
       putStrLn $ "\n= Building parallel layer #" ++ show layernum ++
         if nopkgs > 1
@@ -120,7 +120,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
         error' $ "Build failures in layer " ++ show layernum ++ ": " ++
           unwords failures ++ "\n\n" ++
           show pending ++ " pending packages:\n" ++
-          intercalate " " (map unwords nextLayers)
+          unwords (map unwords nextLayers)
       when (null jobs) $
         error' "No jobs run"
       return $ fromMaybe (error' "No target determined") mtarget

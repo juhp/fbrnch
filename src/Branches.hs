@@ -187,7 +187,7 @@ gitCurrentBranch' = do
   anyBranch <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
 
 checkOnBranch :: IO ()
-checkOnBranch = void $ gitCurrentBranch
+checkOnBranch = void gitCurrentBranch
 
 anyBranchToRelease :: AnyBranch -> IO Branch
 anyBranchToRelease (RelBranch rbr) = return rbr

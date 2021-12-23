@@ -19,7 +19,6 @@ repoqueryCmd (breq, pkgs) = do
   where
     repoquery_ :: Branch -> [String] -> Branch -> IO ()
     repoquery_ sysbr query br = do
-      let qf = if null (filter ("--qf" `L.isPrefixOf`) query)
-               then ["--queryformat=%{repoid}: %{name}-%{version}-%{release}.%{arch}"]
-               else []
+      let qf = ["--queryformat=%{repoid}: %{name}-%{version}-%{release}.%{arch}"
+               | not (any ("--qf" `L.isPrefixOf`) query)]
       repoquery sysbr br (qf ++ query) >>= putStrLn

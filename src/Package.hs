@@ -283,7 +283,9 @@ checkSourcesMatch spec = do
   sourcefiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
   sources <- lines <$> readFile "sources"
   gitfiles <- gitLines "ls-files" []
-  let missing = filter (\src -> (isNothing (find (src `isInfixOf`) sources) && src `notElem` gitfiles)) sourcefiles
+  let missing = filter (\src -> isNothing (find (src `isInfixOf`) sources) &&
+                                src `notElem` gitfiles)
+                sourcefiles
   unless (null missing) $ do
     prompt_ $ color Red $ unwords missing ++ " not in sources, please fix"
     checkOnBranch
@@ -578,7 +580,7 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
             _ -> when (fetch || isJust mheader) $ putPkgHdr pkg
         when haveGit $
           when (have gitOptClean) checkWorkingDirClean
-        when fetch $ gitFetchSilent
+        when fetch gitFetchSilent
         -- FIXME!! no branch restriction
         when (breq `elem` map BranchOpt [AllBranches,AllFedora,AllEPEL]) $
           putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"

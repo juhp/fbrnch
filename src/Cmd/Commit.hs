@@ -13,7 +13,7 @@ import Prompt
 commitPkgs :: Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
 commitPkgs mopt firstLine staged args = do
   when (isJust mopt && firstLine) $
-    error' $ "--first-line cannot be used with other commit msg options"
+    error' "--first-line cannot be used with other commit msg options"
   if null args
     then commitPkg "."
     else mapM_ commitPkg args

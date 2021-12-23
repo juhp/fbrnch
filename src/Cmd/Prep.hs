@@ -55,7 +55,7 @@ srpmMacros =
 needSrpmMacro :: FilePath -> (String,String) -> IO (Maybe String)
 needSrpmMacro spec (meta, macros) = do
   contents <- readFile spec
-  return $ if meta `isInfixOf` contents then (Just macros) else Nothing
+  return $ if meta `isInfixOf` contents then Just macros else Nothing
 
 installMissingMacros :: FilePath -> IO ()
 installMissingMacros spec = do
