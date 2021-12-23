@@ -9,6 +9,7 @@ import Git
 import Koji
 import Package
 
+-- FIXME first check/wait for build to actually exist
 waitrepoCmd :: Bool -> Maybe String -> (BranchesReq, [String]) -> IO ()
 waitrepoCmd dryrun mtarget = do
   withPackageByBranches (Just False) cleanGitFetchActive AnyNumber waitrepoBranch

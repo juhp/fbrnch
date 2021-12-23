@@ -174,6 +174,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             mBugSess <-
               if firstBuild
               then do
+              -- FIXME check for bug before requiring login
               (mbid, session) <- bzReviewSession
               return $ case mbid of
                 Just bid -> Just (bid,session)

@@ -96,6 +96,7 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
         error "empty source field!"
       else (takeFileName . last . words) field
 
+    -- FIXME handle .tgz?
     isArchiveFile :: FilePath -> Bool
     isArchiveFile f =
       ".tar." `isInfixOf` f || ".zip" `isSuffixOf` f
