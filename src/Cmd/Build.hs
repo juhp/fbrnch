@@ -51,9 +51,9 @@ buildCmd opts (breq, pkgs) = do
   let mlastOfPkgs = if length pkgs > 1
                     then Just (Package (last pkgs))
                     else Nothing
-  brs <- listOfBranches True True breq
-  if not (buildoptByPackage opts) && length brs > 1
-    then
+  if not (buildoptByPackage opts) && breq /= Branches [] && length pkgs > 1
+    then do
+    brs <- listOfBranches True True breq
     forM_ brs $ \br ->
       withPackageByBranches (Just False) cleanGitFetchActive singleBrnch (buildBranch mlastOfPkgs opts) (Branches [br], pkgs)
     else
