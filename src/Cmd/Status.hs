@@ -107,11 +107,7 @@ statusBranch pkg rbr@(RelBranch br) = do
       let (days,nomRest) = diff `divMod'` nominalDay :: (Int,NominalDiffTime)
           nominalHour = 3600 :: NominalDiffTime
           hours = nomRest `div'` nominalHour :: Int
-      putStr $ " " ++ showUnits days "day" +-+ showUnits hours "hour"
-
-    showUnits :: Int -> String -> String
-    showUnits i uni = show i ++ " " ++ uni ++
-                      if i == 1 then "" else "s"
+      putStr $ " " ++ plural days "day" +-+ plural hours "hour"
 
 #if MIN_VERSION_time(1,8,0)
 #else
