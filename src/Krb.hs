@@ -1,5 +1,6 @@
 module Krb (
   fasIdFromKrb,
+  maybeFasIdFromKrb,
   krbTicket
   ) where
 
@@ -9,7 +10,7 @@ import SimpleCmd
 
 krbTicket :: IO ()
 krbTicket = do
-  krb <- words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines <$> cmd "klist" ["-l"]
+  krb <- klistEntryFedora
   if null krb
     then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
     else
@@ -18,9 +19,18 @@ krbTicket = do
       cmd_ "fkinit" []
       putStrLn ""
 
+maybeFasIdFromKrb :: IO (Maybe String)
+maybeFasIdFromKrb =
+  fmap (removeSuffix "@FEDORAPROJECT.ORG") . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) <$> klistEntryFedora
+
 fasIdFromKrb :: IO String
 fasIdFromKrb = do
-  mfasid <- (removeSuffix "@FEDORAPROJECT.ORG" <$>) . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) . words <$> cmd "klist" ["-l"]
+  mfasid <- maybeFasIdFromKrb
   case mfasid of
     Nothing -> error' "Could not determine fasid from klist"
     Just fasid -> return fasid
+
+klistEntryFedora :: IO [String]
+klistEntryFedora =
+  words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines
+  <$> cmd "klist" ["-l"]
