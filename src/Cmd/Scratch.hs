@@ -15,12 +15,11 @@ import Types (Archs(..))
 
 -- FIXME default to rawhide/main?
 -- FIXME build from a specific git ref
--- FIXME print message about uploading srpm
 -- FIXME allow multiple --target's (parallel too)
 scratchCmd :: Bool -> Bool -> Bool -> Maybe Archs -> Maybe String
            -> Maybe String -> (BranchesReq, [String]) -> IO ()
 scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget mref (breq,pkgs) =
-  withPackageByBranches (Just False) Nothing AnyNumber scratchBuild (breq,pkgs)
+  withPackageByBranches (Just True) Nothing AnyNumber scratchBuild (breq,pkgs)
   where
     scratchBuild :: Package -> AnyBranch -> IO ()
     scratchBuild pkg br = do
