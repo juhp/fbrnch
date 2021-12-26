@@ -12,7 +12,7 @@ import Common.System
 import qualified Common.Text as T
 
 import Data.Char
-import Network.HTTP.Directory
+import Network.HTTP.Directory (httpExists, httpManager)
 
 import Branches
 import Bugzilla
