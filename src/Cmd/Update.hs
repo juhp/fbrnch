@@ -75,8 +75,9 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
         existing <- filterM doesFileExist sources
         unless (existing == sources) $ do
           cmd_ "fedpkg" ["sources"]
-          -- FIXME only if not all exist
-          cmd_ "spectool" ["-g", "-S", spec]
+          unless force $
+            -- FIXME only if not all exist
+            cmd_ "spectool" ["-g", "-S", spec]
         when force $ do
           let archives = filter isArchiveFile existing
           forM_ archives removeFile
