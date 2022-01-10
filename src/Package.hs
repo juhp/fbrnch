@@ -660,7 +660,12 @@ pkgNameVerRel' br spec = do
 builtRpms :: AnyBranch -> FilePath -> IO [FilePath]
 builtRpms br spec = do
   dist <- getBranchDist br
-  rpms <- rpmspec ["--builtrpms", "--define", "dist " ++ rpmDistTag dist] (Just "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") spec
+  rpmdir <- do
+    pkggit <- isPkgGitRepo
+    if pkggit
+    then return ""
+    else fromMaybe "" <$> rpmEval "%{_rpmdir}"
+  rpms <- rpmspec ["--builtrpms", "--define", "dist " ++ rpmDistTag dist] (Just (rpmdir </>  "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm")) spec
   if null rpms
     then error' $ spec ++ " does not seem to create any rpms"
     else return rpms
