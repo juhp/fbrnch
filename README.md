@@ -296,6 +296,7 @@ Available commands:
   - so python clients are used for "writing"
     (specifically koji, bodhi-client, fedpkg),
     but all queries are done directly by Web APIs for speed and control.
+- https checkouts are currently assumed to an anonymous git checkouts
 
 ## Motivation, history, talks
 This project started off (as "fedbrnch") basically as a simple tool to
