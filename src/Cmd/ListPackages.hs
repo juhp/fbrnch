@@ -29,7 +29,7 @@ listCmd count mpackager pkgs = do
       let path = "projects"
           params = makeKey "short" "1" ++ fork ++ packager ++ makeKey "namespace" "rpms" ++ maybeKey "pattern" mpattern
       pages <- queryPaged srcfpo count path params ("pagination", "page")
-      mapM_ (printPage . toObject) pages
+      mapM_ printPage pages
       where
         packager =
           case mpackager of
@@ -45,12 +45,8 @@ listCmd count mpackager pkgs = do
           in
           mapM_ (T.putStrLn . lookupKey' "name") projects
 
-        toObject :: Value -> Object
-        toObject (Object obj) = obj
-        toObject v = error $ "not object: " ++ show v
-
 -- FIXME limit max number of pages (10?) or --pages
-queryPaged :: String -> Bool -> String -> Query -> (String,String) -> IO [Value]
+queryPaged :: String -> Bool -> String -> Query -> (String,String) -> IO [Object]
 queryPaged server count path params (pagination,paging) =
   if count
     then do
