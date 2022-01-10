@@ -194,7 +194,7 @@ main = do
       commitPkgs
       <$> optional commitOpts
       <*> switchWith '1' "first-line" "use first line of changelog"
-      <*> switchWith 's' "staged" "only commit staged changes"
+      <*> switchWith 'u' "unstaged" "include unstaged changes"
       <*> manyPackages
     , Subcommand "pull" "Git pull packages" $
       pullPkgs

@@ -11,7 +11,7 @@ import Prompt
 
 -- FIXME use branches after all?
 commitPkgs :: Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
-commitPkgs mopt firstLine staged args = do
+commitPkgs mopt firstLine notstaged args = do
   when (isJust mopt && firstLine) $
     error' "--first-line cannot be used with other commit msg options"
   if null args
@@ -48,7 +48,7 @@ commitPkgs mopt firstLine staged args = do
                         [msg] -> putStrLn msg >> return (removePrefix "- " msg)
                         _ -> mapM_ putStrLn newlogs >> readCommitMsg
               return ["-m", changelog]
-          git_ "commit" $ ["-a" | not staged] ++ opts
+          git_ "commit" $ ["-a" | notstaged] ++ opts
 
 readCommitMsg :: IO String
 readCommitMsg = do
