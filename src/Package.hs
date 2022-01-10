@@ -274,8 +274,8 @@ installDeps :: Bool -> FilePath -> IO ()
 installDeps strict spec = do
   missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
   unless (null missingdeps) $ do
-    putStrLn $ "Running dnf builddep " ++ unwords missingdeps
-    cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"--quiet":"builddep": ["--skip-unavailable" | not strict] ++ ["--assumeyes", spec]
+    putStrLn $ "Running 'dnf install' " ++ unwords missingdeps
+    cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"install": ["--skip-broken" | not strict] ++ ["--assumeyes"] ++ missingdeps
 
 checkSourcesMatch :: FilePath -> IO ()
 checkSourcesMatch spec = do
@@ -671,9 +671,24 @@ getBranchDist (OtherBranch _) = systemBranch >>= branchDist
 
 -- from fedora-haskell-tools
 buildRequires :: FilePath -> IO [String]
-buildRequires spec =
-  -- FIXME should resolve meta
-  map (head . words) <$> rpmspec ["--buildrequires"] Nothing spec
+buildRequires spec = do
+  dynbr <- grep_ "^%generate_buildrequires" spec
+  mapMaybe primary <$>
+    if dynbr
+    then do
+      out <- cmdIgnoreErr "rpmbuild" ["-br", "--nodeps", spec] ""
+      -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
+      cmdLines "rpm" ["-qp", "--requires", last (words out)]
+    else
+      -- FIXME should resolve meta
+      rpmspec ["--buildrequires"] Nothing spec
+  where
+    primary dep =
+      case (head . words) dep of
+        '(':rest -> Just rest
+        d -> if "rpmlib(" `isPrefixOf` d
+             then Nothing
+             else Just d
 
 notInstalled :: String -> IO Bool
 notInstalled pkg =
