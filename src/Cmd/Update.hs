@@ -59,7 +59,9 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
           editSpecField "Version" newver spec
           editSpecField "Release" "0%{?dist}" spec
           cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
-          cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
+          -- FIXME should be sure sources exists for distgit
+          whenM (doesFileExist "sources") $
+            cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
           else do
           versions <- changelogVersions spec
           let missing = null versions || not ((newver ++ "-") `isPrefixOf` head versions)
