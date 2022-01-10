@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 
 module Bodhi (
   bodhiCreateOverride,
@@ -8,6 +8,9 @@ module Bodhi (
   )
 where
 
+#if MIN_VERSION_aeson(2,0,0)
+import Data.Aeson.Key (fromText)
+#endif
 import Data.Aeson.Types (Object, (.:), parseEither)
 import Data.Char (toLower)
 import Fedora.Bodhi hiding (bodhiUpdate)
@@ -34,7 +37,12 @@ checkAutoBodhiUpdate br =
     lookupKey'' k obj =
       let errMsg e = error $ e ++ " " ++ show obj in
         -- bodhi-hs has lookupKeyEither
-        either errMsg id $ parseEither (.: k) obj
+        either errMsg id $ parseEither (.: fromText k) obj
+
+#if !MIN_VERSION_aeson(2,0,0)
+    fromText :: T.Text -> T.Text
+    fromText = id
+#endif
 
 -- FIXME should determine 3 days for branched devel release
 -- FIXME handle expired override?
