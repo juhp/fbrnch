@@ -1,18 +1,3 @@
-[submodule "bodhi-hs"]
-	path = libs/bodhi-hs
-	url = https://github.com/juhp/bodhi-hs
-[submodule "copr-hs"]
-	path = libs/copr-hs
-	url = https://github.com/juhp/copr-hs
 [submodule "fedora-dists"]
 	path = libs/fedora-dists
 	url = https://github.com/juhp/fedora-dists
-[submodule "koji-hs"]
-	path = libs/koji-hs
-	url = https://github.com/juhp/koji-hs
-[submodule "pagure-hs"]
-	path = libs/pagure-hs
-	url = https://github.com/juhp/pagure-hs
-[submodule "pdc-hs"]
-	path = libs/pdc-hs
-	url = https://github.com/juhp/pdc-hs

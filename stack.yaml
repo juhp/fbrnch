@@ -1,1 +1,6 @@
-stack-lts16.yaml
+resolver: lts-18.21
+extra-deps:
+  - pdc-0.1.1
+  - bodhi-0.1.0
+  - pagure-0.1.0
+  - copr-api-0.1.0

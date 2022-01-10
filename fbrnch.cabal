@@ -32,13 +32,9 @@ category:            Distribution
 build-type:          Simple
 extra-doc-files:     CHANGELOG.md
                      README.md
-                     libs/bodhi-hs/LICENSE
-                     libs/copr-hs/LICENSE
                      libs/fedora-dists/LICENSE
-                     libs/pagure-hs/LICENSE
-                     libs/pdc-hs/LICENSE
 tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
-                     GHC == 8.6.5,  GHC == 8.8.4, GHC == 8.10.4
+                     GHC == 8.6.5,  GHC == 8.8.4, GHC == 8.10.5
 
 source-repository head
   type:                git
@@ -94,38 +90,25 @@ executable fbrnch
                        Paths_fbrnch
                        Prompt
                        Types
-                       -- copr
-                       Web.Fedora.Copr
-                       Web.Fedora.Copr.API
                        -- fedora-dists
                        Distribution.Fedora
                        Distribution.Fedora.Branch
                        Distribution.Fedora.Products
                        Distribution.Fedora.ReadProducts
-                       -- pdc
-                       Fedora.PDC
-                       -- bodhi
-                       Fedora.Bodhi
-                       -- pagure
-                       Fedora.Pagure
 
   hs-source-dirs:      src
-                       libs/copr-hs/src
                        libs/fedora-dists/src
-                       libs/pdc-hs/src
-                       libs/bodhi-hs/src
-                       libs/pagure-hs/src
   default-language:    Haskell2010
 
   build-depends:       aeson,
                        async,
                        -- pretty-terminal needs 4.9:
                        base >= 4.9 && < 5,
-                       -- bodhi,
+                       bodhi,
                        bugzilla-redhat >= 0.3,
                        bytestring,
                        config-ini,
-                       -- copr,
+                       copr-api,
                        directory >= 1.2.3,
                        email-validate,
                        extra,
@@ -137,7 +120,8 @@ executable fbrnch
                        koji,
                        network-uri,
                        optparse-applicative,
-                       -- pagure,
+                       pagure >= 0.1,
+                       pdc,
                        pretty-terminal,
                        process,
                        -- regex-tdfa,
@@ -150,12 +134,7 @@ executable fbrnch
                        typed-process >= 0.2.4.0,
                        utf8-string,
                        unix,
-                       xdg-basedir,
-                       -- for copr:
-                       unordered-containers,
-                       -- for bodhi and pagure:
-                       lens,
-                       lens-aeson
+                       xdg-basedir
 
   if impl(ghc<8.0)
        build-depends: semigroups

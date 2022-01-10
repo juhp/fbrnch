@@ -5,3 +5,7 @@ extra-deps:
   - koji-0.0.1
   - rpmbuild-order-0.4.5
   - rpm-nvr-0.1.1
+  - pdc-0.1.1
+  - bodhi-0.1.0
+  - pagure-0.1.0
+  - copr-api-0.1.0

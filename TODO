@@ -32,11 +32,7 @@
 - 'retire': more than one branch pre-release branch with merge
 
 # release deps on hackage:
-- pagure (new)
-- bodhi (new)
-- copr (new)
 - fedora-dists (update)
-  - pdc (new)
 
 # other namespaces
 - support containers/ and modules/
