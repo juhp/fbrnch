@@ -299,7 +299,7 @@ checkSourcesMatch spec = do
       case words source of
         ("SHA512":('(':fileparen):"=":[hash]) -> do
           let file = dropSuffix ")" fileparen
-              url = "https://src.fedoraproject.org/lookaside/pkgs" +/+ pkg +/+ file +/+ hash +/+ file
+              url = "https://src.fedoraproject.org/lookaside/pkgs" +/+ pkg +/+ file +/+ "sha512" +/+ hash +/+ file
           unlessM (httpExists mgr url) $ do
             putStrLn $ url ++ " not found"
             putStrLn $ "uploading " ++ file ++ " to lookaside source repo"
