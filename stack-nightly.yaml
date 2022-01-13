@@ -1,6 +1,1 @@
-resolver: nightly-2022-01-06
-extra-deps:
-  - pdc-0.1.1
-  - bodhi-0.1.0
-  - pagure-0.1.0
-  - copr-api-0.1.0
+resolver: nightly-2022-01-10
