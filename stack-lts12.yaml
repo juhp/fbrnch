@@ -18,3 +18,4 @@ extra-deps:
   - bodhi-0.1.0
   - pagure-0.1.0
   - copr-api-0.1.0
+  - cached-json-file-0.1.0

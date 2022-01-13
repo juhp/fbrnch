@@ -94,7 +94,7 @@ executable fbrnch
                        Distribution.Fedora
                        Distribution.Fedora.Branch
                        Distribution.Fedora.Products
-                       Distribution.Fedora.ReadProducts
+                       Distribution.Fedora.Release
 
   hs-source-dirs:      src
                        libs/fedora-dists/src
@@ -134,7 +134,9 @@ executable fbrnch
                        typed-process >= 0.2.4.0,
                        utf8-string,
                        unix,
-                       xdg-basedir
+                       xdg-basedir,
+                       -- for fedora-dists
+                       cached-json-file
 
   if impl(ghc<8.0)
        build-depends: semigroups
