@@ -28,7 +28,7 @@ import Cmd.Override
 import Cmd.Parallel
 import Cmd.PkgReview
 import Cmd.Prep
-import Cmd.Pull
+import Cmd.PullPush
 import Cmd.Repoquery
 import Cmd.RequestBranch
 import Cmd.RequestRepo
@@ -198,6 +198,9 @@ main = do
       <*> manyPackages
     , Subcommand "pull" "Git pull packages" $
       pullPkgs
+      <$> branchesPackages
+    , Subcommand "push" "Git push packages" $
+      pushPkgs
       <$> branchesPackages
     , Subcommand "create-review" "Create a Package Review request" $
       createReview

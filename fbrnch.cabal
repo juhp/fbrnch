@@ -65,7 +65,7 @@ executable fbrnch
                        Cmd.Parallel
                        Cmd.PkgReview
                        Cmd.Prep
-                       Cmd.Pull
+                       Cmd.PullPush
                        Cmd.Repoquery
                        Cmd.RequestBranch
                        Cmd.RequestRepo

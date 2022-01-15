@@ -1,4 +1,4 @@
-module Cmd.Pull (pullPkgs) where
+module Cmd.PullPush (pullPkgs, pushPkgs) where
 
 import Branches
 import Git
@@ -13,3 +13,12 @@ pullPkgs =
     pullPkg :: Package -> AnyBranch -> IO ()
     pullPkg _pkg _br =
       getReleaseBranch >>= gitMergeOrigin
+
+pushPkgs :: (BranchesReq, [String]) -> IO ()
+pushPkgs =
+  withPackageByBranches (Just False) cleanGitFetch AnyNumber pushPkg
+  where
+    pushPkg :: Package -> AnyBranch -> IO ()
+    pushPkg _pkg _br = do
+      gitShortLog1 Nothing >>= putStrLn
+      gitPushSilent Nothing
