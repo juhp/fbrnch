@@ -39,7 +39,7 @@ requestPkgBranches multiple mock breq pkg = do
     urls <- forM newbranches $ \ br -> do
       when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
       when multiple $ putStr (unPackage pkg ++ " ")
-      when (length newbranches > 1) $ putStr (show br ++ " ")
+      when (length newbranches > 1) $ putStrLn (show br)
       fedpkg "request-branch" [show br]
     case mbid of
       Just bid -> commentBug session bid
