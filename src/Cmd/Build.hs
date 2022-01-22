@@ -111,7 +111,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         autoupdate <- checkAutoBodhiUpdate br
         unless autoupdate $ do
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
-            mbug <- fst <$>  bzReviewSession
+            mbug <- bzReviewAnon
             bodhiUpdate dryrun mbug spec nvr
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
             when (buildoptOverride opts) $
@@ -173,12 +173,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               kojiBuildBranch target pkg mbuildref ["--fail-fast" | not (buildoptNoFailFast opts)]
             mBugSess <-
               if firstBuild
-              then do
-              -- FIXME check for bug before requiring login
-              (mbid, session) <- bzReviewSession
-              return $ case mbid of
-                Just bid -> Just (bid,session)
-                Nothing -> Nothing
+              then bzReviewSession
               else return Nothing
             autoupdate <- checkAutoBodhiUpdate br
             if autoupdate

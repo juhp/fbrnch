@@ -234,13 +234,9 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then
             when newpkg $ do
-            mBugSess <- do
-              (mbid, session) <- bzReviewSession
-              return $ case mbid of
-                Just bid -> Just (bid,session)
-                Nothing -> Nothing
-            whenJust mBugSess $
-              \ (bid,session) -> putBugBuild dryrun session bid nvr
+            mBugSess <- bzReviewSession
+            whenJust mBugSess $ \(bid,session) ->
+              putBugBuild dryrun session bid nvr
             else do
             when (target == branchTarget br && morelayers) $
               -- -- FIXME: avoid prompt in

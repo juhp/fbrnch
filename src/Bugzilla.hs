@@ -6,11 +6,12 @@ module Bugzilla (
   BugId,
   -- session
   BugzillaSession,
-  bugIdsSession,
   bugsSession,
+  bugsAnon,
+  bugIdsAnon,
   bzAnonSession,
-  bzLoginSession,
   bzReviewSession,
+  bzReviewAnon,
   getBzUser,
   reviewBugIdSession,
   approvedReviewBugIdSession,
@@ -137,14 +138,25 @@ putBugBuild dryrun session bid nvr = do
 brc :: T.Text
 brc = "bugzilla.redhat.com"
 
-bzReviewSession :: IO (Maybe BugId,BugzillaSession)
+bzReviewAnon :: IO (Maybe BugId)
+bzReviewAnon = do
+  pkg <- getDirectoryName
+  bids <- bugIdsAnon $
+          pkgReviews pkg .&&. statusOpen .&&. reviewApproved
+  return $ case bids of
+    [bid] -> Just bid
+    _ -> Nothing
+
+bzReviewSession :: IO (Maybe (BugId,BugzillaSession))
 bzReviewSession = do
   pkg <- getDirectoryName
-  (bids,session) <- bugIdsSession $
-                    pkgReviews pkg .&&. statusOpen .&&. reviewApproved
+  bids <- bugIdsAnon $
+          pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bids of
-    [bid] -> return (Just bid, session)
-    _ -> return (Nothing, session)
+    [bid] -> do
+      session <- bzLoginSession
+      return $ Just (bid, session)
+    _ -> return Nothing
 
 newtype BzUserRC = BzUserRC {rcUserEmail :: UserEmail}
   deriving (Eq, Show)
@@ -177,12 +189,11 @@ bzAnonSession =
   AnonymousSession <$> newBugzillaContext brc
 
 -- FIXME support bugzilla API key
-bzLoginSession :: IO (BugzillaSession, UserEmail)
+bzLoginSession :: IO BugzillaSession
 bzLoginSession = do
   user <- getBzUser
   ctx <- newBugzillaContext brc
-  session <- getBzLoginSession ctx user
-  return (session,user)
+  getBzLoginSession ctx user
   where
     getBzLoginSession :: BugzillaContext -> UserEmail -> IO BugzillaSession
     getBzLoginSession ctx user = do
@@ -291,42 +302,52 @@ summaryContains :: String -> SearchExpression
 summaryContains keywrd =
   SummaryField `contains` T.pack keywrd
 
-bugIdsSession :: SearchExpression -> IO ([BugId],BugzillaSession)
-bugIdsSession query = do
-  (session,_) <- bzLoginSession
-  bugs <- searchBugs' session query
-  return (bugs, session)
+bugIdsAnon :: SearchExpression -> IO [BugId]
+bugIdsAnon query = do
+  session <- bzAnonSession
+  searchBugs' session query
+
+bugsAnon :: SearchExpression -> IO [Bug]
+bugsAnon query = do
+  session <- bzAnonSession
+  searchBugs session query
 
 bugsSession :: SearchExpression -> IO ([Bug],BugzillaSession)
 bugsSession query = do
-  (session,_) <- bzLoginSession
+  session <- bzLoginSession
   bugs <- searchBugs session query
   return (bugs, session)
 
 reviewBugIdSession :: String -> IO (BugId,BugzillaSession)
 reviewBugIdSession pkg = do
-  (bugs,session) <- bugIdsSession $ pkgReviews pkg .&&. statusOpen
+  bugs <- bugIdsAnon $ pkgReviews pkg .&&. statusOpen
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
-    [bug] -> return (bug, session)
+    [bug] -> do
+      session <- bzLoginSession
+      return (bug, session)
     _ -> error' "more than one review bug found!"
 
 approvedReviewBugIdSession :: String -> IO (BugId,BugzillaSession)
 approvedReviewBugIdSession pkg = do
-  (bugs,session) <- bugIdsSession $
-                    pkgReviews pkg .&&. statusOpen .&&. reviewApproved
+  bugs <- bugIdsAnon $
+          pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
-    [bug] -> return (bug, session)
+    [bug] -> do
+      session <- bzLoginSession
+      return (bug, session)
     _ -> error' "more than one review bug found!"
 
 approvedReviewBugSession :: String -> IO (Bug,BugzillaSession)
 approvedReviewBugSession pkg = do
-  (bugs,session) <- bugsSession $
-                    pkgReviews pkg .&&. statusOpen .&&. reviewApproved
+  bugs <- bugsAnon $
+          pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
-    [bug] -> return (bug, session)
+    [bug] -> do
+      session <- bzLoginSession
+      return (bug, session)
     _ -> error' "more than one review bug found!"
 
 reviewBugToPackage :: Bug -> String

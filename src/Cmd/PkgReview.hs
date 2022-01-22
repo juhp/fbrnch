@@ -134,9 +134,10 @@ reviewPackage :: Maybe String -> IO ()
 reviewPackage mpkg = do
   -- FIXME if spec file exists use it directly
   pkg <- maybe getDirectoryName return mpkg
-  (bugs, _) <- if all isDigit pkg
-    then bugsSession $ packageReview .&&. statusNewAssigned .&&. bugIdIs (read pkg)
-    else bugsSession $ pkgReviews pkg .&&. statusNewAssigned
+  bugs <- bugsAnon $
+          if all isDigit pkg
+          then packageReview .&&. statusNewAssigned .&&. bugIdIs (read pkg)
+          else pkgReviews pkg .&&. statusNewAssigned
   case bugs of
     [bug] -> do
       putReviewBug False bug

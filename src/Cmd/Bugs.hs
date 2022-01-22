@@ -17,5 +17,5 @@ bugsCmd keyword pkgs = do
             case keyword of
               Nothing -> statusOpen
               Just key -> statusOpen .&&. summaryContains key
-      (bugs, _) <- bugsSession $ pkgBugs (unPackage pkg) .&&. query
+      bugs <- bugsAnon $ pkgBugs (unPackage pkg) .&&. query
       mapM_ putBugVer $ sortBugsByProduct bugs

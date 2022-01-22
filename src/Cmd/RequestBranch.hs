@@ -35,14 +35,14 @@ requestPkgBranches multiple mock breq pkg = do
   branches <- getRequestedBranches breq
   newbranches <- filterExistingBranchRequests branches
   unless (null newbranches) $ do
-    (mbid,session) <- bzReviewSession
+    mbidsession <- bzReviewSession
     urls <- forM newbranches $ \ br -> do
       when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
       when multiple $ putStr (unPackage pkg ++ " ")
       when (length newbranches > 1) $ putStrLn (show br)
       fedpkg "request-branch" [show br]
-    case mbid of
-      Just bid -> commentBug session bid
+    case mbidsession of
+      Just (bid,session) -> commentBug session bid
       Nothing -> putStrLn
       $ unlines urls
   where

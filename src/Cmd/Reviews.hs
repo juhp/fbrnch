@@ -18,5 +18,5 @@ reviewsCmd short allstates assignee muser mpat status = do
 
 findReview :: String -> IO ()
 findReview pkg = do
-  (bugs, _) <- bugIdsSession $ pkgReviews pkg
-  mapM_ putBugId bugs
+  bugIdsAnon (pkgReviews pkg)
+    >>= mapM_ putBugId
