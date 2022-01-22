@@ -32,7 +32,6 @@ category:            Distribution
 build-type:          Simple
 extra-doc-files:     CHANGELOG.md
                      README.md
-                     libs/fedora-dists/LICENSE
 tested-with:         GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
                      GHC == 8.6.5,  GHC == 8.8.4, GHC == 8.10.5
 
@@ -90,14 +89,8 @@ executable fbrnch
                        Paths_fbrnch
                        Prompt
                        Types
-                       -- fedora-dists
-                       Distribution.Fedora
-                       Distribution.Fedora.Branch
-                       Distribution.Fedora.Products
-                       Distribution.Fedora.Release
 
   hs-source-dirs:      src
-                       libs/fedora-dists/src
   default-language:    Haskell2010
 
   build-depends:       aeson,
@@ -112,16 +105,16 @@ executable fbrnch
                        directory >= 1.2.3,
                        email-validate,
                        extra,
-                       -- fedora-dists > 2.0,
+                       fedora-dists >= 2.0,
                        filepath,
                        http-conduit,
                        http-directory >= 0.1.5,
                        http-query,
                        koji,
                        network-uri,
+                       -- (for simple_cmd_args < 0.1.7):
                        optparse-applicative,
                        pagure >= 0.1,
-                       pdc,
                        pretty-terminal,
                        process,
                        -- regex-tdfa,
@@ -134,9 +127,7 @@ executable fbrnch
                        typed-process >= 0.2.4.0,
                        utf8-string,
                        unix,
-                       xdg-basedir,
-                       -- for fedora-dists
-                       cached-json-file
+                       xdg-basedir
 
   if impl(ghc<8.0)
        build-depends: semigroups

@@ -21,3 +21,4 @@ extra-deps:
   - pagure-0.1.0
   - copr-api-0.1.0
   - cached-json-file-0.1.0
+  - fedora-dists-2.0.0

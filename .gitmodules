@@ -1,3 +1,0 @@
-[submodule "fedora-dists"]
-	path = libs/fedora-dists
-	url = https://github.com/juhp/fedora-dists
