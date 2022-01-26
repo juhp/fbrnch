@@ -138,17 +138,14 @@ findSpecfile = do
       dir <- getDirectoryName
       error' $ "No spec file found in: " ++ dir
 
+-- adapted from fileWithExtension
 maybeFindSpecfile :: IO (Maybe FilePath)
-maybeFindSpecfile = fileWithExtension ".spec"
-  where
-    -- looks in dir for a unique file with given extension
-    fileWithExtension :: String -> IO (Maybe FilePath)
-    fileWithExtension ext = do
-      files <- filter (ext `isExtensionOf`) <$> listDirectory "."
-      case files of
-        [] -> return Nothing
-        [spec] -> return $ Just spec
-        _ -> error' $ "No unique " ++ ext ++ " file found"
+maybeFindSpecfile = do
+  files <- filter (".spec" `isExtensionOf`) <$> listDirectory "."
+  case files of
+    [] -> return Nothing
+    [spec] -> return $ Just spec
+    _ -> error' $ "More than one .spec file: " ++ unwords files
 
 localBranchSpecFile :: Package -> AnyBranch -> IO FilePath
 localBranchSpecFile pkg br = do
