@@ -6,13 +6,22 @@ import Package
 
 -- FIXME pulling more than one branch
 -- FIXME print nvr after pulling or old -> new
-pullPkgs :: (BranchesReq, [String]) -> IO ()
-pullPkgs =
-  withPackageByBranches (Just False) cleanGitFetch AnyNumber pullPkg
+pullPkgs :: Bool -> (BranchesReq, [String]) -> IO ()
+pullPkgs lenient =
+  withPackageByBranches (Just False) (if lenient then Nothing else cleanGitFetch) AnyNumber pullPkg
   where
     pullPkg :: Package -> AnyBranch -> IO ()
-    pullPkg _pkg _br =
-      getReleaseBranch >>= gitMergeOrigin
+    pullPkg pkg _br =
+      if lenient
+      then do
+        haveGit <- isPkgGitRepo
+        if haveGit
+          then doPullPkg
+          else putStrLn $ "ignoring " ++ unPackage pkg
+      else doPullPkg
+
+    doPullPkg :: IO ()
+    doPullPkg = getReleaseBranch >>= gitMergeOrigin
 
 pushPkgs :: (BranchesReq, [String]) -> IO ()
 pushPkgs =

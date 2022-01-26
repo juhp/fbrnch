@@ -198,7 +198,8 @@ main = do
       <*> manyPackages
     , Subcommand "pull" "Git pull packages" $
       pullPkgs
-      <$> branchesPackages
+      <$> switchWith 'l' "lenient" "Ignore non-git dirs and files"
+      <*> branchesPackages
     , Subcommand "push" "Git push packages" $
       pushPkgs
       <$> branchesPackages
