@@ -1,5 +1,6 @@
 module Cmd.Mock
-  ( mockCmd
+  ( mockCmd,
+    NoClean(..)
   )
 where
 
@@ -11,10 +12,15 @@ import Common.System
 import Git
 import Package
 
+data NoClean = NoCleanBefore | NoCleanAfter | NoCleanAll
+  deriving Eq
+
 -- FIXME handle non-release branches (on-branch works)
-mockCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch
+-- FIXME option for --shell without rebuild
+-- FIXME add --no-clean-all
+mockCmd :: Bool -> Maybe NoClean -> Bool -> Bool -> Maybe Branch
         -> (BranchesReq, [String]) -> IO ()
-mockCmd dryrun noclean network noCleanAfter mroot (breq, ps) = do
+mockCmd dryrun mnoclean network mockshell mroot (breq, ps) = do
   branches <-
     case breq of
       Branches [] ->
@@ -40,7 +46,22 @@ mockCmd dryrun noclean network noCleanAfter mroot (breq, ps) = do
                  in ["--resultdir=results" </> verrel]
               _ -> []
       let command = if length pkgs > 1 then "--chain" else "--rebuild"
-      (if dryrun then cmdN else cmd_) "mock" $ [command, "--root", mockRoot rootBr] ++ ["--no-clean" | noclean] ++ ["--no-cleanup-after" | noCleanAfter] ++ ["--config-opts=cleanup_on_failure=False" | not noCleanAfter] ++ ["--enable-network" | network] ++ resultdir ++ srpms
+          noclean = case mnoclean of
+                      Nothing -> []
+                      Just NoCleanBefore -> ["--no-clean"]
+                      Just NoCleanAfter -> ["--no-cleanup-after"]
+                      Just NoCleanAll -> ["--no-cleanup-all"]
+          mockopts_common c = [c, "--root", mockRoot rootBr] ++ noclean ++ ["--enable-network" | network] ++ resultdir ++ srpms
+          mockbuild_opts = mockopts_common command ++ ["--config-opts=cleanup_on_failure=False" | mnoclean `elem` [Nothing, Just NoCleanBefore]] ++ resultdir ++ srpms
+          mockshell_opts = mockopts_common "--shell" ++ ["--no-clean"]
+      if dryrun
+        then do
+        cmdN "mock" mockbuild_opts
+        when mockshell $ cmdN "mock" mockshell_opts
+        else do
+        ok <- cmdBool "mock" mockbuild_opts
+        when mockshell $ cmd_ "mock" mockshell_opts
+        unless ok $ error' "mockbuild failed"
       where
         prepSrpm :: AnyBranch -> FilePath -> IO FilePath
         prepSrpm rbr pkgdir =

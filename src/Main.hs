@@ -160,10 +160,10 @@ main = do
       <*> manyPackages
     , Subcommand "mock" "Local mock build" $
       mockCmd
-      <$> switchWith 'd' "dry-run" "Do not build (but creates srpm)"
-      <*> switchWith 'n' "no-clean" "Do not clean chroot before building a package"
+      <$> switchWith 'n' "dry-run" "Do not build (but creates srpm)"
+      <*> optional nocleanOpt
       <*> switchWith 'w' "network" "Use network during build"
-      <*> switchWith 'N' "no-clean-after" "Don't clean  chroot after building a package"
+      <*> switchWith 's' "shell" "Enter chroot shell after building"
       <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use")
       <*> branchesPackages
     , Subcommand "install-deps" "Install package build dependencies" $
@@ -456,3 +456,9 @@ main = do
     scratchOpt =
       ScratchTask <$> optionWith auto 's' "scratch-build" "TASKID" "Existing scratch build taskid" <|>
       flagWith ScratchBuild SkipScratch 'S' "no-scratch" "Skip scratch build"
+
+    nocleanOpt :: Parser NoClean
+    nocleanOpt =
+      flagWith' NoCleanBefore 'c' "no-clean" "Do not clean chroot before building"
+      <|> flagWith' NoCleanAfter 'C' "no-clean-after" "Do not clean chroot after building"
+      <|> flagWith' NoCleanAll 'A' "no-clean-all" "Do not clean chroot before or after building"
