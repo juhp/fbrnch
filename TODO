@@ -31,9 +31,6 @@
 - 'remove-sidetag(s)'
 - 'retire': more than one branch pre-release branch with merge
 
-# release deps on hackage:
-- fedora-dists (update)
-
 # other namespaces
 - support containers/ and modules/
 

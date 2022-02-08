@@ -10,6 +10,7 @@ import Package
 import Prompt
 
 -- FIXME use branches after all?
+-- FIXME handle multiline changelog entries with "-m description"
 commitPkgs :: Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
 commitPkgs mopt firstLine notstaged args = do
   when (isJust mopt && firstLine) $

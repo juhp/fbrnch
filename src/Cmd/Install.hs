@@ -16,6 +16,7 @@ import Prompt
 -- FIXME --ignore-uninstalled subpackages
 -- FIXME --skip-unavailable
 -- FIXME --check any/all of package installed
+-- FIXME add --debug or respect --verbose for dnf commands
 installCmd :: Bool -> Bool -> Maybe ForceShort -> [BCond] -> Bool
            -> (Maybe Branch,[String]) -> IO ()
 installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
