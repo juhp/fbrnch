@@ -21,6 +21,7 @@ module Branches (
   checkOnBranch,
   systemBranch,
   getReleaseBranch,
+  getReleaseBranchWarn,
   branchVersion,
   anyBranchToRelease,
   getRequestedBranches,
@@ -172,19 +173,34 @@ getReleaseBranch :: IO Branch
 getReleaseBranch =
   gitCurrentBranch >>= anyBranchToRelease
 
+getReleaseBranchWarn :: IO Branch
+getReleaseBranchWarn =
+  gitCurrentBranchWarn >>= anyBranchToRelease
+
 gitCurrentBranch :: IO AnyBranch
 gitCurrentBranch = do
   br <- gitCurrentBranch'
   if br == OtherBranch "HEAD"
     then do
     dir <- getDirectoryName
-    prompt_ $ dir ++ ": HEAD is not a branch, please fix"
+    prompt_ $ dir ++ ": " ++ show br ++ " is not a branch, please fix"
     gitCurrentBranch
     else return br
 
 gitCurrentBranch' :: IO AnyBranch
 gitCurrentBranch' = do
   anyBranch <$> git "rev-parse" ["--abbrev-ref", "HEAD"]
+
+gitCurrentBranchWarn :: IO AnyBranch
+gitCurrentBranchWarn = do
+  br <- gitCurrentBranch
+  if br == OtherBranch "master"
+    then do
+    dir <- getDirectoryName
+    prompt_ $ dir ++ ": " ++ show br ++ " is not a valid branch, please use 'rename-rawhide'"
+    gitCurrentBranchWarn
+    else return br
+
 
 checkOnBranch :: IO ()
 checkOnBranch = void gitCurrentBranch

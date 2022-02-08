@@ -19,9 +19,10 @@ pullPkgs lenient =
           then doPullPkg
           else putStrLn $ "ignoring " ++ unPackage pkg
       else doPullPkg
-
-    doPullPkg :: IO ()
-    doPullPkg = getReleaseBranch >>= gitMergeOrigin
+      where
+        doPullPkg :: IO ()
+        doPullPkg =
+          getReleaseBranchWarn >>= gitMergeOrigin
 
 pushPkgs :: (BranchesReq, [String]) -> IO ()
 pushPkgs =
