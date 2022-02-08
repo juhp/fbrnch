@@ -1,3 +1,1 @@
-resolver: nightly-2022-01-20
-extra-deps:
-  - fedora-dists-2.0.0
+resolver: nightly-2022-02-07
