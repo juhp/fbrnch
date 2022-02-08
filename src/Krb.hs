@@ -33,6 +33,7 @@ fasIdFromKrb = do
 klistEntryFedora :: IO [String]
 klistEntryFedora = do
   mres <- cmdMaybe "klist" ["-l"]
-  return $ case mres of
-    Nothing ->  []
-    Just out -> (words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines) out
+  return $
+    maybe []
+    (words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines)
+    mres
