@@ -315,9 +315,7 @@ fbrnch is packaged in Fedora: `sudo dnf install fbrnch`.
 ## Build from source
 1. Install openssl-devel
 
-2. Clone the git repo and in the source dir, setup the git submodules:
-
-`git submodule update --init`
+2. Clone the git repo.
 
 3. Then either:
 

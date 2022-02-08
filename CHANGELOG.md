@@ -3,7 +3,7 @@
 ## next
 - 'repoquery': new experimental command
 
-## 0.9.2 (2021-10-14)
+## 0.10 (2022-02-xx)
 - rpm's _sourcedir is now acts as a source cache directory:
   sources are in the package dir, but may be hardlinks to _sourcedir
 - getSources checks compression integrity to re-download partial tarballs
