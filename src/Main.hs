@@ -133,6 +133,7 @@ main = do
     , Subcommand "prep" "Prep sources" $
       prepCmd
       <$> switchWith 'c' "clone" "Try to clone package repo first"
+      <*> switchWith 'v' "verbose" "show rpmbuild output"
       <*> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
       localCmd

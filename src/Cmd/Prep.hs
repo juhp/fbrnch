@@ -10,8 +10,8 @@ import Git
 import InterleaveOutput (cmdSilent')
 import Package
 
-prepCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
-prepCmd clone (mbr,pkgs) = do
+prepCmd :: Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
+prepCmd clone verbose (mbr,pkgs) = do
   when clone $
     cloneCmd mbr (ClonePkgs pkgs)
   withPackagesMaybeBranchNoHeadergit ZeroOrOne prepPackage (mbr,pkgs)
@@ -42,7 +42,7 @@ prepCmd clone (mbr,pkgs) = do
             -- newline avoids error starting on same line
             putStr $ "Prepping " ++ nvr ++ ": "
           _ -> return ()
-        cmdSilent' "rpmbuild" args
+        (if verbose then cmdLog else cmdSilent') "rpmbuild" args
         putStrLn "done"
 
 
