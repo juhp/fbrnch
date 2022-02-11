@@ -51,7 +51,7 @@ mockCmd dryrun mnoclean network mockshell mroot (breq, ps) = do
                       Just NoCleanBefore -> ["--no-clean"]
                       Just NoCleanAfter -> ["--no-cleanup-after"]
                       Just NoCleanAll -> ["--no-cleanup-all"]
-          mockopts_common c = [c, "--root", mockRoot rootBr] ++ noclean ++ ["--enable-network" | network] ++ resultdir ++ srpms
+          mockopts_common c = [c, "--root", mockRoot rootBr] ++ noclean ++ ["--enable-network" | network]
           mockbuild_opts = mockopts_common command ++ ["--config-opts=cleanup_on_failure=False" | mnoclean `elem` [Nothing, Just NoCleanBefore]] ++ resultdir ++ srpms
           mockshell_opts = mockopts_common "--shell" ++ ["--no-clean"]
       if dryrun
