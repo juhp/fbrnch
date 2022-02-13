@@ -374,7 +374,7 @@ main = do
 
     rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
 
-    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> mtargetOpt <*> overrideOpt <*> dryrunOpt <*> updatetypeOpt <*> useChangelogOpt <*> switchWith 'p' "by-package" "Build by each package across brs"
+    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> mtargetOpt <*> overrideOpt <*> waitrepoOpt <*> dryrunOpt <*> updatetypeOpt <*> useChangelogOpt <*> switchWith 'p' "by-package" "Build by each package across brs"
 
     useChangelogOpt = switchWith 'c' "changelog-notes" "Use spec changelog for Bodhi notes"
 
@@ -403,7 +403,11 @@ main = do
         checkNotRawhide "rawhide" = error' "'rawhide' is not a valid target!"
         checkNotRawhide t = t
 
-    overrideOpt = switchWith 'o' "override" "Create a buildroot override and wait-repo"
+    overrideOpt = switchWith 'o' "override" "Create a buildroot override: implies --wait-repo"
+
+    waitrepoOpt =
+      optional (flagWith' True 'w' "waitrepo" "Waitrepo for each build" <|>
+                 flagWith' False 'M' "no-waitrepo" "Do not waitrepo for each build")
 
     dryrunOpt = switchWith 'n' "dry-run" "Do not write (push, build, post, override)"
 

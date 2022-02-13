@@ -27,22 +27,23 @@ data BuildOpts = BuildOpts
   , buildoptNoFailFast :: Bool
   , buildoptTarget :: Maybe String
   , buildoptOverride :: Bool
+  , buildoptWaitrepo :: Maybe Bool
   , buildoptDryrun :: Bool
   , buildoptUpdateType :: Maybe UpdateType
   , buildoptUseChangelog :: Bool
   , buildoptByPackage :: Bool
   }
 
+-- FIXME --sort
 -- FIXME --add-to-update nvr
--- FIXME vertical vs horizontal builds (ie by package or branch)
 -- FIXME --rpmlint (only run for rawhide?)
 -- FIXME support --wait-build=NVR
 -- FIXME build from ref
 -- FIXME provide direct link to failed task/build.log
 -- FIXME --auto-override for deps in testing
 -- FIXME -B fails to find new branches (fixed?)
--- FIXME --no-wait
 -- FIXME --ignore-dirty??
+-- FIXME disallow override for autoupdate?
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptTarget opts)
@@ -101,6 +102,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
   let mtarget = buildoptTarget opts
       target = fromMaybe (branchTarget br) mtarget
+      mwaitrepo = buildoptWaitrepo opts
+      override = buildoptOverride opts
   case buildstatus of
     Just BuildComplete -> do
       putStrLn $ nvr ++ " is already built"
@@ -114,10 +117,11 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             mbug <- bzReviewAnon
             bodhiUpdate dryrun mbug spec nvr
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-            when (buildoptOverride opts) $
+            when override $
             bodhiCreateOverride dryrun Nothing nvr
-        when (isJust mlastpkg && mlastpkg /= Just pkg) $
-          when (buildoptOverride opts || autoupdate) $
+        when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
+          when ((override && mwaitrepo /= Just False) ||
+                (autoupdate && mwaitrepo == Just True)) $
             kojiWaitRepo dryrun target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
@@ -184,10 +188,11 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 -- FIXME diff previous changelog?
                 bodhiUpdate dryrun (fmap fst mBugSess) spec nvr
                 -- FIXME prompt for override note
-                when (buildoptOverride opts) $
+                when override $
                   bodhiCreateOverride dryrun Nothing nvr
-            when (isJust mlastpkg && mlastpkg /= Just pkg) $
-              when (buildoptOverride opts || autoupdate) $
+            when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
+              when ((override && mwaitrepo /= Just False) ||
+                    (autoupdate && mwaitrepo == Just True)) $
               kojiWaitRepo dryrun target nvr
   where
     bodhiUpdate :: Bool -> Maybe BugId -> FilePath -> String -> IO ()
