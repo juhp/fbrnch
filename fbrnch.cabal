@@ -129,7 +129,7 @@ executable fbrnch
                        unix,
                        xdg-basedir
 
-  if impl(ghc<8.0)
+  if impl(ghc<8.3)
        build-depends: semigroups
   if impl(ghc<8.4)
        build-depends: http-common < 0.8.3.4
