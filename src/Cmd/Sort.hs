@@ -6,8 +6,9 @@ module Cmd.Sort (
 where
 
 import Control.Monad.Extra
-import Distribution.RPM.Build.Graph -- (dependencySortRpmOpts)
-import Distribution.RPM.Build.Order (dependencySortRpmOpts)
+import Distribution.RPM.Build.Graph
+import Distribution.RPM.Build.Order (dependencySortRpmOpts,
+                                     dependencySortParallel)
 
 import Branches
 import Git
@@ -15,13 +16,15 @@ import Package
 
 data RpmWith = RpmWith String | RpmWithout String
 
-sortCmd :: Maybe RpmWith -> (Maybe Branch,[String]) -> IO ()
-sortCmd _ (_,[]) = return ()
-sortCmd mrpmwith (mbr, pkgs) = do
+sortCmd :: Bool -> Maybe RpmWith -> (Maybe Branch,[String]) -> IO ()
+sortCmd _ _ (_,[]) = return ()
+sortCmd parallel mrpmwith (mbr, pkgs) = do
   withPackagesMaybeBranchNoHeadergit ExactlyOne noop (mbr, pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
-  packages <- dependencySortRpmOpts rpmopts $ reverse pkgs
-  putStrLn $ unwords packages
+  if parallel
+    -- reverse because rpmbuild-order reverses the order of independent pkgs?
+    then dependencySortParallel (reverse pkgs) >>= mapM_ (putStrLn . unwords)
+    else dependencySortRpmOpts rpmopts (reverse pkgs) >>= putStrLn . unwords
 
 noop :: Package -> AnyBranch -> IO ()
 noop _pkg br =

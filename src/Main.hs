@@ -128,7 +128,8 @@ main = do
       <*> maybeBranchPackages False
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd
-      <$> optional rpmWithOpt
+      <$> switchWith 'p' "parallel" "Group dependent packages on separate lines"
+      <*> optional rpmWithOpt
       <*> maybeBranchPackages True
     , Subcommand "prep" "Prep sources" $
       prepCmd
