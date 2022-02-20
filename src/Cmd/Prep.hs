@@ -1,5 +1,6 @@
 module Cmd.Prep (
-  prepCmd
+  prepCmd,
+  PrepPre(..)
   ) where
 
 import Branches
@@ -10,14 +11,19 @@ import Git
 import InterleaveOutput (cmdSilent')
 import Package
 
-prepCmd :: Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
-prepCmd clone verbose (mbr,pkgs) = do
-  when clone $
+data PrepPre = PrepClone | PrepPull
+  deriving Eq
+
+prepCmd :: Maybe PrepPre -> Bool -> (Maybe Branch,[String]) -> IO ()
+prepCmd mpre verbose (mbr,pkgs) = do
+  when (mpre == Just PrepClone) $
     cloneCmd mbr (ClonePkgs pkgs)
   withPackagesMaybeBranchNoHeadergit ZeroOrOne prepPackage (mbr,pkgs)
   where
     prepPackage :: Package -> AnyBranch -> IO ()
     prepPackage pkg br = do
+      when (mpre == Just PrepPull) $
+        git_ "pull" []
       dead <- doesFileExist "dead.package"
       if dead
         then do

@@ -133,7 +133,7 @@ main = do
       <*> maybeBranchPackages True
     , Subcommand "prep" "Prep sources" $
       prepCmd
-      <$> switchWith 'c' "clone" "Try to clone package repo first"
+      <$> optional prepPreOpts
       <*> switchWith 'v' "verbose" "show rpmbuild output"
       <*> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
@@ -362,6 +362,11 @@ main = do
             Nothing -> (Branches brs, pkgs)
             Just req | null brs -> (BranchOpt req, pkgs)
                      | otherwise -> error' "cannot have branch option and branch list"
+
+    prepPreOpts :: Parser PrepPre
+    prepPreOpts =
+      flagWith' PrepClone 'c' "clone" "Try to clone package repo first" <|>
+      flagWith' PrepPull 'p' "pull" "Git pull before preping"
 
     rpmWithOpt :: Parser RpmWith
     rpmWithOpt =
