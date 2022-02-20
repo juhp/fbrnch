@@ -67,7 +67,6 @@ import Common.System
 import qualified Common.Text as T
 import Prompt
 
-import Control.Exception (finally)
 import Data.Aeson.Types (Array, Object)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.UTF8
@@ -77,10 +76,9 @@ import Network.HTTP.Query
 import Network.HTTP.Simple
 import System.Environment
 import System.Environment.XDG.BaseDir
-import System.IO (hSetEcho, stdin)
 import qualified Text.Email.Validate as Email
-import Web.Bugzilla.RedHat
-import Web.Bugzilla.RedHat.Search
+import Web.RedHatBugzilla
+import Web.RedHatBugzilla.Search
 
 createBug :: BugzillaSession -> [(String,String)] -> IO Int
 createBug session params = do
@@ -154,7 +152,7 @@ bzReviewSession = do
           pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bids of
     [bid] -> do
-      session <- bzLoginSession
+      session <- bzApiKeySession
       return $ Just (bid, session)
     _ -> return Nothing
 
@@ -184,72 +182,53 @@ getBzUser = do
       section brc $
       BzUserRC <$> fieldOf "user" string
 
-bzAnonSession :: IO BugzillaSession
-bzAnonSession =
-  AnonymousSession <$> newBugzillaContext brc
+bzAnonSession :: BugzillaSession
+bzAnonSession = anonymousSession brc
 
--- FIXME support bugzilla API key
-bzLoginSession :: IO BugzillaSession
-bzLoginSession = do
-  user <- getBzUser
-  ctx <- newBugzillaContext brc
-  getBzLoginSession ctx user
+-- bzAnonSession' :: IO (BugzillaSession,BugzillaContext)
+-- bzAnonSession' =
+--   context <- newBugzillaContext brc
+--   return (AnonymousSession context, context)
+
+bzApiKeySession :: IO BugzillaSession
+bzApiKeySession = do
+  (config,exists) <- do
+    rc1 <- getUserConfigFile "python-bugzilla" "bugzillarc"
+    haveRc1 <- doesFileExist rc1
+    if haveRc1
+      then return (rc1,haveRc1)
+      else do
+      home <- getHomeDirectory
+      let rc2 = home </> ".bugzillarc"
+      haveRc2 <- doesFileExist rc2
+      return $ if haveRc2
+               then (rc2,haveRc2)
+               else (rc1,False)
+  if not exists
+    then
+    -- do
+    -- let configDir = takeDirectory config
+    -- configDirExists <- doesDirectoryExist configDir
+    -- unless configDirExists $ createDirectory configDir
+    error' $ unlines
+    ["No Bugzilla API key found",
+     "Create a key at https://bugzilla.redhat.com/userprefs.cgi?tab=apikey",
+     "Save the key under in '" ++ config ++ "' under:",
+     "[bugzilla.redhat.com]",
+     apiKeyField ++ " = <YourApiKey>"]
+    else do
+    apikey <- readIniConfig config rcParser bzApiKey
+    return $ ApiKeySession brc $ BugzillaApiKey apikey
   where
-    getBzLoginSession :: BugzillaContext -> UserEmail -> IO BugzillaSession
-    getBzLoginSession ctx user = do
-      cache <- getUserCacheFile "python-bugzilla" "bugzillatoken"
-      let cacheDir = takeDirectory cache
-      cacheDirExists <- doesDirectoryExist cacheDir
-      unless cacheDirExists $ createDirectory cacheDir
-      tokenstatus <- ifM (notM (doesFileExist cache)) (return NoToken) $
-        do
-        token <- readIniConfig cache rcParser bzToken
-        let session = LoginSession ctx $ BugzillaToken token
-        let validreq = setRequestCheckStatus $
-                       newBzRequest session ["valid_login"] [("login",Just user)]
-        valid <- lookupKey' "result" . getResponseBody <$> httpJSON validreq
-        return $ if valid then ValidToken session else InvalidToken token
-      case tokenstatus of
-        ValidToken session -> return session
-        InvalidToken oldtoken -> do
-          token <- bzLogin
-          cmd_ "sed" ["-i", "s/" ++ T.unpack oldtoken ++ "/" ++ T.unpack token ++ "/", cache]
-          return $ LoginSession ctx $ BugzillaToken token
-        NoToken -> do
-          token <- bzLogin
-          T.writeFile cache $ "[" <> brc <> "]\ntoken = " <> token <> "\n"
-          putStrLn $ "Saved in " ++ cache
-          return $ LoginSession ctx $ BugzillaToken token
-      where
-        rcParser :: IniParser BzTokenConf
-        rcParser =
-          section brc $
-          BzTokenConf <$> fieldOf "token" string
+    apiKeyField = "api_key"
 
-        bzLogin :: IO T.Text
-        bzLogin = do
-          putStrLn "No valid bugzilla login token, please login:"
-          passwd <- withoutEcho $ prompt "Bugzilla Password"
-          if null passwd then bzLogin
-            else do
-            let anonsession = AnonymousSession ctx
-                tokenReq = setRequestCheckStatus $
-                           newBzRequest anonsession ["login"]
-                           [("login", Just user),
-                            makeTextItem "password" passwd]
-            res <- getResponseBody <$> httpJSON tokenReq
-            case lookupKey "token" res of
-              Nothing -> T.putStrLn (lookupKey' "message" res) >> bzLogin
-              Just token -> return token
+    rcParser :: IniParser BzApiKeyConf
+    rcParser =
+      section brc $
+      BzApiKeyConf <$> fieldOf (T.pack apiKeyField) string
 
-        withoutEcho :: IO a -> IO a
-        withoutEcho action =
-          finally (hSetEcho stdin False >> action) (hSetEcho stdin True)
-
-newtype BzTokenConf = BzTokenConf {bzToken :: T.Text}
+newtype BzApiKeyConf = BzApiKeyConf {bzApiKey :: T.Text}
   deriving (Eq, Show)
-
-data BzTokenStatus = ValidToken BugzillaSession | InvalidToken T.Text | NoToken
 
 bugIdIs :: BugId -> SearchExpression
 bugIdIs bid = BugIdField .==. bid
@@ -303,18 +282,15 @@ summaryContains keywrd =
   SummaryField `contains` T.pack keywrd
 
 bugIdsAnon :: SearchExpression -> IO [BugId]
-bugIdsAnon query = do
-  session <- bzAnonSession
-  searchBugs' session query
+bugIdsAnon = searchBugs' bzAnonSession
 
 bugsAnon :: SearchExpression -> IO [Bug]
-bugsAnon query = do
-  session <- bzAnonSession
-  searchBugs session query
+bugsAnon = searchBugs bzAnonSession
 
+-- FIXME name is ambiguous
 bugsSession :: SearchExpression -> IO ([Bug],BugzillaSession)
 bugsSession query = do
-  session <- bzLoginSession
+  session <- bzApiKeySession
   bugs <- searchBugs session query
   return (bugs, session)
 
@@ -324,7 +300,7 @@ reviewBugIdSession pkg = do
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
     [bug] -> do
-      session <- bzLoginSession
+      session <- bzApiKeySession
       return (bug, session)
     _ -> error' "more than one review bug found!"
 
@@ -335,7 +311,7 @@ approvedReviewBugIdSession pkg = do
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
     [bug] -> do
-      session <- bzLoginSession
+      session <- bzApiKeySession
       return (bug, session)
     _ -> error' "more than one review bug found!"
 
@@ -346,7 +322,7 @@ approvedReviewBugSession pkg = do
   case bugs of
     [] -> error $ "No review bug found for " ++ pkg
     [bug] -> do
-      session <- bzLoginSession
+      session <- bzApiKeySession
       return (bug, session)
     _ -> error' "more than one review bug found!"
 

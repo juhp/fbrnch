@@ -47,7 +47,6 @@
 
 # auth
 - update pagure key in ~/.config/rpkg/fedpkg.conf
-- bugzilla login via api key
 
 # status/*unbuilt*/unreleased
 - list pending new package builds

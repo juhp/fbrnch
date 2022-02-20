@@ -34,7 +34,7 @@ listReviewsAll = listReviewsFull False Nothing Nothing
 listReviewsFull :: Bool -> Maybe String -> Maybe String -> Bool
                 -> ReviewStatus-> IO [Bug]
 listReviewsFull assignee muser mpat allopen status = do
-  session <- bzAnonSession
+  let session = bzAnonSession
   accountid <- do
     case muser of
       Nothing -> getBzUser

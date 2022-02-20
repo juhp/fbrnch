@@ -1,7 +1,6 @@
 resolver: lts-16.31
 
 extra-deps:
-  - bugzilla-redhat-0.3.0@rev:1
   - koji-0.0.1
   - rpmbuild-order-0.4.5
   - rpm-nvr-0.1.1
@@ -11,3 +10,4 @@ extra-deps:
   - copr-api-0.1.0
   - cached-json-file-0.1.1
   - fedora-dists-2.0.0
+  - bugzilla-redhat-1.0.0
