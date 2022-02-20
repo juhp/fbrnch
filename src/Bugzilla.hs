@@ -74,7 +74,6 @@ import Data.Ini.Config
 import Network.HTTP.Conduit
 import Network.HTTP.Query
 import Network.HTTP.Simple
-import System.Environment
 import System.Environment.XDG.BaseDir
 import qualified Text.Email.Validate as Email
 import Web.RedHatBugzilla
@@ -164,17 +163,19 @@ emailIsValid = Email.isValid . B.pack
 
 getBzUser :: IO UserEmail
 getBzUser = do
-  home <- getEnv "HOME"
-  let rc = home </> ".bugzillarc"
-  -- FIXME assumption if file exists then it has b.r.c user
-  ifM (doesFileExist rc)
-    (readIniConfig rc rcParser rcUserEmail) $
-    do
+  config <- getUserConfigFile "fbrnch" "bugzilla"
+  haveConfig <- doesFileExist config
+  if haveConfig
+    then readIniConfig config rcParser rcUserEmail
+    else do
     -- FIXME: option to override email
     email <- prompt "Bugzilla Username"
     when (emailIsValid email) $ do
-      T.writeFile rc $ "[" <> brc <> "]\nuser = " <> T.pack email <> "\n"
-      putStrLn $ "Saved in " ++ rc
+      let configDir = takeDirectory config
+      configDirExists <- doesDirectoryExist configDir
+      unless configDirExists $ createDirectory configDir
+      T.writeFile config $ "[" <> brc <> "]\nuser = " <> T.pack email <> "\n"
+      putStrLn $ "Saved in " ++ config ++ "\n"
     getBzUser
   where
     rcParser :: IniParser BzUserRC
