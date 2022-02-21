@@ -18,10 +18,23 @@ import Data.RPM.VerCmp
 updateCmd :: Bool -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
 updateCmd onlysources force allowHEAD (mbr,args) = do
   pkgGit <- isPkgGitSshRepo
-  let (mver,pkgs) = case args of
-        [a] -> if pkgGit then (Just a,[]) else (Nothing,[a])
-        _ -> (Nothing,args)
-  withPackagesMaybeBranch (Just False) (if allowHEAD then dirtyGitHEAD else dirtyGitFetch) ZeroOrOne (updatePkg mver) (mbr, pkgs)
+  (mver,pkgs) <-
+    case args of
+      [a] -> do
+        if pkgGit
+          then return (Just a,[])
+          else do
+          mspec <- maybeFindSpecfile
+          return $ if isJust mspec
+                   then (Just a,[])
+                   else (Nothing,[a])
+      _ -> return (Nothing,args)
+  let mgitops =
+        let dirty = if allowHEAD then dirtyGitHEAD else dirtyGitFetch
+        in if pkgGit
+           then dirty
+           else if null pkgs then Nothing else dirty
+  withPackagesMaybeBranch (Just False) mgitops ZeroOrOne (updatePkg mver) (mbr, pkgs)
   where
     updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
     updatePkg mver pkg br = do
