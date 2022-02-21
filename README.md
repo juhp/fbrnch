@@ -96,7 +96,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f34 [package] ...
+$ fbrnch switch f35 [package] ...
 ```
 
 You can also git pull over packages:
@@ -144,13 +144,13 @@ It uses any rpm changelog, or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f33 package
+$ fbrnch merge f34 package
 ```
-which will offer to merge f34 (or some of it) into f33.
+which will offer to merge f35 (or some of it) into f34.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build f34 package
+$ fbrnch build f35 package
 ```
 will ask if you want to merge newer commits from a newer branch,
 then push and build it.
@@ -233,9 +233,9 @@ There are more commands like `copr` and `graph`.
 
 ```
 $ fbrnch --version
-0.9.1.1
+1.0.0
 $ fbrnch --help
-Fedora package branch building tool
+Fedora branch building tool
 
 Usage: fbrnch [--version] COMMAND
   This tool helps with updating and building package branches
@@ -264,7 +264,7 @@ Available commands:
   local                    Build locally
   srpm                     Build srpm
   diff                     Diff local changes
-  log                      Show commits between branches
+  compare                  Show commits between branches
   mock                     Local mock build
   install-deps             Install package build dependencies
   install                  Build locally and install package(s)
@@ -273,6 +273,7 @@ Available commands:
   bump                     Bump release for package
   commit                   Git commit packages
   pull                     Git pull packages
+  push                     Git push packages
   create-review            Create a Package Review request
   update-review            Update a Package Review
   review-package           Run fedora-review on a package Review Request bug
@@ -284,30 +285,10 @@ Available commands:
   find-review              Find package review bug
   command                  Run shell command in package dirs ($p)
   copr                     Build package(s) in Fedora Copr
-  rename-master            Rename local master branch to rawhide
+  rename-rawhide           Rename local 'master' branch to 'rawhide'
+  count                    Count number of living packages
   graph                    Output dependency graph
 ```
-
-## Known issues
-- parallel builds will push local package commits without asking
-- currently it only checks if already built by NVR not githash
-- authentication is not implemented yet natively for Koji, Bodhi, Pagure
-  (and source upload)
-  - so python clients are used for "writing"
-    (specifically koji, bodhi-client, fedpkg),
-    but all queries are done directly by Web APIs for speed and control.
-- https checkouts are currently assumed to an anonymous git checkouts
-
-## Motivation, history, talks
-This project started off (as "fedbrnch") basically as a simple tool to
-build a package across branches (ie for current releases).  Then bugzilla
-and Bodhi integration was added, and gradually more features, including
-some generic commands across packages which had already been done before
-in fedora-haskell-tools.
-
-I have given a couple of short talks about fbranch:
-- Nest with Fedora: [youtube](https://www.youtube.com/watch?v=40kTBsA674U) and [slides](https://github.com/juhp/presentations/blob/master/fedora-nest-2020-fbrnch/fbrnch-nest.md)
-- Lightning talk at devconf.cz 2021: [youtube](https://www.youtube.com/watch?v=O2-6rDuPMRA&t=2s)
 
 ## Installation
 fbrnch is packaged in Fedora: `sudo dnf install fbrnch`.
@@ -344,6 +325,28 @@ It also makes use of:
 - klist and fkinit
 - git
 - ssh & scp (for uploading package reviews)
+- bugzilla API key
+
+## Known issues
+- parallel builds will push local package commits without asking
+- currently it only checks if already built by NVR not githash
+- authentication is not implemented yet natively for Koji, Bodhi, Pagure
+  (and source upload)
+  - so python clients are used for "writing"
+    (specifically koji, bodhi-client, fedpkg),
+    but all queries are done directly by Web APIs for speed and control.
+- https checkouts are currently assumed to an anonymous git checkouts
+
+## Motivation, history, talks
+This project started off (as "fedbrnch") basically as a simple tool to
+build a package across branches (ie for current releases).  Then bugzilla
+and Bodhi integration was added, and gradually more features, including
+some generic commands across packages which had already been done before
+in fedora-haskell-tools.
+
+I have given a couple of short talks about fbranch:
+- Nest with Fedora: [youtube](https://www.youtube.com/watch?v=40kTBsA674U) and [slides](https://github.com/juhp/presentations/blob/master/fedora-nest-2020-fbrnch/fbrnch-nest.md)
+- Lightning talk at devconf.cz 2021: [youtube](https://www.youtube.com/watch?v=O2-6rDuPMRA&t=2s)
 
 ## Contribute
 Bug reports, feedback, and pull requests welcome.

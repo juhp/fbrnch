@@ -10,13 +10,12 @@
 - use rpm-nvr: eg for nameOfNVR
 - 'clean' command
 - merge rawhide pushes to local main?
-- use +/+ for urls instead of </>
 - pull creating new branches and/or clone --all?
 - stash and restore
 
 - push/build a commit (eg if one doesn't want to build HEAD yet)
 - merge koji-progress
-- install from koji (koji-install)
+- install from koji (koji-tool)
 
 # new commands
 - 'unpushed' command, etc (from f-h-t)

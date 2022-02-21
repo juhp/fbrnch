@@ -3,7 +3,7 @@
 ## next
 - 'repoquery': new experimental command
 
-## 0.10 (2022-02-xx)
+## 1.0.0 (2022-02-21)
 - rpm's _sourcedir is now acts as a source cache directory:
   sources are in the package dir, but may be hardlinks to _sourcedir
 - getSources checks compression integrity to re-download partial tarballs
@@ -37,6 +37,45 @@
 - Merge: rebase after non-ancestor merge
 - ListReviews: use anonymous bugzilla queries
 - checkOnBranch and gitCurrentBranch now prompt if detached HEAD
+
+- update to bugzilla-redhat-1.0 and use API key bzApiKeySession
+- 'build': build by branch by default instead of by package, if >1 package
+- 'build': --[no-]waitrepo option changes default behavior with autoupdate
+- 'commit': replace --staged with --unstaged
+- 'commit': tweak changelog filter to "+- " prefix
+- 'copr': handle --all-fedora and --all-epel
+- 'list': use pagure-hs release with new Object API
+- 'mock': add --no-clean-all and --shell to enter chroot after building
+- 'parallel': output enhancements
+- 'prep': add --pull option (alternative to --clone)
+- 'prep': add --verbose for prep output
+- 'pull': add --lenient to ignore non-git dirs/files
+- 'pull': handle old master branch better
+- 'push': new git push command
+- 'rename-master' renamed to 'rename-rawhide'
+- 'request-branches': output branch names with newline
+- 'scratch': print package header by default
+- 'sort': add --parallel option to group dependent packages
+- 'update': only run spectool -g once with --force
+- 'update': only sed edit sources if it exists
+- 'update': improve the mver/pkg/dirty logic
+- Bodhi: fix for aeson-2.0
+- Bugzilla: getBzUser save email id in ~/.config/fbrnch/bugzilla
+- Bugzilla: many queries now use anonymous session
+- Krb: factor out klistEntryFedora adding maybeFasIdFromKrb
+- Krb: klist errors if no tickets
+- Package: add checkLookasideCache to checkSourcesMatch
+- Package: builtRpms: check in %_rpmdir if not distgit
+- Package: fix lookaside check url
+- Package: handle Dynamic BRs locally
+- Package: refactor checkCompression
+- allow anonymous cloning of packages
+- decouple bodhi-hs, copr-hs, pagure-hs, pdc-hs
+- fedora-dists-2.0 was released: remove the submodule
+- kojiWatchTask: don't backtrace for task failure
+- latest fedora-dists uses cached-json-file & has better releaseBranch err
+- readme: note https checkouts currently assumed anonymous (#27)
+- require rpm-nvr-0.1.1 for VerComp bugfix
 
 ## 0.9.1.1 (2021-08-01)
 - getSources: fix mixup between sources and patches
