@@ -28,8 +28,8 @@ maybeTarget :: Maybe SideTagTarget -> Maybe String
 maybeTarget (Just (Target t)) = Just t
 maybeTarget _ = Nothing
 
--- (pkg, (sidetag, nvr))
-type Job = (String, Async (String, String))
+-- (pkg, nvr)
+type Job = (String, Async String)
 
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
@@ -68,14 +68,11 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
           error' "You must use --target/--sidetag to build package layers for this branch"
       when (length branches > 1) $
         putStrLn $ "# " ++ show rbr
-      -- FIXME: pass remaining layers for failure error
-      targets <- mapM (parallelBuild rbr)
+      target <- targetMaybeSidetag rbr
+      mapM_ (parallelBuild target rbr)
                  $ zip [firstlayer..length allLayers]
                  $ init $ tails layers -- tails ends in []
-      when (isJust msidetagTarget && null targets && not dryrun) $
-        error' "No target was returned from jobs!"
-      unless (isNothing msidetagTarget || null targets || dryrun) $ do
-        let target = head targets
+      unless (isNothing msidetagTarget || dryrun) $ do
         when (target /= branchTarget rbr) $ do
           notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
           bodhiSidetagUpdate target notes
@@ -86,19 +83,20 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
       putStrLn $ "= Building " ++ show (length brs) ++ " branches in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
-      (failures,_mtarget) <- watchJobs Nothing [] jobs
+      failures <- watchJobs [] jobs
       unless (null failures) $
         error' $ "Build failures: " ++ unwords failures
       where
         setupBranch :: Branch -> IO Job
         setupBranch br = do
-          job <- startBuild False False br "." >>= async
+          target <- targetMaybeSidetag br
+          job <- startBuild False False target br "." >>= async
           unless dryrun $ sleep 3
           return (show br,job)
 
-    parallelBuild :: Branch -> (Int,[[String]]) -> IO String
-    parallelBuild _ (_,[]) = return "" -- should not reach here
-    parallelBuild br (layernum, layer:nextLayers) =  do
+    parallelBuild :: String -> Branch -> (Int,[[String]]) -> IO ()
+    parallelBuild _ _ (_,[]) = return () -- should not reach here
+    parallelBuild target br (layernum, layer:nextLayers) =  do
       krbTicket
       putStrLn $ "\n= Building parallel layer #" ++ show layernum ++
         if nopkgs > 1
@@ -113,7 +111,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
              [l] -> plural l "package"
              _ -> show layerspkgs ++ " packages"
       jobs <- mapM setupBuild layer
-      (failures,mtarget) <- watchJobs Nothing [] jobs
+      failures <- watchJobs [] jobs
       -- FIXME prompt to continue?
       unless (null failures) $ do
         let pending = sum $ map length nextLayers
@@ -123,35 +121,36 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
           unwords (map unwords nextLayers)
       when (null jobs) $
         error' "No jobs run"
-      return $ fromMaybe (error' "No target determined") mtarget
+      return ()
       where
         nopkgs = length layer
         layersleft = length nextLayers
 
         setupBuild :: String -> IO Job
         setupBuild pkg = do
-          job <- startBuild (layersleft > 0) (nopkgs > 5) br pkg >>= async
+          job <- startBuild (layersleft > 0) (nopkgs > 5) target br pkg
+                 >>= async
           unless dryrun $ sleep 3
           return (pkg,job)
 
-    watchJobs :: Maybe String -> [String] -> [Job] -> IO ([String],Maybe String)
-    watchJobs mtarget fails [] = return (fails,mtarget)
-    watchJobs mtarget fails (job:jobs) = do
+    watchJobs :: [String] -> [Job] -> IO [String]
+    watchJobs fails [] = return fails
+    watchJobs fails (job:jobs) = do
       status <- poll (snd job)
       case status of
-        Nothing -> sleep 1 >> watchJobs mtarget fails (jobs ++ [job])
-        Just (Right (target,nvr)) -> do
+        Nothing -> sleep 1 >> watchJobs fails (jobs ++ [job])
+        Just (Right nvr) -> do
           putStrLn $ color Yellow nvr ++ " job completed (" ++ show (length jobs) ++ " jobs left in layer)"
-          watchJobs (Just target) fails jobs
+          watchJobs fails jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
           putStrLn $ "** " ++ color Magenta pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " jobs left in layer)"
-          watchJobs mtarget (pkg : fails) jobs
+          watchJobs (pkg : fails) jobs
 
     -- FIXME prefix output with package name
-    startBuild :: Bool -> Bool -> Branch -> String -> IO (IO (String,String))
-    startBuild morelayers background br pkgdir =
+    startBuild :: Bool -> Bool -> String -> Branch -> String -> IO (IO String)
+    startBuild morelayers background target br pkgdir =
       withExistingDirectory pkgdir $ do
       gitSwitchBranch (RelBranch br)
       pkg <- getPackageName pkgdir
@@ -166,21 +165,6 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
         unless dryrun $
           gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
-      target <- case msidetagTarget of
-                  Nothing -> return $ branchTarget br
-                  Just (Target t) -> return t
-                  Just SideTag -> do
-                    tags <- map (head . words) <$> kojiUserSideTags (Just br)
-                    case tags of
-                      [] -> do
-                        out <- head . lines <$> fedpkg "request-side-tag" []
-                        if "Side tag '" `isPrefixOf` out
-                          then do
-                          putStrLn out
-                          return $ init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
-                          else error' "'fedpkg request-side-tag' failed"
-                      [tag] -> return tag
-                      _ -> error' $ "More than one user side-tag found for " ++ show br
       putStrLn $ nvr ++ " (" ++ target ++ ")"
       -- FIXME should compare git refs
       -- FIXME check for target
@@ -198,20 +182,20 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
           return $ do
             when morelayers $
               kojiWaitRepo dryrun target nvr
-            return (target,nvr)
+            return nvr
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
           return $
             kojiGetBuildTaskID fedoraHub nvr >>=
             maybe (error' $ "Task for " ++ nvr ++ " not found")
-            (kojiWaitTaskAndRepo (isNothing mlatest) nvr target)
+            (kojiWaitTaskAndRepo (isNothing mlatest) nvr)
         _ -> do
           buildref <- git "show-ref" ["--hash", "origin/" ++ show br]
           opentasks <- kojiOpenTasks pkg (Just buildref) target
           case opentasks of
             [task] -> do
               putStrLn $ nvr ++ " task is already open"
-              return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr target task
+              return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr task
             (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
             [] -> do
               if equivNVR nvr (fromMaybe "" mlatest)
@@ -219,13 +203,13 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
                 else do
                 -- FIXME parse build output
                 if dryrun
-                  then return (return (target,nvr))
+                  then return (return nvr)
                   else do
                   task <- kojiBuildBranchNoWait target pkg Nothing $ "--fail-fast" : ["--background" | background]
-                  return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr target task
+                  return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr task
       where
-        kojiWaitTaskAndRepo :: Bool -> String -> String -> TaskID -> IO (String,String)
-        kojiWaitTaskAndRepo newpkg nvr target task = do
+        kojiWaitTaskAndRepo :: Bool -> String -> TaskID -> IO String
+        kojiWaitTaskAndRepo newpkg nvr task = do
           finish <- kojiWaitTask task
           if finish
             then putStrLn $ color Green $ nvr ++ " build success"
@@ -245,7 +229,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
               bodhiCreateOverride dryrun Nothing nvr
           when morelayers $
             kojiWaitRepo dryrun target nvr
-          return (target,nvr)
+          return nvr
 
     bodhiSidetagUpdate :: String -> String -> IO ()
     bodhiSidetagUpdate sidetag notes = do
@@ -257,3 +241,21 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
           when ok $ do
             prompt_ "After editing update, press Enter to remove sidetag"
             fedpkg_ "remove-side-tag" [sidetag]
+
+    targetMaybeSidetag :: Branch -> IO String
+    targetMaybeSidetag br =
+      case msidetagTarget of
+        Nothing -> return $ branchTarget br
+        Just (Target t) -> return t
+        Just SideTag -> do
+          tags <- map (head . words) <$> kojiUserSideTags (Just br)
+          case tags of
+            [] -> do
+              out <- head . lines <$> fedpkg "request-side-tag" ["--base-tag",  show br ++ "-build"]
+              if "Side tag '" `isPrefixOf` out
+                then do
+                putStrLn out
+                return $ init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
+                else error' "'fedpkg request-side-tag' failed"
+            [tag] -> return tag
+            _ -> error' $ "More than one user side-tag found for " ++ show br
