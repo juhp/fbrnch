@@ -20,6 +20,7 @@ module Git (
   isPkgGitSshRepo,
   checkWorkingDirClean,
   isGitDirClean,
+  checkIfRemoteBranchExists,
   CommitOpt (..),
   module SimpleCmd.Git
   ) where
@@ -170,18 +171,20 @@ gitSwitchBranch br = do
       git_ "switch" ["-q", show br]
     else do
     -- check remote branch exists
-    remotebranch <-
-      ifM checkIfRemoteBranchExists
-       (return True) $
-        gitFetchSilent >> checkIfRemoteBranchExists
+    remotebranch <- do
+      exists <- checkIfRemoteBranchExists br
+      if exists
+      then return True
+      else gitFetchSilent >> checkIfRemoteBranchExists br
     if not remotebranch
       then do
       name <- getDirectoryName
       error' $ name ++ " " ++ show br ++ " branch does not exist!"
       else
       git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]
-  where
-    checkIfRemoteBranchExists =
-      gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
+
+checkIfRemoteBranchExists :: AnyBranch -> IO Bool
+checkIfRemoteBranchExists br =
+  gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
 
 data CommitOpt = CommitMsg String | CommitAmend
