@@ -52,6 +52,7 @@ executable fbrnch
                        Cmd.Commit
                        Cmd.Copr
                        Cmd.Diff
+                       Cmd.FTBFS
                        Cmd.Import
                        Cmd.Install
                        Cmd.ListBranches

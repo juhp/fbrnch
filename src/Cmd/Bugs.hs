@@ -6,6 +6,7 @@ import Package
 bugsCmd :: Maybe String -> [String] -> IO ()
 bugsCmd keyword pkgs = do
   if null pkgs
+    -- FIXME check for distgit
     then bugsPkg "."
     else mapM_ bugsPkg pkgs
   where

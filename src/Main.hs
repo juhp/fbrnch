@@ -16,6 +16,7 @@ import Cmd.Clone
 import Cmd.Commit
 import Cmd.Copr
 import Cmd.Diff
+import Cmd.FTBFS
 import Cmd.Import
 import Cmd.Install
 import Cmd.ListBranches
@@ -273,6 +274,12 @@ main = do
     -- , Subcommand "repoquery" "Repoquery branches (put repoquery options after '--')" $
     --   repoqueryCmd
     --   <$> branchesPackages
+    , Subcommand "ftbfs" "Check FTBFS status" $
+      ftbfsCmd
+      <$> dryrunOpt
+      <*> switchWith 'b' "bugs" "Query for FTBFS bugs"
+      <*> optional (strOptionWith 'U' "user" "USER" "Bugzilla userid")
+      <*> maybeBranchPackages False
     ]
   where
     cloneRequest :: Parser CloneRequest

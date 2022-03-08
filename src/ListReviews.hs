@@ -8,9 +8,6 @@ module ListReviews (
   ) where
 
 import Common
-import Common.System
-import qualified Common.Text as T
-import Network.HTTP.Query
 
 import Branches
 import Bugzilla
@@ -30,23 +27,11 @@ listReviews = listReviewsAll False
 listReviewsAll :: Bool -> ReviewStatus -> IO [Bug]
 listReviewsAll = listReviewsFull False Nothing Nothing
 
--- FIXME should not require login
 listReviewsFull :: Bool -> Maybe String -> Maybe String -> Bool
                 -> ReviewStatus-> IO [Bug]
 listReviewsFull assignee muser mpat allopen status = do
   let session = bzAnonSession
-  accountid <- do
-    case muser of
-      Nothing -> getBzUser
-      Just userid ->
-        if emailIsValid userid then return $ T.pack userid
-        else do
-          users <- listBzUsers session userid
-          case users of
-            [] -> error' $ "No user found for " ++ userid
-            [obj] -> return $ T.pack $ lookupKey' "email" obj
-            objs -> error' $ "Found multiple user matches: " ++
-                    unwords (map (lookupKey' "email") objs)
+  accountid <- getBzAccountId session muser
   let reviews = (if assignee then assigneeIs else reporterIs) accountid .&&. maybe packageReview pkgReviewsPrefix mpat
       open = if allopen
         then statusOpen else

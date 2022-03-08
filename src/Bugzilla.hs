@@ -10,9 +10,11 @@ module Bugzilla (
   bugsAnon,
   bugIdsAnon,
   bzAnonSession,
+  bzApiKeySession,
   bzReviewSession,
   bzReviewAnon,
   getBzUser,
+  getBzAccountId,
   reviewBugIdSession,
   approvedReviewBugIdSession,
   approvedReviewBugSession,
@@ -36,6 +38,8 @@ module Bugzilla (
   statusNewModified,
   statusOpen,
   summaryContains,
+  versionIs,
+  ftbfsBugs,
   -- comments
   Comment,
   checkForComment,
@@ -57,6 +61,7 @@ module Bugzilla (
   putBugVer,
   putReviewBug,
   putBugId,
+  putBugURLStatus,
   -- request
   newBzRequest,
   makeTextItem
@@ -125,12 +130,13 @@ encodeParams [] = []
 encodeParams ((k,v):ps) =
   (B.pack k, fromString v) : encodeParams ps
 
+-- FIXME check original status?
 putBugBuild :: Bool -> BugzillaSession -> BugId -> String -> IO ()
 putBugBuild dryrun session bid nvr = do
   unless dryrun $
     void $ updateBug session bid
     [("cf_fixed_in", nvr), ("status", "MODIFIED")]
-  putStrLn $ "build posted to review bug " ++ show bid
+  putStrLn $ "bug " ++ show bid ++ (if dryrun then " would be" else "") ++ " moved to MODIFIED with " ++ nvr
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
@@ -282,6 +288,13 @@ summaryContains :: String -> SearchExpression
 summaryContains keywrd =
   SummaryField `contains` T.pack keywrd
 
+versionIs :: String -> SearchExpression
+versionIs v =
+  VersionField .==. T.pack v
+
+ftbfsBugs :: SearchExpression
+ftbfsBugs = summaryContains "FTBFS in Fedora"
+
 bugIdsAnon :: SearchExpression -> IO [BugId]
 bugIdsAnon = searchBugs' bzAnonSession
 
@@ -404,6 +417,11 @@ putBugId :: BugId -> IO ()
 putBugId bid =
   putStrLn $ "https://" <> T.unpack brc <> "/show_bug.cgi?id=" <> show bid
 
+putBugURLStatus :: Bug -> IO ()
+putBugURLStatus bug = do
+  putStr $ "https://" <> T.unpack brc <> "/show_bug.cgi?id=" <> show (bugId bug)
+  T.putStrLn $ " (" <> bugStatus bug <> ")"
+
 -- uniq for lists
 dropDuplicates :: Eq a => [a] -> [a]
 dropDuplicates (x:xs) =
@@ -430,3 +448,17 @@ listBzUsers session user = do
   let req = setRequestCheckStatus $
             newBzRequest session ["user"] [makeTextItem "match" user]
   lookupKey' "users" . getResponseBody <$> httpJSON req
+
+getBzAccountId :: BugzillaSession -> Maybe String -> IO T.Text
+getBzAccountId session muser = do
+  case muser of
+    Nothing -> getBzUser
+    Just userid ->
+      if emailIsValid userid then return $ T.pack userid
+      else do
+        users <- listBzUsers session userid
+        case users of
+          [] -> error' $ "No user found for " ++ userid
+          [obj] -> return $ T.pack $ lookupKey' "email" obj
+          objs -> error' $ "Found multiple user matches: " ++
+                  unwords (map (lookupKey' "email") objs)
