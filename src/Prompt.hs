@@ -51,4 +51,6 @@ conflictPrompt commits txt = do
   if null ref then return Nothing
     else if ref `elem` commitrefs
       then return $ Just ref
-      else conflictPrompt commits txt
+      else if lower ref == "head"
+           then return $ Just $ head commitrefs
+           else conflictPrompt commits txt

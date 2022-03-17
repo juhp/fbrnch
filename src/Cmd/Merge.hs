@@ -88,7 +88,7 @@ mergeBranch build noprompt (False,unmerged) br = do
     mapM_ putStrLn unpushed
   mmerge <-
     if noprompt then return Nothing
-    else conflictPrompt unmerged $ "Press Enter to skip merge" ++ (if build then " and build" else "") ++ "; or give a ref to attempt merge"
+    else conflictPrompt unmerged $ "Press Enter to skip merge" ++ (if build then " and build" else "") ++ "; or give a ref or 'HEAD' to attempt merge"
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ ref -> do
