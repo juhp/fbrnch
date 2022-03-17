@@ -15,8 +15,9 @@ prompt s = do
   putStr $ s ++ ": "
   tty <- openFile "/dev/tty" ReadMode
   inp <- hGetLine tty
-  putStrLn ""
-  return inp
+  if "\ESC[" `isInfixOf` inp
+    then prompt s
+    else return inp
 
 prompt_ :: String -> IO ()
 prompt_ = void <$> prompt
