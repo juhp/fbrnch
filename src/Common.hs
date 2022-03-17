@@ -8,7 +8,8 @@ module Common (
   (<>),
 #endif
   (+/+),
-  plural
+  plural,
+  pluralException
   ) where
 
 import Control.Monad.Extra -- hiding (loop)
@@ -23,10 +24,13 @@ import Network.HTTP.Query ((+/+))
 
 plural :: Int -> String -> String
 plural i ns =
+  pluralException i ns (ns ++ "s")
+
+pluralException :: Int -> String -> String -> String
+pluralException i ns ps =
   mconcat
   [
     show i,
     " ",
-    ns,
-    if i == 1 then "" else "s"
+    if i == 1 then ns else ps
   ]

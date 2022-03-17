@@ -31,6 +31,7 @@ maybeTarget _ = Nothing
 -- (pkg, nvr)
 type Job = (String, Async String)
 
+-- FIXME print koji url of failed process or use koji-tool
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources as early as possible
@@ -80,7 +81,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do
       krbTicket
-      putStrLn $ "= Building " ++ show (length brs) ++ " branches in parallel:"
+      putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
       failures <- watchJobs [] jobs
@@ -117,8 +118,11 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
         let pending = sum $ map length nextLayers
         error' $ "Build failures in layer " ++ show layernum ++ ": " ++
           unwords failures ++ "\n\n" ++
-          show pending ++ " pending packages:\n" ++
-          unwords (map unwords nextLayers)
+          show pending ++ " pending packages" ++
+          if pending > 0
+          then
+          ":\n" ++ unwords (map unwords nextLayers)
+          else ""
       when (null jobs) $
         error' "No jobs run"
       where
@@ -139,12 +143,12 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
       case status of
         Nothing -> sleep 1 >> watchJobs fails (jobs ++ [job])
         Just (Right nvr) -> do
-          putStrLn $ color Yellow nvr ++ " job completed (" ++ show (length jobs) ++ " jobs left in layer)"
+          putStrLn $ color Yellow nvr ++ " job completed (" ++ show (length jobs) ++ " left in layer)"
           watchJobs fails jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
-          putStrLn $ "** " ++ color Magenta pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " jobs left in layer)"
+          putStrLn $ "** " ++ color Magenta pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " left in layer)"
           watchJobs (pkg : fails) jobs
 
     -- FIXME prefix output with package name
