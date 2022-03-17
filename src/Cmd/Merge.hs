@@ -37,8 +37,7 @@ getNewerBranch br = do
            Just i -> branches !! (i - 1)
            Nothing -> error' $ show br ++ ": branch not found"
 
--- FIXME newer branch might not exist (eg epel8):
-   -- restrict to local branches
+-- FIXME maybe require local branch already here
 mergeable :: Branch -> IO (Bool,[String])
 mergeable br = do
   newer <- getNewerBranch br
@@ -70,6 +69,9 @@ mergeBranch build noprompt (True, unmerged) br = do
     let ref = case mhash of
                 Nothing -> show newerBr
                 Just hash -> hash
+    locals <- localBranches True
+    unless (show newerBr `elem` locals) $
+      git_ "fetch" ["origin", show newerBr ++ ":" ++ show newerBr]
     git_ "merge" ["--quiet", ref]
 mergeBranch build noprompt (False,unmerged) br = do
   newer <- getNewerBranch br
