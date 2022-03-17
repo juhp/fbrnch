@@ -1,14 +1,17 @@
 module Cmd.Sort (
   sortCmd,
   RpmWith(..),
-  graphCmd
+  graphCmd,
+  SortDisplay(..)
   )
 where
 
 import Control.Monad.Extra
+import Data.List (intercalate)
 import Distribution.RPM.Build.Graph
 import Distribution.RPM.Build.Order (dependencySortRpmOpts,
-                                     dependencySortParallel)
+                                     dependencySortParallel,
+                                     dependencyLayers)
 
 import Branches
 import Git
@@ -16,15 +19,25 @@ import Package
 
 data RpmWith = RpmWith String | RpmWithout String
 
-sortCmd :: Bool -> Maybe RpmWith -> (Maybe Branch,[String]) -> IO ()
+data SortDisplay = SortParallel | SortChain | SortLayers | SortPlain
+
+sortCmd :: SortDisplay -> Maybe RpmWith -> (Maybe Branch,[String]) -> IO ()
 sortCmd _ _ (_,[]) = return ()
-sortCmd parallel mrpmwith (mbr, pkgs) = do
+sortCmd displaymode mrpmwith (mbr, pkgs) = do
   withPackagesMaybeBranchNoHeadergit ExactlyOne noop (mbr, pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
-  if parallel
+  case displaymode of
     -- reverse because rpmbuild-order reverses the order of independent pkgs?
-    then dependencySortParallel (reverse pkgs) >>= mapM_ (putStrLn . unwords)
-    else dependencySortRpmOpts rpmopts (reverse pkgs) >>= putStrLn . unwords
+    SortParallel ->
+      dependencySortParallel (reverse pkgs) >>= mapM_ (putStrLn . unwords)
+    SortChain ->
+      dependencyLayers pkgs >>=
+      putStrLn . intercalate " : " . map unwords
+    SortLayers ->
+      dependencyLayers pkgs >>=
+      mapM_ (putStrLn . unwords)
+    SortPlain ->
+      dependencySortRpmOpts rpmopts (reverse pkgs) >>= putStrLn . unwords
 
 noop :: Package -> AnyBranch -> IO ()
 noop _pkg br =

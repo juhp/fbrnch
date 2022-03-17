@@ -129,7 +129,7 @@ main = do
       <*> maybeBranchPackages False
     , Subcommand "sort" "Sort packages in build dependency order" $
       sortCmd
-      <$> switchWith 'p' "parallel" "Group dependent packages on separate lines"
+      <$> sortDisplayOpt
       <*> optional rpmWithOpt
       <*> maybeBranchPackages True
     , Subcommand "prep" "Prep sources" $
@@ -485,3 +485,9 @@ main = do
       flagWith' NoCleanBefore 'c' "no-clean" "Do not clean chroot before building"
       <|> flagWith' NoCleanAfter 'C' "no-clean-after" "Do not clean chroot after building"
       <|> flagWith' NoCleanAll 'A' "no-clean-all" "Do not clean chroot before or after building"
+
+    sortDisplayOpt :: Parser SortDisplay
+    sortDisplayOpt =
+      flagWith' SortParallel 'p' "parallel" "Group dependent packages on separate lines"
+      <|> flagWith' SortChain 'c' "chain" "chain-build output"
+      <|> flagWith SortPlain SortLayers 'l' "layers" "output parallel layers"
