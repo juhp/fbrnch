@@ -54,7 +54,7 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget mref (breq,pkgs) =
                 else return False
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
-        putStrLn $ "koji scratch build of " ++ fromMaybe nvr mref ++ (if pushed then "" else ".src.rpm") ++ " for " ++ target
+        putStrLn $ "scratch build of " ++ fromMaybe nvr mref ++ (if pushed then "" else ".src.rpm") ++ " for " ++ target
         unless dryrun $ do
           if pushed
             then kojiBuildBranch target pkg mref $ "--scratch" : kojiargs
