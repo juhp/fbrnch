@@ -104,10 +104,15 @@ changelogVersions spec = do
 
 cleanChangelog :: FilePath -> IO String
 cleanChangelog spec = do
-  cs <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
-  let ls = lines cs
-      no = length $ filter ("- " `isPrefixOf`) ls
-  return $ if no == 1 then removePrefix "- " cs else cs
+  autochangelog <- grep_ "^%autochangelog" spec
+  ls <-
+    if autochangelog
+    then takeWhile (not . null) . drop 1 <$>
+         cmdLines "rpmautospec" ["generate-changelog", spec]
+    else cmdLines "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
+  return $ case filter ("- " `isPrefixOf`) ls of
+             [l] -> removePrefix "- " l
+             _ -> unlines ls
 
 getSummaryURL :: FilePath -> IO String
 getSummaryURL spec = do
