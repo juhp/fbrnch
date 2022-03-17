@@ -61,8 +61,12 @@ mergeBranch build noprompt (True, unmerged) br = do
     mapM_ putStrLn unpushed
   -- FIXME avoid Mass_Rebuild bumps
   mmerge <-
-    if isnewrepo && length unmerged == 1 || noprompt then return $ Just Nothing
-    else refPrompt unmerged $ "Press Enter to merge " ++ show newerBr ++ (if build then " and build" else "") ++ (if length unmerged > 1 then "; or give a ref to merge" else "") ++ "; or 'no' to skip merge"
+    if isnewrepo && length unmerged == 1 || noprompt
+    then return $ Just Nothing
+    else refPrompt unmerged $ "Press Enter to merge " ++ show newerBr ++
+         (if build then " and build" else "") ++
+         (if length unmerged > 1 then "; or give a ref to merge" else "") ++
+         "; or 'no' to skip merge"
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ mhash -> do
