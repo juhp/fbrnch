@@ -102,14 +102,14 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
           staggerBuilds srpm initialChroots remainingChroots
 
     removeArch relarch = init $ dropWhileEnd (/= '-') relarch
-    takeArch relarch = takeWhileEnd (/= '-') relarch
+    takeArch = takeWhileEnd (/= '-')
 
     staggerBuilds srpm initialChroots remainingChroots = do
       mapM_ (coprBuild dryrun project srpm) initialChroots
       unless (null remainingChroots) $
         coprBuild dryrun project srpm remainingChroots
 
-    releaseArch relarch = takeWhileEnd (/= '-') relarch
+    releaseArch = takeWhileEnd (/= '-')
 
     isArch arch release = releaseArch release == arch
 

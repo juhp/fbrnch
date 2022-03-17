@@ -121,7 +121,6 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
           unwords (map unwords nextLayers)
       when (null jobs) $
         error' "No jobs run"
-      return ()
       where
         nopkgs = length layer
         layersleft = length nextLayers
