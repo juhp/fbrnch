@@ -13,6 +13,7 @@ module Bugzilla (
   bzApiKeySession,
   bzReviewSession,
   bzReviewAnon,
+  bzBugMaybe,
   getBzUser,
   getBzAccountId,
   reviewBugIdSession,
@@ -39,7 +40,8 @@ module Bugzilla (
   statusOpen,
   summaryContains,
   versionIs,
-  ftbfsBugs,
+  ftbfsFedoraBugs,
+  componentSubStr,
   -- comments
   Comment,
   checkForComment,
@@ -140,6 +142,14 @@ putBugBuild dryrun session bid nvr = do
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
+
+bzBugMaybe :: BugzillaSession -> SearchExpression -> IO (Maybe Bug)
+bzBugMaybe session query = do
+  bugs <- searchBugs session query
+  return $ case bugs of
+             [] -> Nothing
+             [bug] -> Just bug
+             _ -> error' "more that one bug found"
 
 bzReviewAnon :: IO (Maybe BugId)
 bzReviewAnon = do
@@ -292,8 +302,12 @@ versionIs :: String -> SearchExpression
 versionIs v =
   VersionField .==. T.pack v
 
-ftbfsBugs :: SearchExpression
-ftbfsBugs = summaryContains "FTBFS in Fedora"
+ftbfsFedoraBugs :: SearchExpression
+ftbfsFedoraBugs = summaryContains "FTBFS in Fedora"
+
+componentSubStr :: String -> SearchExpression
+componentSubStr substr =
+  ComponentField .=~. [T.pack substr]
 
 bugIdsAnon :: SearchExpression -> IO [BugId]
 bugIdsAnon = searchBugs' bzAnonSession

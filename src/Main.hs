@@ -277,8 +277,12 @@ main = do
     , Subcommand "ftbfs" "Check FTBFS status" $
       ftbfsCmd
       <$> dryrunOpt
-      <*> switchWith 'b' "bugs" "Query for FTBFS bugs"
-      <*> optional (strOptionWith 'U' "user" "USER" "Bugzilla userid")
+      <*> switchWith 'l' "short" "Only list packages"
+      <*> optional (flagWith' (FtbfsUser Nothing) 'M' "mine" "Your packages"
+                    <|>
+                    FtbfsUser . Just <$> strOptionWith 'U' "user" "USER" "Bugzilla userid"
+                    <|>
+                    FtbfsSubstring <$> strOptionWith 's' "substring" "STRING" "Component substring")
       <*> maybeBranchPackages False
     ]
   where
