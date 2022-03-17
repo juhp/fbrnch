@@ -402,7 +402,7 @@ main = do
           "Create a buildroot override: implies --wait-repo"
         waitrepoOpt =
           optional (flagWith' True 'w' "waitrepo" "Waitrepo for each build" <|>
-                    flagWith' False 'M' "no-waitrepo" "Do not waitrepo for each build")
+                    flagWith' False 'W' "no-waitrepo" "Do not waitrepo for each build")
         useChangelogOpt =
           switchWith 'c' "changelog-notes" "Use spec changelog for Bodhi notes"
 
