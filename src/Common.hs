@@ -11,7 +11,7 @@ module Common (
   plural
   ) where
 
-import Control.Monad.Extra
+import Control.Monad.Extra -- hiding (loop)
 import Data.List.Extra
 import Data.Maybe
 

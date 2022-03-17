@@ -108,6 +108,7 @@ executable fbrnch
                        extra,
                        fedora-dists >= 2.0,
                        filepath,
+                       -- haskeline,
                        http-conduit,
                        http-directory >= 0.1.5,
                        http-query,

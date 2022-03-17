@@ -7,11 +7,21 @@ module Prompt (
 
 import Common
 
+-- import System.Console.Haskeline
 import System.IO
 
 -- FIXME promptNonEmpty
 prompt :: String -> IO String
 prompt s = do
+  -- -- doesn't work in emacs-vterm :(
+  -- runInputT defaultSettings loop
+  --  where
+  --      loop :: InputT IO String
+  --      loop = do
+  --          minput <- getInputLine $ s ++ ": "
+  --          case minput of
+  --              Nothing -> return ""
+  --              Just input -> return input
   putStr $ s ++ ": "
   tty <- openFile "/dev/tty" ReadMode
   inp <- hGetLine tty
