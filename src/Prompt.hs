@@ -7,7 +7,6 @@ module Prompt (
 
 import Common
 
-import Data.Char
 import System.IO
 
 -- FIXME promptNonEmpty
@@ -28,7 +27,7 @@ refPrompt commits txt = do
   let commitrefs = tail $ map (head . words) commits
   ref <- prompt txt
   if null ref then return (Just Nothing) else
-    if map toLower ref == "no" then return Nothing
+    if lower ref == "no" then return Nothing
     else if ref `elem` commitrefs
       then return $ Just (Just ref)
       else refPrompt commits txt
