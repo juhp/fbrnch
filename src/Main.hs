@@ -139,7 +139,8 @@ main = do
       <*> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
       localCmd
-      <$> optional forceshortOpt
+      <$> switchWith 'q' "quiet" "Hide the build.log until it errors"
+      <*> optional forceshortOpt
       <*> many bcondOpt
       <*> branchesPackages
     , Subcommand "srpm" "Build srpm" $

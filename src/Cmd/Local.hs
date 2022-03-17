@@ -21,8 +21,9 @@ import Git
 import Package
 
 -- FIXME generate build.log files
-localCmd :: Maybe ForceShort -> [BCond] -> (BranchesReq, [String]) -> IO ()
-localCmd mforceshort bconds =
+localCmd :: Bool -> Maybe ForceShort -> [BCond] -> (BranchesReq, [String])
+         -> IO ()
+localCmd quiet mforceshort bconds =
   withPackageByBranches Nothing Nothing ZeroOrOne localBuildPkg
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
@@ -31,7 +32,7 @@ localCmd mforceshort bconds =
       rpms <- if isJust mforceshort
               then return []
               else builtRpms br spec
-      void $ buildRPMs False mforceshort bconds rpms br spec
+      void $ buildRPMs quiet mforceshort bconds rpms br spec
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd =
