@@ -308,21 +308,22 @@ checkSourcesMatch spec = do
 
 getSources :: FilePath -> IO [FilePath]
 getSources spec = do
-  gitDir <- isGitRepo
-  cwd <- getCurrentDirectory
   -- FIXME fallback to ~/rpmbuild/SOURCES?
   msrcdir <- do
+    cwd <- getCurrentDirectory
     msourcedir <- rpmEval "%{_sourcedir}"
     case msourcedir of
       Nothing -> return Nothing
-      Just srcdir ->
-        if msourcedir == Just cwd
+      Just srcdir -> do
+        canon <- canonicalizePath srcdir
+        if canon == cwd
         then return Nothing
         else do
           dir <- doesDirectoryExist srcdir
           if dir
             then return msourcedir
             else return Nothing
+  gitDir <- isGitRepo
   (patches,srcs) <- partitionEithers . map sourceFieldFile
                     <$> cmdLines "spectool" ["-a", spec]
   forM_ srcs $ \ src -> do
