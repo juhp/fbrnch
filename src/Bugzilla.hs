@@ -364,7 +364,10 @@ reviewBugToPackage =
 readIniConfig :: FilePath -> IniParser a -> (a -> b) -> IO b
 readIniConfig inifile iniparser fn = do
   ini <- T.readFile inifile
-  return $ either error fn $ parseIniFile ini iniparser
+  return $
+    case parseIniFile ini iniparser of
+      Left err -> error' $ err ++ "\nin " ++ inifile
+      Right res -> fn res
 
 sortBugsByID :: [Bug] -> [Bug]
 sortBugsByID = sortOn bugId

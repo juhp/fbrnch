@@ -327,6 +327,19 @@ It also makes use of:
 - ssh & scp (for uploading package reviews)
 - bugzilla API key
 
+## Bugzilla API key
+fbrnch can share the API of the python-bugzilla CLI tool,
+placed either in `~/.config/python-bugzilla/bugzillarc` or `~/.bugzillarc`:
+
+```
+[bugzilla.redhat.com]
+api_key = PASTE_YOUR_APIKEY_HERE
+
+```
+
+You can create your key at
+<https://bugzilla.redhat.com/userprefs.cgi?tab=apikey>.
+
 ## Known issues
 - parallel builds will push local package commits without asking
 - currently it only checks if already built by NVR not githash
