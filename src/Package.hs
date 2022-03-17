@@ -631,10 +631,9 @@ clonePkg quiet cloneuser mbr pkg = do
         fasid <- fasIdFromKrb
         msgout
         git_ "clone" $ ["--quiet"] ++ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg <.> "git"]
-    putStrLn ""
   where
     msgout =
-      putStr $ if quiet then "cloning..." else "Cloning: " ++ pkg
+      putStrLn $ if quiet then "cloning..." else "Cloning: " ++ pkg
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
 pkgNameVerRel br spec = do
