@@ -197,22 +197,30 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   where
     bodhiUpdate :: Bool -> Maybe BugId -> FilePath -> String -> IO ()
     bodhiUpdate dryrun mreview spec nvr = do
-      changelog <- if isJust mreview
-                   then getSummaryURL spec
-                   else if buildoptUseChangelog opts
-                        then cleanChangelog spec
-                        else changeLogPrompt (Just "update") spec
-      let cbugs = mapMaybe extractBugReference $ lines changelog
-          bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
-            if null bids then [] else ["--bugs", intercalate "," bids]
-      -- FIXME also query for open existing bugs
       case buildoptUpdateType opts of
         Nothing -> return ()
         Just updateType -> do
-          putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
           unless dryrun $ do
             -- use cmdLog to debug, but notes are not quoted
-            cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+            if updateType == TemplateUpdate
+              then cmd_ "fedpkg" ["update"]
+              else do
+              changelog <- if isJust mreview
+                           then getSummaryURL spec
+                           else if buildoptUseChangelog opts
+                                then cleanChangelog spec
+                                else
+                                  -- FIXME list open bugs
+                                  changeLogPrompt (Just "update") spec
+              let cbugs = mapMaybe extractBugReference $ lines changelog
+                  bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
+                    if null bids then [] else ["--bugs", intercalate "," bids]
+      -- FIXME also query for open existing bugs
+
+              putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
+              -- FIXME check for Bodhi URL to confirm update
+              cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+            -- FIXME avoid this if we know the update URL
             updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
             case updatequery of
               [] -> do

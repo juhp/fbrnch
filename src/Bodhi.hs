@@ -12,7 +12,6 @@ where
 import Data.Aeson.Key (fromText)
 #endif
 import Data.Aeson.Types (Object, (.:), parseEither)
-import Data.Char (toLower)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import Text.Read
 import qualified Text.ParserCombinators.ReadP as R
@@ -64,22 +63,26 @@ bodhiCreateOverride dryrun mduration nvr = do
         Just obj -> error' $ show obj
 
 data UpdateType =
-  SecurityUpdate | BugfixUpdate | EnhancementUpdate | NewPackageUpdate
+  SecurityUpdate | BugfixUpdate | EnhancementUpdate | NewPackageUpdate |
+  TemplateUpdate
+  deriving Eq
 
 instance Show UpdateType where
   show SecurityUpdate = "security"
   show BugfixUpdate = "bugfix"
   show EnhancementUpdate = "enhancement"
   show NewPackageUpdate = "newpackage"
+  show TemplateUpdate = error "template update"
 
 instance Read UpdateType where
   readPrec = do
     s <- look
-    case map toLower s of
+    case lower s of
       "security" -> RP.lift (R.string s) >> return SecurityUpdate
       "bugfix" -> RP.lift (R.string s) >> return BugfixUpdate
       "enhancement" -> RP.lift (R.string s) >> return EnhancementUpdate
       "newpackage" -> RP.lift (R.string s) >> return NewPackageUpdate
+      "template" -> RP.lift (R.string s) >> return TemplateUpdate
       _ -> error' "unknown bodhi update type" >> RP.pfail
 
 bodhiTestingRepo :: Branch -> IO (Maybe String)
