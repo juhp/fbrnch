@@ -645,7 +645,9 @@ pkgNameVerRel br spec = do
   fmap (replace hostdist disttag) . listToMaybe <$>
     if autorelease
     then do
-      -- FIXME use  ?
+      mautospec <- findExecutable "rpmautospec"
+      when (isNothing mautospec) $
+        error' "requires rpmautospec.."
       autorel <- last . words <$> cmd "rpmautospec" ["calculate-release", spec]
       rpmspec ["--srpm"] (Just ("%{name}-%{version}-" ++ autorel ++ disttag)) spec
     else rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
@@ -677,8 +679,9 @@ getBranchDist (OtherBranch _) = systemBranch >>= branchDist
 -- from fedora-haskell-tools
 buildRequires :: FilePath -> IO [String]
 buildRequires spec = do
+  autorelease <- grep_ " %autorelease" spec
   dynbr <- grep_ "^%generate_buildrequires" spec
-  mapMaybe primary <$>
+  brs <- mapMaybe primary <$>
     if dynbr
     then do
       out <- cmdIgnoreErr "rpmbuild" ["-br", "--nodeps", spec] ""
@@ -687,6 +690,7 @@ buildRequires spec = do
     else
       -- FIXME should resolve meta
       rpmspec ["--buildrequires"] Nothing spec
+  return $ brs ++ ["rpmautospec" | autorelease]
   where
     primary dep =
       case (head . words) dep of
