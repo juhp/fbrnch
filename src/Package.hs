@@ -247,7 +247,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
     void $ getSources spec
     dist <- getBranchDist br
     cwd <- getCurrentDirectory
-    gitDir <- isGitRepo
+    gitDir <- isPkgGitRepo
     let shortcircuit = mforceshort == Just ShortCircuit
     let buildopt = if shortcircuit then ["-bi", "--short-circuit"] else ["-bb"]
         rpmdirs =
