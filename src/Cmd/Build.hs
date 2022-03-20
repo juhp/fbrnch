@@ -234,7 +234,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
 
     extractBugReference :: String -> Maybe String
     extractBugReference clog =
-      let rest = dropWhile (/= '#') clog in
-        if null rest then Nothing
-        else let bid = takeWhile isDigit $ tail rest in
-          if null bid then Nothing else Just bid
+      case dropWhile (/= '#') clog of
+        "" -> Nothing
+        rest ->
+          case takeWhile isDigit (tail rest) of
+            -- make sure is contemporary bug
+            ds | length ds > 6 -> Just ds
+            _ -> Nothing
