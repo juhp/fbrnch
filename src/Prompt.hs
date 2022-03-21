@@ -5,7 +5,10 @@ module Prompt (
   conflictPrompt
   ) where
 
+import Data.Char (isPrint)
+
 import Common
+import Common.System
 
 -- import System.Console.Haskeline
 import System.IO
@@ -25,9 +28,12 @@ prompt s = do
   putStr $ s ++ ": "
   tty <- openFile "/dev/tty" ReadMode
   inp <- hGetLine tty
-  if "\ESC[" `isInfixOf` inp
-    then prompt s
-    else return inp
+  if all isPrint inp
+    then return inp
+    else do
+    warning $ "input rejected because of unprintable character(s): " ++
+      filter (not . isPrint) inp
+    prompt s
 
 prompt_ :: String -> IO ()
 prompt_ = void <$> prompt
