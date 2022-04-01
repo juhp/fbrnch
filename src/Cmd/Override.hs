@@ -27,6 +27,7 @@ overrideCmd dryrun mduration nowait breqpkgs = do
     overrideBranch pkg rbr@(RelBranch br) = do
       gitSwitchBranch rbr
       let spec = packageSpec pkg
+      checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
       putStrLn nvr
       tags <- kojiNVRTags nvr
