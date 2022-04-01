@@ -19,7 +19,7 @@ overrideCmd dryrun mduration nowait breqpkgs = do
   withPackageByBranches (Just False) cleanGitFetchActive AnyNumber overrideBranch breqpkgs
   unless nowait $ do
     putStrLn "Waiting"
-    waitrepoCmd dryrun Nothing breqpkgs
+    waitrepoCmd False dryrun Nothing breqpkgs
   where
     overrideBranch :: Package -> AnyBranch -> IO ()
     overrideBranch _ (OtherBranch _) =

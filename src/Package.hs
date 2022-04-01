@@ -33,6 +33,7 @@ module Package (
   withPackagesMaybeBranchNoHeadergit,
   LimitBranches(..),
   cleanGit,
+  cleanGitActive,
   cleanGitFetch,
   cleanGitFetchActive,
   dirtyGit,
@@ -504,9 +505,10 @@ data GitOpts =
   , gitOptHEAD :: Bool -- allow detached head/rebase state
   }
 
-cleanGit, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitFetch, dirtyGitHEAD :: Maybe GitOpts
+cleanGit, cleanGitActive, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitFetch, dirtyGitHEAD :: Maybe GitOpts
 --                                   clean fetch active HEAD
 cleanGit =            Just $ GitOpts True  False False  False
+cleanGitActive =      Just $ GitOpts True  False True   False
 cleanGitFetch =       Just $ GitOpts True  True  False  False
 cleanGitFetchActive = Just $ GitOpts True  True  True   False
 dirtyGit =            Just $ GitOpts False False False  False

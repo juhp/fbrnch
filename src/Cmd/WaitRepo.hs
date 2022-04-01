@@ -10,9 +10,9 @@ import Koji
 import Package
 
 -- FIXME first check/wait for build to actually exist
-waitrepoCmd :: Bool -> Maybe String -> (BranchesReq, [String]) -> IO ()
-waitrepoCmd dryrun mtarget = do
-  withPackageByBranches (Just False) cleanGitFetchActive AnyNumber waitrepoBranch
+waitrepoCmd :: Bool -> Bool -> Maybe String -> (BranchesReq, [String]) -> IO ()
+waitrepoCmd fetch dryrun mtarget = do
+  withPackageByBranches (Just False) (if fetch then cleanGitFetchActive else cleanGitActive) AnyNumber waitrepoBranch
   where
     waitrepoBranch :: Package -> AnyBranch -> IO ()
     waitrepoBranch _ (OtherBranch _) =

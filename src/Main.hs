@@ -108,7 +108,7 @@ main = do
       <*> switchWith 'w' "no-wait" "Skip waitrepo step"
       <*> branchesPackages
     , Subcommand "waitrepo" "Wait for build to appear in Koji buildroot" $
-      waitrepoCmd
+      waitrepoCmd True
       <$> dryrunOpt
       <*> mtargetOpt
       <*> branchesPackages
