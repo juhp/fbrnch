@@ -39,6 +39,7 @@ getNewerBranch br = do
 
 -- FIXME maybe require local branch already here
 mergeable :: Branch -> IO (Bool,[String])
+mergeable Rawhide = return (False,[])
 mergeable br = do
   newer <- getNewerBranch br
   locals <- localBranches True

@@ -79,9 +79,12 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       Just False -> return False
       Just True -> mergeBranch True True (ancestor,unmerged) br >> return True
       Nothing ->
-        if newrepo || tty
+        if ancestor && (newrepo || tty)
         then mergeBranch True False (ancestor,unmerged) br >> return True
-        else return False
+        else do
+          unless (br == Rawhide) $
+            putStrLn "newer branch is not ancestor"
+          return False
   let spec = packageSpec pkg
   checkForSpecFile spec
   checkSourcesMatch spec
