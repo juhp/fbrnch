@@ -405,10 +405,11 @@ getSources spec = do
       doesFileExist (srcdir </> file)
 
 withExistingDirectory :: FilePath -> IO a -> IO a
-withExistingDirectory dir act =
-  ifM (doesDirectoryExist dir)
-    (withCurrentDirectory dir act)
-    (error' $ "No such directory: " ++ dir)
+withExistingDirectory dir act = do
+  exists <- doesDirectoryExist dir
+  if exists
+  then withCurrentDirectory dir act
+  else error' $ "No such directory: " ++ dir
 
 -- newly created Fedora repos/branches have just one README commit
 initialPkgRepo :: IO Bool
