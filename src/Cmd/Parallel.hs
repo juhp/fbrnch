@@ -81,10 +81,14 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do
       krbTicket
+      currentbranch <- gitCurrentBranch
       putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
       failures <- watchJobs [] jobs
+      -- switch back to the original branch
+      when (length brs /= 1) $
+        gitSwitchBranch currentbranch
       unless (null failures) $
         error' $ "Build failures: " ++ unwords failures
       where
