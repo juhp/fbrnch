@@ -328,10 +328,10 @@ main = do
     pkgArg lbl = removeSuffix "/" <$> strArg lbl
 
     manyPackages :: Parser [String]
-    manyPackages =  many (pkgArg "PACKAGE...")
+    manyPackages =  many (pkgArg "PKGPATH...")
 
     somePackages :: Parser [String]
-    somePackages = some (pkgArg "PACKAGE...")
+    somePackages = some (pkgArg "PKGPATH...")
 
     branchesOpt :: Parser (Maybe BranchOpts)
     branchesOpt =
@@ -352,8 +352,8 @@ main = do
     maybeBranchPackages oneplus =
       maybeBranchesPkgs <$>
       if oneplus
-      then some (pkgArg "[BRANCH] PACKAGE...")
-      else many (pkgArg "[BRANCH] [PACKAGE]...")
+      then some (pkgArg "[BRANCH] PKGPATH...")
+      else many (pkgArg "[BRANCH] [PKGPATH]...")
       where
         maybeBranchesPkgs :: [String] -> (Maybe Branch,[String])
         maybeBranchesPkgs args =
@@ -365,7 +365,7 @@ main = do
 
     branchesPackages :: Parser (BranchesReq, [String])
     branchesPackages =
-      branchesReqPkgs <$> branchesOpt <*> many (pkgArg "BRANCH... PACKAGE...")
+      branchesReqPkgs <$> branchesOpt <*> many (pkgArg "BRANCH... PKGPATH...")
       where
         branchesReqPkgs :: Maybe BranchOpts -> [String] -> (BranchesReq, [String])
         branchesReqPkgs mbrnchopts args =
