@@ -9,8 +9,10 @@ import Git
 import Package
 import Prompt
 
+-- FIXME reject if nvr ahead of newer branch
 -- FIXME use branches after all?
 -- FIXME handle multiline changelog entries with "-m description"
+-- FIXME --undo last change: eg undo accidential --amend
 commitPkgs :: Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
 commitPkgs mopt firstLine notstaged args = do
   when (isJust mopt && firstLine) $

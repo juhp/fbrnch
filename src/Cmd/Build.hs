@@ -34,6 +34,7 @@ data BuildOpts = BuildOpts
   , buildoptByPackage :: Bool
   }
 
+-- FIXME --sidetag
 -- FIXME --sort
 -- FIXME --add-to-update nvr
 -- FIXME --rpmlint (default for rawhide?)
@@ -117,6 +118,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       when (br /= Rawhide && isNothing mtarget) $ do
         tags <- maybeTimeout 30 $ kojiNVRTags nvr
         autoupdate <- checkAutoBodhiUpdate br
+        -- FIXME update referenced bugs for autoupdate branch
         unless autoupdate $ do
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
             mbug <- bzReviewAnon

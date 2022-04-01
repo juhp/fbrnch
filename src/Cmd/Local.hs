@@ -20,7 +20,6 @@ import Common.System
 import Git
 import Package
 
--- FIXME generate build.log files
 localCmd :: Bool -> Maybe ForceShort -> [BCond] -> (BranchesReq, [String])
          -> IO ()
 localCmd quiet mforceshort bconds =

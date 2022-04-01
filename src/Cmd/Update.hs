@@ -15,6 +15,7 @@ import Data.RPM.VerCmp
 
 -- FIXME check EVR increased
 -- FIXME if multiple sources might need to bump release
+-- FIXME Haskell subpackages require release bump even with version bump
 updateCmd :: Bool -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
 updateCmd onlysources force allowHEAD (mbr,args) = do
   pkgGit <- isPkgGitSshRepo

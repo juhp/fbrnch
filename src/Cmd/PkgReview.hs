@@ -130,6 +130,7 @@ mockRpmLint mock scratch pkg spec srpm = do
 
 -- FIXME does not work with pkg dir/spec:
 -- 'fbrnch: No spec file found'
+-- FIXME: option to only download/prep files
 reviewPackage :: Maybe String -> IO ()
 reviewPackage mpkg = do
   -- FIXME if spec file exists use it directly
