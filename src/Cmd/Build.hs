@@ -26,7 +26,7 @@ data BuildOpts = BuildOpts
   { buildoptMerge :: Maybe Bool
   , buildoptNoFailFast :: Bool
   , buildoptTarget :: Maybe String
-  , buildoptOverride :: Bool
+  , buildoptOverride :: Maybe Int
   , buildoptWaitrepo :: Maybe Bool
   , buildoptDryrun :: Bool
   , buildoptUpdateType :: Maybe UpdateType
@@ -65,6 +65,9 @@ buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()
 buildBranch _ _ _ (OtherBranch _) =
   error' "build only defined for release branches"
 buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
+  let moverride = buildoptOverride opts
+  whenJust moverride $ \days ->
+    when (days < 1) $ error "override duration must be positive number of days"
   gitSwitchBranch rbr
   gitMergeOrigin br
   newrepo <- initialPkgRepo
@@ -103,7 +106,6 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   let mtarget = buildoptTarget opts
       target = fromMaybe (branchTarget br) mtarget
       mwaitrepo = buildoptWaitrepo opts
-      override = buildoptOverride opts
   case buildstatus of
     Just BuildComplete -> do
       putStrLn $ nvr ++ " is already built"
@@ -117,10 +119,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             mbug <- bzReviewAnon
             bodhiUpdate dryrun mbug spec nvr
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-            when override $
-            bodhiCreateOverride dryrun Nothing nvr
+            whenJust moverride $ \days ->
+            bodhiCreateOverride dryrun (Just days) nvr
         when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
-          when ((override && mwaitrepo /= Just False) ||
+          when ((isJust moverride && mwaitrepo /= Just False) ||
                 (autoupdate && mwaitrepo == Just True)) $
             kojiWaitRepo dryrun target nvr
     Just BuildBuilding -> do
@@ -188,10 +190,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 -- FIXME diff previous changelog?
                 bodhiUpdate dryrun (fmap fst mBugSess) spec nvr
                 -- FIXME prompt for override note
-                when override $
-                  bodhiCreateOverride dryrun Nothing nvr
+                whenJust moverride $ \days ->
+                  bodhiCreateOverride dryrun (Just days) nvr
             when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
-              when ((override && mwaitrepo /= Just False) ||
+              when ((isJust moverride && mwaitrepo /= Just False) ||
                     (autoupdate && mwaitrepo == Just True)) $
               kojiWaitRepo dryrun target nvr
   where

@@ -398,8 +398,7 @@ main = do
           optional (flagWith' True 'm' "merge" "Merge without prompt" <|>
                     flagWith' False 'M' "no-merge" "No merging")
         overrideOpt =
-          switchWith 'o' "override"
-          "Create a buildroot override: implies --wait-repo"
+          optional (optionWith auto 'o' "override" "DAYS" "Create buildroot override for specified days: implies --wait-repo")
         waitrepoOpt =
           optional (flagWith' True 'w' "waitrepo" "Waitrepo for each build" <|>
                     flagWith' False 'W' "no-waitrepo" "Do not waitrepo for each build")
