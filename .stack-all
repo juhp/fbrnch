@@ -1,3 +1,5 @@
 [versions]
+# rpmbuild-order (via graphviz)
+newest = lts-19
 # bugzilla fails: missing setRequestCheckStatus
 oldest = lts-11

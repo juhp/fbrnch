@@ -1,4 +1,1 @@
-resolver: lts-18.28
-extra-deps:
-  - fedora-dists-2.0.0
-  - bugzilla-redhat-1.0.0
+resolver: lts-19.1
