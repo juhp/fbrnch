@@ -10,6 +10,7 @@ import Common.System
 import Git
 import InterleaveOutput (cmdSilent')
 import Package
+import Time
 
 data PrepPre = PrepClone | PrepPull
   deriving Eq
@@ -48,7 +49,8 @@ prepCmd mpre verbose (mbr,pkgs) = do
             -- newline avoids error starting on same line
             putStr $ "Prepping " ++ nvr ++ ": "
           _ -> return ()
-        (if verbose then cmdLog else cmdSilent') "rpmbuild" args
+        timeIO $
+          (if verbose then cmdLog else cmdSilent') "rpmbuild" args
         putStrLn "done"
 
 

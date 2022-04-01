@@ -19,6 +19,7 @@ import Common
 import Common.System
 import Git
 import Package
+import Time
 
 localCmd :: Bool -> Maybe ForceShort -> [BCond] -> (BranchesReq, [String])
          -> IO ()
@@ -31,7 +32,8 @@ localCmd quiet mforceshort bconds =
       rpms <- if isJust mforceshort
               then return []
               else builtRpms br spec
-      void $ buildRPMs quiet mforceshort bconds rpms br spec
+      timeIO $
+        void $ buildRPMs quiet mforceshort bconds rpms br spec
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd =

@@ -36,6 +36,7 @@ type Job = (String, Async String)
 -- FIXME use --wait-build=NVR
 -- FIXME check sources as early as possible
 -- FIXME --single-layer to build packages at once regardless
+-- FIXME time builds
 parallelBuildCmd :: Bool -> Int -> Maybe SideTagTarget -> Maybe UpdateType
                  -> (BranchesReq, [String]) -> IO ()
 parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do

@@ -34,6 +34,7 @@ coprServer = "copr.fedorainfracloud.org"
 -- FIXME --exclude-arch
 -- FIXME skip existing builds
 -- FIXME distless srpm
+-- FIXME time builds
 coprCmd :: Bool -> Bool -> BuildBy -> Maybe Archs -> String
         -> (BranchesReq,[String]) -> IO ()
 coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do

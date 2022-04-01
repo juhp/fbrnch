@@ -69,6 +69,7 @@ import Git
 import InterleaveOutput
 import Krb
 import Prompt
+import Time
 
 fedpkg :: String -> [String] -> IO String
 fedpkg c args =
@@ -261,11 +262,11 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
       then do
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
-        pipeBool ("rpmbuild", args) ("tee", [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"])
+        timeIO $ pipeBool ("rpmbuild", args) ("tee", [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"])
       else do
         date <- cmd "date" ["+%T"]
         putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
-        res <- cmdSilentBool "rpmbuild" args
+        res <- timeIO $ cmdSilentBool "rpmbuild" args
         when res $ putStrLn "done"
         return res
     unless ok $

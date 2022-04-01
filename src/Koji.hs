@@ -44,6 +44,7 @@ import Krb
 import Package
 import Pagure
 import Prompt
+import Time
 
 fedoraHub :: String
 fedoraHub = fedoraKojiHub
@@ -113,7 +114,7 @@ kojiBuild' wait target args = do
     let kojiurl = B.unpack $ last $ B.words out
         task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
     when wait $ do
-      kojiWatchTask task
+      timeIO $ kojiWatchTask task
       cmd_ "date" ["+%T"]
     return $ if wait then Right kojiurl else Left task
     else do
