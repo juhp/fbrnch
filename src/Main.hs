@@ -198,7 +198,7 @@ main = do
       commitPkgs
       <$> optional commitOpts
       <*> switchWith '1' "first-line" "use first line of changelog"
-      <*> switchWith 'u' "unstaged" "include unstaged changes"
+      <*> switchWith 'a' "unstaged" "include unstaged changes"
       <*> manyPackages
     , Subcommand "pull" "Git pull packages" $
       pullPkgs
@@ -455,8 +455,9 @@ main = do
 
     commitOpts :: Parser CommitOpt
     commitOpts =
-      CommitMsg <$> strOptionWith 'm' "message" "COMMITMSG" "commit message" <|>
-      flagWith' CommitAmend 'a' "amend" "Amend commit"
+      CommitMsg <$>
+      strOptionWith 'm' "message" "COMMITMSG" "commit message" <|>
+      flagWith' CommitAmend 'A' "amend" "Amend commit"
 
     buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
 
