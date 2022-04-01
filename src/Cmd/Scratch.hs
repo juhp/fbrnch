@@ -13,8 +13,6 @@ import Koji
 import Package
 import Types (Archs(..))
 
--- FIXME default to rawhide/main?
--- FIXME build from a specific git ref
 -- FIXME allow multiple --target's (parallel too)
 scratchCmd :: Bool -> Bool -> Bool -> Maybe Archs -> Maybe String
            -> Maybe String -> (BranchesReq, [String]) -> IO ()
@@ -25,8 +23,12 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget mref (breq,pkgs) =
     scratchBuild pkg br = do
       when (isJust mref && length pkgs > 1) $
         error' "--ref is not supported for multiple packages"
+      pkggit <- isPkgGitRepo
+      when (not pkggit && breq == Branches [] && isNothing mtarget) $
+        error' "please specify a branch or target for non dist-git"
       spec <- localBranchSpecFile pkg br
       let target = fromMaybe (anyTarget br) mtarget
+      putStrLn $ "Target: " ++ target
       archs <- case marchopts of
         Nothing -> return []
         Just archopts -> case archopts of
@@ -36,7 +38,6 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget mref (breq,pkgs) =
             tagArchs <- kojiTagArchs buildtag
             return $ tagArchs \\ as
       let kojiargs = ["--arch-override=" ++ intercalate "," archs | notNull archs] ++ ["--fail-fast" | not nofailfast && length archs /= 1] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
-      pkggit <- isPkgGitRepo
       if pkggit
         then do
         gitSwitchBranch br
@@ -54,7 +55,7 @@ scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget mref (breq,pkgs) =
                 else return False
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
-        putStrLn $ "scratch build of " ++ fromMaybe nvr mref ++ (if pushed then "" else ".src.rpm") ++ " for " ++ target
+        putStrLn $ target ++ " scratch build of " ++ fromMaybe nvr mref ++ (if pushed then "" else ".src.rpm")
         unless dryrun $ do
           if pushed
             then kojiBuildBranch target pkg mref $ "--scratch" : kojiargs
