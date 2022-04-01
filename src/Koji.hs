@@ -100,7 +100,7 @@ kojiBuild' wait target args = do
              then error' "no args passed to koji build"
              else ".src.rpm" `isSuffixOf` last args
   -- FIXME use tee functionality
-  when srpm $ putStrLn "koji srpm build uploading..."
+  when srpm $ putStrLn "koji srpm build: uploading..."
   -- can fail like:
   -- [ERROR] koji: Request error: POST::https://koji.fedoraproject.org/kojihub/ssllogin::<PreparedRequest [POST]>
   -- [ERROR] koji: AuthError: unable to obtain a session
