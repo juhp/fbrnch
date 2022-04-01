@@ -17,15 +17,19 @@ import Pagure
 -- FIXME option to do koji scratch build instead of mock
 requestBranches :: Bool -> (BranchesReq,[String]) -> IO ()
 requestBranches mock (breq, ps) = do
-  if null ps then do
+  if null ps
+    then do
     isPkgGit <- isPkgGitSshRepo
     if isPkgGit
       then getDirectoryName >>= requestPkgBranches False mock breq . Package
       else do
       pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches (length pkgs > 1) mock breq (Package p)) pkgs
-  else
-    mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches (length ps > 1) mock breq (Package p)) ps
+    else
+    forM_ ps $ \ p ->
+    withExistingDirectory p $ do
+    pkg <- getDirectoryName
+    requestPkgBranches (length ps > 1) mock breq (Package pkg)
 
 requestPkgBranches :: Bool -> Bool -> BranchesReq -> Package -> IO ()
 requestPkgBranches multiple mock breq pkg = do
@@ -56,7 +60,8 @@ requestPkgBranches multiple mock breq pkg = do
         when (br `elem` existing) $
         putStrLn $ show br ++ " branch already exists"
       let brs' = branches \\ existing
-      if null brs' then return []
+      if null brs'
+        then return []
         else do
         current <- fedoraBranchesNoRawhide $ pagurePkgBranches (unPackage pkg)
         forM_ brs' $ \ br ->
