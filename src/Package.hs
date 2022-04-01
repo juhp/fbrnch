@@ -193,21 +193,22 @@ generateSrpm' force mbr spec = do
                Just br -> do
                  dist <- getBranchDist br
                  return ["--define", "dist " ++ rpmDistTag dist]
-  srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", "%{name}-%{version}-%{release}.src.rpm", spec]
+  msrcrpmdir <- rpmEval "%{_srcrpmdir}"
+  srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", fromMaybe "" msrcrpmdir </> "%{name}-%{version}-%{release}.src.rpm", spec]
   cwd <- getCurrentDirectory
-  let srpmdiropt = ["--define", "_srcrpmdir " ++ cwd]
-      sourcediropt = ["--define", "_sourcedir " ++ cwd]
+  let sourcediropt = ["--define", "_sourcedir " ++ cwd]
+      opts = distopt ++ sourcediropt
   if force then
-    buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
+    buildSrpm opts
     else do
     exists <- doesFileExist srpmfile
     if not exists
-      then buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
+      then buildSrpm opts
       else do
       srpmTime <- getModificationTime srpmfile
       fileTimes <- mapM getModificationTime (spec:srcs)
       if any (srpmTime <) fileTimes
-        then buildSrpm (distopt ++ srpmdiropt ++ sourcediropt)
+        then buildSrpm opts
         else do
         -- pretty print with ~/
         putStrLn $ srpmfile ++ " is up to date"
@@ -249,13 +250,10 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
     void $ getSources spec
     dist <- getBranchDist br
     cwd <- getCurrentDirectory
-    gitDir <- isPkgGitRepo
     let shortcircuit = mforceshort == Just ShortCircuit
     let buildopt = if shortcircuit then ["-bi", "--short-circuit"] else ["-bb"]
-        rpmdirs =
-          [ "--define="++ mcr +-+ cwd | gitDir,
-            mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
-        args = rpmdirs ++ ["--define", "dist " ++ rpmDistTag dist] ++
+        sourcediropt = ["--define", "_sourcedir " ++ cwd]
+        args = sourcediropt ++ ["--define", "dist " ++ rpmDistTag dist] ++
                buildopt ++ map show bconds ++ [spec]
     ok <-
       if not quiet || shortcircuit

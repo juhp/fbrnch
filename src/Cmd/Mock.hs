@@ -77,4 +77,4 @@ mockCmd dryrun mnoclean network mockshell mroot (breq, ps) = do
                     else gitSwitchBranch rbr >> return rbr
                 )
             spec <- findSpecfile
-            (pkgdir </>) . takeFileName <$> generateSrpm (Just actualBr) spec
+            generateSrpm (Just actualBr) spec
