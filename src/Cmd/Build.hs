@@ -219,7 +219,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                                 else
                                   -- FIXME list open bugs
                                   changeLogPrompt (Just "update") spec
-              let cbugs = mapMaybe extractBugReference $ lines changelog
+              let cbugs = extractBugReferences changelog
                   bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
                     if null bids then [] else ["--bugs", intercalate "," bids]
               putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
@@ -237,12 +237,13 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 Just uri -> putStrLn uri
               _ -> error' $ "impossible happened: more than one update found for " ++ nvr
 
-    extractBugReference :: String -> Maybe String
-    extractBugReference clog =
+    extractBugReferences :: String -> [String]
+    extractBugReferences clog =
       case dropWhile (/= '#') clog of
-        "" -> Nothing
+        "" -> []
         rest ->
-          case takeWhile isDigit (tail rest) of
-            -- make sure is contemporary bug
-            ds | length ds > 6 -> Just ds
-            _ -> Nothing
+          case span isDigit (tail rest) of
+            (ds,more) ->
+              -- make sure is contemporary 7-digit bug
+              (if length ds > 6 then (ds :) else id) $
+              extractBugReferences more
