@@ -42,6 +42,7 @@ import Cmd.Switch
 import Cmd.Update
 import Cmd.WaitRepo
 
+import Bodhi (UpdateType(..),UpdateSeverity(..))
 import Branches
 import Common.System
 import Git (CommitOpt(..))
@@ -96,7 +97,7 @@ main = do
       <$> dryrunOpt
       <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
       <*> optional sidetagTargetOpt
-      <*> updatetypeOpt
+      <*> updateOpt
       <*> branchesPackages
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd
@@ -392,7 +393,17 @@ main = do
 
     rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
 
-    buildOpts = BuildOpts <$> mergeOpt <*> noFailFastOpt <*> mtargetOpt <*> overrideOpt <*> waitrepoOpt <*> dryrunOpt <*> updatetypeOpt <*> useChangelogOpt <*> switchWith 'p' "by-package" "Build by each package across brs"
+    buildOpts =
+      BuildOpts
+      <$> mergeOpt
+      <*> noFailFastOpt
+      <*> mtargetOpt
+      <*> overrideOpt
+      <*> waitrepoOpt
+      <*> dryrunOpt
+      <*> updateOpt
+      <*> useChangelogOpt
+      <*> switchWith 'p' "by-package" "Build by each package across brs"
       where
         mergeOpt =
           optional (flagWith' True 'm' "merge" "Merge without prompt" <|>
@@ -431,7 +442,25 @@ main = do
 
     dryrunOpt = switchWith 'n' "dry-run" "Do not write (push, build, post, override)"
 
-    updatetypeOpt = flagWith' Nothing 'U' "no-update" "Do not generate a Bodhi update" <|> Just <$> optionalWith auto 'u' "update-type" "TYPE" "security, bugfix, enhancement (default), newpackage, or template" EnhancementUpdate
+    updateOpt :: Parser (Maybe UpdateType, UpdateSeverity)
+    updateOpt = updatePair <$> updatetypeOpt <*> updateSeverityOpt
+      where
+        updatetypeOpt =
+          flagWith' Nothing 'U' "no-update" "Do not generate a Bodhi update" <|>
+          Just <$> optionalWith auto 'u' "update-type" "TYPE" "security, bugfix, enhancement (default), newpackage, or template" EnhancementUpdate
+
+        updateSeverityOpt =
+          optionalWith auto 's' "severity" "SEVERITY" "low, medium, high, urgent, (default: unspecified)" SeverityUnspecified
+
+        updatePair :: Maybe UpdateType -> UpdateSeverity
+                   -> (Maybe UpdateType, UpdateSeverity)
+        updatePair (Just SecurityUpdate) SeverityUnspecified =
+          error' "Security update requires specifying Severity"
+        updatePair Nothing sev | sev /= SeverityUnspecified =
+          error' "cannot have --severity with --no-update"
+        updatePair (Just TemplateUpdate) sev | sev /= SeverityUnspecified =
+          error' "Template update cannot have --severity"
+        updatePair t s = (t,s)
 
     forceshortOpt =
       flagWith' ForceBuild 'f' "rebuild" "Rebuild even if already built" <|>

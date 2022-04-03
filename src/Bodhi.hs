@@ -4,7 +4,8 @@ module Bodhi (
   bodhiCreateOverride,
   bodhiTestingRepo,
   checkAutoBodhiUpdate,
-  UpdateType(..)
+  UpdateType(..),
+  UpdateSeverity(..)
   )
 where
 
@@ -84,6 +85,28 @@ instance Read UpdateType where
       "newpackage" -> RP.lift (R.string s) >> return NewPackageUpdate
       "template" -> RP.lift (R.string s) >> return TemplateUpdate
       _ -> error' "unknown bodhi update type" >> RP.pfail
+
+data UpdateSeverity =
+  SeverityLow | SeverityMedium | SeverityHigh | SeverityUrgent |
+  SeverityUnspecified
+  deriving Eq
+
+instance Show UpdateSeverity where
+  show SeverityLow = "low"
+  show SeverityMedium = "medium"
+  show SeverityHigh = "high"
+  show SeverityUrgent = "urgent"
+  show SeverityUnspecified = "unspecified"
+
+instance Read UpdateSeverity where
+  readPrec = do
+    s <- look
+    case lower s of
+      "low" -> RP.lift (R.string s) >> return SeverityLow
+      "medium" -> RP.lift (R.string s) >> return SeverityMedium
+      "high" -> RP.lift (R.string s) >> return SeverityHigh
+      "urgent" -> RP.lift (R.string s) >> return SeverityUrgent
+      _ -> error' "unknown bodhi update severity" >> RP.pfail
 
 bodhiTestingRepo :: Branch -> IO (Maybe String)
 bodhiTestingRepo Rawhide = return Nothing

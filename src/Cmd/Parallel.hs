@@ -37,9 +37,10 @@ type Job = (String, Async String)
 -- FIXME check sources as early as possible
 -- FIXME --single-layer to build packages at once regardless
 -- FIXME time builds
-parallelBuildCmd :: Bool -> Int -> Maybe SideTagTarget -> Maybe UpdateType
+parallelBuildCmd :: Bool -> Int -> Maybe SideTagTarget
+                 -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()
-parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
+parallelBuildCmd dryrun firstlayer msidetagTarget mupdate (breq, pkgs) = do
   branches <-
     case pkgs of
       [] -> do
@@ -240,9 +241,9 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
 
     bodhiSidetagUpdate :: String -> String -> IO ()
     bodhiSidetagUpdate sidetag notes = do
-      case mupdatetype of
-        Nothing -> return ()
-        Just updateType -> do
+      case mupdate of
+        (Nothing, _) -> return ()
+        (Just updateType, severity) -> do
           putStrLn $ "Creating Bodhi Update for " ++ sidetag
           ok <-
             if updateType == TemplateUpdate
@@ -250,7 +251,7 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdatetype (breq, pkgs) = do
               putStrLn "Paste update template now:"
               template <- getContents
               cmdBool "bodhi" ["updates", "new", "--file", template, "--from-tag", sidetag]
-            else cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--request", "testing", "--notes", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
+            else cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--severity", show severity, "--request", "testing", "--notes", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
           when ok $ do
             prompt_ "After editing update, press Enter to remove sidetag"
             fedpkg_ "remove-side-tag" [sidetag]
