@@ -137,6 +137,8 @@ isGitRepo = isGitDir "." ||^ doesFileExist ".git"
 
 isPkgGitRepo :: IO Bool
 isPkgGitRepo = grepGitConfig' "\\(https://\\|@\\)\\(pkgs\\|src\\)\\."
+               &&^
+               (not <$> grepGitConfig' "/forks/")
 
 isPkgGitSshRepo :: IO Bool
 isPkgGitSshRepo = grepGitConfig' "@\\(pkgs\\|src\\)\\."
