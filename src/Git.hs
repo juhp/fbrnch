@@ -112,7 +112,9 @@ gitFetchSilent = do
         [] -> []
         (hd:tl) -> filter (/= "Already up to date.") $
                    if "From " `isPrefixOf` hd then tl else hd:tl
-  putStrLn $ if null filtered then "done" else "\n" ++ intercalate "\n" filtered
+  putStrLn $ if null filtered
+             then "done"
+             else "\n" ++ intercalate "\n" filtered
 
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
