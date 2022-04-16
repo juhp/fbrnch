@@ -48,10 +48,9 @@ requestPkgBranches multiple mock breq pkg = do
       -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
       -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
       fedpkg "request-branch" [show br]
-    case mbidsession of
-      Just (bid,session) -> commentBug session bid
-      Nothing -> putStrLn
-      $ unlines urls
+    putStrLn $ unlines urls
+    whenJust mbidsession $ \(bid,session) ->
+      commentBug session bid $ unlines urls
   where
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests branches = do
