@@ -33,6 +33,7 @@ data BuildOpts = BuildOpts
   , buildoptByPackage :: Bool
   }
 
+-- FIXME check bugs before building?
 -- FIXME --sidetag
 -- FIXME --sort
 -- FIXME --add-to-update nvr
@@ -182,7 +183,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             unless dryrun $
               kojiBuildBranch target pkg mbuildref ["--fail-fast" | not (buildoptNoFailFast opts)]
             mBugSess <-
-              if firstBuild && fst (buildoptUpdate opts) `elem` [Nothing, Just NewPackageUpdate]
+              if firstBuild && isJust (fst (buildoptUpdate opts))
               then bzReviewSession
               else return Nothing
             autoupdate <- checkAutoBodhiUpdate br
@@ -191,6 +192,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                    \ (bid,session) -> putBugBuild dryrun session bid nvr
               else do
               when (isNothing mtarget) $ do
+                whenJust (fmap fst mBugSess) $
+                  \bid -> putStr "review bug: " >> putBugId bid
                 -- FIXME diff previous changelog?
                 bodhiUpdate dryrun (fmap fst mBugSess) spec nvr
                 -- FIXME prompt for override note
@@ -222,6 +225,9 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               let cbugs = extractBugReferences changelog
                   bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
                     if null bids then [] else ["--bugs", intercalate "," bids]
+              when (isJust mreview &&
+                    updateType `elem` [SecurityUpdate,BugfixUpdate]) $
+                warning "overriding update type with 'newpackage'"
               putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
               -- FIXME check for Bodhi URL to confirm update
               cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
