@@ -57,7 +57,7 @@ requestRepo mock retry breq pkg = do
         -- FIXME check api key is still valid or open pagure ticket directly
         url <- fedpkg "request-repo" [pkg, show bid]
         let assignee = userRealName (bugAssignedToDetail bug)
-        let draft = "Thank you for the review" ++ maybe "" ((", " ++) . T.unpack) (getFirstname assignee)
+        let draft = "Thank you for the review" ++ maybe "" (", " ++) (getFirstname assignee)
         putStrLn "```"
         putStrLn draft
         putStrLn "```"
@@ -91,9 +91,9 @@ requestRepo mock retry breq pkg = do
         error' $ "Repo for " ++ pkg ++ " already exists"
 
     -- FIXME handle "email name"
-    getFirstname :: T.Text -> Maybe T.Text
+    getFirstname :: T.Text -> Maybe String
     getFirstname t =
       let first = head (T.words t) in
         if "@" `T.isInfixOf` first
         then Nothing
-        else Just first
+        else Just (T.unpack first)
