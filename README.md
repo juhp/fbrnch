@@ -96,7 +96,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f35 [package] ...
+$ fbrnch switch f36 [package] ...
 ```
 
 You can also git pull over packages:
@@ -144,13 +144,13 @@ It uses any rpm changelog, or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f34 package
+$ fbrnch merge f35 package
 ```
-which will offer to merge f35 (or some of it) into f34.
+which will offer to merge f36 (or some of it) into f35.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build f35 package
+$ fbrnch build f36 package
 ```
 will ask if you want to merge newer commits from a newer branch,
 then push and build it.
@@ -233,7 +233,7 @@ There are more commands like `copr` and `graph`.
 
 ```
 $ fbrnch --version
-1.0.0
+1.1
 $ fbrnch --help
 Fedora branch building tool
 
@@ -288,6 +288,7 @@ Available commands:
   rename-rawhide           Rename local 'master' branch to 'rawhide'
   count                    Count number of living packages
   graph                    Output dependency graph
+  ftbfs                    Check FTBFS status
 ```
 
 ## Installation
