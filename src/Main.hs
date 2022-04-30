@@ -297,7 +297,7 @@ main = do
     reviewShortOpt = switchWith 's' "short" "Only output the package name"
 
     reviewAllStatusOpt :: Parser Bool
-    reviewAllStatusOpt = switchWith 'A' "all-status" "all open reviews"
+    reviewAllStatusOpt = switchWith 'A' "all-status" "include all open states"
 
     reviewStatusOpt :: Parser ReviewStatus
     reviewStatusOpt =
