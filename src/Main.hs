@@ -58,8 +58,7 @@ main = do
     subcommands
     [ Subcommand "clone" "clone packages" $
       cloneCmd
-      <$> optional branchOpt
-      <*> cloneRequest
+      <$> cloneRequest
     , Subcommand "switch" "Switch branch" $
       switchCmd
       <$> anyBranchArg
@@ -289,7 +288,10 @@ main = do
     ]
   where
     cloneRequest :: Parser CloneRequest
-    cloneRequest = flagWith' (CloneUser Nothing) 'M' "mine" "Your packages" <|> CloneUser . Just <$> strOptionWith 'u' "user" "USER" "Packages of FAS user" <|> ClonePkgs <$> somePackages
+    cloneRequest =
+      flagWith' (CloneUser Nothing) 'M' "mine" "Your packages" <|>
+      CloneUser . Just <$> strOptionWith 'u' "user" "USER" "Packages of FAS user" <|>
+      ClonePkgs <$> maybeBranchPackages True
 
     reviewShortOpt :: Parser Bool
     reviewShortOpt = switchWith 's' "short" "Only output the package name"
@@ -306,9 +308,6 @@ main = do
       flagWith' ReviewRepoCreated 'c' "created" "Approved package reviews with a created repo" <|>
       flagWith' ReviewUnbranched 'B' "unbranched" "Approved created package reviews not yet branched" <|>
       flagWith ReviewAllOpen ReviewBranched 'b' "branched" "Approved created package reviews already branched"
-
-    branchOpt :: Parser Branch
-    branchOpt = optionWith branchM 'b' "branch" "BRANCH" "branch"
 
     branchArg :: Parser Branch
     branchArg = argumentWith branchM "BRANCH"
@@ -331,8 +330,8 @@ main = do
     manyPackages :: Parser [String]
     manyPackages =  many (pkgArg "PKGPATH...")
 
-    somePackages :: Parser [String]
-    somePackages = some (pkgArg "PKGPATH...")
+    -- somePackages :: Parser [String]
+    -- somePackages = some (pkgArg "PKGPATH...")
 
     branchesOpt :: Parser (Maybe BranchOpts)
     branchesOpt =
