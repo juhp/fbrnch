@@ -21,6 +21,7 @@ module Package (
   ForceShort(..),
   buildRPMs,
   installDeps,
+  installMissingMacros,
   checkSourcesMatch,
   getSources,
   putPkgHdr,
@@ -278,6 +279,24 @@ installDeps strict spec = do
   unless (null missingdeps) $ do
     putStrLn $ "Running 'dnf install' " ++ unwords missingdeps
     cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"install": ["--skip-broken" | not strict] ++ ["--assumeyes"] ++ missingdeps
+
+installMissingMacros :: FilePath -> IO ()
+installMissingMacros spec = do
+  macros <- mapMaybeM needSrpmMacro srpmMacros
+  missing <- filterM notInstalled macros
+  unless (null missing) $
+    cmd_ "/usr/bin/sudo" $ ["/usr/bin/dnf", "install", "--assumeyes"] ++ missing
+  where
+    srpmMacros :: [(String,String)]
+    srpmMacros =
+      [("%gometa", "go-rpm-macros"),
+       ("fontpkgname", "fonts-rpm-macros"),
+       ("%cargo_prep", "rust-packaging")]
+
+    needSrpmMacro :: (String,String) -> IO (Maybe String)
+    needSrpmMacro (meta, macros) = do
+      contents <- readFile spec
+      return $ if meta `isInfixOf` contents then Just macros else Nothing
 
 checkSourcesMatch :: FilePath -> IO ()
 checkSourcesMatch spec = do
@@ -691,6 +710,7 @@ buildRequires spec = do
   brs <- mapMaybe primary <$>
     if dynbr
     then do
+      installMissingMacros spec
       out <- cmdIgnoreErr "rpmbuild" ["-br", "--nodeps", spec] ""
       -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
       cmdLines "rpm" ["-qp", "--requires", last (words out)]

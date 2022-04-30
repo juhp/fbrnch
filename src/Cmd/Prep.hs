@@ -46,22 +46,3 @@ prepCmd mpre verbose (mbr,pkgs) = do
         timeIO $
           (if verbose then cmdLog else cmdSilent') "rpmbuild" ["-bp", spec]
         putStrLn "done"
-
-
-srpmMacros :: [(String,String)]
-srpmMacros =
-  [("%gometa", "go-rpm-macros"),
-   ("fontpkgname", "fonts-rpm-macros"),
-   ("%cargo_prep", "rust-packaging")]
-
-needSrpmMacro :: FilePath -> (String,String) -> IO (Maybe String)
-needSrpmMacro spec (meta, macros) = do
-  contents <- readFile spec
-  return $ if meta `isInfixOf` contents then Just macros else Nothing
-
-installMissingMacros :: FilePath -> IO ()
-installMissingMacros spec = do
-  macros <- mapMaybeM (needSrpmMacro spec) srpmMacros
-  missing <- filterM notInstalled macros
-  unless (null missing) $
-    cmd_ "/usr/bin/sudo" $ ["/usr/bin/dnf", "install", "--assumeyes"] ++ missing
