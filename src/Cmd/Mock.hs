@@ -15,9 +15,9 @@ import Package
 data NoClean = NoCleanBefore | NoCleanAfter | NoCleanAll
   deriving Eq
 
+-- FIXME add repo/copr for build
 -- FIXME handle non-release branches (on-branch works)
 -- FIXME option for --shell without rebuild
--- FIXME add --no-clean-all
 mockCmd :: Bool -> Maybe NoClean -> Bool -> Bool -> Maybe Branch
         -> (BranchesReq, [String]) -> IO ()
 mockCmd dryrun mnoclean network mockshell mroot (breq, ps) = do
@@ -50,10 +50,10 @@ mockCmd dryrun mnoclean network mockshell mroot (breq, ps) = do
                       Nothing -> []
                       Just NoCleanBefore -> ["--no-clean"]
                       Just NoCleanAfter -> ["--no-cleanup-after"]
-                      Just NoCleanAll -> ["--no-cleanup-all"]
+                      Just NoCleanAll -> ["--no-clean", "--no-cleanup-after"]
           mockopts_common c = [c, "--root", mockRoot rootBr] ++ noclean ++ ["--enable-network" | network]
           mockbuild_opts = mockopts_common command ++ ["--config-opts=cleanup_on_failure=False" | mnoclean `elem` [Nothing, Just NoCleanBefore]] ++ resultdir ++ srpms
-          mockshell_opts = mockopts_common "--shell" ++ ["--no-clean"]
+          mockshell_opts = mockopts_common "--shell" ++ ["--no-clean" | "--no-clean" `notElem` noclean]
       if dryrun
         then do
         cmdN "mock" mockbuild_opts
