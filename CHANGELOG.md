@@ -3,6 +3,48 @@
 ## next
 - 'repoquery': new experimental command
 
+## 1.1 (2022-04-30)
+- parallel: show target as early as possible
+- status: warn if branch does not exist rather than erroring
+- new 'ftbfs' command: lists FTBFS bugs
+- build,parallel: add --template to support bodhi update templates
+- local: --quiet option to suppress the rpmbuild output
+- sort: add --chain (#25) and --layers
+- Prompt: reject input with escape sequence chars
+- Package checkLookasideCache: accept old md5 hashes in sources too
+- merge: fetch newer branch if not local
+- merge: accept HEAD in conflict prompt
+- parallel: more output improvement tweaks
+- Package getSources: canonicalize %_sourcedir
+- Package: make sure rpmautospec is installed if needed
+- Package: support %autochangelog
+- build: fix --no-waitrepo short option to be '-W'
+- Bugzilla readIniConfig: include ini filename in parser error
+- build: extractBugReference require 7 digits RH bug id
+- Package buildRPMs: only override dir macros if not dist-git
+- Prompt: only allow printable chars in input (703a575)
+- Branches listOfBranches: return branches for non-distgit
+- build: --override now takes number of days (#31)
+- scratch now requires a target or branch for non dist-git
+- build no longer offers to merge unmergeable
+- override no longer git fetches again when doing wait-repo
+- switch: fix branch handling for multiple packages
+- print duration of builds, etc
+- parallel package now returns to original branch like build
+- override: make sure a spec file exists
+- commit: change '-u' to '-a' (all) and '-a' to '-A' (amend)
+- request-branch: don't use full path for package name
+- prep, srpm, local, scratch, mock: respect _builddir, _rpmdir, _srcrpmdir
+- Main: most commands take PKGPATH not PACKAGE name
+- build,parallel: add --severity (#32)
+- build: changelog lines can contain multiple bzs
+- build: simplify update type logic to detect pkgreview again and print
+- request-branch: always print urls
+- Git: isPkgGitRepo now ignores dist-git fork
+- Package buildRequires: use installMissingMacros for dyn BR
+- clone: --branch option is now an optional arg
+- mock: --no-clean* fix and tweak
+
 ## 1.0.0 (2022-02-21)
 - rpm's _sourcedir is now acts as a source cache directory:
   sources are in the package dir, but may be hardlinks to _sourcedir

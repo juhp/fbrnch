@@ -44,7 +44,6 @@ import Krb
 import Package
 import Pagure
 import Prompt
-import Time
 
 fedoraHub :: String
 fedoraHub = fedoraKojiHub

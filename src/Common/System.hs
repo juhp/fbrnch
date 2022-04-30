@@ -11,7 +11,10 @@ module Common.System (
   isExtensionOf,
 #endif
 #if !MIN_VERSION_simple_cmd(0,2,3)
-  cmdFull
+  cmdFull,
+#endif
+#if !MIN_VERSION_simple_cmd(0,2,5)
+  timeIO,
 #endif
   ) where
 
@@ -29,6 +32,21 @@ import System.Process
 import System.Directory
 import System.FilePath
 import System.IO
+
+#if !MIN_VERSION_simple_cmd(0,2,5)
+import Control.Exception
+import Data.Time.Clock
+
+timeIO :: IO a -> IO a
+timeIO action = do
+  bracket
+    getCurrentTime
+    (\start -> do
+        end <- getCurrentTime
+        let duration = diffUTCTime end start
+        putStrLn $ "took " ++ show duration)
+    (const action)
+#endif
 
 isTty :: IO Bool
 isTty = hIsTerminalDevice stdin

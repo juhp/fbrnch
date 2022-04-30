@@ -10,7 +10,6 @@ import Common.System
 import Git
 import InterleaveOutput (cmdSilent')
 import Package
-import Time
 
 data PrepPre = PrepClone | PrepPull
   deriving Eq

@@ -89,7 +89,6 @@ executable fbrnch
                        Pagure
                        Paths_fbrnch
                        Prompt
-                       Time
                        Types
 
   hs-source-dirs:      src

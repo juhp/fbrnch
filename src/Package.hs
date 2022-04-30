@@ -53,9 +53,6 @@ module Package (
   nameOfNVR
   ) where
 
-import Common
-import Common.System
-
 import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 import Data.RPM
@@ -66,11 +63,12 @@ import System.Console.Pretty
 import System.Posix.Files
 
 import Branches
+import Common
+import Common.System
 import Git
 import InterleaveOutput
 import Krb
 import Prompt
-import Time
 
 fedpkg :: String -> [String] -> IO String
 fedpkg c args =
