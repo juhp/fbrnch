@@ -1,6 +1,5 @@
 module Cmd.Merge (
   mergeCmd,
-  mergeable,
   mergeBranch)
 where
 
