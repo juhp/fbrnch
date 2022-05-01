@@ -157,7 +157,7 @@ coprBuild dryrun project srpm buildroots = do
     output <- cmd "copr" buildargs
     putStrLn output
     let bid = read $ last $ words $ last $ lines output
-    ok <- coprWatchBuild bid Nothing
+    ok <- timeIO $ coprWatchBuild bid Nothing
     unless ok $
       error' $ "Failed: copr " ++ unwords buildargs
 
