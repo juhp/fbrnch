@@ -74,6 +74,7 @@ main = do
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd
       <$> nopromptOpt
+      <*> optional (optionWith branchM 'f' "from" "BRANCH" "Branch to merge from [default newer]")
       <*> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd

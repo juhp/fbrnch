@@ -1,6 +1,7 @@
 module Cmd.Merge (
   mergeCmd,
-  mergeBranch)
+  mergeBranch,
+  getNewerBranch)
 where
 
 import Common
@@ -11,9 +12,8 @@ import Git
 import Package
 import Prompt
 
--- add BranchOpts?
-mergeCmd :: Bool -> (BranchesReq,[String]) -> IO ()
-mergeCmd noprompt =
+mergeCmd :: Bool -> Maybe Branch -> (BranchesReq,[String]) -> IO ()
+mergeCmd noprompt mfrom =
   withPackageByBranches (Just False) cleanGitFetchActive AnyNumber runMergeBranch
   where
     runMergeBranch :: Package -> AnyBranch -> IO ()
@@ -21,39 +21,41 @@ mergeCmd noprompt =
       error' "merge only defined for release branches"
     runMergeBranch _pkg rbr@(RelBranch br) = do
       gitSwitchBranch rbr
+      from <- maybe (getNewerBranch br) return mfrom
+      when (from == br) $
+        error' "cannot merge branch to itself"
       gitMergeOrigin br
-      unmerged <- mergeable br
-      mergeBranch False noprompt unmerged br
+      unmerged <- mergeable from br
+      mergeBranch False noprompt unmerged from br
+
+-- FIXME maybe require local branch already here
+mergeable :: Branch -> Branch -> IO (Bool,[String])
+mergeable _ Rawhide = return (False,[])
+mergeable from _ = do
+  locals <- localBranches True
+  gitMergeable (show from `notElem` locals) from
 
 getNewerBranch :: Branch -> IO Branch
 getNewerBranch Rawhide = return Rawhide
 getNewerBranch br = do
   branches <- fedoraBranches (localBranches False)
   let newer = newerBranch br branches
-  return $ if newer > br then newer
-    -- FIXME this can be dropped with next fedora-dists
+  return $
+    if newer > br then newer
+    -- FIXME? this can be dropped with next fedora-dists
     else case elemIndex br branches of
            Just i -> branches !! (i - 1)
            Nothing -> error' $ show br ++ ": branch not found"
 
--- FIXME maybe require local branch already here
-mergeable :: Branch -> IO (Bool,[String])
-mergeable Rawhide = return (False,[])
-mergeable br = do
-  newer <- getNewerBranch br
-  locals <- localBranches True
-  gitMergeable (show newer `notElem` locals) newer
-
 -- FIXME return merged ref
 mergeBranch :: Bool -> Bool -> (Bool,[String]) -- (ancestor,unmerged)
-            -> Branch -> IO ()
-mergeBranch _ _ _ Rawhide = return ()
-mergeBranch _ _ (_,[]) _ = return ()
-mergeBranch build noprompt (True, unmerged) br = do
-  newerBr <- getNewerBranch br
+            -> Branch -> Branch -> IO ()
+mergeBranch _ _ _ _ Rawhide = return ()
+mergeBranch _ _ (_,[]) _ _ = return ()
+mergeBranch build noprompt (True, unmerged) from br = do
   isnewrepo <- initialPkgRepo
   unless (null unmerged) $ do
-    putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show newerBr ++ ":"
+    putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show from ++ ":"
     mapM_ putStrLn unmerged
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
@@ -63,7 +65,7 @@ mergeBranch build noprompt (True, unmerged) br = do
   mmerge <-
     if isnewrepo && length unmerged == 1 || noprompt
     then return $ Just Nothing
-    else refPrompt unmerged $ "Press Enter to merge " ++ show newerBr ++
+    else refPrompt unmerged $ "Press Enter to merge " ++ show from ++
          (if build then " and build" else "") ++
          (if length unmerged > 1 then "; or give a ref to merge" else "") ++
          "; or 'no' to skip merge"
@@ -71,15 +73,14 @@ mergeBranch build noprompt (True, unmerged) br = do
   gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ mhash -> do
     let ref = case mhash of
-                Nothing -> show newerBr
+                Nothing -> show from
                 Just hash -> hash
     locals <- localBranches True
-    unless (show newerBr `elem` locals) $
-      git_ "fetch" ["origin", show newerBr ++ ":" ++ show newerBr]
+    unless (show from `elem` locals) $
+      git_ "fetch" ["origin", show from ++ ":" ++ show from]
     git_ "merge" ["--quiet", ref]
-mergeBranch build noprompt (False,unmerged) br = do
-  newer <- getNewerBranch br
-  putStrLn $ show newer ++ " branch is not directly mergeable:"
+mergeBranch build noprompt (False,unmerged) from br = do
+  putStrLn $ show from ++ " branch is not directly mergeable:"
   mapM_ putStrLn unmerged
   putStrLn ""
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
