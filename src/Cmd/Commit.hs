@@ -45,10 +45,10 @@ commitPkgs mopt firstLine notstaged args = do
                     else do
                       diff <- git "diff" ["-U0", "HEAD"]
                       let newlogs =
-                            filter (\c -> ("+- " ++ c) `elem` lines diff) clog
+                            filter (\c -> ('+' : c) `elem` lines diff) clog
                       case newlogs of
                         [] -> putStrLn diff >> readCommitMsg
-                        [msg] -> putStrLn msg >> return (removePrefix "- " msg)
+                        [msg] -> return (removePrefix "- " msg)
                         _ -> mapM_ putStrLn newlogs >> readCommitMsg
               return ["-m", changelog]
           git_ "commit" $ ["-a" | notstaged] ++ opts
