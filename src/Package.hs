@@ -339,13 +339,13 @@ getSources spec = do
       Just srcdir -> do
         canon <- canonicalizePath srcdir
         if canon == cwd
-        then return Nothing
-        else do
+          then return Nothing
+          else do
           dir <- doesDirectoryExist srcdir
           if dir
             then return msourcedir
             else return Nothing
-  gitDir <- isGitRepo
+  isPkgGit <- isPkgGitRepo
   (patches,srcs) <- partitionEithers . map sourceFieldFile
                     <$> cmdLines "spectool" ["-a", spec]
   forM_ srcs $ \ src -> do
@@ -356,7 +356,7 @@ getSources spec = do
         then maybeSourceDir createLink msrcdir src
         else do
         uploaded <-
-          if gitDir then do
+          if isPkgGit then do
             have_sources <- doesFileExist "sources"
             if have_sources then
               grep_ src "sources"
