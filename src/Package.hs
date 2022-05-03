@@ -259,7 +259,8 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
       then do
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
-        timeIO $ pipeBool ("rpmbuild", args) ("tee", [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"])
+        -- FIXME would like to have pipeOutErr
+        timeIO $ shellBool $ intercalate " " $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"]
       else do
         date <- cmd "date" ["+%T"]
         putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
@@ -269,6 +270,10 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
     unless ok $
       error' $ takeBaseName spec ++ " failed to build"
   return needBuild
+  where
+    quoteArg :: String -> String
+    quoteArg cs =
+      if ' ' `elem` cs then '\'' : cs ++ "'" else cs
 
 -- FIXME print unavailable deps
 installDeps :: Bool -> FilePath -> IO ()
