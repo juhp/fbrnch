@@ -407,7 +407,12 @@ getSources spec = do
           ".zstd" -> Just "zstd"
           _ -> Nothing
       of
-        Just prog -> cmdBool prog ["-t", file]
+        Just prog -> do
+          have <- findExecutable prog
+          when (isNothing have) $ do
+            putStrLn $ "Running 'dnf install' " ++ prog
+            cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"install": ["--assumeyes", prog]
+          cmdBool prog ["-t", file]
         Nothing -> return True
 
     maybeSourceDir :: (FilePath -> FilePath -> IO ())
