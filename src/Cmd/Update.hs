@@ -97,10 +97,7 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
           forM_ archives removeFile
           cmd_ "spectool" ["-g", "-S", spec]
         krbTicket
-        copyFile "sources" "sources.fbrnch"
         cmd_ "fedpkg" $ "new-sources" : filter isArchiveFile sources
-        --shell_ $ "cat sources.fbrnch >>" +-+ "sources"
-        removeFile "sources.fbrnch"
         putStr "Prepping... "
         cmdSilent' "rpmbuild" ["-bp", spec]
         putStrLn "done"
