@@ -14,7 +14,7 @@ extra-deps:
   - http-query-0.1.0
   - fgl-5.5.4.0
   - graphviz-2999.19.0.0
-  - rpm-nvr-0.1.1
+  - rpm-nvr-0.1.2
   - pdc-0.1.1
   - bodhi-0.1.0
   - pagure-0.1.0

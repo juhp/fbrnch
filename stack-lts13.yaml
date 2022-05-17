@@ -11,7 +11,7 @@ extra-deps:
   - pretty-terminal-0.1.0.0
   - http-query-0.1.0
   - graphviz-2999.20.0.3
-  - rpm-nvr-0.1.1
+  - rpm-nvr-0.1.2
   - pdc-0.1.1
   - bodhi-0.1.0
   - pagure-0.1.0
