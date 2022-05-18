@@ -115,7 +115,6 @@ statusBranch pkg rbr@(RelBranch br) = do
           hours = nomRest `div'` nominalHour :: Int
       putStr $ " " ++ plural days "day" +-+ plural hours "hour"
 
-#if MIN_VERSION_time(1,8,0)
-#else
+#if !MIN_VERSION_time(1,8,0)
     nominalDay = 3600 * 24 :: NominalDiffTime
 #endif
