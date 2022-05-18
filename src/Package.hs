@@ -95,7 +95,7 @@ changeLogPrompt mcontext spec = do
   if not tty
     then return clog
     else do
-    userlog <- prompt $ "Press Enter to use above or input " ++ fromMaybe "change" mcontext ++ " summary now"
+    userlog <- prompt $ "Press Enter to use above or input " ++ fromMaybe "change" mcontext ++ " summary now" ++ if isJust mcontext then "; or 'no' to skip update" else ""
     return $ if null userlog then clog else userlog
 
 changelogVersions :: FilePath -> IO [String]

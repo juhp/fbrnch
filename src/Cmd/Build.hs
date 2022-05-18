@@ -215,37 +215,45 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         (Just updateType, severity) -> do
           unless dryrun $ do
             -- use cmdLog to debug, but notes are not quoted
-            if updateType == TemplateUpdate
-              then cmd_ "fedpkg" ["update"]
-              else do
-              -- FIXME also query for open existing bugs
-              changelog <- if isJust mreview
-                           then getSummaryURL spec
-                           else if buildoptUseChangelog opts
-                                then cleanChangelog spec
-                                else
-                                  -- FIXME list open bugs
-                                  changeLogPrompt (Just "update") spec
-              let cbugs = extractBugReferences changelog
-                  bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
-                    if null bids then [] else ["--bugs", intercalate "," bids]
-              when (isJust mreview &&
-                    updateType `elem` [SecurityUpdate,BugfixUpdate]) $
-                warning "overriding update type with 'newpackage'"
-              putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
-              -- FIXME check for Bodhi URL to confirm update
-              cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
-            -- FIXME avoid this if we know the update URL
-            updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
-            case updatequery of
-              [] -> do
-                putStrLn "bodhi submission failed"
-                prompt_ "Press Enter to resubmit to Bodhi"
-                bodhiUpdate dryrun mreview spec nvr
-              [update] -> case lookupKey "url" update of
-                Nothing -> error' "Update created but no url"
-                Just uri -> putStrLn uri
-              _ -> error' $ "impossible happened: more than one update found for " ++ nvr
+            updatedone <-
+              if updateType == TemplateUpdate
+                then do
+                cmd_ "fedpkg" ["update"]
+                return True
+                else do
+                -- FIXME also query for open existing bugs
+                changelog <- if isJust mreview
+                             then getSummaryURL spec
+                             else if buildoptUseChangelog opts
+                                  then cleanChangelog spec
+                                  else
+                                    -- FIXME list open bugs
+                                    changeLogPrompt (Just "update") spec
+                if lower changelog == "no"
+                  then return False
+                  else do
+                  let cbugs = extractBugReferences changelog
+                      bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
+                        if null bids then [] else ["--bugs", intercalate "," bids]
+                  when (isJust mreview &&
+                        updateType `elem` [SecurityUpdate,BugfixUpdate]) $
+                    warning "overriding update type with 'newpackage'"
+                  putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
+                  -- FIXME check for Bodhi URL to confirm update
+                  cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
+                  return True
+            when updatedone $ do
+              -- FIXME avoid this if we know the update URL
+              updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
+              case updatequery of
+                [] -> do
+                  putStrLn "bodhi submission failed"
+                  prompt_ "Press Enter to resubmit to Bodhi"
+                  bodhiUpdate dryrun mreview spec nvr
+                [update] -> case lookupKey "url" update of
+                  Nothing -> error' "Update created but no url"
+                  Just uri -> putStrLn uri
+                _ -> error' $ "impossible happened: more than one update found for " ++ nvr
 
     extractBugReferences :: String -> [String]
     extractBugReferences clog =
