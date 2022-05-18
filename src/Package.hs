@@ -260,7 +260,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
         -- FIXME would like to have pipeOutErr
-        timeIO $ shellBool $ intercalate " " $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"]
+        timeIO $ shellBool $ unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"]
       else do
         date <- cmd "date" ["+%T"]
         putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
