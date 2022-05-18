@@ -1,5 +1,5 @@
 resolver: lts-18.28
 extra-deps:
-  - fedora-dists-2.0.0
+  - fedora-dists-2.1.0
   - bugzilla-redhat-1.0.0
   - rpm-nvr-0.1.2

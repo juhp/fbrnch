@@ -106,7 +106,7 @@ executable fbrnch
                        directory >= 1.2.3,
                        email-validate,
                        extra,
-                       fedora-dists >= 2.0,
+                       fedora-dists >= 2.1,
                        filepath,
                        -- haskeline,
                        http-conduit,

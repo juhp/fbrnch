@@ -56,7 +56,7 @@ module Package (
 import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 import Data.RPM
-import Distribution.Fedora hiding (Fedora,EPEL)
+import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
 import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import SimpleCmd.Rpm
 import System.Console.Pretty
@@ -758,6 +758,8 @@ repoquery sysbr br args = do
                          "--enablerepo=updates",
                          "--releasever=" ++ branchVersion br]
             EPEL _ -> ["--disablerepo=*", "--enablerepo=epel",
+                         "--releasever=" ++ branchVersion br]
+            EPELNext _ -> ["--disablerepo=*", "--enablerepo=epel-next",
                          "--releasever=" ++ branchVersion br]
   cmd "dnf" (["repoquery", "--quiet"] ++ brOpts ++ args)
 

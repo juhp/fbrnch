@@ -29,6 +29,8 @@ checkAutoBodhiUpdate :: Branch -> IO Bool
 checkAutoBodhiUpdate Rawhide = return True
 -- epel7 returns 'create_automatic_updates: null' !
 checkAutoBodhiUpdate (EPEL 7) = return False
+-- not sure how to best handle next
+checkAutoBodhiUpdate (EPELNext _) = return False
 checkAutoBodhiUpdate br =
   lookupKey'' "create_automatic_updates" <$> bodhiRelease (show br)
   where

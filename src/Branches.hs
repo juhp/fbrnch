@@ -110,6 +110,7 @@ mockRoot br = do
     Rawhide -> "fedora-rawhide-" ++ arch
     Fedora n -> "fedora-" ++ show n ++ "-" ++ arch
     EPEL n -> "epel-" ++ show n ++ "-" ++ arch
+    EPELNext n -> "centos-stream+epel-next-" ++ show n ++ "-" ++ arch
 
 ------
 
@@ -217,6 +218,7 @@ branchVersion :: Branch -> String
 branchVersion Rawhide = "rawhide"
 branchVersion (Fedora n) = show n
 branchVersion (EPEL n) = show n
+branchVersion (EPELNext n) = show n
 
 getRequestedBranches :: BranchesReq -> IO [Branch]
 getRequestedBranches breq = do
