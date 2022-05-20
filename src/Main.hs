@@ -401,6 +401,7 @@ main = do
       <*> overrideOpt
       <*> waitrepoOpt
       <*> dryrunOpt
+      <*> skipFetchOpt
       <*> updateOpt
       <*> useChangelogOpt
       <*> switchWith 'p' "by-package" "Build by each package across brs"
@@ -441,6 +442,8 @@ main = do
 
 
     dryrunOpt = switchWith 'n' "dry-run" "Do not write (push, build, post, override)"
+
+    skipFetchOpt = switchWith 'S' "skip-fetch" "Do not git fetch"
 
     updateOpt :: Parser (Maybe UpdateType, UpdateSeverity)
     updateOpt = updatePair <$> updatetypeOpt <*> updateSeverityOpt

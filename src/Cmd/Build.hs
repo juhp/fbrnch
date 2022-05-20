@@ -28,6 +28,7 @@ data BuildOpts = BuildOpts
   , buildoptOverride :: Maybe Int
   , buildoptWaitrepo :: Maybe Bool
   , buildoptDryrun :: Bool
+  , buildSkipFetch :: Bool
   , buildoptUpdate :: (Maybe UpdateType, UpdateSeverity)
   , buildoptUseChangelog :: Bool
   , buildoptByPackage :: Bool
@@ -50,16 +51,18 @@ buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptTarget opts)
                     then ZeroOrOne
                     else AnyNumber
-  let mlastOfPkgs = if length pkgs > 1
+      mlastOfPkgs = if length pkgs > 1
                     then Just (Package (last pkgs))
                     else Nothing
+      gitopts =
+        if buildSkipFetch opts then cleanGitActive else cleanGitFetchActive
   if not (buildoptByPackage opts) && breq /= Branches [] && length pkgs > 1
     then do
     brs <- listOfBranches True True breq
     forM_ brs $ \br ->
-      withPackageByBranches (Just False) cleanGitFetchActive singleBrnch (buildBranch mlastOfPkgs opts) (Branches [br], pkgs)
+      withPackageByBranches (Just False) gitopts singleBrnch (buildBranch mlastOfPkgs opts) (Branches [br], pkgs)
     else
-    withPackageByBranches (Just False) cleanGitFetchActive singleBrnch (buildBranch mlastOfPkgs opts) (breq, pkgs)
+    withPackageByBranches (Just False) gitopts singleBrnch (buildBranch mlastOfPkgs opts) (breq, pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()
