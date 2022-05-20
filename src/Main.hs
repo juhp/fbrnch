@@ -54,7 +54,7 @@ main :: IO ()
 main = do
   setNoBuffering
   simpleCmdArgs (Just version) "Fedora branch building tool"
-    "This tool helps with updating and building package branches" $
+    "A tool to help with updating and building package branches https://github.com/juhp/fbrnch#readme" $
     subcommands
     [ Subcommand "clone" "clone packages" $
       cloneCmd
