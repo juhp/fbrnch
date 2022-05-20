@@ -138,7 +138,8 @@ isGitRepo = isGitDir "." ||^ doesFileExist ".git"
 isPkgGitRepo :: IO Bool
 isPkgGitRepo = grepGitConfig' "\\(https://\\|@\\)\\(pkgs\\|src\\)\\."
                &&^
-               (not <$> grepGitConfig' "/forks/")
+               (not . ("/forks/" `isInfixOf`) <$>
+                git "config" ["--get", "remote.origin.url"])
 
 isPkgGitSshRepo :: IO Bool
 isPkgGitSshRepo = grepGitConfig' "@\\(pkgs\\|src\\)\\."
