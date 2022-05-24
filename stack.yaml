@@ -1,4 +1,4 @@
 resolver: lts-19.7
 extra-deps:
   - simple-cmd-0.2.6
-  - fedora-dists-2.1.0
+  - fedora-dists-2.1.1

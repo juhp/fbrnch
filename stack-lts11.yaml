@@ -20,6 +20,6 @@ extra-deps:
   - pagure-0.1.0
   - copr-api-0.1.0
   - cached-json-file-0.1.0
-  - fedora-dists-2.1.0
+  - fedora-dists-2.1.1
   - bugzilla-redhat-1.0.0
   - HsOpenSSL-0.11.7.2
