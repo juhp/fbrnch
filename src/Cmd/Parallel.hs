@@ -16,6 +16,7 @@ import System.Time.Extra (sleep)
 import Bodhi
 import Bugzilla
 import Branches
+import Cmd.Merge (mergeBranch)
 import Git
 import Krb
 import Koji
@@ -37,10 +38,11 @@ type Job = (String, Async String)
 -- FIXME check sources as early as possible
 -- FIXME --single-layer to build packages at once regardless
 -- FIXME time builds
-parallelBuildCmd :: Bool -> Int -> Maybe SideTagTarget
+parallelBuildCmd :: Bool -> Bool -> Int -> Maybe SideTagTarget
                  -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()
-parallelBuildCmd dryrun firstlayer msidetagTarget mupdate (breq, pkgs) = do
+parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
+  do
   branches <-
     case pkgs of
       [] -> do
@@ -63,6 +65,8 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdate (breq, pkgs) = do
            parallelBranches branches
     _ ->
       forM_ branches $ \ rbr -> do
+      forM_ pkgs $ \p ->
+        withExistingDirectory p $ mergeNewerBranch p rbr
       allLayers <- dependencyLayers pkgs
       let layers = drop firstlayer allLayers
       when (isNothing msidetagTarget && length allLayers > 1) $
@@ -93,13 +97,25 @@ parallelBuildCmd dryrun firstlayer msidetagTarget mupdate (breq, pkgs) = do
       unless (null failures) $
         error' $ "Build failures: " ++ unwords failures
       where
+        -- FIXME time jobs
         setupBranch :: Branch -> IO Job
         setupBranch br = do
           target <- targetMaybeSidetag br
+          when merge $ mergeNewerBranch (show br) br
           job <- startBuild False False target br "." >>= async
           unless dryrun $ sleep 3
           return (show br,job)
 
+    mergeNewerBranch :: String -> Branch -> IO ()
+    mergeNewerBranch desc br = do
+      gitSwitchBranch (RelBranch br)
+      (ancestor,unmerged) <- newerMergeable br
+      newer <- getNewerBranch br
+      when (ancestor && not (null unmerged)) $
+        putStrLn $ "Checking " ++ desc ++ ":"
+      mergeBranch True False (ancestor,unmerged) newer br
+
+    -- FIXME time builds or layers
     parallelBuild :: String -> Branch -> (Int,[[String]]) -> IO ()
     parallelBuild _ _ (_,[]) = return () -- should not reach here
     parallelBuild target br (layernum, layer:nextLayers) =  do

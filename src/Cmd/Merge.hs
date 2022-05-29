@@ -35,18 +35,6 @@ mergeable from _ = do
   locals <- localBranches True
   gitMergeable (show from `notElem` locals) from
 
-getNewerBranch :: Branch -> IO Branch
-getNewerBranch Rawhide = return Rawhide
-getNewerBranch br = do
-  branches <- fedoraBranches (localBranches False)
-  let newer = newerBranch br branches
-  return $
-    if newer > br then newer
-    -- FIXME? this can be dropped with next fedora-dists
-    else case elemIndex br branches of
-           Just i -> branches !! (i - 1)
-           Nothing -> error' $ show br ++ ": branch not found"
-
 -- FIXME return merged ref
 mergeBranch :: Bool -> Bool -> (Bool,[String]) -- (ancestor,unmerged)
             -> Branch -> Branch -> IO ()

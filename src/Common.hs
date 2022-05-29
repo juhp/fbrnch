@@ -13,7 +13,7 @@ module Common (
   ) where
 
 import Control.Monad.Extra -- hiding (loop)
-import Data.List.Extra
+import Data.List.Extra hiding (merge)
 import Data.Maybe
 
 #if !MIN_VERSION_base(4,11,0)

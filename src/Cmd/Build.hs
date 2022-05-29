@@ -76,7 +76,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   gitMergeOrigin br
   newrepo <- initialPkgRepo
   tty <- isTty
-  (ancestor,unmerged) <- newerMergeable
+  (ancestor,unmerged) <- newerMergeable br
   -- FIXME if already built or failed, also offer merge
   merged <-
     case buildoptMerge opts of
@@ -268,13 +268,3 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               -- make sure is contemporary 7-digit bug
               (if length ds > 6 then (ds :) else id) $
               extractBugReferences more
-
-    -- FIXME maybe require local branch already here
-    newerMergeable :: IO (Bool,[String])
-    newerMergeable =
-      if br == Rawhide
-      then return (False,[])
-      else do
-        newer <- getNewerBranch br
-        locals <- localBranches True
-        gitMergeable (show newer `notElem` locals) newer

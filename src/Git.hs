@@ -7,6 +7,8 @@ module Git (
   gitLines,
   gitMergeable,
   gitMergeOrigin,
+  getNewerBranch,
+  newerMergeable,
   gitFetchSilent,
   gitPushSilent,
   gitRepoName,
@@ -48,6 +50,18 @@ gitMergeable origin br = do
   commits <- gitShortLog ("HEAD.." ++ ref)
   return (ancestor, commits)
 
+getNewerBranch :: Branch -> IO Branch
+getNewerBranch Rawhide = return Rawhide
+getNewerBranch br = do
+  branches <- fedoraBranches (localBranches False)
+  let newer = newerBranch br branches
+  return $
+    if newer > br then newer
+    -- FIXME? this can be dropped with next fedora-dists
+    else case elemIndex br branches of
+           Just i -> branches !! (i - 1)
+           Nothing -> error' $ show br ++ ": branch not found"
+
 gitMergeOrigin :: Branch -> IO ()
 gitMergeOrigin br = do
   (ancestor,commits) <- gitMergeable True br
@@ -57,6 +71,16 @@ gitMergeOrigin br = do
     unless ("Already up to date." `isPrefixOf` rebase) $
       putStr rebase
     else git_ "rebase" []
+
+-- FIXME maybe require local branch already here
+newerMergeable :: Branch -> IO (Bool,[String])
+newerMergeable br =
+  if br == Rawhide
+  then return (False,[])
+  else do
+    newer <- getNewerBranch br
+    locals <- localBranches True
+    gitMergeable (show newer `notElem` locals) newer
 
 gitShortLog :: String -> IO [String]
 gitShortLog range =
