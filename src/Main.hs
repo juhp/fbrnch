@@ -98,7 +98,7 @@ main = do
       <*> switchWith 'm' "merge" "Merge newer branch without prompt"
       <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
       <*> optional sidetagTargetOpt
-      <*> updateOpt
+      <*> updateOpt 'S'
       <*> branchesPackages
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd
@@ -403,7 +403,7 @@ main = do
       <*> waitrepoOpt
       <*> dryrunOpt
       <*> skipFetchOpt
-      <*> updateOpt
+      <*> updateOpt 's'
       <*> useChangelogOpt
       <*> switchWith 'p' "by-package" "Build by each package across brs"
       where
@@ -446,15 +446,15 @@ main = do
 
     skipFetchOpt = switchWith 'S' "skip-fetch" "Do not git fetch"
 
-    updateOpt :: Parser (Maybe UpdateType, UpdateSeverity)
-    updateOpt = updatePair <$> updatetypeOpt <*> updateSeverityOpt
+    updateOpt :: Char -> Parser (Maybe UpdateType, UpdateSeverity)
+    updateOpt s = updatePair <$> updatetypeOpt <*> updateSeverityOpt
       where
         updatetypeOpt =
           flagWith' Nothing 'U' "no-update" "Do not generate a Bodhi update" <|>
           Just <$> optionalWith auto 'u' "update-type" "TYPE" "security, bugfix, enhancement (default), newpackage, or template" EnhancementUpdate
 
         updateSeverityOpt =
-          optionalWith auto 's' "severity" "SEVERITY" "low, medium, high, urgent, (default: unspecified)" SeverityUnspecified
+          optionalWith auto s "severity" "SEVERITY" "low, medium, high, urgent, (default: unspecified)" SeverityUnspecified
 
         updatePair :: Maybe UpdateType -> UpdateSeverity
                    -> (Maybe UpdateType, UpdateSeverity)
@@ -464,7 +464,7 @@ main = do
           error' "cannot have --severity with --no-update"
         updatePair (Just TemplateUpdate) sev | sev /= SeverityUnspecified =
           error' "Template update cannot have --severity"
-        updatePair t s = (t,s)
+        updatePair ty sv = (ty,sv)
 
     forceshortOpt =
       flagWith' ForceBuild 'f' "rebuild" "Rebuild even if already built" <|>
