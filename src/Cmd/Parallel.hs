@@ -10,6 +10,7 @@ import Common.System
 
 import Control.Concurrent.Async
 import Distribution.RPM.Build.Order (dependencyLayers)
+import Fedora.Bodhi
 import System.Console.Pretty
 import System.Time.Extra (sleep)
 
@@ -75,13 +76,13 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
       when (length branches > 1) $
         putStrLn $ "# " ++ show rbr
       target <- targetMaybeSidetag rbr
-      mapM_ (parallelBuild target rbr)
-                 $ zip [firstlayer..length allLayers]
-                 $ init $ tails layers -- tails ends in []
+      nvrs <- concatMapM (parallelBuild target rbr)
+              $ zip [firstlayer..length allLayers]
+              $ init $ tails layers -- tails ends in []
       unless (isNothing msidetagTarget || dryrun) $ do
         when (target /= branchTarget rbr) $ do
           notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
-          bodhiSidetagUpdate target notes
+          bodhiSidetagUpdate nvrs target notes
   where
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do
@@ -90,7 +91,7 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
       putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
-      failures <- watchJobs [] jobs
+      (failures,_nvrs) <- watchJobs [] [] jobs
       -- switch back to the original branch
       when (length brs /= 1) $
         gitSwitchBranch currentbranch
@@ -116,8 +117,8 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
       mergeBranch True False (ancestor,unmerged) newer br
 
     -- FIXME time builds or layers
-    parallelBuild :: String -> Branch -> (Int,[[String]]) -> IO ()
-    parallelBuild _ _ (_,[]) = return () -- should not reach here
+    parallelBuild :: String -> Branch -> (Int,[[String]]) -> IO [String]
+    parallelBuild _ _ (_,[]) = return [] -- should not reach here
     parallelBuild target br (layernum, layer:nextLayers) =  do
       krbTicket
       putStrLn $ "\n= Building parallel layer #" ++ show layernum ++
@@ -133,9 +134,13 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
              [l] -> plural l "package"
              _ -> show layerspkgs ++ " packages"
       jobs <- mapM setupBuild layer
-      failures <- watchJobs [] jobs
+      when (null jobs) $
+        error' "No jobs run"
+      (failures,nvrs) <- watchJobs [] [] jobs
       -- FIXME prompt to continue?
-      unless (null failures) $ do
+      if null failures
+        then return nvrs
+        else do
         let pending = sum $ map length nextLayers
         error' $ "Build failures in layer " ++ show layernum ++ ": " ++
           unwords failures ++ "\n\n" ++
@@ -144,8 +149,6 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
           then
           ":\n" ++ unwords (map unwords nextLayers)
           else ""
-      when (null jobs) $
-        error' "No jobs run"
       where
         nopkgs = length layer
         layersleft = length nextLayers
@@ -157,20 +160,21 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
           unless dryrun $ sleep 3
           return (pkg,job)
 
-    watchJobs :: [String] -> [Job] -> IO [String]
-    watchJobs fails [] = return fails
-    watchJobs fails (job:jobs) = do
+    -- (failures,successes)
+    watchJobs :: [String] -> [String] -> [Job] -> IO ([String],[String])
+    watchJobs fails nvrs [] = return (fails,nvrs)
+    watchJobs fails nvrs (job:jobs) = do
       status <- poll (snd job)
       case status of
-        Nothing -> sleep 1 >> watchJobs fails (jobs ++ [job])
+        Nothing -> sleep 1 >> watchJobs fails nvrs (jobs ++ [job])
         Just (Right nvr) -> do
           putStrLn $ color Yellow nvr ++ " job completed (" ++ show (length jobs) ++ " left in layer)"
-          watchJobs fails jobs
+          watchJobs fails (nvr:nvrs) jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
           putStrLn $ "** " ++ color Magenta pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " left in layer)"
-          watchJobs (pkg : fails) jobs
+          watchJobs (pkg : fails) nvrs jobs
 
     -- FIXME prefix output with package name
     startBuild :: Bool -> Bool -> String -> Branch -> String -> IO (IO String)
@@ -255,8 +259,8 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
             kojiWaitRepo dryrun target nvr
           return nvr
 
-    bodhiSidetagUpdate :: String -> String -> IO ()
-    bodhiSidetagUpdate sidetag notes = do
+    bodhiSidetagUpdate :: [String] -> String -> String -> IO ()
+    bodhiSidetagUpdate nvrs sidetag notes = do
       case mupdate of
         (Nothing, _) -> return ()
         (Just updateType, severity) -> do
@@ -269,8 +273,25 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
               cmdBool "bodhi" ["updates", "new", "--file", template, "--from-tag", sidetag]
             else cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--severity", show severity, "--request", "testing", "--notes", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
           when ok $ do
-            prompt_ "After editing update, press Enter to remove sidetag"
+            prompt_ "Press Enter to remove the sidetag"
             fedpkg_ "remove-side-tag" [sidetag]
+            -- arguably we already received the Updateid from the above bodhi
+            -- command, but we query it here via nvr
+            res <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" (last nvrs)]
+            case res of
+              [] -> do
+                putStrLn "bodhi submission failed"
+                prompt_ "Press Enter to resubmit to Bodhi"
+                bodhiSidetagUpdate nvrs sidetag notes
+              [update] ->
+                case lookupKey "updateid" update of
+                  Nothing -> error' "could not determine Update id"
+                  Just updateid -> do
+                    -- disconnect the update from the sidetag
+                    -- so it can be changed after sidetag closed
+                    cmd_ "bodhi" ["updates", "edit", updateid]
+                    putStrLn "Update edited to unlock from sidetag"
+              _ -> error' $ "impossible happened: more than one update found for " ++ last nvrs
 
     targetMaybeSidetag :: Branch -> IO String
     targetMaybeSidetag br =
