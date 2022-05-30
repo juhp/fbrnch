@@ -306,7 +306,10 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
               if "Side tag '" `isPrefixOf` out
                 then do
                 putStrLn out
-                return $ init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
+                let sidetag =
+                      init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
+                cmd_ "koji" ["wait-repo", sidetag]
+                return sidetag
                 else error' "'fedpkg request-side-tag' failed"
             [tag] -> return tag
             _ -> error' $ "More than one user side-tag found for " ++ show br
