@@ -54,7 +54,7 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
       _ -> case breq of
              Branches [] -> error' "please specify a branch"
              Branches _ -> listOfBranches True True breq
-             _ -> error' "parallel does not support branch options for multiple packages: please give an explicit list of branches instead"
+             _ -> listOfBranches False True breq
   when (null branches) $
     error' "Please specify at least one branch"
   let mtarget = maybeTarget msidetagTarget
