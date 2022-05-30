@@ -13,7 +13,10 @@ import Koji
 import Package
 import Types (Archs(..))
 
+-- FIXME --stagger archs
 -- FIXME allow multiple --target's (parallel too)
+-- FIXME tail build.log for failure
+-- FIXME append timestamp after %release (to help identify scratch builds)
 scratchCmd :: Bool -> Bool -> Bool -> Maybe Archs -> Maybe String
            -> Maybe String -> (BranchesReq, [String]) -> IO ()
 scratchCmd dryrun rebuildSrpm nofailfast marchopts mtarget mref (breq,pkgs) =

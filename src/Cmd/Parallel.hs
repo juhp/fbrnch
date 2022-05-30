@@ -39,6 +39,7 @@ type Job = (String, Async String)
 -- FIXME check sources as early as possible
 -- FIXME --single-layer to build packages at once regardless
 -- FIXME time builds
+-- FIXME copy bodhi notes from another branch update
 parallelBuildCmd :: Bool -> Bool -> Int -> Maybe SideTagTarget
                  -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()
@@ -201,6 +202,7 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
       mlatest <- kojiLatestNVR tag $ unPackage pkg
       case buildstatus of
         Just BuildComplete -> do
+          -- FIXME detect old stable existing build
           putStrLn $ color Green nvr ++ " is " ++ color Green "already built"
           when (br /= Rawhide && morelayers && target == branchTarget br) $ do
             tags <- kojiNVRTags nvr

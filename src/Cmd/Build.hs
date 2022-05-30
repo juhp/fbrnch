@@ -41,7 +41,7 @@ data BuildOpts = BuildOpts
 -- FIXME --rpmlint (default for rawhide?)
 -- FIXME support --wait-build=NVR
 -- FIXME build from ref
--- FIXME provide direct link to failed task/build.log
+-- FIXME tail of failed build.log
 -- FIXME --auto-override for deps in testing
 -- FIXME -B fails to find new branches (fixed?)
 -- FIXME disallow override for autoupdate?
