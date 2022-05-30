@@ -4,7 +4,7 @@
 [![GitHub CI](https://github.com/juhp/fbrnch/workflows/build/badge.svg)](https://github.com/juhp/fbrnch/actions)
 [![Hackage](https://img.shields.io/hackage/v/fbrnch.svg)](https://hackage.haskell.org/package/fbrnch)
 
-A tool to help Fedora Packagers build package branches and add new packages.
+A tool to help Fedora Packagers build package branches.
 
 Fedora developers use a lot of time building packages across releases
 and workflow for adding new packages, etc.
@@ -19,10 +19,11 @@ like:
 
 - merging and building a package across release branches
 - automated parallel builds of sets of packages in dependency order
+- easy scratch and mock builds
+- progressive copr builds
 - creating, updating and listing package reviews
 - requesting new repos and branches
 - importing new packages and updating packages
-- progressive copr builds
 - rename master branches to rawhide
 
 and more.
@@ -233,12 +234,13 @@ There are more commands like `copr` and `graph`.
 
 ```
 $ fbrnch --version
-1.1
+1.1.1
 $ fbrnch --help
 Fedora branch building tool
 
 Usage: fbrnch [--version] COMMAND
-  This tool helps with updating and building package branches
+  A tool to help with updating and building package branches
+  https://github.com/juhp/fbrnch#readme
 
 Available options:
   -h,--help                Show this help text
@@ -328,6 +330,35 @@ It also makes use of:
 - ssh & scp (for uploading package reviews)
 - bugzilla API key
 
+## rpmbuild configuration
+You may want to set `~/.rpmmacros` to use particular directories,
+since unlike fedpkg, fbrnch follows the macros set in `~/.rpmmacros`.
+
+By default rpmbuild uses `~/rpmbuild/`.
+
+Two common alternative configurations might be either:
+
+1) use the package directory for everything (like fedpkg does):
+```
+%__pwd %(echo $PWD)
+%_builddir %__pwd
+%_rpmdir %__pwd
+%_sourcedir %__pwd
+%_specdir %__pwd
+%_srcrpmdir %__pwd
+```
+These are easy to find, but do create a lot of clutter.
+
+2) Lately I just set _topdir to pwd
+```
+%__pwd %(echo $PWD)
+%_topdir %__pwd
+%_sourcedir %__pwd
+%_specdir %__pwd
+```
+With this rpmbuild creates a bunch of dirs in each package dir
+(like the ones in ~/rpmbuild/), which can hide srpms and build trees, etc.
+
 ## Bugzilla API key
 fbrnch can share the API of the python-bugzilla CLI tool,
 placed either in `~/.config/python-bugzilla/bugzillarc` or `~/.bugzillarc`:
@@ -349,7 +380,7 @@ You can create your key at
   - so python clients are used for "writing"
     (specifically koji, bodhi-client, fedpkg),
     but all queries are done directly by Web APIs for speed and control.
-- https checkouts are currently assumed to an anonymous git checkouts
+- https checkouts are currently treated as anonymous git checkouts
 
 ## Motivation, history, talks
 This project started off (as "fedbrnch") basically as a simple tool to
@@ -363,14 +394,14 @@ I have given a couple of short talks about fbranch:
 - Lightning talk at devconf.cz 2021: [youtube](https://www.youtube.com/watch?v=O2-6rDuPMRA&t=2s)
 
 ## Contribute
-Bug reports, feedback, and pull requests welcome.
+Bug reports, feedback, and pull requests are all highly appreciated.
 
 Please report any unsupported or unintuitive workflow steps.
 
 See the TODO list and also the FIXME comments scattered across the source.
-Do open an issue before embarking on large changes.
+Do open an issue before embarking on larger changes.
 
-People who have committed:
+Authors of the code:
 
 <a href="https://github.com/juhp/fbrnch/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=juhp/fbrnch" />

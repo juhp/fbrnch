@@ -1,7 +1,30 @@
 # Changelog
 
-## next
-- 'repoquery': new experimental command
+## 1.1.1 (2022-05-30)
+- copr: time builds
+- commit: fix getting log from additional changelog message
+- merge: --from to specify which branch to merge
+- Package getSources: only check 'sources' if dist-git
+- Package getSources: install compression tool if missing
+- Package buildRPMs: use shellBool to send stderr also to tee
+- request-branches: print out url per branch
+- require rpm-nvr 0.1.2 for better NVR name validation
+- initial support for epel-next (#29)
+- Package builtRpms: no longer assume in cwd for dist-git
+- build: now possible to skip pushing an update at prompt with 'no'
+- initial support for epel-next (#29)
+- Package builtRpms: no longer assume in cwd for dist-git
+- build: now possible to skip pushing an update at prompt with 'no'
+- main help: add readme url
+- build: add --skip-fetch option
+- Git isPkgGitRepo: fix handling of forks (#33)
+- InterleaveOutput: fix cmdSilent' to error on failure
+- parallel: add --merge (#30)
+- fix -s/-S ambigious for build and parallel
+- parallel: unlock update after sidetag removal
+- parallel: waitrepo for sidetag before starting to build
+- parallel: get buildtag from koji to determine basetag for sidetag
+- parallel: allow branch options like --all-fedora/--all-epel
 
 ## 1.1 (2022-04-30)
 - parallel: show target as early as possible
