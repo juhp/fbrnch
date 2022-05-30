@@ -302,7 +302,8 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
           tags <- map (head . words) <$> kojiUserSideTags (Just br)
           case tags of
             [] -> do
-              out <- head . lines <$> fedpkg "request-side-tag" ["--base-tag",  show br ++ "-build"]
+              Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (show br)
+              out <- head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
               if "Side tag '" `isPrefixOf` out
                 then do
                 putStrLn out
