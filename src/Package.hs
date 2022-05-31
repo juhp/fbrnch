@@ -254,6 +254,8 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
         sourcediropt = ["--define", "_sourcedir " ++ cwd]
         args = sourcediropt ++ ["--define", "dist " ++ rpmDistTag dist] ++
                buildopt ++ map show bconds ++ [spec]
+    date <- cmd "date" ["+%T"]
+    putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
     ok <-
       if not quiet || shortcircuit
       then do
@@ -262,8 +264,6 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
         -- FIXME would like to have pipeOutErr
         timeIO $ shellBool $ unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"]
       else do
-        date <- cmd "date" ["+%T"]
-        putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
         res <- timeIO $ cmdSilentBool "rpmbuild" args
         when res $ putStrLn "done"
         return res
