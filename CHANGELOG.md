@@ -12,9 +12,6 @@
 - initial support for epel-next (#29)
 - Package builtRpms: no longer assume in cwd for dist-git
 - build: now possible to skip pushing an update at prompt with 'no'
-- initial support for epel-next (#29)
-- Package builtRpms: no longer assume in cwd for dist-git
-- build: now possible to skip pushing an update at prompt with 'no'
 - main help: add readme url
 - build: add --skip-fetch option
 - Git isPkgGitRepo: fix handling of forks (#33)
