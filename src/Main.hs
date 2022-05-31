@@ -95,7 +95,7 @@ main = do
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd
       <$> dryrunOpt
-      <*> switchWith 'm' "merge" "Merge newer branch without prompt"
+      <*> mergeOpt
       <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
       <*> optional sidetagTargetOpt
       <*> updateOpt 'S'
@@ -394,6 +394,10 @@ main = do
 
     rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
 
+    mergeOpt =
+      optional (flagWith' True 'm' "merge" "Merge without prompt" <|>
+                flagWith' False 'M' "no-merge" "No merging")
+
     buildOpts =
       BuildOpts
       <$> mergeOpt
@@ -407,9 +411,6 @@ main = do
       <*> useChangelogOpt
       <*> switchWith 'p' "by-package" "Build by each package across brs"
       where
-        mergeOpt =
-          optional (flagWith' True 'm' "merge" "Merge without prompt" <|>
-                    flagWith' False 'M' "no-merge" "No merging")
         overrideOpt =
           optional (optionWith auto 'o' "override" "DAYS" "Create buildroot override for specified days: implies --wait-repo")
         waitrepoOpt =

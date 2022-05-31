@@ -40,10 +40,10 @@ type Job = (String, Async String)
 -- FIXME --single-layer to build packages at once regardless
 -- FIXME time builds
 -- FIXME copy bodhi notes from another branch update
-parallelBuildCmd :: Bool -> Bool -> Int -> Maybe SideTagTarget
+parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget
                  -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()
-parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
+parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
   do
   branches <-
     case pkgs of
@@ -103,7 +103,7 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
         setupBranch :: Branch -> IO Job
         setupBranch br = do
           target <- targetMaybeSidetag br
-          when merge $ mergeNewerBranch (show br) br
+          when (mmerge /= Just False) $ mergeNewerBranch (show br) br
           job <- startBuild False False target br "." >>= async
           unless dryrun $ sleep 3
           return (show br,job)
@@ -115,7 +115,7 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
       newer <- getNewerBranch br
       when (ancestor && not (null unmerged)) $
         putStrLn $ "Checking " ++ desc ++ ":"
-      mergeBranch True False (ancestor,unmerged) newer br
+      mergeBranch True (mmerge == Just True) (ancestor,unmerged) newer br
 
     -- FIXME time builds or layers
     parallelBuild :: String -> Branch -> (Int,[[String]]) -> IO [String]
