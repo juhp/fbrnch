@@ -62,7 +62,7 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   case pkgs of
-    [] -> parallelBranches branches
+    [] -> timeIO $ parallelBranches branches
     [p] -> withExistingDirectory p $
            parallelBranches branches
     _ ->
@@ -77,7 +77,7 @@ parallelBuildCmd dryrun merge firstlayer msidetagTarget mupdate (breq, pkgs) =
       when (length branches > 1) $
         putStrLn $ "# " ++ show rbr
       target <- targetMaybeSidetag rbr
-      nvrs <- concatMapM (parallelBuild target rbr)
+      nvrs <- concatMapM (timeIO . parallelBuild target rbr)
               $ zip [firstlayer..length allLayers]
               $ init $ tails layers -- tails ends in []
       unless (isNothing msidetagTarget || dryrun) $ do
