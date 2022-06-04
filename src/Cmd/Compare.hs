@@ -1,5 +1,5 @@
-module Cmd.Log (
-  logCmd)
+module Cmd.Compare (
+  compareCmd)
 where
 
 import Branches
@@ -8,8 +8,8 @@ import Common.System
 import Git
 import Package
 
-logCmd :: Bool -> AnyBranch -> AnyBranch -> [String] -> IO ()
-logCmd long br1 br2 pkgs = do
+compareCmd :: Bool -> AnyBranch -> AnyBranch -> [String] -> IO ()
+compareCmd long br1 br2 pkgs = do
   if null pkgs
     then do
       unlessM isPkgGitRepo $
@@ -18,10 +18,10 @@ logCmd long br1 br2 pkgs = do
       whenM isPkgGitRepo $
         error' "Cannot specify multiple packages inside a package dir"
   let packages = if null pkgs then ["."] else pkgs
-  mapM_ logPkg packages
+  mapM_ comparePkg packages
   where
-    logPkg :: String -> IO ()
-    logPkg pkgdir =
+    comparePkg :: String -> IO ()
+    comparePkg pkgdir =
       withExistingDirectory pkgdir $ do
       unless (null pkgs) $
         getPackageName pkgdir >>= putPkgHdr

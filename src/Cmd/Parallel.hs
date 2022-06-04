@@ -311,6 +311,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                 putStrLn out
                 let sidetag =
                       init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
+                putStrLn $ "waiting for " ++ sidetag ++ " repo"
                 cmd_ "koji" ["wait-repo", sidetag]
                 return sidetag
                 else error' "'fedpkg request-side-tag' failed"

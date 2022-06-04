@@ -14,6 +14,7 @@ import Cmd.Build
 import Cmd.Bump
 import Cmd.Clone
 import Cmd.Commit
+import Cmd.Compare
 import Cmd.Copr
 import Cmd.Diff
 import Cmd.FTBFS
@@ -22,7 +23,6 @@ import Cmd.Install
 import Cmd.ListBranches
 import Cmd.ListPackages
 import Cmd.Local
-import Cmd.Log
 import Cmd.Merge
 import Cmd.Mock
 import Cmd.Override
@@ -159,7 +159,7 @@ main = do
       <*> optional (optionWith anyBranchM 'w' "with-branch" "BRANCH" "branch")
       <*> maybeBranchPackages False
     , Subcommand "compare" "Show commits between branches" $
-      logCmd
+      compareCmd
       <$> switchWith 'l' "long" "show full commit log"
       <*> anyBranchArg
       <*> anyBranchArg

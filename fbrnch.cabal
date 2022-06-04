@@ -50,6 +50,7 @@ executable fbrnch
                        Cmd.Bump
                        Cmd.Clone
                        Cmd.Commit
+                       Cmd.Compare
                        Cmd.Copr
                        Cmd.Diff
                        Cmd.FTBFS
@@ -58,7 +59,6 @@ executable fbrnch
                        Cmd.ListBranches
                        Cmd.ListPackages
                        Cmd.Local
-                       Cmd.Log
                        Cmd.Merge
                        Cmd.Mock
                        Cmd.Override
