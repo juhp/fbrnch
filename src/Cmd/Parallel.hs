@@ -83,7 +83,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       unless (isNothing msidetagTarget || dryrun) $ do
         when (target /= branchTarget rbr) $ do
           notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
-          bodhiSidetagUpdate nvrs target notes
+          bodhiSidetagUpdate rbr nvrs target notes
   where
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do
@@ -261,8 +261,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
             kojiWaitRepo dryrun target nvr
           return nvr
 
-    bodhiSidetagUpdate :: [String] -> String -> String -> IO ()
-    bodhiSidetagUpdate nvrs sidetag notes = do
+    -- FIXME how to catch authentication errors?
+    bodhiSidetagUpdate :: Branch -> [String] -> String -> String -> IO ()
+    bodhiSidetagUpdate rbr nvrs sidetag notes = do
       case mupdate of
         (Nothing, _) -> return ()
         (Just updateType, severity) -> do
@@ -274,17 +275,21 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               template <- getContents
               cmdBool "bodhi" ["updates", "new", "--file", template, "--from-tag", sidetag]
             else cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--severity", show severity, "--request", "testing", "--notes", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
-          when ok $ do
+          if not ok
+            then bodhiSidetagUpdate rbr nvrs sidetag notes
+            else
+            unlessM (checkAutoBodhiUpdate rbr) $ do
             prompt_ "Press Enter to remove the sidetag"
             fedpkg_ "remove-side-tag" [sidetag]
             -- arguably we already received the Updateid from the above bodhi
-            -- command, but we query it here via nvr
+              -- command, but we query it here via nvr
+            prompt_ "Press Enter to edit update just to unlock it from sidetag"
             res <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" (last nvrs)]
             case res of
               [] -> do
                 putStrLn "bodhi submission failed"
                 prompt_ "Press Enter to resubmit to Bodhi"
-                bodhiSidetagUpdate nvrs sidetag notes
+                bodhiSidetagUpdate rbr nvrs sidetag notes
               [update] ->
                 case lookupKey "updateid" update of
                   Nothing -> error' "could not determine Update id"
