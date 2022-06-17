@@ -8,7 +8,7 @@ import Package
 -- FIXME print nvr after pulling or old -> new
 pullPkgs :: Bool -> (BranchesReq, [String]) -> IO ()
 pullPkgs lenient =
-  withPackageByBranches (Just False) (if lenient then Nothing else cleanGitFetch) AnyNumber pullPkg
+  withPackagesByBranches HeaderMay False (if lenient then Nothing else cleanGitFetch) AnyNumber pullPkg
   where
     pullPkg :: Package -> AnyBranch -> IO ()
     pullPkg pkg _br =
@@ -26,7 +26,7 @@ pullPkgs lenient =
 
 pushPkgs :: (BranchesReq, [String]) -> IO ()
 pushPkgs =
-  withPackageByBranches (Just False) cleanGitFetch AnyNumber pushPkg
+  withPackagesByBranches HeaderMay False cleanGitFetch AnyNumber pushPkg
   where
     pushPkg :: Package -> AnyBranch -> IO ()
     pushPkg _pkg _br = do

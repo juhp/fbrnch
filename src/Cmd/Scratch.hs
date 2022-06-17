@@ -21,7 +21,7 @@ import Types (Archs(..))
 scratchCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Archs -> Maybe String
            -> Maybe String -> (BranchesReq, [String]) -> IO ()
 scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts mtarget mref (breq,pkgs) =
-  withPackageByBranches (Just True) Nothing AnyNumber scratchBuild (breq,pkgs)
+  withPackagesByBranches HeaderMust False Nothing AnyNumber scratchBuild (breq,pkgs)
   where
     anyTarget (RelBranch b) = branchTarget b
     anyTarget _ = "rawhide"

@@ -29,9 +29,11 @@ module Package (
   putPkgAnyBrnchHdr,
   withExistingDirectory,
   initialPkgRepo,
-  withPackageByBranches,
+  withPackagesByBranches,
   withPackagesMaybeBranch,
   withPackagesMaybeBranchNoHeadergit,
+  HeaderShow(..),
+  boolHeader,
   LimitBranches(..),
   cleanGit,
   cleanGitActive,
@@ -546,29 +548,35 @@ dirtyGitHEAD =        Just $ GitOpts False False False  True
 data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
   deriving Eq
 
--- FIXME rename to withPackages*
--- FIXME countdown packages
-withPackageByBranches :: Maybe Bool
-                      -> Maybe GitOpts
-                      -> LimitBranches
-                      -> (Package -> AnyBranch -> IO ())
-                      -> (BranchesReq,[String])
-                      -> IO ()
-withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
+data HeaderShow = HeaderNone | HeaderMay | HeaderMust
+  deriving Eq
+
+boolHeader :: Bool -> HeaderShow
+boolHeader b = if b then HeaderMust else HeaderMay
+
+withPackagesByBranches :: HeaderShow
+                       -> Bool
+                       -> Maybe GitOpts
+                       -> LimitBranches
+                       -> (Package -> AnyBranch -> IO ())
+                       -> (BranchesReq,[String])
+                       -> IO ()
+withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
   if null pkgs
     then
-    withPackageDir "."
+    withPackageDir (0, ".")
     else do
-    when (length pkgs > 1 && breq == Branches []) $
+    let numpkgs = length pkgs
+    when (numpkgs > 1 && breq == Branches []) $
       case limitBranches of
         Zero -> return ()
         ZeroOrOne -> warning "Better to specify an explicit branch for multiple packages"
         _ -> error' "At least one branch must be specified when there are multiple packages"
-    mapM_ withPackageDir pkgs
+    mapM_ withPackageDir $ zip [numpkgs,(numpkgs-1)..1] pkgs
   where
     -- FIXME support arbitrary (module) branches
-    withPackageDir :: FilePath -> IO ()
-    withPackageDir path = do
+    withPackageDir :: (Int,FilePath) -> IO ()
+    withPackageDir (n, path) = do
       let dir =
             if ".spec" `isExtensionOf` path
             then takeDirectory path
@@ -584,6 +592,8 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
                  -- For now assume spec filename = package name
                  Just spec -> return $ takeBaseName spec
                  Nothing -> getDirectoryName
+        when (count && length pkgs >= 2) $
+          putStrLn $ plural n "package" +-+ "left"
         unless (isNothing mspec || mspec == Just (unPackage pkg <.> "spec")) $
           putStrLn  "Warning: package name and spec filename differ!"
         haveGit <- isPkgGitRepo
@@ -611,10 +621,10 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
             error' "please only specify one branch"
           _ -> return ()
         let fetch = have gitOptFetch
-        when ((isJust mheader || fetch) && dir /= ".") $
+        when ((header /= HeaderNone || fetch) && dir /= ".") $
           case brs of
-            [br] -> when (fetch || mheader == Just True) $ putPkgAnyBrnchHdr pkg br
-            _ -> when (fetch || isJust mheader) $ putPkgHdr pkg
+            [br] -> when (fetch || header == HeaderMust) $ putPkgAnyBrnchHdr pkg br
+            _ -> when (fetch || header /= HeaderNone) $ putPkgHdr pkg
         when haveGit $
           when (have gitOptClean) checkWorkingDirClean
         when fetch gitFetchSilent
@@ -623,7 +633,7 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
           putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"
         -- FIXME add newline at end?
         let action' p b = do
-              when (isJust mheader && length brs > 1) $ putPkgAnyBrnchHdr p b
+              when (header /= HeaderNone && length brs > 1) $ putPkgAnyBrnchHdr p b
               action p b
         mapM_ (action' pkg) brs
         when (length brs /= 1) $
@@ -632,21 +642,22 @@ withPackageByBranches mheader mgitopts limitBranches action (breq,pkgs) =
     have :: (GitOpts -> Bool) -> Bool
     have opt = maybe False opt mgitopts
 
-withPackagesMaybeBranch :: Maybe Bool
+withPackagesMaybeBranch :: HeaderShow
+                        -> Bool
                         -> Maybe GitOpts
                         -> LimitBranches
                         -> (Package -> AnyBranch -> IO ())
                         -> (Maybe Branch,[String])
                         -> IO ()
-withPackagesMaybeBranch mheader mgitopts limitBranches action (mbr, pkgs) =
-  withPackageByBranches mheader mgitopts limitBranches action (Branches (maybeToList mbr),pkgs)
+withPackagesMaybeBranch header count mgitopts limitBranches action (mbr, pkgs) =
+  withPackagesByBranches header count mgitopts limitBranches action (Branches (maybeToList mbr),pkgs)
 
 withPackagesMaybeBranchNoHeadergit :: LimitBranches
                                        -> (Package -> AnyBranch -> IO ())
                                        -> (Maybe Branch,[String])
                                        -> IO ()
 withPackagesMaybeBranchNoHeadergit =
-  withPackagesMaybeBranch Nothing Nothing
+  withPackagesMaybeBranch HeaderNone False Nothing
 
 data CloneUser = AnonClone | UserClone
 

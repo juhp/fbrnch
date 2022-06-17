@@ -17,7 +17,7 @@ import System.IO.Extra
 -- FIXME detect rpmautospec and add empty commit
 bumpPkgs :: Bool -> Maybe CommitOpt -> (BranchesReq,[String]) -> IO ()
 bumpPkgs local mopt =
-  withPackageByBranches (Just local) (if local then cleanGit else cleanGitFetchActive)
+  withPackagesByBranches (boolHeader local) False (if local then cleanGit else cleanGitFetchActive)
   AnyNumber bumpPkg
   where
     bumpPkg :: Package -> AnyBranch -> IO ()

@@ -14,7 +14,7 @@ import Prompt
 
 mergeCmd :: Bool -> Maybe Branch -> (BranchesReq,[String]) -> IO ()
 mergeCmd noprompt mfrom =
-  withPackageByBranches (Just False) cleanGitFetchActive AnyNumber runMergeBranch
+  withPackagesByBranches HeaderMay False cleanGitFetchActive AnyNumber runMergeBranch
   where
     runMergeBranch :: Package -> AnyBranch -> IO ()
     runMergeBranch _ (OtherBranch _) =

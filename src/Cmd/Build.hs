@@ -46,7 +46,6 @@ data BuildOpts = BuildOpts
 -- FIXME --auto-override for deps in testing
 -- FIXME -B fails to find new branches (fixed?)
 -- FIXME disallow override for autoupdate?
--- FIXME count remaining packages
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptTarget opts)
@@ -63,9 +62,9 @@ buildCmd opts (breq, pkgs) = do
     then do
     brs <- listOfBranches True True breq
     forM_ brs $ \br ->
-      withPackageByBranches (Just False) gitopts singleBrnch (buildBranch mlastOfPkgs opts) (Branches [br], pkgs)
+      withPackagesByBranches HeaderMay True gitopts singleBrnch (buildBranch mlastOfPkgs opts) (Branches [br], pkgs)
     else
-    withPackageByBranches (Just False) gitopts singleBrnch (buildBranch mlastOfPkgs opts) (breq, pkgs)
+    withPackagesByBranches HeaderMay True gitopts singleBrnch (buildBranch mlastOfPkgs opts) (breq, pkgs)
 
 -- FIXME what if untracked files
 buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()

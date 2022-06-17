@@ -27,7 +27,7 @@ data ScratchOption = ScratchBuild | ScratchTask Int | SkipScratch
 -- FIXME add --dependent pkgreview
 createReview :: ScratchOption -> Bool -> [FilePath] -> IO ()
 createReview scratchOpt mock pkgs =
-  withPackageByBranches (Just True) Nothing Zero createPkgReview (Branches [], pkgs)
+  withPackagesByBranches HeaderMust False Nothing Zero createPkgReview (Branches [], pkgs)
   where
     createPkgReview :: Package -> AnyBranch -> IO ()
     createPkgReview package _br = do

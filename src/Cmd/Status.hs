@@ -28,7 +28,7 @@ statusCmd nofetch reviews (breq, pkgs) = do
     map reviewBugToPackage <$> listReviewsAll True ReviewRepoCreated
     else return []
   -- FIXME dirty not okay for multiple branches?
-  withPackageByBranches (Just False) (if nofetch then dirtyGit else dirtyGitFetch) AnyNumber statusBranch (breq, pkgs ++ reviewpkgs)
+  withPackagesByBranches HeaderMay False (if nofetch then dirtyGit else dirtyGitFetch) AnyNumber statusBranch (breq, pkgs ++ reviewpkgs)
 
 -- FIXME note dirty when local changes
 statusBranch :: Package -> AnyBranch -> IO ()

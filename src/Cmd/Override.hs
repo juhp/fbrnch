@@ -16,7 +16,7 @@ overrideCmd :: Bool -> Maybe Int -> Bool -> (BranchesReq, [String]) -> IO ()
 overrideCmd dryrun mduration nowait breqpkgs = do
   unless nowait $
     putStrLn "Overriding"
-  withPackageByBranches (Just False) cleanGitFetchActive AnyNumber overrideBranch breqpkgs
+  withPackagesByBranches HeaderMay False cleanGitFetchActive AnyNumber overrideBranch breqpkgs
   unless nowait $
     waitrepoCmd dryrun WaitNoFetch Nothing breqpkgs
   where

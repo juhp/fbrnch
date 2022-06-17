@@ -23,7 +23,7 @@ import Package
 localCmd :: Bool -> Maybe ForceShort -> [BCond] -> (BranchesReq, [String])
          -> IO ()
 localCmd quiet mforceshort bconds =
-  withPackageByBranches Nothing Nothing ZeroOrOne localBuildPkg
+  withPackagesByBranches HeaderNone False Nothing ZeroOrOne localBuildPkg
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
     localBuildPkg pkg br = do
@@ -35,7 +35,7 @@ localCmd quiet mforceshort bconds =
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd =
-  withPackagesMaybeBranch Nothing Nothing ZeroOrOne installDepsPkg
+  withPackagesMaybeBranch HeaderNone False Nothing ZeroOrOne installDepsPkg
   where
     installDepsPkg :: Package -> AnyBranch -> IO ()
     installDepsPkg pkg br =
@@ -52,7 +52,7 @@ srpmCmd force =
 
 nvrCmd :: (BranchesReq, [String]) -> IO ()
 nvrCmd =
-  withPackageByBranches Nothing Nothing AnyNumber nvrBranch
+  withPackagesByBranches HeaderNone False Nothing AnyNumber nvrBranch
   where
     nvrBranch :: Package -> AnyBranch -> IO ()
     nvrBranch pkg br = do
@@ -69,7 +69,7 @@ nvrCmd =
 commandCmd :: Bool -> Bool -> Bool -> String -> (BranchesReq,[String])
            -> IO ()
 commandCmd ifoutput compact continue cs =
-  withPackageByBranches (Just (not ifoutput)) Nothing AnyNumber cmdBranch
+  withPackagesByBranches (boolHeader (not ifoutput)) False Nothing AnyNumber cmdBranch
   where
     cmdBranch :: Package -> AnyBranch -> IO ()
     cmdBranch pkg br =
@@ -95,7 +95,7 @@ commandCmd ifoutput compact continue cs =
 
 renameMasterCmd :: [String] -> IO ()
 renameMasterCmd pkgs =
-  withPackageByBranches (Just False) dirtyGit Zero renameMasterBranch (Branches [], pkgs)
+  withPackagesByBranches HeaderMay False dirtyGit Zero renameMasterBranch (Branches [], pkgs)
   where
   renameMasterBranch :: Package -> AnyBranch -> IO ()
   renameMasterBranch _pkg _br = do

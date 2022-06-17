@@ -35,7 +35,7 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
         in if pkgGit
            then dirty
            else if null pkgs then Nothing else dirty
-  withPackagesMaybeBranch (Just False) mgitops ZeroOrOne (updatePkg mver) (mbr, pkgs)
+  withPackagesMaybeBranch HeaderMay False mgitops ZeroOrOne (updatePkg mver) (mbr, pkgs)
   where
     updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
     updatePkg mver pkg br = do
