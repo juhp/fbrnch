@@ -118,6 +118,7 @@ main = do
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd
       <$> dryrunOpt
+      <*> switchWith 'S' "stagger" "Stagger archs"
       <*> rebuildSrpmOpt
       <*> noFailFastOpt
       <*> optional archesOpt
