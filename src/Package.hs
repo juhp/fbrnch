@@ -600,7 +600,7 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
         when (count && length pkgs >= 2) $
           putStrLn $ plural n "package" +-+ "left"
         unless (isNothing mspec || mspec == Just (unPackage pkg <.> "spec")) $
-          putStrLn  "Warning: package name and spec filename differ!"
+          putStrLn $ "Warning: package name (" ++ unPackage pkg ++ ") differs from spec filename!"
         haveGit <- isPkgGitRepo
         when (isJust mgitopts && not haveGit) $
           error' $ "Not a pkg git dir: " ++ unPackage pkg
