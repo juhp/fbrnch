@@ -30,7 +30,7 @@ listReviewsAll = listReviewsFull False Nothing Nothing
 listReviewsFull :: Bool -> Maybe String -> Maybe String -> Bool
                 -> ReviewStatus-> IO [Bug]
 listReviewsFull assignee muser mpat allopen status = do
-  let session = bzAnonSession
+  session <- bzApiKeySession
   accountid <- getBzAccountId session muser
   let reviews = (if assignee then assigneeIs else reporterIs) accountid .&&. maybe packageReview pkgReviewsPrefix mpat
       open = if allopen
