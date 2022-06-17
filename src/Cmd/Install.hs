@@ -66,9 +66,12 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
                 sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
             else do
               ok <- cmdBool "sudo" $ "/usr/bin/dnf" : "install" : "-q" : "-y" : filterDebug rpms
-              unless (ok || wasbuilt) $ do
-                prompt_ "Press Enter to rebuild package"
-                doInstallPkg (Just ForceBuild) spec rpms installed
+              unless ok $
+                if wasbuilt
+                then error' "build failed to install"
+                else do
+                  prompt_ "Press Enter to rebuild package"
+                  doInstallPkg (Just ForceBuild) spec rpms installed
 
         lookForPkgDir :: Branch -> FilePath -> String -> IO (Maybe FilePath)
         lookForPkgDir rbr topdir p = do
