@@ -13,6 +13,7 @@ import Prompt
 -- FIXME use branches after all?
 -- FIXME handle multiline changelog entries with "-m description"
 -- FIXME --undo last change: eg undo accidential --amend
+-- FIXME for single package assume --all if no stage
 commitPkgs :: Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
 commitPkgs mopt firstLine notstaged args = do
   when (isJust mopt && firstLine) $
@@ -48,8 +49,10 @@ commitPkgs mopt firstLine notstaged args = do
                             filter (\c -> ('+' : c) `elem` lines diff) clog
                       case newlogs of
                         [] -> putStrLn diff >> readCommitMsg
-                        [msg] -> return (removePrefix "- " msg)
-                        _ -> mapM_ putStrLn newlogs >> readCommitMsg
+                        [msg] -> putStrLn msg >>
+                                 return (removePrefix "- " msg)
+                        (m:ms) -> mapM_ putStrLn newlogs >>
+                                  return (unlines (m:"":ms))
               return ["-m", changelog]
           git_ "commit" $ ["-a" | notstaged] ++ opts
 
