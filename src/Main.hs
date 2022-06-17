@@ -411,6 +411,7 @@ main = do
       <*> updateOpt 's'
       <*> useChangelogOpt
       <*> switchWith 'p' "by-package" "Build by each package across brs"
+      <*> switchWith 'k' "allow-dirty" "Allow building from unclean git dir"
       where
         overrideOpt =
           optional (optionWith auto 'o' "override" "DAYS" "Create buildroot override for specified days: implies --wait-repo")

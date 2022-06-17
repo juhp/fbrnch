@@ -28,10 +28,11 @@ data BuildOpts = BuildOpts
   , buildoptOverride :: Maybe Int
   , buildoptWaitrepo :: Maybe Bool
   , buildoptDryrun :: Bool
-  , buildSkipFetch :: Bool
+  , buildoptSkipFetch :: Bool
   , buildoptUpdate :: (Maybe UpdateType, UpdateSeverity)
   , buildoptUseChangelog :: Bool
   , buildoptByPackage :: Bool
+  , buildoptAllowDirty :: Bool
   }
 
 -- FIXME check bugs before building?
@@ -54,8 +55,10 @@ buildCmd opts (breq, pkgs) = do
       mlastOfPkgs = if length pkgs > 1
                     then Just (Package (last pkgs))
                     else Nothing
-      gitopts =
-        if buildSkipFetch opts then cleanGitActive else cleanGitFetchActive
+      gitopts
+        | buildoptAllowDirty opts = dirtyGitActive
+        | buildoptSkipFetch opts = cleanGitActive
+        | otherwise = cleanGitFetchActive
   if not (buildoptByPackage opts) && breq /= Branches [] && length pkgs > 1
     then do
     brs <- listOfBranches True True breq
@@ -184,7 +187,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
               when (mpush == Just Nothing && not dryrun) $
               error' "Unpushed changes remain"
-            unlessM isGitDirClean $
+            unless (buildoptAllowDirty opts) $
+              unlessM isGitDirClean $
               error' "local changes remain (dirty)"
             -- FIXME parse build output
             unless dryrun $
