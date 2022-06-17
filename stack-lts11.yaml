@@ -9,7 +9,7 @@ extra-deps:
   - haxr-3000.11.4
   - simple-cmd-args-0.1.6
   - koji-0.0.1
-  - rpmbuild-order-0.4.5
+  - rpmbuild-order-0.4.8
   - pretty-terminal-0.1.0.0
   - http-query-0.1.0
   - fgl-5.5.4.0
