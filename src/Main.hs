@@ -125,6 +125,20 @@ main = do
       <*> mtargetOpt
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
+    , Subcommand "scratch-aarch64" "Koji aarch64 scratch build of package" $
+      scratchCmdAarch64
+      <$> dryrunOpt
+      <*> rebuildSrpmOpt
+      <*> mtargetOpt
+      <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
+      <*> branchesPackages
+    , Subcommand "scratch-x86_64" "Koji x86_64 scratch build of package" $
+      scratchCmdX86_64
+      <$> dryrunOpt
+      <*> rebuildSrpmOpt
+      <*> mtargetOpt
+      <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
+      <*> branchesPackages
     , Subcommand "update" "Update package in dist-git to newer version" $
       updateCmd
       <$> switchWith 's' "sources-only" "Only update sources"
