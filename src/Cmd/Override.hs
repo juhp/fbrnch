@@ -6,7 +6,7 @@ import Common.System
 
 import Bodhi
 import Branches
-import Cmd.WaitRepo (waitrepoCmd)
+import Cmd.WaitRepo (waitrepoCmd, WaitFetch(WaitNoFetch))
 import Git
 import Koji
 import Package
@@ -18,7 +18,7 @@ overrideCmd dryrun mduration nowait breqpkgs = do
     putStrLn "Overriding"
   withPackageByBranches (Just False) cleanGitFetchActive AnyNumber overrideBranch breqpkgs
   unless nowait $
-    waitrepoCmd False dryrun Nothing breqpkgs
+    waitrepoCmd dryrun WaitNoFetch Nothing breqpkgs
   where
     overrideBranch :: Package -> AnyBranch -> IO ()
     overrideBranch _ (OtherBranch _) =

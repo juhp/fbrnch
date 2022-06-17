@@ -38,6 +38,7 @@ module Package (
   cleanGitFetch,
   cleanGitFetchActive,
   dirtyGit,
+  dirtyGitActive,
   dirtyGitFetch,
   dirtyGitHEAD,
   Package(..),
@@ -531,13 +532,14 @@ data GitOpts =
   , gitOptHEAD :: Bool -- allow detached head/rebase state
   }
 
-cleanGit, cleanGitActive, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitFetch, dirtyGitHEAD :: Maybe GitOpts
+cleanGit, cleanGitActive, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitActive, dirtyGitFetch, dirtyGitHEAD :: Maybe GitOpts
 --                                   clean fetch active HEAD
 cleanGit =            Just $ GitOpts True  False False  False
 cleanGitActive =      Just $ GitOpts True  False True   False
 cleanGitFetch =       Just $ GitOpts True  True  False  False
 cleanGitFetchActive = Just $ GitOpts True  True  True   False
 dirtyGit =            Just $ GitOpts False False False  False
+dirtyGitActive =      Just $ GitOpts False False True   False
 dirtyGitFetch =       Just $ GitOpts False True  False  False
 dirtyGitHEAD =        Just $ GitOpts False False False  True
 

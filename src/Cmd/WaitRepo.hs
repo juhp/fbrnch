@@ -1,4 +1,7 @@
-module Cmd.WaitRepo (waitrepoCmd)
+module Cmd.WaitRepo (
+  waitrepoCmd,
+  WaitFetch(..)
+  )
 where
 
 import Common.System
@@ -9,10 +12,18 @@ import Git
 import Koji
 import Package
 
+data WaitFetch = WaitNoFetch | WaitDirty | WaitFetch
+
 -- FIXME first check/wait for build to actually exist
-waitrepoCmd :: Bool -> Bool -> Maybe String -> (BranchesReq, [String]) -> IO ()
-waitrepoCmd fetch dryrun mtarget = do
-  withPackageByBranches (Just False) (if fetch then cleanGitFetchActive else cleanGitActive) AnyNumber waitrepoBranch
+waitrepoCmd :: Bool -> WaitFetch -> Maybe String -> (BranchesReq, [String])
+            -> IO ()
+waitrepoCmd dryrun fetch mtarget = do
+  withPackagesByBranches HeaderMay False
+    (case fetch of
+       WaitFetch -> cleanGitFetchActive
+       WaitNoFetch -> cleanGitActive
+       WaitDirty -> dirtyGitActive)
+    AnyNumber waitrepoBranch
   where
     waitrepoBranch :: Package -> AnyBranch -> IO ()
     waitrepoBranch _ (OtherBranch _) =

@@ -110,8 +110,9 @@ main = do
       <*> switchWith 'w' "no-wait" "Skip waitrepo step"
       <*> branchesPackages
     , Subcommand "waitrepo" "Wait for build to appear in Koji buildroot" $
-      waitrepoCmd True
+      waitrepoCmd
       <$> dryrunOpt
+      <*> waitfetchOpt
       <*> mtargetOpt
       <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
@@ -528,3 +529,9 @@ main = do
       flagWith' SortParallel 'p' "parallel" "Group dependent packages on separate lines"
       <|> flagWith' SortChain 'c' "chain" "chain-build output"
       <|> flagWith SortPlain SortLayers 'l' "layers" "output parallel layers"
+
+    -- for waitrepo
+    waitfetchOpt :: Parser WaitFetch
+    waitfetchOpt =
+      flagWith' WaitDirty 'k' "allow-dirty" "Allow unclean git repo" <|>
+      flagWith WaitFetch WaitNoFetch 'F' "no-fetch" "Skip git fetch"
