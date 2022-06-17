@@ -11,6 +11,7 @@ cmdSilent' c args = do
   ok <- cmdSilentBool c args
   unless ok $ error' $ unwords (c:args) ++ ": failed"
 
+-- currently unused
 cmdSilentBool :: String -> [String] -> IO Bool
 cmdSilentBool c args = do
   (ret, out) <- readProcessInterleaved (proc c args)

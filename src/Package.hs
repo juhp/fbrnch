@@ -69,7 +69,6 @@ import Branches
 import Common
 import Common.System
 import Git
-import InterleaveOutput
 import Krb
 import Prompt
 
@@ -260,15 +259,21 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
     date <- cmd "date" ["+%T"]
     putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
     ok <-
+      timeIO $
       if not quiet || shortcircuit
       then do
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
         -- FIXME would like to have pipeOutErr
-        timeIO $ shellBool $ unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"]
+        shellBool $ unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"]
       else do
-        res <- timeIO $ cmdSilentBool "rpmbuild" args
-        when res $ putStrLn "done"
+        rbr <- anyBranchToRelease br
+        nvr <- pkgNameVerRel' rbr spec
+        let buildlog = ".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"
+        res <- shellBool $ unwords $ "rpmbuild" : map quoteArg args ++ [">&", buildlog]
+        if res
+          then putStrLn "done"
+          else cmd_ "tail" ["-n 100", buildlog]
         return res
     unless ok $
       error' $ takeBaseName spec ++ " failed to build"
