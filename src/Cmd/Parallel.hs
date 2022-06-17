@@ -296,7 +296,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                   Just updateid -> do
                     -- disconnect the update from the sidetag
                     -- so it can be changed after sidetag closed
-                    cmd_ "bodhi" ["updates", "edit", updateid]
+                    -- see https://github.com/fedora-infra/bodhi/issues/4563 for the auto options
+                    cmd_ "bodhi" ["updates", "edit", updateid, "--autokarma", "--autotime"]
                     putStrLn "Update edited to unlock from sidetag"
               _ -> error' $ "impossible happened: more than one update found for " ++ last nvrs
 
