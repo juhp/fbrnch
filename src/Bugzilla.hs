@@ -22,7 +22,7 @@ module Bugzilla (
   pkgBugs,
   pkgReviews,
   pkgReviewsPrefix,
-  listBzUsers,
+  -- listBzUsers,
   emailIsValid,
 --  testBZlogin,
   -- search
