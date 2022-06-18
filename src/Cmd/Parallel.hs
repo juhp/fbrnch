@@ -31,7 +31,7 @@ maybeTarget (Just (Target t)) = Just t
 maybeTarget _ = Nothing
 
 -- (pkg, nvr)
-type Job = (String, Async String)
+type Job = (String, Async (String,String))
 
 -- FIXME print koji url of failed process or use koji-tool
 -- FIXME option to build multiple packages over branches in parallel
@@ -77,13 +77,18 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       when (length branches > 1) $
         putStrLn $ "# " ++ show rbr
       target <- targetMaybeSidetag rbr
-      nvrs <- concatMapM (timeIO . parallelBuild target rbr)
-              $ zip [firstlayer..length allLayers]
-              $ init $ tails layers -- tails ends in []
+      nvrclogs <- concatMapM (timeIO . parallelBuild target rbr)
+                      (zip [firstlayer..length allLayers] $
+                       init $ tails layers) -- tails ends in []
       unless (isNothing msidetagTarget || dryrun) $ do
         when (target /= branchTarget rbr) $ do
-          notes <- prompt $ "Enter notes to submit Bodhi update for " ++ target
-          bodhiSidetagUpdate rbr nvrs target notes
+          let changelog = intercalate "" $ renderChangelogs nvrclogs
+          putStrLn ""
+          putStrLn changelog
+          input <- prompt "Press Enter to use above or input update summary now; or 'no' to skip update"
+          unless (trim (lower input) == "no") $
+            bodhiSidetagUpdate rbr (map fst nvrclogs) target $
+            if null input then changelog else input
   where
     parallelBranches :: [Branch] -> IO ()
     parallelBranches brs = do
@@ -118,7 +123,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       mergeBranch True (mmerge == Just True) (ancestor,unmerged) newer br
 
     -- FIXME time builds or layers
-    parallelBuild :: String -> Branch -> (Int,[[String]]) -> IO [String]
+    parallelBuild :: String -> Branch -> (Int,[[String]])
+                  -> IO [(String,String)]
     parallelBuild _ _ (_,[]) = return [] -- should not reach here
     parallelBuild target br (layernum, layer:nextLayers) =  do
       krbTicket
@@ -162,23 +168,26 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           return (pkg,job)
 
     -- (failures,successes)
-    watchJobs :: [String] -> [String] -> [Job] -> IO ([String],[String])
-    watchJobs fails nvrs [] = return (fails,nvrs)
-    watchJobs fails nvrs (job:jobs) = do
+    watchJobs :: [String] -> [(String,String)] -> [Job]
+              -> IO ([String],[(String,String)])
+    watchJobs fails results [] = return (fails,results)
+    watchJobs fails results (job:jobs) = do
       status <- poll (snd job)
       case status of
-        Nothing -> sleep 1 >> watchJobs fails nvrs (jobs ++ [job])
-        Just (Right nvr) -> do
-          putStrLn $ color Yellow nvr ++ " job completed (" ++ show (length jobs) ++ " left in layer)"
-          watchJobs fails (nvr:nvrs) jobs
+        Nothing -> sleep 1 >> watchJobs fails results (jobs ++ [job])
+        -- (nvr,changelog)
+        Just (Right result) -> do
+          putStrLn $ color Yellow (fst result) ++ " job completed (" ++ show (length jobs) ++ " left in layer)"
+          watchJobs fails (result:results) jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
           putStrLn $ "** " ++ color Magenta pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " left in layer)"
-          watchJobs (pkg : fails) nvrs jobs
+          watchJobs (pkg : fails) results jobs
 
     -- FIXME prefix output with package name
-    startBuild :: Bool -> Bool -> String -> Branch -> String -> IO (IO String)
+    startBuild :: Bool -> Bool -> String -> Branch -> String
+               -> IO (IO (String,String))
     startBuild morelayers background target br pkgdir =
       withExistingDirectory pkgdir $ do
       gitSwitchBranch (RelBranch br)
@@ -195,6 +204,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
       putStrLn $ nvr ++ " (" ++ target ++ ")"
+      changelog <- unlines <$> getChangelog spec
+      putStrLn changelog
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
@@ -212,33 +223,41 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           return $ do
             when morelayers $
               kojiWaitRepo dryrun target nvr
-            return nvr
+            return (nvr,changelog)
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
-          return $
-            kojiGetBuildTaskID fedoraHub nvr >>=
-            maybe (error' $ "Task for " ++ nvr ++ " not found")
-            (kojiWaitTaskAndRepo (isNothing mlatest) nvr)
+          mtask <- kojiGetBuildTaskID fedoraHub nvr
+          case mtask of
+            Nothing -> error' $ "Task for " ++ nvr ++ " not found"
+            Just task ->
+              return $ do
+              kojiWaitTaskAndRepo (isNothing mlatest) nvr task
+              return (nvr,changelog)
         _ -> do
           buildref <- git "show-ref" ["--hash", "origin/" ++ show br]
           opentasks <- kojiOpenTasks pkg (Just buildref) target
           case opentasks of
             [task] -> do
               putStrLn $ nvr ++ " task is already open"
-              return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr task
+              return $ do
+                kojiWaitTaskAndRepo (isNothing mlatest) nvr task
+                return (nvr,changelog)
             (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
             [] -> do
               if equivNVR nvr (fromMaybe "" mlatest)
-                then return $ error' $ color Red $ nvr ++ " is already latest (modulo disttag)"
+                then return $ error' $
+                     color Red $ nvr ++ " is already latest (modulo disttag)"
                 else do
                 -- FIXME parse build output
                 if dryrun
-                  then return (return nvr)
+                  then return $ return (nvr,"<changelog>")
                   else do
                   task <- kojiBuildBranchNoWait target pkg Nothing $ "--fail-fast" : ["--background" | background]
-                  return $ kojiWaitTaskAndRepo (isNothing mlatest) nvr task
+                  return $ do
+                    kojiWaitTaskAndRepo (isNothing mlatest) nvr task
+                    return (nvr,changelog)
       where
-        kojiWaitTaskAndRepo :: Bool -> String -> TaskID -> IO String
+        kojiWaitTaskAndRepo :: Bool -> String -> TaskID -> IO ()
         kojiWaitTaskAndRepo newpkg nvr task = do
           finish <- kojiWaitTask task
           if finish
@@ -259,7 +278,12 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               bodhiCreateOverride dryrun Nothing nvr
           when morelayers $
             kojiWaitRepo dryrun target nvr
-          return nvr
+
+    -- FIXME map nvr to package?
+    renderChangelogs :: [(String,String)] -> [String]
+    renderChangelogs [] = []
+    renderChangelogs ((nvr,clog):nvrclogs) =
+      unlines [nvr, "", clog] : renderChangelogs nvrclogs
 
     -- FIXME how to catch authentication errors?
     bodhiSidetagUpdate :: Branch -> [String] -> String -> String -> IO ()

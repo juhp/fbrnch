@@ -7,6 +7,7 @@ module Package (
   fedpkg,
   fedpkg_,
   checkForSpecFile,
+  getChangelog,
   cleanChangelog,
   changelogVersions,
   changeLogPrompt,
@@ -105,14 +106,17 @@ changelogVersions spec = do
   ns <- cmdLines "rpmspec" ["-q", "--srpm", "--qf", "%{changelogname}", spec]
   return $ map (removePrefix "- " . dropWhile (/= '-')) ns
 
-cleanChangelog :: FilePath -> IO String
-cleanChangelog spec = do
+getChangelog :: FilePath -> IO [String]
+getChangelog spec = do
   autochangelog <- grep_ "^%autochangelog" spec
-  ls <-
-    if autochangelog
+  if autochangelog
     then takeWhile (not . null) . drop 1 <$>
          cmdLines "rpmautospec" ["generate-changelog", spec]
     else cmdLines "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
+
+cleanChangelog :: FilePath -> IO String
+cleanChangelog spec = do
+  ls <- getChangelog spec
   return $ case filter ("- " `isPrefixOf`) ls of
              [l] -> removePrefix "- " l
              _ -> unlines ls
