@@ -2,14 +2,11 @@
 
 module Cmd.Build (
   buildCmd,
-  BuildOpts(..),
+  BuildOpts(..)
   ) where
 
 import Common
 import Common.System
-
-import Data.Char (isDigit)
-import Fedora.Bodhi hiding (bodhiUpdate)
 
 import Bodhi
 import Bugzilla
@@ -131,7 +128,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         unless autoupdate $ do
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
             mbug <- bzReviewAnon
-            bodhiUpdate dryrun mbug spec nvr
+            bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec nvr
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
             whenJust moverride $ \days ->
             bodhiCreateOverride dryrun (Just days) nvr
@@ -205,7 +202,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 whenJust (fmap fst mBugSess) $
                   \bid -> putStr "review bug: " >> putBugId bid
                 -- FIXME diff previous changelog?
-                bodhiUpdate dryrun (fmap fst mBugSess) spec nvr
+                bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptUseChangelog opts) spec nvr
                 -- FIXME prompt for override note
                 whenJust moverride $ \days ->
                   bodhiCreateOverride dryrun (Just days) nvr
@@ -213,61 +210,3 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               when ((isJust moverride && mwaitrepo /= Just False) ||
                     (autoupdate && mwaitrepo == Just True)) $
               kojiWaitRepo dryrun target nvr
-  where
-    bodhiUpdate :: Bool -> Maybe BugId -> FilePath -> String -> IO ()
-    bodhiUpdate dryrun mreview spec nvr = do
-      case buildoptUpdate opts of
-        (Nothing, _) -> return ()
-        (Just updateType, severity) -> do
-          unless dryrun $ do
-            -- use cmdLog to debug, but notes are not quoted
-            updatedone <-
-              if updateType == TemplateUpdate
-                then do
-                cmd_ "fedpkg" ["update"]
-                return True
-                else do
-                -- FIXME also query for open existing bugs
-                changelog <- if isJust mreview
-                             then getSummaryURL spec
-                             else if buildoptUseChangelog opts
-                                  then cleanChangelog spec
-                                  else
-                                    -- FIXME list open bugs
-                                    changeLogPrompt (Just "update") spec
-                if lower changelog == "no"
-                  then return False
-                  else do
-                  let cbugs = extractBugReferences changelog
-                      bugs = let bids = [show rev | Just rev <- [mreview]] ++ cbugs in
-                        if null bids then [] else ["--bugs", intercalate "," bids]
-                  when (isJust mreview &&
-                        updateType `elem` [SecurityUpdate,BugfixUpdate]) $
-                    warning "overriding update type with 'newpackage'"
-                  putStrLn $ "Creating Bodhi Update for " ++ nvr ++ ":"
-                  -- FIXME check for Bodhi URL to confirm update
-                  cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvr])
-                  return True
-            when updatedone $ do
-              -- FIXME avoid this if we know the update URL
-              updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
-              case updatequery of
-                [] -> do
-                  putStrLn "bodhi submission failed"
-                  prompt_ "Press Enter to resubmit to Bodhi"
-                  bodhiUpdate dryrun mreview spec nvr
-                [update] -> case lookupKey "url" update of
-                  Nothing -> error' "Update created but no url"
-                  Just uri -> putStrLn uri
-                _ -> error' $ "impossible happened: more than one update found for " ++ nvr
-
-    extractBugReferences :: String -> [String]
-    extractBugReferences clog =
-      case dropWhile (/= '#') clog of
-        "" -> []
-        rest ->
-          case span isDigit (tail rest) of
-            (ds,more) ->
-              -- make sure is contemporary 7-digit bug
-              (if length ds > 6 then (ds :) else id) $
-              extractBugReferences more
