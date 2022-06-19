@@ -32,4 +32,4 @@ waitrepoCmd dryrun fetch mtarget = do
       gitSwitchBranch rbr
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
-      kojiWaitRepo dryrun (fromMaybe (branchTarget br) mtarget) nvr
+      kojiWaitRepo dryrun True (fromMaybe (branchTarget br) mtarget) nvr

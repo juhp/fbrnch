@@ -227,7 +227,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               bodhiCreateOverride dryrun Nothing nvr
           return $ do
             when morelayers $
-              kojiWaitRepo dryrun target nvr
+              kojiWaitRepo dryrun background target nvr
             return (nvr,changelog)
         Just BuildBuilding -> do
           putStrLn $ nvr ++ " is already building"
@@ -282,7 +282,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               -- bodhiUpdate (fmap fst mBugSess) changelog nvr
               bodhiCreateOverride dryrun Nothing nvr
           when morelayers $
-            kojiWaitRepo dryrun target nvr
+            kojiWaitRepo dryrun background target nvr
 
     -- FIXME map nvr to package?
     renderChangelogs :: [(String,String)] -> [String]

@@ -181,8 +181,8 @@ kojiBuildBranchNoWait target pkg mref args = do
   Left task <- kojiBuildBranch' False target pkg mref args
   return task
 
-kojiWaitRepo :: Bool -> String -> String -> IO ()
-kojiWaitRepo dryrun target nvr = do
+kojiWaitRepo :: Bool -> Bool -> String -> String -> IO ()
+kojiWaitRepo dryrun quiet target nvr = do
   Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
   unless dryrun $
     waitRepo buildtag Nothing
@@ -209,7 +209,7 @@ kojiWaitRepo dryrun target nvr = do
                        then " is in " ++ buildtag
                        else " appeared"
                   else do
-                  when (isNothing moldrepo) $
+                  when (isNothing moldrepo && not quiet) $
                     logMsg $ "Waiting for " ++ buildtag ++ " to have " ++ nvr
                   waitRepo buildtag mrepo
 
