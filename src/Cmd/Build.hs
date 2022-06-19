@@ -128,14 +128,14 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         unless autoupdate $ do
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
             mbug <- bzReviewAnon
-            bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec nvr
+            bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec [nvr]
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
             whenJust moverride $ \days ->
             bodhiCreateOverride dryrun (Just days) nvr
         when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
           when ((isJust moverride && mwaitrepo /= Just False) ||
                 (autoupdate && mwaitrepo == Just True)) $
-            kojiWaitRepo dryrun target nvr
+            kojiWaitRepo dryrun True target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
       when (isJust mpush) $
@@ -202,11 +202,11 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 whenJust (fmap fst mBugSess) $
                   \bid -> putStr "review bug: " >> putBugId bid
                 -- FIXME diff previous changelog?
-                bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptUseChangelog opts) spec nvr
+                bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptUseChangelog opts) spec [nvr]
                 -- FIXME prompt for override note
                 whenJust moverride $ \days ->
                   bodhiCreateOverride dryrun (Just days) nvr
             when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
               when ((isJust moverride && mwaitrepo /= Just False) ||
                     (autoupdate && mwaitrepo == Just True)) $
-              kojiWaitRepo dryrun target nvr
+              kojiWaitRepo dryrun True target nvr

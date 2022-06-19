@@ -10,7 +10,7 @@ import Common.System
 
 import Control.Concurrent.Async
 import Distribution.RPM.Build.Order (dependencyLayers)
-import Fedora.Bodhi
+import Fedora.Bodhi hiding (bodhiUpdate)
 import System.Console.Pretty
 import System.Time.Extra (sleep)
 
@@ -62,9 +62,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   case pkgs of
-    [] -> timeIO $ parallelBranches branches
+    [] -> timeIO $ parallelBranches "." branches
     [p] -> withExistingDirectory p $
-           parallelBranches branches
+           parallelBranches p branches
     _ ->
       forM_ branches $ \ rbr -> do
       forM_ pkgs $ \p ->
@@ -90,19 +90,23 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
             bodhiSidetagUpdate rbr (map fst nvrclogs) target $
             if null input then changelog else input
   where
-    parallelBranches :: [Branch] -> IO ()
-    parallelBranches brs = do
+    parallelBranches :: FilePath -> [Branch] -> IO ()
+    parallelBranches pkgdir brs = do
       krbTicket
       currentbranch <- gitCurrentBranch
       putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
-      (failures,_nvrs) <- watchJobs [] [] jobs
+      (failures,nvrclogs) <- watchJobs [] [] jobs
       -- switch back to the original branch
       when (length brs /= 1) $
         gitSwitchBranch currentbranch
       unless (null failures) $
         error' $ "Build failures: " ++ unwords failures
+      when (isNothing msidetagTarget) $ do
+        pkg <- getPackageName pkgdir
+        let spec = packageSpec pkg
+        bodhiUpdate dryrun mupdate Nothing False spec $ map fst nvrclogs
       where
         -- FIXME time jobs
         setupBranch :: Branch -> IO Job
@@ -205,7 +209,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       nvr <- pkgNameVerRel' br spec
       putStrLn $ nvr ++ " (" ++ target ++ ")"
       changelog <- unlines <$> getChangelog spec
-      putStrLn changelog
+      when (null unpushed) $
+        putStrLn changelog
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
