@@ -27,12 +27,12 @@ module Git (
   module SimpleCmd.Git
   ) where
 
-import Common
-import Common.System
-
 import SimpleCmd.Git
 
 import Branches
+import Common
+import Common.System
+import Prompt
 
 #if !MIN_VERSION_simple_cmd(0,2,2)
 -- | 'gitBool c args' runs git command and return result
@@ -48,6 +48,12 @@ gitMergeable origin br = do
   let ref = (if origin then "origin/" else "") ++ show br
   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
   commits <- gitShortLog ("HEAD.." ++ ref)
+  -- warn if branch is ahead
+  when (null commits && not ancestor) $ do
+    rcommits <- gitShortLog (ref ++ "..HEAD")
+    unless (null rcommits) $ do
+      putStrLn $ "current branch is ahead of newer" ++ show br ++ " !!"
+      prompt_ "Press Enter if you want to continue"
   return (ancestor, commits)
 
 getNewerBranch :: Branch -> IO Branch
