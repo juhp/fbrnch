@@ -117,7 +117,7 @@ gitPushSilent mref = do
   checkOnBranch
   putStr "git pushing... "
   out <- cmdQuiet "git" $ ["push", "--quiet", "origin"] ++ maybeToList mref
-  putStrLn $ if null out then "done\n" else "\n" ++ out
+  putStrLn $ if null out then "done" else "\n" ++ out
 
 -- FIXME use this in more places
 gitRepoName :: IO String
