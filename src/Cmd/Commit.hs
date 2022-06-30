@@ -15,18 +15,22 @@ import Prompt
 -- FIXME --undo last change: eg undo accidential --amend
 -- FIXME for single package assume --all if no stage
 commitPkgs :: Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
-commitPkgs mopt firstLine notstaged args = do
+commitPkgs mopt firstLine unstaged paths = do
   when (isJust mopt && firstLine) $
     error' "--first-line cannot be used with other commit msg options"
-  if null args
+  if null paths
     then commitPkg "."
-    else mapM_ commitPkg args
+    else mapM_ commitPkg paths
   where
     commitPkg :: FilePath -> IO ()
     commitPkg path =
       withExistingDirectory path $
         unlessM isGitDirClean $ do
           getPackageName path >>= putPkgHdr
+          addall <-
+            if null paths
+            then null <$> git "diff" ["--cached"]
+            else return unstaged
           opts <- case mopt of
             Just opt -> return $
               case opt of
@@ -44,7 +48,7 @@ commitPkgs mopt firstLine notstaged args = do
                     if firstLine
                     then return $ removePrefix "- " $ head msgs
                     else do
-                      diff <- git "diff" ["-U0", "HEAD"]
+                      diff <- git "diff" ["-U0", if addall then "HEAD" else "--cached"]
                       let newlogs =
                             filter (\c -> ('+' : c) `elem` lines diff) clog
                       case newlogs of
@@ -52,9 +56,9 @@ commitPkgs mopt firstLine notstaged args = do
                         [msg] -> putStrLn msg >>
                                  return (removePrefix "- " msg)
                         (m:ms) -> mapM_ putStrLn newlogs >>
-                                  return (unlines (m:"":ms))
+                                  return (unlines (removePrefix "- " m:"":ms))
               return ["-m", changelog]
-          git_ "commit" $ ["-a" | notstaged] ++ opts
+          git_ "commit" $ ["-a" | addall] ++ opts
 
 readCommitMsg :: IO String
 readCommitMsg = do
