@@ -1,7 +1,17 @@
+{-# LANGUAGE CPP, OverloadedStrings #-}
+
 module Cmd.RequestBranch (
   requestBranches,
   requestPkgBranches
   ) where
+
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap as M
+#else
+import qualified Data.HashMap.Lazy as M
+import Data.Text (Text)
+#endif
+import Network.HTTP.Query (lookupKey')
 
 import Common
 import Common.System
@@ -33,6 +43,16 @@ requestBranches mock (breq, ps) = do
 
 requestPkgBranches :: Bool -> Bool -> BranchesReq -> Package -> IO ()
 requestPkgBranches multiple mock breq pkg = do
+  -- check have access
+  fasid <- fasIdFromKrb
+  epkginfo <- pagureProjectInfo srcfpo ("rpms" </> unPackage pkg)
+  case epkginfo of
+    Left err -> error' err
+    Right pkginfo ->
+      -- FIXME exclude unprivileged roles
+      unless (fasid `elem` concat
+              (lookupKeyElems "access_users" pkginfo)) $
+      error' $ fasid ++ " does not have access to " ++ unPackage pkg
   when (breq == Branches []) $
     putPkgHdr pkg
   git_ "fetch" []
@@ -53,6 +73,14 @@ requestPkgBranches multiple mock breq pkg = do
     whenJust mbidsession $ \(bid,session) ->
       commentBug session bid $ unlines urls
   where
+    lookupKeyElems k o =
+      lookupKey' k o ::
+#if MIN_VERSION_aeson(2,0,0)
+        M.KeyMap [String]
+#else
+        M.HashMap Text [String]
+#endif
+
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests branches = do
       existing <- fedoraBranchesNoRawhide (localBranches True)

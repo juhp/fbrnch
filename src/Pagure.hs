@@ -1,10 +1,10 @@
 module Pagure (
   srcfpo,
   pagureio,
-  pagureProjectInfo,
   pagureListGitBranches,
   pagureListProjectIssueTitlesStatus,
   IssueTitleStatus(..),
+  pagureProjectInfo,
   pagureUserRepos,
   makeItem,
   printScmIssue

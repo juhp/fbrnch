@@ -127,6 +127,7 @@ executable fbrnch
                        text,
                        time,
                        typed-process >= 0.2.4.0,
+                       unordered-containers,
                        utf8-string,
                        unix,
                        xdg-basedir
