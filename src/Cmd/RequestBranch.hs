@@ -84,9 +84,10 @@ requestPkgBranches multiple mock breq pkg = do
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests branches = do
       existing <- fedoraBranchesNoRawhide (localBranches True)
+      let pkgPrefix = if multiple then unPackage pkg ++ ": " else ""
       forM_ branches $ \ br ->
         when (br `elem` existing) $
-        putStrLn $ unPackage pkg ++ ": " ++ show br ++ " branch already exists"
+        putStrLn $ pkgPrefix ++ show br ++ " branch already exists"
       let brs' = branches \\ existing
       if null brs'
         then return []
@@ -94,7 +95,7 @@ requestPkgBranches multiple mock breq pkg = do
         current <- fedoraBranchesNoRawhide $ pagurePkgBranches (unPackage pkg)
         forM_ brs' $ \ br ->
           when (br `elem` current) $
-          putStrLn $ show br ++ " remote branch already exists"
+          putStrLn $ pkgPrefix ++ show br ++ " remote branch already exists"
         let newbranches = brs' \\ current
         if null newbranches then return []
           else do
