@@ -77,7 +77,8 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts mtarget mref (breq,pk
                   else return True
                 Nothing -> do
                   clean <- isGitDirClean
-                  if clean then
+                  if clean && isRelBranch br
+                    then
                     null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
                     else return False
             rbr <- anyBranchToRelease br
