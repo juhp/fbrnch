@@ -98,7 +98,7 @@ uploadPkgFiles pkg spec srpm = do
   let sshhost = "fedorapeople.org"
       sshpath = "public_html/reviews/" ++ pkg
   cmd_ "ssh" [fasid ++ "@" ++ sshhost, "mkdir", "-p", sshpath]
-  cmd_ "scp" [spec, srpm, sshhost ++ ":" ++ sshpath]
+  cmd_ "scp" [spec, srpm, fasid ++ "@" ++ sshhost ++ ":" ++ sshpath]
   getCheckedFileUrls $ "https://" <> fasid <> ".fedorapeople.org" +/+ removePrefix "public_html/" sshpath
   where
     getCheckedFileUrls :: String -> IO String
