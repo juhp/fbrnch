@@ -49,10 +49,10 @@ gitMergeable origin br = do
   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
   commits <- gitShortLog ("HEAD.." ++ ref)
   -- warn if branch is ahead
-  when (null commits && not ancestor) $ do
+  when (not origin && null commits && not ancestor) $ do
     rcommits <- gitShortLog (ref ++ "..HEAD")
     unless (null rcommits) $ do
-      putStrLn $ "current branch is ahead of newer" ++ show br ++ " !!"
+      putStrLn $ "current branch is ahead of newer " ++ show br ++ " !!"
       prompt_ "Press Enter if you want to continue"
   return (ancestor, commits)
 
