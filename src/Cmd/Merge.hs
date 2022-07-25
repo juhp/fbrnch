@@ -19,14 +19,15 @@ mergeCmd noprompt mfrom =
     runMergeBranch :: Package -> AnyBranch -> IO ()
     runMergeBranch _ (OtherBranch _) =
       error' "merge only defined for release branches"
-    runMergeBranch _pkg rbr@(RelBranch br) = do
-      gitSwitchBranch rbr
-      from <- maybe (getNewerBranch br) return mfrom
-      when (from == br) $
-        error' "cannot merge branch to itself"
-      gitMergeOrigin br
-      unmerged <- mergeable from br
-      mergeBranch False noprompt unmerged from br
+    runMergeBranch _pkg (RelBranch br) = do
+      exists <- gitSwitchBranch' br
+      when exists $ do
+        from <- maybe (getNewerBranch br) return mfrom
+        when (from == br) $
+          error' "cannot merge branch to itself"
+        gitMergeOrigin br
+        unmerged <- mergeable from br
+        mergeBranch False noprompt unmerged from br
 
 -- FIXME maybe require local branch already here
 mergeable :: Branch -> Branch -> IO (Bool,[String])

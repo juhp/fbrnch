@@ -16,6 +16,7 @@ module Git (
   gitShortLogN,
   gitShortLog1,
   gitSwitchBranch,
+  gitSwitchBranch',
 --  checkIsPkgGitDir,
   isGitRepo,
   isPkgGitRepo,
@@ -200,7 +201,8 @@ gitSwitchBranch (OtherBranch "HEAD") = do
   error' $ dir ++ ": HEAD is not a branch"
 gitSwitchBranch br = do
   localbranches <- gitLines "branch" ["--format=%(refname:short)"]
-  if show br `elem` localbranches then do
+  if show br `elem` localbranches
+    then do
     current <- gitCurrentBranch
     when (current /= br) $
       git_ "switch" ["-q", show br]
@@ -217,6 +219,33 @@ gitSwitchBranch br = do
       error' $ name ++ " " ++ show br ++ " branch does not exist!"
       else
       git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]
+
+-- similar to gitSwitchBranch but does not error
+gitSwitchBranch' :: Branch -> IO Bool
+gitSwitchBranch' br = do
+  localbranches <- gitLines "branch" ["--format=%(refname:short)"]
+  if show br `elem` localbranches
+    then do
+    current <- gitCurrentBranch
+    when (current /= RelBranch br) $
+      git_ "switch" ["-q", show br]
+    return True
+    else do
+    -- check remote branch exists
+    remotebranch <- do
+      exists <- checkIfRemoteBranchExists (RelBranch br)
+      if exists
+        then return True
+        -- FIXME this is redundant if we already fetched (eg for merge cmd)
+        else gitFetchSilent >> checkIfRemoteBranchExists (RelBranch br)
+    if not remotebranch
+      then do
+      name <- getDirectoryName
+      warning $ name ++ " " ++ show br ++ " branch does not exist!"
+      return False
+      else do
+      git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]
+      return True
 
 checkIfRemoteBranchExists :: AnyBranch -> IO Bool
 checkIfRemoteBranchExists br =
