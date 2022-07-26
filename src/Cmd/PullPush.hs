@@ -1,18 +1,35 @@
-module Cmd.PullPush (pullPkgs, pushPkgs) where
+module Cmd.PullPush (
+  pullPkgs,
+  PullOpts(..),
+  pushPkgs)
+where
 
 import Branches
+import Common
 import Git
 import Package
 
+data PullOpts =
+  PullOpts { pullLenient :: Bool
+           , pullNoFetch :: Bool}
+
 -- FIXME pulling more than one branch
 -- FIXME print nvr after pulling or old -> new
-pullPkgs :: Bool -> (BranchesReq, [String]) -> IO ()
-pullPkgs lenient =
-  withPackagesByBranches HeaderMay False (if lenient then Nothing else cleanGitFetch) AnyNumber pullPkg
+pullPkgs :: PullOpts -> (BranchesReq, [String]) -> IO ()
+pullPkgs pullopts (breq,args) =
+  withPackagesByBranches
+  (if length args > 1 then HeaderMust else HeaderMay)
+  False
+  (if pullLenient pullopts
+   then Nothing
+   else if pullNoFetch pullopts
+        then cleanGit
+        else cleanGitFetch)
+  AnyNumber pullPkg (breq,args)
   where
     pullPkg :: Package -> AnyBranch -> IO ()
-    pullPkg pkg _br =
-      if lenient
+    pullPkg pkg br =
+      if pullLenient pullopts
       then do
         haveGit <- isPkgGitRepo
         if haveGit
@@ -21,8 +38,11 @@ pullPkgs lenient =
       else doPullPkg
       where
         doPullPkg :: IO ()
-        doPullPkg =
-          getReleaseBranchWarn >>= gitMergeOrigin
+        doPullPkg = do
+          current <- getReleaseBranchWarn
+          unless (breq == Branches [] || RelBranch current == br) $
+            gitSwitchBranch br
+          gitMergeOrigin current
 
 pushPkgs :: (BranchesReq, [String]) -> IO ()
 pushPkgs =

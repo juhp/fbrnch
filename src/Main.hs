@@ -220,7 +220,7 @@ main = do
       <*> manyPackages
     , Subcommand "pull" "Git pull packages" $
       pullPkgs
-      <$> switchWith 'l' "lenient" "Ignore non-git dirs and files"
+      <$> pullOpts
       <*> branchesPackages
     , Subcommand "push" "Git push packages" $
       pushPkgs
@@ -509,6 +509,12 @@ main = do
       CommitMsg <$>
       strOptionWith 'm' "message" "COMMITMSG" "commit message" <|>
       flagWith' CommitAmend 'A' "amend" "Amend commit"
+
+    pullOpts :: Parser PullOpts
+    pullOpts =
+      PullOpts <$>
+      switchWith 'l' "lenient" "Ignore non-git dirs and files" <*>
+      switchWith 'f' "no-fetch" "Skip git fetch"
 
     buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
 
