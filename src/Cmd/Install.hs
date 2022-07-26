@@ -34,7 +34,8 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
       installed <- filterM rpmInstalled packages
       if isJust mforceshort || null installed || reinstall
         then doInstallPkg mforceshort spec rpms installed
-        else putStrLn $ unwords (map showNVRA installed) ++ " already installed!\n"
+        else putStrLn $ unlines (map showNVRA installed) ++
+             "\nalready installed!\n"
       where
         doInstallPkg mforceshort' spec rpms installed = do
           putStrLn $ (showNVR . dropArch . readNVRA . takeFileName) (head rpms)
