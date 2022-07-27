@@ -76,7 +76,7 @@ importCmd mock (breq, ps) = do
         putBugBuild False session bid nvr
         existing <- fedoraBranchesNoRawhide (localBranches False)
         when (null existing) $ do
-          brs <- getRequestedBranches breq
+          brs <- getRequestedBranches [] breq
           requestPkgBranches False mock (Branches brs) (Package pkg)
       when (pkg /= takeFileName dir) $
         setCurrentDirectory dir

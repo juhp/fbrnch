@@ -66,7 +66,7 @@ requestRepo mock retry breq pkg = do
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment
         putStrLn ""
-        branches <- getRequestedBranches breq
+        branches <- getRequestedBranches [] breq
         forM_ branches $ \ br -> do
           when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
           putStr (show br ++ " ")

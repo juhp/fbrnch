@@ -56,7 +56,8 @@ requestPkgBranches multiple mock breq pkg = do
   when (breq == Branches []) $
     putPkgHdr pkg
   git_ "fetch" []
-  branches <- getRequestedBranches breq
+  brs <- localBranches False
+  branches <- getRequestedBranches brs breq
   newbranches <- filterExistingBranchRequests branches
   unless (null newbranches) $ do
     mbidsession <- bzReviewSession

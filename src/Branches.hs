@@ -220,23 +220,23 @@ branchVersion (Fedora n) = show n
 branchVersion (EPEL n) = show n
 branchVersion (EPELNext n) = show n
 
-getRequestedBranches :: BranchesReq -> IO [Branch]
-getRequestedBranches breq = do
-  active <- getFedoraBranched
+getRequestedBranches :: [String] -> BranchesReq -> IO [Branch]
+getRequestedBranches existing breq = do
+  activenew <- filter (\b -> show b `notElem` existing) <$> getFedoraBranched
   case breq of
     Branches brs -> if null brs
-                    then branchingPrompt active
+                    then branchingPrompt activenew
                     else return brs
     BranchOpt request -> do
       let requested = case request of
-                        AllBranches -> active
-                        AllFedora -> filter isFedoraBranch active
-                        AllEPEL -> filter isEPELBranch active
-                        ExcludeBranches xbrs -> active \\ xbrs
+                        AllBranches -> activenew
+                        AllFedora -> filter isFedoraBranch activenew
+                        AllEPEL -> filter isEPELBranch activenew
+                        ExcludeBranches xbrs -> activenew \\ xbrs
       inp <- prompt $ "Confirm branches request [" ++ unwords (map show requested) ++ "]"
       return $ if null inp
                then requested
-               else map (readActiveBranch' active) $ words inp
+               else map (readActiveBranch' activenew) $ words inp
   where
     branchingPrompt :: [Branch] -> IO [Branch]
     branchingPrompt active = do
