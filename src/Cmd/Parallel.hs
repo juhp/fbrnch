@@ -125,6 +125,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       when (ancestor && not (null unmerged)) $
         putStrLn $ "Checking " ++ desc ++ ":"
       mergeBranch True (mmerge == Just True) (ancestor,unmerged) newer br
+      putStrLn ""
 
     -- FIXME time builds or layers
     parallelBuild :: String -> Branch -> (Int,[[String]])
