@@ -572,8 +572,7 @@ withPackagesByBranches :: HeaderShow
                        -> IO ()
 withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
   if null pkgs
-    then
-    withPackageDir (0, ".")
+    then withPackageDir (0, ".")
     else do
     let numpkgs = length pkgs
     when (numpkgs > 1 && breq == Branches []) $
