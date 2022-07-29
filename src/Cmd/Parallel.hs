@@ -304,16 +304,17 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               putStrLn "Paste update template now:"
               template <- getContents
               cmdBool "bodhi" ["updates", "new", "--file", template, "--from-tag", sidetag]
+              -- perhaps testing works now? (though seems there is a delay at least)
             else cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--severity", show severity, "--request", "testing", "--notes", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
           if not ok
             then bodhiSidetagUpdate rbr nvrs sidetag notes
             else
             unlessM (checkAutoBodhiUpdate rbr) $ do
-            prompt_ "Press Enter to remove the sidetag"
+            prompt_ "After editing the update, press Enter to remove the sidetag"
             fedpkg_ "remove-side-tag" [sidetag]
             -- arguably we already received the Updateid from the above bodhi
               -- command, but we query it here via nvr
-            prompt_ "Press Enter to edit update just to unlock it from sidetag"
+            -- prompt_ "Press Enter to edit update just to unlock it from sidetag"
             res <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" (last nvrs)]
             case res of
               [] -> do
@@ -321,14 +322,16 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                 prompt_ "Press Enter to resubmit to Bodhi"
                 bodhiSidetagUpdate rbr nvrs sidetag notes
               [update] ->
-                case lookupKey "updateid" update of
+                case lookupKey "updateid" update :: Maybe String of
                   Nothing -> error' "could not determine Update id"
-                  Just updateid -> do
-                    -- disconnect the update from the sidetag
-                    -- so it can be changed after sidetag closed
-                    -- see https://github.com/fedora-infra/bodhi/issues/4563 for the auto options
-                    cmd_ "bodhi" ["updates", "edit", updateid, "--autokarma", "--autotime"]
-                    putStrLn "Update edited to unlock from sidetag"
+                  Just _updateid -> return ()
+                    -- -- disconnect the update from the sidetag
+                    -- -- so it can be changed after sidetag closed
+                    -- -- see https://github.com/fedora-infra/bodhi/issues/4563 for the auto options
+                    -- fails with: {"status": "error", "errors": [{"location": "body", "name": "from_tag", "description": "The supplied from_tag doesn't exist."}, {"location": "body", "name": "builds", "description": "ACL validation mechanism was unable to determine ACLs."}]}
+                    -- cmd_ "bodhi" ["updates", "edit", updateid,
+                    --               "--request", "testing"] -- was "--autokarma", "--autotime"
+                    -- putStrLn "Update edited to unlock from sidetag"
               _ -> error' $ "impossible happened: more than one update found for " ++ last nvrs
 
     targetMaybeSidetag :: Branch -> IO String
