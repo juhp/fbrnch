@@ -27,6 +27,7 @@ data BuildBy = SingleBuild | ValidateByRelease | ValidateByArch | BuildByRelease
 coprServer :: String
 coprServer = "copr.fedorainfracloud.org"
 
+-- FIXME handle fedora-eln
 -- FIXME make project optional (if same as pkg??) or configurable ?
 -- FIXME repo config with a setup command?
 -- FIXME interact with copr dist-git

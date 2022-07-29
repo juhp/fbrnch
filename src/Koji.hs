@@ -142,6 +142,10 @@ kojiWatchTask task = do
     Just TaskCanceled -> return ()
     _ -> kojiWatchTask task
 
+-- FIXME at 4am
+-- Connection timed out: retrying
+-- Connection timed out: retrying
+-- Network.Socket.connect: <socket: 11>: does not exist (No route to host)
 kojiWaitTask :: TaskID -> IO Bool
 kojiWaitTask task = do
   -- FIXME can error:

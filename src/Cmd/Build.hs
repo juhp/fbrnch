@@ -43,6 +43,7 @@ data BuildOpts = BuildOpts
 -- FIXME --auto-override for deps in testing
 -- FIXME -B fails to find new branches (fixed?)
 -- FIXME disallow override for autoupdate?
+-- FIXME --yes
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptTarget opts)

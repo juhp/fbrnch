@@ -1,8 +1,10 @@
-- tag builds locally
+- tag builds without disttag
 - scratch/build: show total build times
 - filter bz# out from bodhi notes
 - rpmautospec: conversion command
 - layers command to print
+
+- color warnings
 
 - config option to cache tarballs in ~/rpmbuild/SOURCES if it exists when _sourcedir is cwd
 
@@ -29,6 +31,8 @@
 - 'clone-deps'
 - 'remove-sidetag(s)'
 - 'retire': more than one branch pre-release branch with merge
+- 'package-owner'
+- 'fas-email'
 
 # other namespaces
 - support containers/ and modules/
