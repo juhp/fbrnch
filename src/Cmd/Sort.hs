@@ -51,5 +51,5 @@ graphCmd :: Bool -> Maybe RpmWith -> (Maybe Branch,[FilePath]) -> IO ()
 graphCmd dot mrpmwith (mbr, pkgs) = do
   withPackagesMaybeBranchNoHeadergit ZeroOrOne noop (mbr, pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
-  createGraph'''' False [] rpmopts False False True Nothing pkgs >>=
+  createGraph4 False [] rpmopts False False True Nothing pkgs >>=
     if dot then printGraph else renderGraph
