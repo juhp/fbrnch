@@ -56,7 +56,7 @@ main = do
   simpleCmdArgs (Just version) "Fedora branch building tool"
     "A tool to help with updating and building package branches https://github.com/juhp/fbrnch#readme" $
     subcommands
-    [ Subcommand "clone" "clone packages" $
+    [ Subcommand "clone" "Clone packages" $
       cloneCmd
       <$> cloneRequest
     , Subcommand "switch" "Switch branch" $

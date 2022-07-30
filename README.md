@@ -79,6 +79,15 @@ $ fbrnch bugs [package]
 ```
 
 ### Commit, Merging and Building in Koji
+The update command helps with updating a package after editing the spec file
+to a newer version:
+```
+$ fbrnch update
+```
+which will download the new tarball and upload it, etc.
+
+The `bump` command can be used to increase the release field for packages.
+
 You can commit to the current branch:
 ```
 $ fbrnch commit
@@ -99,7 +108,8 @@ will ask if you want to merge newer commits from a newer branch,
 then push and build it.
 
 If the branch is also already pushed and NVR built it will be skipped.
-Branch builds are pushed to Bodhi.
+If the NVR is currently building it will be picked up by `fbrnch build`.
+Completed branch builds can be pushed to Bodhi.
 
 You can also build all branches:
 ```
@@ -119,6 +129,8 @@ Scratch builds can also be done:
 $ fbrnch scratch rawhide
 ```
 optionally a different koji `--target` can be given.
+
+There are arch short-cut aliases: `scratch-x86_64` and `scratch-aarch64`.
 
 You can sort packages by build dependency order:
 ```
@@ -152,7 +164,7 @@ to only install the dependencies of a package.
 
 Use
 ```
-$ fbrnch rename-master [package]
+$ fbrnch rename-rawhide [package]
 ```
 to rename an old master branch locally to rawhide.
 
@@ -165,11 +177,16 @@ to avoid grabbing too many Koji resources).
 $ fbrnch parallel --sidetag rawhide pkg-x pkg-y pkg-z pkg-xy pkg-xy-z
 ```
 generates a sidetag and builds a list of packages there
-in parallel ordered by build dependencies.
+in parallel ordered by build dependencies. When building for a branch
+merging from newer branch will be offered unless using `--no-merge`.
 
-Except for rawhide using a sidetag is required,
-so you need to manage and select them
-if using more than one per branch with `--target`.
+Except for rawhide using a sidetag is required.
+If you have more than one branch sidetag, you can select one using `--target`.
+
+After parallel building you can create a Bodhi update from the sidetag.
+
+It is also possible to build a package in parallel across branches
+and push to Bodhi.
 
 ### Creating new packages/branches
 
@@ -230,11 +247,11 @@ Optionally a mock build per branch can be done first.
 
 
 ### Other commands
-There are more commands like `copr` and `graph`.
+There are a lot more commands, like eg `copr` and `graph`:
 
 ```
 $ fbrnch --version
-1.1.1
+1.1.2
 $ fbrnch --help
 Fedora branch building tool
 
@@ -260,6 +277,8 @@ Available commands:
   override                 Tag builds into buildroot override in Koji
   waitrepo                 Wait for build to appear in Koji buildroot
   scratch                  Scratch build package in Koji
+  scratch-aarch64          Koji aarch64 scratch build of package
+  scratch-x86_64           Koji x86_64 scratch build of package
   update                   Update package in dist-git to newer version
   sort                     Sort packages in build dependency order
   prep                     Prep sources
