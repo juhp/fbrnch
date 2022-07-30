@@ -64,6 +64,7 @@ import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
 import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import SimpleCmd.Rpm
 import System.Console.Pretty
+import System.IO.Extra (withTempDir)
 import System.Posix.Files
 
 import Branches
@@ -737,9 +738,13 @@ buildRequires spec = do
     if dynbr
     then do
       installMissingMacros spec
-      out <- cmdIgnoreErr "rpmbuild" ["-br", "--nodeps", spec] ""
-      -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-      cmdLines "rpm" ["-qp", "--requires", last (words out)]
+      withTempDir $ \tmpdir -> do
+        let srpmdiropt = ["--define", "_srcrpmdir" ++ tmpdir]
+        out <- cmdIgnoreErr "rpmbuild" (["-br", "--nodeps", spec] ++ srpmdiropt) ""
+        -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
+        case words out of
+          [] -> error' $ spec +-+ "could not generate source rpm for dynamic buildrequires"
+          ws -> cmdLines "rpm" ["-qp", "--requires", last ws]
     else
       -- FIXME should resolve meta
       rpmspec ["--buildrequires"] Nothing spec
