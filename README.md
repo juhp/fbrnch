@@ -30,64 +30,6 @@ and more.
 
 ## Usage
 
-### Creating new packages/branches
-
-#### Creating a new package
-```
-$ fbrnch create-review [my-new-package]
-```
-This will create (or update) an srpm, run rpmlint,
-then upload it to fedorapeople, perform a scratch build,
-and open a Review Request in Bugzilla (similar to fedora-create-review).
-
-#### Update a package review
-```
-$ fbrnch update-review [my-new-package]
-```
-Similar to create-review: it uploads the updated files to fedorapeople
-and posts the updated package urls to the open package review.
-
-#### List open package reviews
-To list one's open package reviews:
-```
-$ fbrnch reviews
-```
-They can be filtered by status with various options like
-`--approved` or `--created`.
-
-One can also search for the review(s) of a specific package with:
-```
-$ fbrnch find-review package-name
-```
-
-#### Request repos
-Once a review has been approved
-```
-$ fbrnch request-repos
-```
-will request repos for approved package(s) and offer to request branches.
-
-#### Import a new package
-After the repo has been created
-```
-$ fbrnch import
-```
-will clone the repo and offer to import the srpm
-directly from the latest url in the approved package review,
-which can then be built directly into Koji Rawhide
-and the package review is updated.
-
-#### Request branches
-If you prefer you can request branches after the repo is created
-or package imported with
-```
-$ fbrnch request-branches
-```
-which will be prompt for which branches you want, unless already given.
-
-Optionally a mock build per branch can be done first.
-
-
 ### Cloning and switching branch
 Clone one or more packages:
 ```
@@ -228,6 +170,64 @@ in parallel ordered by build dependencies.
 Except for rawhide using a sidetag is required,
 so you need to manage and select them
 if using more than one per branch with `--target`.
+
+### Creating new packages/branches
+
+#### Creating a new package
+```
+$ fbrnch create-review [my-new-package]
+```
+This will create (or update) an srpm, run rpmlint,
+then upload it to fedorapeople, perform a scratch build,
+and open a Review Request in Bugzilla (similar to fedora-create-review).
+
+#### Update a package review
+```
+$ fbrnch update-review [my-new-package]
+```
+Similar to create-review: it uploads the updated files to fedorapeople
+and posts the updated package urls to the open package review.
+
+#### List open package reviews
+To list one's open package reviews:
+```
+$ fbrnch reviews
+```
+They can be filtered by status with various options like
+`--approved` or `--created`.
+
+One can also search for the review(s) of a specific package with:
+```
+$ fbrnch find-review package-name
+```
+
+#### Request repos
+Once a review has been approved
+```
+$ fbrnch request-repos
+```
+will request repos for approved package(s) and offer to request branches.
+
+#### Import a new package
+After the repo has been created
+```
+$ fbrnch import
+```
+will clone the repo and offer to import the srpm
+directly from the latest url in the approved package review,
+which can then be built directly into Koji Rawhide
+and the package review is updated.
+
+#### Request branches
+If you prefer you can request branches after the repo is created
+or package imported with
+```
+$ fbrnch request-branches
+```
+which will be prompt for which branches you want, unless already given.
+
+Optionally a mock build per branch can be done first.
+
 
 ### Other commands
 There are more commands like `copr` and `graph`.
