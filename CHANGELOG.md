@@ -1,39 +1,39 @@
 # Changelog
 
-## 1.1.2 (2022-07-29)
-- Parallel bodhiSidetagUpdate: revert to edit update and then delete sidetag
-- Branches getRequestedBranches: exclude existing branches
-- waitrepo: use timeIO to time the operation
-- install: print already installed packages on separate lines
-- pull: switch to given branch, add --no-fetch, show header when several pkgs
-- merge: do not error if target branch does not exist
-- Git gitMergeable: only check newer branch if local
-- request-branches: print package for existing branch
-- request-branches: check user in access_users to avoid bad requests
-- create-review: Fix for different username/fasid (@LyesSaadi, #34)
-- Git gitMergeable: warn if branch ahead of newer branch
-- commit: add all if nothing staged; remove initial "- "
-- scratch: only check pushed if release branch
-- kojiWaitRepo: add quiet arg for many parallel builds
-- bodhiUpdate now takes multiple builds: used for parallelBranches (#30)
-- parallel: create changelog for parallel package builds
-- Package withPackagesByBranches: mention pkg name when spec names differs
-- Package buildRPMs: also create build.log for silent build
-- parallel: use branch to determine autoupdate or prompt for update edit
-- rename withPackageByBranches to withPackagesByBranches with HeaderShow & count
+## 1.1.2 (2022-07-30)
 - add scratch-x86_64 and scratch-aarch64 shortcut commands
-- scratch: add --stagger to stagger archs
-- install: abort if installation failed
-- commit: default to changelog even if multiline
+- bodhiUpdate now takes multiple builds: used for parallelBranches (#30)
 - build: add --allow-dirty
-- waitrepo: --allow-dirty and --no-fetch
-- listReviewsAll: use bz api key
-- use rpmbuild-order-0.4.8 (needs simple-cmd-0.2.3)
+- commit: add all if nothing staged; remove initial "- "
+- commit: default to changelog even if multiline
 - compare: check branch exists and only print package if log output
-- rename Log to Compare and logCmd to compareCmd
+- create-review: Fix for different username/fasid (@LyesSaadi, #34)
+- install: abort if installation failed
+- install: print already installed packages on separate lines
+- kojiWaitRepo: add quiet arg for many parallel builds
+- listReviewsAll: use bz api key
+- merge: do not error if target branch does not exist
+- parallel: create changelog for parallel package builds
 - parallel: now takes same merge opts as build (#30)
-- Package buildRPMs: log start of build also for verbose
 - parallel: timeIO layers and parallel packages
+- parallel: use branch to determine autoupdate or prompt for update edit
+- pull: switch to given branch, add --no-fetch, show header when several pkgs
+- rename Log to Compare and logCmd to compareCmd
+- rename withPackageByBranches to withPackagesByBranches with HeaderShow & count
+- request-branches: check user in access_users to avoid bad requests
+- request-branches: print package for existing branch
+- scratch: add --stagger to stagger archs
+- scratch: only check pushed if release branch
+- use rpmbuild-order-0.4.8 (needs simple-cmd-0.2.3)
+- waitrepo: --allow-dirty and --no-fetch
+- waitrepo: use timeIO to time the operation
+- Branches getRequestedBranches: exclude existing branches
+- Git gitMergeable: only check newer branch if local
+- Git gitMergeable: warn if branch ahead of newer branch
+- Package buildRPMs: also create build.log for silent build
+- Package buildRPMs: log start of build also for verbose
+- Package withPackagesByBranches: mention pkg name when spec names differs
+- Parallel bodhiSidetagUpdate: revert to edit update and then delete sidetag
 
 ## 1.1.1 (2022-05-30)
 - copr: time builds
