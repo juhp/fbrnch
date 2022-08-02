@@ -80,13 +80,13 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       nvrclogs <- concatMapM (timeIO . parallelBuild target rbr)
                       (zip [firstlayer..length allLayers] $
                        init $ tails layers) -- tails ends in []
-      unless (isNothing msidetagTarget || dryrun) $ do
+      unless (isNothing msidetagTarget) $ do
         when (target /= branchTarget rbr) $ do
           let changelog = intercalate "" $ renderChangelogs nvrclogs
           putStrLn ""
           putStrLn changelog
           input <- prompt "Press Enter to use above or input update summary now; or 'no' to skip update"
-          unless (trim (lower input) == "no") $
+          unless (trim (lower input) == "no" || dryrun) $
             bodhiSidetagUpdate rbr (map fst nvrclogs) target $
             if null input then changelog else input
   where
@@ -124,8 +124,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       newer <- getNewerBranch br
       when (ancestor && not (null unmerged)) $
         putStrLn $ "Checking " ++ desc ++ ":"
-      mergeBranch True (mmerge == Just True) (ancestor,unmerged) newer br
-      putStrLn ""
+      unless dryrun $ do
+        mergeBranch True (mmerge == Just True) (ancestor,unmerged) newer br
+        putStrLn ""
 
     -- FIXME time builds or layers
     parallelBuild :: String -> Branch -> (Int,[[String]])
