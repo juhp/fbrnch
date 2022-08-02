@@ -129,6 +129,7 @@ main = do
       scratchCmdAarch64
       <$> dryrunOpt
       <*> rebuildSrpmOpt
+      <*> switchWith 'X' "exclude-arch" "Exclude aarch64"
       <*> mtargetOpt
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
@@ -136,6 +137,7 @@ main = do
       scratchCmdX86_64
       <$> dryrunOpt
       <*> rebuildSrpmOpt
+      <*> switchWith 'X' "exclude-arch" "Exclude x86_64"
       <*> mtargetOpt
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages

@@ -94,12 +94,15 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts mtarget mref (breq,pk
             srpmBuild kojiargs =
               void $ generateSrpm (Just br) spec >>= kojiScratchBuild target kojiargs
 
-scratchCmdX86_64 :: Bool -> Bool -> Maybe String -> Maybe String
+scratchCmdX86_64 :: Bool -> Bool -> Bool -> Maybe String -> Maybe String
                  -> (BranchesReq, [String]) -> IO ()
-scratchCmdX86_64 dryrun rebuildSrpm =
-  scratchCmd dryrun False rebuildSrpm False (Just (Archs ["x86_64"]))
+scratchCmdX86_64 dryrun rebuildSrpm excludeArch =
+  scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["x86_64"]))
 
-scratchCmdAarch64 :: Bool -> Bool -> Maybe String -> Maybe String
+scratchCmdAarch64 :: Bool -> Bool -> Bool -> Maybe String -> Maybe String
                   -> (BranchesReq, [String]) -> IO ()
-scratchCmdAarch64 dryrun rebuildSrpm =
-  scratchCmd dryrun False rebuildSrpm False (Just (Archs ["aarch64"]))
+scratchCmdAarch64 dryrun rebuildSrpm excludeArch =
+  scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["aarch64"]))
+
+excludeArchs :: Bool -> [String] -> Archs
+excludeArchs excl = if excl then ExcludedArchs else Archs
