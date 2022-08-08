@@ -270,7 +270,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
         -- FIXME would like to have pipeOutErr
-        shellBool $ unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"]
+        shellBool $ unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log" ++ " && exit ${PIPESTATUS[0]}"]
       else do
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec
