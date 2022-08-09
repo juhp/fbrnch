@@ -698,7 +698,7 @@ pkgNameVerRel br spec = do
   hostdist <- cmd "rpm" ["--eval", "%{dist}"]
   -- FIXME more precise regexp with "Release:"
   autorelease <- grep_ " %autorelease" spec
-  fmap (replace hostdist disttag) . listToMaybe <$>
+  nvrs <-
     if autorelease
     then do
       mautospec <- findExecutable "rpmautospec"
@@ -707,6 +707,12 @@ pkgNameVerRel br spec = do
       autorel <- last . words <$> cmd "rpmautospec" ["calculate-release", spec]
       rpmspec ["--srpm"] (Just ("%{name}-%{version}-" ++ autorel ++ disttag)) spec
     else rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
+  seq disttag $
+    return $
+    case nvrs of
+      [] -> Nothing
+      [nvr] -> Just (replace hostdist disttag nvr)
+      _ -> error' "could not determine unique nvr"
 
 pkgNameVerRel' :: Branch -> FilePath -> IO String
 pkgNameVerRel' br spec = do
