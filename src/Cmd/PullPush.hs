@@ -1,6 +1,7 @@
 module Cmd.PullPush (
   pullPkgs,
   PullOpts(..),
+  fetchPkgs,
   pushPkgs)
 where
 
@@ -43,6 +44,19 @@ pullPkgs pullopts (breq,args) =
           unless (breq == Branches [] || RelBranch current == br) $
             gitSwitchBranch br
           gitMergeOrigin current
+
+fetchPkgs :: [String] -> IO ()
+fetchPkgs args =
+  withPackagesByBranches
+  (if length args > 1 then HeaderMust else HeaderMay)
+  False
+  dirtyGit
+  Zero
+  fetchPkg (Branches [],args)
+  where
+    fetchPkg :: Package -> AnyBranch -> IO ()
+    fetchPkg _pkg _br =
+      gitFetchSilent
 
 pushPkgs :: (BranchesReq, [String]) -> IO ()
 pushPkgs =

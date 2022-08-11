@@ -224,6 +224,9 @@ main = do
       pullPkgs
       <$> pullOpts
       <*> branchesPackages
+    , Subcommand "fetch" "Git fetch packages" $
+      fetchPkgs
+      <$> manyPackages
     , Subcommand "push" "Git push packages" $
       pushPkgs
       <$> branchesPackages
