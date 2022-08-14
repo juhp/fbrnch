@@ -209,6 +209,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         unless dryrun $
           gitPushSilent Nothing
       nvr <- pkgNameVerRel' br spec
+      putNewline
       putStrLn $ nvr ++ " (" ++ target ++ ")"
       changelog <- unlines <$> getChangelog spec
       when (null unpushed) $

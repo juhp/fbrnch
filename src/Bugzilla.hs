@@ -397,7 +397,7 @@ showComment cmt = do
   -- comment0 from fedora-create-review has leading newline
   T.putStrLn $ "(Comment " <> intAsText (commentCount cmt) <> ") <" <> commentCreator cmt <> "> " <> (T.pack . show) (commentCreationTime cmt) <> "\n"
   mapM_ (T.putStrLn . ("  " <>)) $ dropDuplicates . removeLeadingNewline . T.lines $ commentText cmt
-  putStrLn ""
+  putNewline
 
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid =
@@ -421,7 +421,7 @@ putBug :: Bug -> IO ()
 putBug bug = do
   T.putStrLn $ bugSummary bug <> " (" <> bugStatus bug <> ")"
   putBugId $ bugId bug
-  putStrLn ""
+  putNewline
 
 putBugVer :: Bug -> IO ()
 putBugVer bug = do

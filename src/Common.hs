@@ -9,7 +9,8 @@ module Common (
 #endif
   (+/+),
   plural,
-  pluralException
+  pluralException,
+  putNewline
   ) where
 
 import Control.Monad.Extra -- hiding (loop)
@@ -34,3 +35,6 @@ pluralException i ns ps =
     " ",
     if i == 1 then ns else ps
   ]
+
+putNewline :: IO ()
+putNewline = putChar '\n'

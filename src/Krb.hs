@@ -17,7 +17,7 @@ krbTicket = do
     when (last krb == "(Expired)") $ do
       putStrLn $ unwords krb
       cmd_ "fkinit" []
-      putStrLn ""
+      putNewline
 
 maybeFasIdFromKrb :: IO (Maybe String)
 maybeFasIdFromKrb =

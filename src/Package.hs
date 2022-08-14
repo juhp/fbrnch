@@ -90,7 +90,7 @@ checkForSpecFile spec = do
 changeLogPrompt :: Maybe String -> FilePath -> IO String
 changeLogPrompt mcontext spec = do
   clog <- cleanChangelog spec
-  putStrLn ""
+  putNewline
   putStrLn "```"
   putStrLn clog
   putStrLn "```"
@@ -125,7 +125,7 @@ cleanChangelog spec = do
 getSummaryURL :: FilePath -> IO String
 getSummaryURL spec = do
   notes <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}\n\n- %{url}", spec]
-  putStrLn ""
+  putNewline
   putStrLn "```"
   putStrLn notes
   putStrLn "```"
