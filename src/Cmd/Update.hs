@@ -39,6 +39,8 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
   where
     updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
     updatePkg mver pkg br = do
+      when (br /= RelBranch Rawhide) $
+        warning $ "Are you sure you want to update " ++ show br ++ "?\n"
       spec <- if allowHEAD
               then findSpecfile
               else localBranchSpecFile pkg br
