@@ -307,8 +307,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
             then bodhiSidetagUpdate rbr nvrs sidetag notes
             else
             unlessM (checkAutoBodhiUpdate rbr) $ do
-            prompt_ "After editing the update, press Enter to remove the sidetag"
-            fedpkg_ "remove-side-tag" [sidetag]
+            inp <- prompt "Edit the update.  Then enter 'yes' to remove the sidetag or Enter to skip"
+            when (lower (trim inp) == "yes") $
+              fedpkg_ "remove-side-tag" [sidetag]
             -- arguably we already received the Updateid from the above bodhi
               -- command, but we query it here via nvr
             -- prompt_ "Press Enter to edit update just to unlock it from sidetag"
