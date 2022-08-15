@@ -23,12 +23,7 @@ import Krb
 import Koji
 import Package
 import Prompt
-
-data SideTagTarget = SideTag | Target String
-
-maybeTarget :: Maybe SideTagTarget -> Maybe String
-maybeTarget (Just (Target t)) = Just t
-maybeTarget _ = Nothing
+import Types
 
 -- (pkg, nvr)
 type Job = (String, Async (String,String))
@@ -76,7 +71,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           error' "You must use --target/--sidetag to build package layers for this branch"
       when (length branches > 1) $
         putStrLn $ "# " ++ show rbr
-      target <- targetMaybeSidetag rbr
+      target <- targetMaybeSidetag rbr msidetagTarget
       nvrclogs <- concatMapM (timeIO . parallelBuild target rbr)
                       (zip [firstlayer..length allLayers] $
                        init $ tails layers) -- tails ends in []
@@ -111,7 +106,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         -- FIXME time jobs
         setupBranch :: Branch -> IO Job
         setupBranch br = do
-          target <- targetMaybeSidetag br
+          target <- targetMaybeSidetag br msidetagTarget
           when (mmerge /= Just False) $ mergeNewerBranch (show br) br
           job <- startBuild False False target br "." >>= async
           unless dryrun $ sleep 3
@@ -335,26 +330,3 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                     --               "--request", "testing"] -- was "--autokarma", "--autotime"
                     -- putStrLn "Update edited to unlock from sidetag"
               _ -> error' $ "impossible happened: more than one update found for " ++ last nvrs
-
-    targetMaybeSidetag :: Branch -> IO String
-    targetMaybeSidetag br =
-      case msidetagTarget of
-        Nothing -> return $ branchTarget br
-        Just (Target t) -> return t
-        Just SideTag -> do
-          tags <- map (head . words) <$> kojiUserSideTags (Just br)
-          case tags of
-            [] -> do
-              Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (show br)
-              out <- head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
-              if "Side tag '" `isPrefixOf` out
-                then do
-                putStrLn out
-                let sidetag =
-                      init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
-                putStrLn $ "waiting for " ++ sidetag ++ " repo"
-                cmd_ "koji" ["wait-repo", sidetag]
-                return sidetag
-                else error' "'fedpkg request-side-tag' failed"
-            [tag] -> return tag
-            _ -> error' $ "More than one user side-tag found for " ++ show br

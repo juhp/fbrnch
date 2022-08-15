@@ -97,7 +97,7 @@ main = do
       <$> dryrunOpt
       <*> mergeOpt
       <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
-      <*> optional sidetagTargetOpt
+      <*> optional (sidetagTargetOpt "or creates one for you (with 'fedpkg request-side-tag --base-tag')")
       <*> updateOpt 'S'
       <*> branchesPackages
     , Subcommand "sidetags" "List user's side-tags" $
@@ -423,7 +423,7 @@ main = do
       BuildOpts
       <$> mergeOpt
       <*> noFailFastOpt
-      <*> mtargetOpt
+      <*> optional (sidetagTargetOpt "")
       <*> overrideOpt
       <*> waitrepoOpt
       <*> dryrunOpt
@@ -525,10 +525,11 @@ main = do
 
     commandOpt = strOptionWith 'c' "cmd" "SHELLCOMMAND" "Shell command to run in $p"
 
-    sidetagTargetOpt :: Parser SideTagTarget
-    sidetagTargetOpt =
+    sidetagTargetOpt :: String -> Parser SideTagTarget
+    sidetagTargetOpt desc =
       Target <$> targetOpt <|>
-      flagWith' SideTag 's' "sidetag" "Use the existing branch side-tag to build or creates one for you (with 'fedpkg request-side-tag --base-tag')"
+      flagWith' SideTag 's' "sidetag"
+      ("Use existing branch side-tag to build" +-+ desc)
 
     packagerOpt = Owner <$> strOptionWith 'o' "owner" "OWNER" "Package owner" <|> Committer <$> strOptionWith 'u' "username" "USERNAME" "Packages user can commit to"
 

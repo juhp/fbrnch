@@ -21,7 +21,8 @@ module Koji (
   TaskID,
   displayID,
   fedoraHub,
-  maybeTimeout
+  maybeTimeout,
+  targetMaybeSidetag
   ) where
 
 import Data.Char (isDigit)
@@ -44,6 +45,7 @@ import Krb
 import Package
 import Pagure
 import Prompt
+import Types
 
 fedoraHub :: String
 fedoraHub = fedoraKojiHub
@@ -243,3 +245,26 @@ maybeTimeout secs act = do
       warning "Connection timed out: retrying"
       maybeTimeout (secs + 5) act
     Just res -> return res
+
+targetMaybeSidetag :: Branch -> Maybe SideTagTarget -> IO String
+targetMaybeSidetag br msidetagTarget =
+  case msidetagTarget of
+    Nothing -> return $ branchTarget br
+    Just (Target t) -> return t
+    Just SideTag -> do
+      tags <- map (head . words) <$> kojiUserSideTags (Just br)
+      case tags of
+        [] -> do
+          Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (show br)
+          out <- head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
+          if "Side tag '" `isPrefixOf` out
+            then do
+            putStrLn out
+            let sidetag =
+                  init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
+            putStrLn $ "waiting for " ++ sidetag ++ " repo"
+            cmd_ "koji" ["wait-repo", sidetag]
+            return sidetag
+            else error' "'fedpkg request-side-tag' failed"
+        [tag] -> return tag
+        _ -> error' $ "More than one user side-tag found for " ++ show br

@@ -17,11 +17,12 @@ import Krb
 import Koji
 import Package
 import Prompt
+import Types
 
 data BuildOpts = BuildOpts
   { buildoptMerge :: Maybe Bool
   , buildoptNoFailFast :: Bool
-  , buildoptTarget :: Maybe String
+  , buildoptSidetagTarget :: Maybe SideTagTarget
   , buildoptOverride :: Maybe Int
   , buildoptWaitrepo :: Maybe Bool
   , buildoptDryrun :: Bool
@@ -46,7 +47,7 @@ data BuildOpts = BuildOpts
 -- FIXME --yes
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
-  let singleBrnch = if isJust (buildoptTarget opts)
+  let singleBrnch = if isJust (buildoptSidetagTarget opts)
                     then ZeroOrOne
                     else AnyNumber
       mlastOfPkgs = if length pkgs > 1
@@ -114,15 +115,15 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         else return $ Just Nothing
   let dryrun = buildoptDryrun opts
   buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
-  let mtarget = buildoptTarget opts
-      target = fromMaybe (branchTarget br) mtarget
+  let msidetagTarget = buildoptSidetagTarget opts
       mwaitrepo = buildoptWaitrepo opts
+  target <- targetMaybeSidetag br msidetagTarget
   case buildstatus of
     Just BuildComplete -> do
       putStrLn $ nvr ++ " is already built"
       when (isJust mpush) $
         error' "Please bump the spec file"
-      when (br /= Rawhide && isNothing mtarget) $ do
+      when (br /= Rawhide && isNothing msidetagTarget) $ do
         tags <- maybeTimeout 30 $ kojiNVRTags nvr
         autoupdate <- checkAutoBodhiUpdate br
         -- FIXME update referenced bugs for autoupdate branch
@@ -156,7 +157,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           kojiWatchTask task
         (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already!"
         [] -> do
-          let tag = fromMaybe (branchDestTag br) mtarget
+          let tag =
+                if target == branchTarget br then branchDestTag br else target
           mlatest <- kojiLatestNVR tag $ unPackage pkg
           if equivNVR nvr (fromMaybe "" mlatest)
             then putStrLn $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
@@ -199,7 +201,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               then whenJust mBugSess $
                    \ (bid,session) -> putBugBuild dryrun session bid nvr
               else do
-              when (isNothing mtarget) $ do
+              when (isNothing msidetagTarget) $ do
                 whenJust (fmap fst mBugSess) $
                   \bid -> putStr "review bug: " >> putBugId bid
                 -- FIXME diff previous changelog?
