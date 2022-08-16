@@ -94,6 +94,10 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
           unless force $
             -- FIXME only if not all exist
             cmd_ "spectool" ["-g", "-S", spec]
+        patches <- cmdLines "spectool" ["-P", spec]
+        forM_ patches $ \patch ->
+          unlessM (doesFileExist patch) $
+          cmd_ "spectool" ["-g", "-P", spec]
         when force $ do
           let archives = filter isArchiveFile existing
           forM_ archives removeFile
