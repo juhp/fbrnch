@@ -98,8 +98,8 @@ main = do
       <$> dryrunOpt
       <*> mergeOpt
       <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
-      <*> optional (sidetagTargetOpt "or creates one for you (with 'fedpkg request-side-tag --base-tag')")
-      <*> updateOpt 'S'
+      <*> optional (sidetagTargetOpt $ Just "or creates one for you (with 'fedpkg request-side-tag --base-tag')")
+      <*> updateOpt
       <*> branchesPackages
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd
@@ -119,7 +119,7 @@ main = do
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd
       <$> dryrunOpt
-      <*> switchWith 'S' "stagger" "Stagger archs"
+      <*> switchLongWith "stagger" "Stagger archs"
       <*> rebuildSrpmOpt
       <*> noFailFastOpt
       <*> optional archesOpt
@@ -414,7 +414,7 @@ main = do
     archOpt :: Parser String
     archOpt = strOptionWith 'a' "arch" "ARCH[,ARCH].." "build for arch(s)"
 
-    rebuildSrpmOpt = switchWith 's' "rebuild-srpm" "rebuild srpm in Koji"
+    rebuildSrpmOpt = switchWith 'S' "rebuild-srpm" "rebuild srpm in Koji"
 
     mergeOpt =
       optional (flagWith' True 'm' "merge" "Merge without prompt" <|>
@@ -424,12 +424,12 @@ main = do
       BuildOpts
       <$> mergeOpt
       <*> noFailFastOpt
-      <*> optional (sidetagTargetOpt "")
+      <*> optional (sidetagTargetOpt Nothing)
       <*> overrideOpt
       <*> waitrepoOpt
       <*> dryrunOpt
       <*> skipFetchOpt
-      <*> updateOpt 's'
+      <*> updateOpt
       <*> useChangelogOpt
       <*> switchWith 'p' "by-package" "Build by each package across brs"
       <*> switchWith 'k' "allow-dirty" "Allow building from unclean git dir"
@@ -470,15 +470,15 @@ main = do
 
     skipFetchOpt = switchWith 'S' "skip-fetch" "Do not git fetch"
 
-    updateOpt :: Char -> Parser (Maybe UpdateType, UpdateSeverity)
-    updateOpt s = updatePair <$> updatetypeOpt <*> updateSeverityOpt
+    updateOpt :: Parser (Maybe UpdateType, UpdateSeverity)
+    updateOpt = updatePair <$> updatetypeOpt <*> updateSeverityOpt
       where
         updatetypeOpt =
           flagWith' Nothing 'U' "no-update" "Do not generate a Bodhi update" <|>
           Just <$> optionalWith auto 'u' "update-type" "TYPE" "security, bugfix, enhancement (default), newpackage, or template" EnhancementUpdate
 
         updateSeverityOpt =
-          optionalWith auto s "severity" "SEVERITY" "low, medium, high, urgent, (default: unspecified)" SeverityUnspecified
+          optionalLongWith auto "severity" "SEVERITY" "low, medium, high, urgent, (default: unspecified)" SeverityUnspecified
 
         updatePair :: Maybe UpdateType -> UpdateSeverity
                    -> (Maybe UpdateType, UpdateSeverity)
@@ -526,11 +526,11 @@ main = do
 
     commandOpt = strOptionWith 'c' "cmd" "SHELLCOMMAND" "Shell command to run in $p"
 
-    sidetagTargetOpt :: String -> Parser SideTagTarget
-    sidetagTargetOpt desc =
+    sidetagTargetOpt :: Maybe String -> Parser SideTagTarget
+    sidetagTargetOpt mdesc =
       Target <$> targetOpt <|>
       flagWith' SideTag 's' "sidetag"
-      ("Use existing branch side-tag to build" +-+ desc)
+      ("Use existing branch side-tag to build" +-+ fromMaybe "" mdesc)
 
     packagerOpt = Owner <$> strOptionWith 'o' "owner" "OWNER" "Package owner" <|> Committer <$> strOptionWith 'u' "username" "USERNAME" "Packages user can commit to"
 
