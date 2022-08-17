@@ -5,19 +5,19 @@ module Cmd.WaitRepo (
 where
 
 import Common.System
-import Data.Maybe
 
 import Branches
 import Git
 import Koji
 import Package
+import Types
 
 data WaitFetch = WaitNoFetch | WaitDirty | WaitFetch
 
 -- FIXME first check/wait for build to actually exist
-waitrepoCmd :: Bool -> WaitFetch -> Maybe String -> (BranchesReq, [String])
-            -> IO ()
-waitrepoCmd dryrun fetch mtarget = do
+waitrepoCmd :: Bool -> WaitFetch -> Maybe SideTagTarget
+            -> (BranchesReq, [String]) -> IO ()
+waitrepoCmd dryrun fetch msidetagTarget = do
   withPackagesByBranches HeaderMay False
     (case fetch of
        WaitFetch -> cleanGitFetchActive
@@ -32,5 +32,6 @@ waitrepoCmd dryrun fetch mtarget = do
       gitSwitchBranch rbr
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
+      target <- targetMaybeSidetag br msidetagTarget
       timeIO $
-        kojiWaitRepo dryrun True (fromMaybe (branchTarget br) mtarget) nvr
+        kojiWaitRepo dryrun True target nvr

@@ -13,14 +13,15 @@ import Common.System
 import Git
 import Koji
 import Package
-import Types (Archs(..))
+import Types (Archs(..),SideTagTarget)
 
 -- FIXME allow multiple --target's (parallel too)
 -- FIXME tail build.log for failure
 -- FIXME append timestamp after %release (to help identify scratch builds)
-scratchCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Archs -> Maybe String
-           -> Maybe String -> (BranchesReq, [String]) -> IO ()
-scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts mtarget mref (breq,pkgs) =
+scratchCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Archs
+           -> Maybe SideTagTarget -> Maybe String -> (BranchesReq, [String])
+           -> IO ()
+scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts msidetagTarget mref (breq,pkgs) =
   withPackagesByBranches HeaderMust False Nothing AnyNumber scratchBuild (breq,pkgs)
   where
     anyTarget (RelBranch b) = branchTarget b
@@ -31,10 +32,12 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts mtarget mref (breq,pk
       when (isJust mref && length pkgs > 1) $
         error' "--ref is not supported for multiple packages"
       pkggit <- isPkgGitRepo
-      when (not pkggit && breq == Branches [] && isNothing mtarget) $
+      when (not pkggit && breq == Branches [] && isNothing msidetagTarget) $
         error' "please specify a branch or target for non dist-git"
       spec <- localBranchSpecFile pkg br
-      let target = fromMaybe (anyTarget br) mtarget
+      target <- if isNothing msidetagTarget
+                then return (anyTarget br)
+                else targetMaybeSidetag (onlyRelBranch br) msidetagTarget
       putStrLn $ "Target: " ++ target
       archs <-
         case marchopts of
@@ -94,13 +97,14 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts mtarget mref (breq,pk
             srpmBuild kojiargs =
               void $ generateSrpm (Just br) spec >>= kojiScratchBuild target kojiargs
 
-scratchCmdX86_64 :: Bool -> Bool -> Bool -> Maybe String -> Maybe String
-                 -> (BranchesReq, [String]) -> IO ()
+-- FIXME default -X to --no-fastfail?
+scratchCmdX86_64 :: Bool -> Bool -> Bool -> Maybe SideTagTarget
+                 -> Maybe String -> (BranchesReq, [String]) -> IO ()
 scratchCmdX86_64 dryrun rebuildSrpm excludeArch =
   scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["x86_64"]))
 
-scratchCmdAarch64 :: Bool -> Bool -> Bool -> Maybe String -> Maybe String
-                  -> (BranchesReq, [String]) -> IO ()
+scratchCmdAarch64 :: Bool -> Bool -> Bool -> Maybe SideTagTarget
+                  -> Maybe String -> (BranchesReq, [String]) -> IO ()
 scratchCmdAarch64 dryrun rebuildSrpm excludeArch =
   scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["aarch64"]))
 

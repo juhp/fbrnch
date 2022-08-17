@@ -114,7 +114,7 @@ main = do
       waitrepoCmd
       <$> dryrunOpt
       <*> waitfetchOpt
-      <*> mtargetOpt
+      <*> optional (sidetagTargetOpt Nothing)
       <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd
@@ -123,7 +123,7 @@ main = do
       <*> rebuildSrpmOpt
       <*> noFailFastOpt
       <*> optional archesOpt
-      <*> mtargetOpt
+      <*> optional (sidetagTargetOpt Nothing)
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
     , Subcommand "scratch-aarch64" "Koji aarch64 scratch build of package" $
@@ -131,7 +131,7 @@ main = do
       <$> dryrunOpt
       <*> rebuildSrpmOpt
       <*> switchWith 'X' "exclude-arch" "Exclude aarch64"
-      <*> mtargetOpt
+      <*> optional (sidetagTargetOpt Nothing)
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
     , Subcommand "scratch-x86_64" "Koji x86_64 scratch build of package" $
@@ -139,7 +139,7 @@ main = do
       <$> dryrunOpt
       <*> rebuildSrpmOpt
       <*> switchWith 'X' "exclude-arch" "Exclude x86_64"
-      <*> mtargetOpt
+      <*> optional (sidetagTargetOpt Nothing)
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
     , Subcommand "update" "Update package in dist-git to newer version" $
@@ -455,17 +455,6 @@ main = do
     archesOpt :: Parser Archs
     archesOpt = Archs <$> some archOpt <|> ExcludedArchs <$> some excludeArch
 
-    mtargetOpt :: Parser (Maybe String)
-    mtargetOpt = optional targetOpt
-
-    targetOpt :: Parser String
-    targetOpt =
-      checkNotRawhide <$> strOptionWith 't' "target" "TARGET" "Koji target"
-      where
-        checkNotRawhide "rawhide" = error' "'rawhide' is not a valid target!"
-        checkNotRawhide t = t
-
-
     dryrunOpt = switchWith 'n' "dry-run" "Do not write (push, build, post, override)"
 
     skipFetchOpt = switchWith 'S' "skip-fetch" "Do not git fetch"
@@ -525,6 +514,13 @@ main = do
     buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
 
     commandOpt = strOptionWith 'c' "cmd" "SHELLCOMMAND" "Shell command to run in $p"
+
+    targetOpt :: Parser String
+    targetOpt =
+      checkNotRawhide <$> strOptionWith 't' "target" "TARGET" "Koji target"
+      where
+        checkNotRawhide "rawhide" = error' "'rawhide' is not a valid target!"
+        checkNotRawhide t = t
 
     sidetagTargetOpt :: Maybe String -> Parser SideTagTarget
     sidetagTargetOpt mdesc =
