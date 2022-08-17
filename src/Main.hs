@@ -2,6 +2,7 @@
 
 module Main (main) where
 
+import Data.Maybe (fromMaybe)
 import Distribution.Fedora.Branch
 #if !MIN_VERSION_simple_cmd_args(0,1,7)
 import Options.Applicative (maybeReader, ReadM)
@@ -551,6 +552,7 @@ main = do
       flagWith' NoCleanBefore 'c' "no-clean" "Do not clean chroot before building"
       <|> flagWith' NoCleanAfter 'C' "no-clean-after" "Do not clean chroot after building"
       <|> flagWith' NoCleanAll 'A' "no-clean-all" "Do not clean chroot before or after building"
+      <|> flagWith' MockShortCircuit 'S' "short-circuit" "Short circuit to install phase"
 
     sortDisplayOpt :: Parser SortDisplay
     sortDisplayOpt =

@@ -12,7 +12,7 @@ import Common.System
 import Git
 import Package
 
-data NoClean = NoCleanBefore | NoCleanAfter | NoCleanAll
+data NoClean = NoCleanBefore | NoCleanAfter | NoCleanAll | MockShortCircuit
   deriving Eq
 
 -- FIXME add repo/copr for build
@@ -51,6 +51,7 @@ mockCmd dryrun mnoclean network mockshell mroot (breq, ps) = do
                       Just NoCleanBefore -> ["--no-clean"]
                       Just NoCleanAfter -> ["--no-cleanup-after"]
                       Just NoCleanAll -> ["--no-clean", "--no-cleanup-after"]
+                      Just MockShortCircuit -> ["--short-circuit", "install"]
           mockopts_common c = [c, "--root", mockRoot rootBr] ++ noclean ++ ["--enable-network" | network]
           mockbuild_opts = mockopts_common command ++ ["--config-opts=cleanup_on_failure=False" | mnoclean `elem` [Nothing, Just NoCleanBefore]] ++ resultdir ++ srpms
           mockshell_opts = mockopts_common "--shell" ++ ["--no-clean" | "--no-clean" `notElem` noclean]
