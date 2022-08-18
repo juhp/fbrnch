@@ -20,7 +20,7 @@ import Prompt
 installCmd :: Bool -> Bool -> Maybe ForceShort -> [BCond] -> Bool
            -> (Maybe Branch,[String]) -> IO ()
 installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
-  when (recurse && mforceshort == Just ShortCircuit) $
+  when (recurse && isShortCircuit mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch (boolHeader (length pkgs > 1)) True Nothing ZeroOrOne installPkg (mbr, pkgs)
   where
@@ -54,7 +54,7 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
               -- FIXME option to enable/disable installing missing deps
             else installDeps True spec
           wasbuilt <- buildRPMs (not verbose) mforceshort' bconds rpms br spec
-          unless (mforceshort' == Just ShortCircuit) $
+          unless (isShortCircuit mforceshort') $
             if reinstall || mforceshort' == Just ForceBuild
             then do
               let reinstalls = filter (\ f -> (readNVRA . takeFileName) f `elem` installed) rpms

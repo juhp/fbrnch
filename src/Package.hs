@@ -20,6 +20,7 @@ module Package (
   generateSrpm',
   BCond(..),
   ForceShort(..),
+  isShortCircuit,
   buildRPMs,
   installDeps,
   installMissingMacros,
@@ -225,8 +226,14 @@ generateSrpm' force mbr spec = do
       putStrLn $ "Created " ++ takeFileName srpm
       return srpm
 
-data ForceShort = ForceBuild | ShortCircuit
+data ForceShort = ForceBuild | ShortCompile | ShortInstall
   deriving Eq
+
+isShortCircuit :: Maybe ForceShort -> Bool
+isShortCircuit ms =
+  case ms of
+    Just s -> s /= ForceBuild
+    Nothing -> False
 
 data BCond = BuildWith String | BuildWithout String
 
@@ -256,8 +263,11 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
     void $ getSources spec
     dist <- getBranchDist br
     cwd <- getCurrentDirectory
-    let shortcircuit = mforceshort == Just ShortCircuit
-    let buildopt = if shortcircuit then ["-bi", "--short-circuit"] else ["-bb"]
+    let buildopt =
+          case mforceshort of
+            Just ShortCompile -> ["-bc", "--short-circuit"]
+            Just ShortInstall -> ["-bi", "--short-circuit"]
+            _ -> ["-bb"]
         sourcediropt = ["--define", "_sourcedir " ++ cwd]
         args = sourcediropt ++ ["--define", "dist " ++ rpmDistTag dist] ++
                buildopt ++ map show bconds ++ [spec]
@@ -265,7 +275,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
     putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
     ok <-
       timeIO $
-      if not quiet || shortcircuit
+      if not quiet || isShortCircuit mforceshort
       then do
         rbr <- anyBranchToRelease br
         nvr <- pkgNameVerRel' rbr spec

@@ -481,7 +481,8 @@ main = do
 
     forceshortOpt =
       flagWith' ForceBuild 'f' "rebuild" "Rebuild even if already built" <|>
-      flagWith' ShortCircuit 's' "short-circuit" "Do --short-circuit rpmbuild"
+      flagLongWith' ShortCompile "short-compile" "Do rpmbuild --short-circuit -bc" <|>
+      flagWith' ShortInstall 's' "short-install" "Do rpmbuild --short-circuit -bi"
 
     diffFormatOpt :: Parser DiffFormat
     diffFormatOpt =
