@@ -38,6 +38,7 @@ import Cmd.Reviews
 import Cmd.Scratch
 import Cmd.SideTags
 import Cmd.Sort
+import Cmd.SrcDeps
 import Cmd.Status
 import Cmd.Switch
 import Cmd.Update
@@ -184,6 +185,10 @@ main = do
       <*> anyBranchArg
       <*> anyBranchArg
       <*> manyPackages
+    , Subcommand "src-deps" "List source package dependencies" $
+      srcDepsCmd
+      <$> switchWith 'r' "reverse" "Reverse dependencies"
+      <*> branchPackages
     , Subcommand "mock" "Local mock build" $
       mockCmd
       <$> switchWith 'n' "dry-run" "Do not build (but creates srpm)"
@@ -372,6 +377,18 @@ main = do
     -- branchesRequestOpt =
     --   flagWith' AllBranches 'B' "all-branches" "Request branches for all current releases [default latest 2]" <|>
     --   ExcludeBranches <$> some excludeBranchOpt
+
+    branchPackages :: Parser (Branch,[String])
+    branchPackages =
+      branchPkgs <$> some (pkgArg "[BRANCH] PKGPATH...")
+      where
+        branchPkgs :: [String] -> (Branch,[String])
+        branchPkgs args =
+          let (brs,pkgs) = partitionBranches args
+          in case brs of
+            [] -> error' "specify one branch"
+            [br] -> (br,pkgs)
+            _ -> error' $ "cannot have more than one branch: " ++ unwords (map show brs)
 
     maybeBranchPackages :: Bool -> Parser (Maybe Branch,[String])
     maybeBranchPackages oneplus =

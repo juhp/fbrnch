@@ -73,6 +73,7 @@ executable fbrnch
                        Cmd.Scratch
                        Cmd.SideTags
                        Cmd.Sort
+                       Cmd.SrcDeps
                        Cmd.Status
                        Cmd.Switch
                        Cmd.Update
