@@ -18,7 +18,7 @@ prepCmd :: Maybe PrepPre -> Bool -> (Maybe Branch,[String]) -> IO ()
 prepCmd mpre verbose (mbr,pkgs) = do
   when (mpre == Just PrepClone) $
     cloneCmd (ClonePkgs (mbr, pkgs))
-  withPackagesMaybeBranchNoHeadergit ZeroOrOne prepPackage (mbr,pkgs)
+  withPackagesMaybeBranchNoHeadergit prepPackage (mbr,pkgs)
   where
     prepPackage :: Package -> AnyBranch -> IO ()
     prepPackage pkg br = do

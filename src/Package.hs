@@ -32,6 +32,7 @@ module Package (
   withExistingDirectory,
   initialPkgRepo,
   withPackagesByBranches,
+  withPackagesBranch,
   withPackagesMaybeBranch,
   withPackagesMaybeBranchNoHeadergit,
   HeaderShow(..),
@@ -661,20 +662,27 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
     have :: (GitOpts -> Bool) -> Bool
     have opt = maybe False opt mgitopts
 
+withPackagesBranch :: HeaderShow
+                   -> Bool
+                   -> Maybe GitOpts
+                   -> (Package -> AnyBranch -> IO ())
+                   -> (Branch,[String])
+                   -> IO ()
+withPackagesBranch header count mgitopts action (br, pkgs) =
+  withPackagesByBranches header count mgitopts ExactlyOne action (Branches [br],pkgs)
+
 withPackagesMaybeBranch :: HeaderShow
                         -> Bool
                         -> Maybe GitOpts
-                        -> LimitBranches
                         -> (Package -> AnyBranch -> IO ())
                         -> (Maybe Branch,[String])
                         -> IO ()
-withPackagesMaybeBranch header count mgitopts limitBranches action (mbr, pkgs) =
-  withPackagesByBranches header count mgitopts limitBranches action (Branches (maybeToList mbr),pkgs)
+withPackagesMaybeBranch header count mgitopts action (mbr, pkgs) =
+  withPackagesByBranches header count mgitopts ZeroOrOne action (Branches (maybeToList mbr),pkgs)
 
-withPackagesMaybeBranchNoHeadergit :: LimitBranches
-                                       -> (Package -> AnyBranch -> IO ())
-                                       -> (Maybe Branch,[String])
-                                       -> IO ()
+withPackagesMaybeBranchNoHeadergit :: (Package -> AnyBranch -> IO ())
+                                   -> (Maybe Branch,[String])
+                                   -> IO ()
 withPackagesMaybeBranchNoHeadergit =
   withPackagesMaybeBranch HeaderNone False Nothing
 

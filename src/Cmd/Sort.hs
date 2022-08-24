@@ -21,10 +21,10 @@ data RpmWith = RpmWith String | RpmWithout String
 
 data SortDisplay = SortParallel | SortChain | SortLayers | SortPlain
 
-sortCmd :: SortDisplay -> Maybe RpmWith -> (Maybe Branch,[String]) -> IO ()
+sortCmd :: SortDisplay -> Maybe RpmWith -> (Branch,[String]) -> IO ()
 sortCmd _ _ (_,[]) = return ()
-sortCmd displaymode mrpmwith (mbr, pkgs) = do
-  withPackagesMaybeBranchNoHeadergit ExactlyOne noop (mbr, pkgs)
+sortCmd displaymode mrpmwith (br, pkgs) = do
+  withPackagesBranch HeaderNone False Nothing noop (br, pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
   case displaymode of
     -- reverse because rpmbuild-order reverses the order of independent pkgs?
@@ -49,7 +49,7 @@ toRpmOption (RpmWithout opt) = ["--without=" ++ opt]
 
 graphCmd :: Bool -> Maybe RpmWith -> (Maybe Branch,[FilePath]) -> IO ()
 graphCmd dot mrpmwith (mbr, pkgs) = do
-  withPackagesMaybeBranchNoHeadergit ZeroOrOne noop (mbr, pkgs)
+  withPackagesMaybeBranchNoHeadergit noop (mbr, pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
   createGraph4 False [] rpmopts False False True Nothing pkgs >>=
     if dot then printGraph else renderGraph

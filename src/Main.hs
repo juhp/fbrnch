@@ -152,7 +152,7 @@ main = do
       sortCmd
       <$> sortDisplayOpt
       <*> optional rpmWithOpt
-      <*> maybeBranchPackages True
+      <*> branchPackages
     , Subcommand "prep" "Prep sources" $
       prepCmd
       <$> optional prepPreOpts

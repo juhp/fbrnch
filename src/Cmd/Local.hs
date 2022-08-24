@@ -35,7 +35,7 @@ localCmd quiet mforceshort bconds =
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd =
-  withPackagesMaybeBranch HeaderNone False Nothing ZeroOrOne installDepsPkg
+  withPackagesMaybeBranch HeaderNone False Nothing installDepsPkg
   where
     installDepsPkg :: Package -> AnyBranch -> IO ()
     installDepsPkg pkg br =
@@ -43,7 +43,7 @@ installDepsCmd =
 
 srpmCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 srpmCmd force =
-  withPackagesMaybeBranchNoHeadergit ZeroOrOne srpmBuildPkg
+  withPackagesMaybeBranchNoHeadergit srpmBuildPkg
   where
     srpmBuildPkg :: Package -> AnyBranch -> IO ()
     srpmBuildPkg pkg br = do

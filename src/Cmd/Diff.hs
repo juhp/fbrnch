@@ -29,7 +29,7 @@ data DiffFilter =
 diffCmd :: Bool -> DiffWork -> DiffFormat -> Bool -> Maybe DiffFilter -> Maybe AnyBranch
         -> (Maybe Branch,[String]) -> IO ()
 diffCmd speconly work fmt quiet mpatt mwbr =
-  withPackagesMaybeBranch HeaderNone False dirtyGit ZeroOrOne diffPkg
+  withPackagesMaybeBranch HeaderNone False dirtyGit diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
     diffPkg pkg br = do
