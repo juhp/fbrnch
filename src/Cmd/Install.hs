@@ -53,7 +53,7 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
                   Just pkgdir -> installCmd verbose recurse mforceshort bconds reinstall (mbr, [pkgdir]) >> putStrLn ""
               -- FIXME option to enable/disable installing missing deps
             else installDeps True spec
-          wasbuilt <- buildRPMs (not verbose) mforceshort' bconds rpms br spec
+          wasbuilt <- buildRPMs (not verbose) False mforceshort' bconds rpms br spec
           unless (isShortCircuit mforceshort') $
             if reinstall || mforceshort' == Just ForceBuild
             then do

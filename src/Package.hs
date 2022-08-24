@@ -245,9 +245,9 @@ instance Show BCond where
 -- FIXME create build.log
 -- Note does not check if bcond changed
 -- FIXME check tarball timestamp
-buildRPMs :: Bool -> Maybe ForceShort -> [BCond] -> [FilePath] -> AnyBranch
-          -> FilePath -> IO Bool
-buildRPMs quiet mforceshort bconds rpms br spec = do
+buildRPMs :: Bool -> Bool -> Maybe ForceShort -> [BCond] -> [FilePath]
+          -> AnyBranch -> FilePath -> IO Bool
+buildRPMs quiet noclean mforceshort bconds rpms br spec = do
   needBuild <-
     if isJust mforceshort
     then return True
@@ -268,7 +268,7 @@ buildRPMs quiet mforceshort bconds rpms br spec = do
           case mforceshort of
             Just ShortCompile -> ["-bc", "--short-circuit"]
             Just ShortInstall -> ["-bi", "--short-circuit"]
-            _ -> ["-bb"]
+            _ -> "-bb" : ["--noclean" | noclean]
         sourcediropt = ["--define", "_sourcedir " ++ cwd]
         args = sourcediropt ++ ["--define", "dist " ++ rpmDistTag dist] ++
                buildopt ++ map show bconds ++ [spec]
