@@ -117,9 +117,10 @@ bodhiTestingRepo :: Branch -> IO (Maybe String)
 bodhiTestingRepo Rawhide = return Nothing
 bodhiTestingRepo br = do
   obj <- bodhiRelease (show br)
-  return $ case lookupKey "testing_repository" obj :: Maybe String of
-             Nothing -> Nothing
-             Just _ -> lookupKey' "testing_tag" obj
+  return $
+    case lookupKey "testing_repository" obj :: Maybe String of
+      Nothing -> Nothing
+      Just _ -> lookupKey' "testing_tag" obj
 
 bodhiUpdate :: Bool -> (Maybe UpdateType, UpdateSeverity) -> Maybe BugId
             -> Bool -> FilePath -> [String] -> IO ()
