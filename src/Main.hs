@@ -263,7 +263,7 @@ main = do
       <$> mockOpt True
       <*> branchesPackages
     , Subcommand "request-branches" "Request branches for approved created packages" $
-      requestBranches
+      requestBranchesCmd
       <$> mockOpt False
       <*> branchesPackages
     , Subcommand "find-review" "Find package review bug" $

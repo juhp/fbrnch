@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, OverloadedStrings #-}
 
 module Cmd.RequestBranch (
-  requestBranches,
+  requestBranchesCmd,
   requestPkgBranches
   ) where
 
@@ -25,8 +25,8 @@ import Package
 import Pagure
 
 -- FIXME option to do koji scratch build instead of mock
-requestBranches :: Bool -> (BranchesReq,[String]) -> IO ()
-requestBranches mock (breq, ps) = do
+requestBranchesCmd :: Bool -> (BranchesReq,[String]) -> IO ()
+requestBranchesCmd mock (breq, ps) = do
   if null ps
     then do
     isPkgGit <- isPkgGitSshRepo
@@ -101,7 +101,8 @@ requestPkgBranches multiple mock breq pkg = do
         if null newbranches then return []
           else do
           fasid <- fasIdFromKrb
-          erecent <- pagureListProjectIssueTitlesStatus "pagure.io" "releng/fedora-scm-requests"
+          erecent <- pagureListProjectIssueTitlesStatus "pagure.io"
+                     "releng/fedora-scm-requests"
                      [makeItem "author" fasid, makeItem "status" "all"]
           case erecent of
             Left err -> error' err
@@ -112,6 +113,6 @@ requestPkgBranches multiple mock breq pkg = do
     notExistingRequest requests br = do
       let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"") ==) . pagureIssueTitle) requests
       unless (null pending) $ do
-        putStrLn $ "Branch request already open for " ++ unPackage pkg ++ ":" ++ show br
+        putStrLn $ "Branch request already exists for " ++ unPackage pkg ++ ":" ++ show br
         mapM_ printScmIssue pending
       return $ null pending
