@@ -8,8 +8,8 @@ import Common.System
 import Git
 import Package
 
-compareCmd :: Bool -> AnyBranch -> AnyBranch -> [String] -> IO ()
-compareCmd long br1 br2 pkgs = do
+compareCmd :: Bool -> Maybe String -> AnyBranch -> AnyBranch -> [String] -> IO ()
+compareCmd long mignore br1 br2 pkgs = do
   if null pkgs
     then do
     unlessM isPkgGitRepo $
@@ -31,8 +31,14 @@ compareCmd long br1 br2 pkgs = do
       localbranches <- gitLines "branch" ["--format=%(refname:short)"]
       forM_ [br1',br2'] $ \br ->
         unless (show br `elem` localbranches) $ gitSwitchBranch br
-      output <- git "log" $ ["--format=reference" | not long] ++ [show br1' ++ ".." ++ show br2']
+      output <- ignoredLines <$> gitLines "log" (["--format=reference" | not long] ++ [show br1' ++ ".." ++ show br2'])
       unless (null output) $ do
         unless (null pkgs) $
           getPackageName pkgdir >>= putPkgHdr
-        putStrLn output
+        mapM_ putStrLn output
+
+    ignoredLines :: [String] -> [String]
+    ignoredLines =
+      case mignore of
+        Nothing -> id
+        Just ignore -> filter (not . (ignore `isInfixOf`))

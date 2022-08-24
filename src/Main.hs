@@ -180,6 +180,7 @@ main = do
     , Subcommand "compare" "Show commits between branches" $
       compareCmd
       <$> switchWith 'l' "long" "show full commit log"
+      <*> optional (strOptionWith 'i' "ignore" "SUBSTRING" "Matching substring to ignore")
       <*> anyBranchArg
       <*> anyBranchArg
       <*> manyPackages
