@@ -49,12 +49,16 @@ gitMergeable origin br = do
   let ref = (if origin then "origin/" else "") ++ show br
   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
   commits <- gitShortLog ("HEAD.." ++ ref)
-  -- warn if branch is ahead
-  when (not origin && null commits && not ancestor) $ do
-    rcommits <- gitShortLog (ref ++ "..HEAD")
-    unless (null rcommits) $ do
-      putStrLn $ "current branch is ahead of newer " ++ show br ++ " !!"
-      prompt_ "Press Enter if you want to continue"
+  when (not origin && null commits && not ancestor) $
+    whenM (gitBool "merge-base" ["--is-ancestor", "HEAD", "origin/" ++ show br]) $ do
+    rancestor <- gitBool "merge-base" ["--is-ancestor", ref, "HEAD"]
+    if rancestor
+      then do
+      diff <- git "diff" [ref]
+      unless (null diff) $ do
+        putStrLn $ "current branch is ahead of newer" +-+ show br +-+ "!!"
+        prompt_ "Press Enter if you want to continue"
+      else putStrLn $ "current branch" +-+ "is diverged from" +-+ show br
   return (ancestor, commits)
 
 getNewerBranch :: Branch -> IO Branch
