@@ -62,6 +62,7 @@ executable fbrnch
                        Cmd.Merge
                        Cmd.Mock
                        Cmd.Override
+                       Cmd.Owner
                        Cmd.Parallel
                        Cmd.PkgReview
                        Cmd.Prep

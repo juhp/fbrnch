@@ -27,6 +27,7 @@ import Cmd.Local
 import Cmd.Merge
 import Cmd.Mock
 import Cmd.Override
+import Cmd.Owner
 import Cmd.Parallel
 import Cmd.PkgReview
 import Cmd.Prep
@@ -237,6 +238,9 @@ main = do
     , Subcommand "push" "Git push packages" $
       pushPkgs
       <$> branchesPackages
+    , Subcommand "owner" "List package owner(s)" $
+      ownerCmd
+      <$> manyPackages
     , Subcommand "create-review" "Create a Package Review request" $
       createReview
       <$> scratchOpt
