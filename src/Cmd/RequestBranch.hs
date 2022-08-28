@@ -43,44 +43,42 @@ requestBranchesCmd mock (breq, ps) = do
 
 requestPkgBranches :: Bool -> Bool -> BranchesReq -> Package -> IO ()
 requestPkgBranches multiple mock breq pkg = do
-  -- check have access
-  fasid <- fasIdFromKrb
-  epkginfo <- pagureProjectInfo srcfpo ("rpms" </> unPackage pkg)
-  case epkginfo of
-    Left err -> error' err
-    Right pkginfo ->
-      -- FIXME exclude unprivileged roles
-      unless (fasid `elem` concat
-              (lookupKeyElems "access_users" pkginfo)) $
-      error' $ fasid ++ " does not have access to " ++ unPackage pkg
   when (breq == Branches []) $
     putPkgHdr pkg
-  git_ "fetch" []
   brs <- localBranches False
   branches <- getRequestedBranches brs breq
-  newbranches <- filterExistingBranchRequests branches
-  unless (null newbranches) $ do
-    mbidsession <- bzReviewSession
-    urls <- forM newbranches $ \ br -> do
-      when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
-      when multiple $ putStr (unPackage pkg ++ " ")
-      when (length branches > 1) $ putStr (show br)
-      -- Can timeout like this:
-      -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
-      -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
-      u <- fedpkg "request-branch" [show br]
-      putStrLn $ ' ' : u
-      return u
-    whenJust mbidsession $ \(bid,session) ->
-      commentBug session bid $ unlines urls
+  unless (null branches) $ do
+    gitFetchSilent
+    brs' <- localBranches False
+    branches' <- getRequestedBranches brs' (Branches branches)
+    whenM (havePkgAccess pkg) $ do
+      newbranches <- filterExistingBranchRequests branches'
+      unless (null newbranches) $ do
+        mbidsession <- bzReviewSession
+        urls <- forM newbranches $ \ br -> do
+          when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
+          when multiple $ putStr (unPackage pkg)
+          when (length branches' > 1) $ putStr (show br)
+          -- Can timeout like this:
+          -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
+          -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
+          u <- fedpkg "request-branch" [show br]
+          putStrLn $ ' ' : u
+          return u
+        whenJust mbidsession $ \(bid,session) ->
+          commentBug session bid $ unlines urls
   where
-    lookupKeyElems k o =
-      lookupKey' k o ::
-#if MIN_VERSION_aeson(2,0,0)
-        M.KeyMap [String]
-#else
-        M.HashMap Text [String]
-#endif
+    -- doRequestBr :: Bool -> Branch -> IO String
+    -- doRequestBr multibr br = do
+    --   when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
+    --   when multiple $ putStr (unPackage pkg ++ " ")
+    --   when multibr $ putStr (show br)
+    --   -- Can timeout like this:
+    --   -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
+    --   -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
+    --   u <- fedpkg "request-branch" [show br]
+    --   putStrLn $ ' ' : u
+    --   return $ show br +-+ u
 
     filterExistingBranchRequests :: [Branch] -> IO [Branch]
     filterExistingBranchRequests branches = do
@@ -116,3 +114,25 @@ requestPkgBranches multiple mock breq pkg = do
         putStrLn $ "Branch request already exists for " ++ unPackage pkg ++ ":" ++ show br
         mapM_ printScmIssue pending
       return $ null pending
+
+havePkgAccess :: Package -> IO Bool
+havePkgAccess pkg = do
+  -- check have access
+  fasid <- fasIdFromKrb
+  epkginfo <- pagureProjectInfo srcfpo ("rpms" </> unPackage pkg)
+  case epkginfo of
+    Left err -> error' err
+    Right pkginfo -> do
+      -- FIXME exclude unprivileged roles
+      let access = fasid `elem` concat (lookupKeyElems "access_users" pkginfo)
+      unless access $
+        warning $ "-" +-+ fasid +-+ "does not have access to" +-+ unPackage pkg
+      return access
+  where
+    lookupKeyElems k o =
+      lookupKey' k o ::
+#if MIN_VERSION_aeson(2,0,0)
+        M.KeyMap [String]
+#else
+        M.HashMap Text [String]
+#endif
