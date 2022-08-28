@@ -4,6 +4,8 @@ module Cmd.Merge (
   getNewerBranch)
 where
 
+import Control.Applicative ((<|>))
+
 import Common
 import Common.System
 
@@ -21,13 +23,13 @@ mergeCmd noprompt mfrom =
       error' "merge only defined for release branches"
     runMergeBranch _pkg (RelBranch br) = do
       exists <- gitSwitchBranch' br
-      when exists $ do
-        from <- maybe (getNewerBranch br) return mfrom
-        when (from == br) $
-          error' "cannot merge branch to itself"
-        gitMergeOrigin br
-        unmerged <- mergeable from br
-        mergeBranch False noprompt unmerged from br
+      when exists $
+        whenJustM (return mfrom <|> getNewerBranch br) $ \from -> do
+          when (from == br) $
+            error' "cannot merge branch to itself"
+          gitMergeOrigin br
+          unmerged <- mergeable from br
+          mergeBranch False noprompt unmerged from br
 
 -- FIXME maybe require local branch already here
 mergeable :: Branch -> Branch -> IO (Bool,[String])
@@ -81,6 +83,6 @@ mergeBranch build noprompt (False,unmerged) from br = do
     else conflictPrompt unmerged $ "Press Enter to skip merge" ++ (if build then " and build" else "") ++ "; or give a ref or 'HEAD' to attempt merge"
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
-  whenJust mmerge $ \ ref -> do
+  whenJust mmerge $ \ ref ->
     git_ "merge" [ref]
     git_ "rebase" []

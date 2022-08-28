@@ -83,13 +83,15 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
     case buildoptMerge opts of
       Just False -> return False
       Just True -> do
-        newer <- getNewerBranch br
-        mergeBranch True True (ancestor,unmerged) newer br >> return True
+        whenJustM (getNewerBranch br) $ \newer ->
+          mergeBranch True True (ancestor,unmerged) newer br
+        return True
       Nothing ->
         if ancestor && (newrepo || tty)
         then do
-          newer <- getNewerBranch br
-          mergeBranch True False (ancestor,unmerged) newer br >> return True
+          whenJustM (getNewerBranch br) $ \newer ->
+            mergeBranch True False (ancestor,unmerged) newer br
+          return True
         else do
           unless (br == Rawhide) $
             putStrLn "newer branch is not ancestor"

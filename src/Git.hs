@@ -61,17 +61,19 @@ gitMergeable origin br = do
       else putStrLn $ "current branch" +-+ "is diverged from" +-+ show br
   return (ancestor, commits)
 
-getNewerBranch :: Branch -> IO Branch
-getNewerBranch Rawhide = return Rawhide
+getNewerBranch :: Branch -> IO (Maybe Branch)
+getNewerBranch Rawhide = return Nothing
 getNewerBranch br = do
   branches <- fedoraBranches (localBranches False)
   let newer = newerBranch br branches
   return $
-    if newer > br then newer
-    -- FIXME? this can be dropped with next fedora-dists
-    else case elemIndex br branches of
-           Just i -> branches !! (i - 1)
-           Nothing -> error' $ show br ++ ": branch not found"
+    if newer > br
+    then Just newer
+    else Nothing
+    -- -- FIXME? this can be dropped with next fedora-dists
+    -- else case elemIndex br branches of
+    --        Just i -> branches !! (i - 1)
+    --        Nothing -> error' $ show br ++ ": branch not found"
 
 gitMergeOrigin :: Branch -> IO ()
 gitMergeOrigin br = do
@@ -89,9 +91,11 @@ newerMergeable br =
   if br == Rawhide
   then return (False,[])
   else do
-    newer <- getNewerBranch br
+    mnewer <- getNewerBranch br
     locals <- localBranches True
-    gitMergeable (show newer `notElem` locals) newer
+    case mnewer of
+      Just newer -> gitMergeable (show newer `notElem` locals) newer
+      Nothing -> return (False,[])
 
 gitShortLog :: String -> IO [String]
 gitShortLog range =
