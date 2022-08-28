@@ -61,8 +61,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
     [p] -> withExistingDirectory p $
            parallelBranches p branches
     _ ->
-      forM_ branches $ \ rbr -> do
+      forM_ branches $ \rbr -> do
       forM_ pkgs $ \p ->
+        when (mmerge /= Just False) $
         withExistingDirectory p $ mergeNewerBranch p rbr
       allLayers <- dependencyLayers pkgs
       let layers = drop firstlayer allLayers
