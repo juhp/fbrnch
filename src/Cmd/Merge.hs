@@ -85,4 +85,3 @@ mergeBranch build noprompt (False,unmerged) from br = do
   gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ ref ->
     git_ "merge" [ref]
-    git_ "rebase" []

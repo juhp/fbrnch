@@ -78,12 +78,11 @@ getNewerBranch br = do
 gitMergeOrigin :: Branch -> IO ()
 gitMergeOrigin br = do
   (ancestor,commits) <- gitMergeable True br
-  if ancestor then
+  when ancestor $
     unless (null commits) $ do
-    rebase <- git "rebase" []
-    unless ("Already up to date." `isPrefixOf` rebase) $
-      putStr rebase
-    else git_ "rebase" []
+    pull <- git "pull" []
+    unless ("Already up to date." `isPrefixOf` pull) $
+      putStr pull
 
 -- FIXME maybe require local branch already here
 newerMergeable :: Branch -> IO (Bool,[String])
