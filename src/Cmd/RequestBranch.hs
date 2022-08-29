@@ -63,8 +63,8 @@ requestPkgBranches multiple mock breq pkg = do
         mbidsession <- bzReviewSession
         urls <- forM newbranches $ \ br -> do
           when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
-          when multiple $ putStr (unPackage pkg)
-          when (length branches' > 1) $ putStr (show br)
+          when multiple $ putStr $ unPackage pkg ++ " "
+          when (length branches' > 1) $ putStr $ show br ++ " "
           -- 1. Can timeout like this:
           -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
           -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
@@ -77,7 +77,7 @@ requestPkgBranches multiple mock breq pkg = do
           -- your request.</p> [...]
           -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
           u <- fedpkg "request-branch" [show br]
-          putStrLn $ ' ' : u
+          putStrLn u
           return u
         whenJust mbidsession $ \(bid,session) ->
           commentBug session bid $ unlines urls
