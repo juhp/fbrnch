@@ -101,7 +101,8 @@ requestPkgBranches multiple mock breq pkg = do
           fasid <- fasIdFromKrb
           erecent <- pagureListProjectIssueTitlesStatus "pagure.io"
                      "releng/fedora-scm-requests"
-                     [makeItem "author" fasid, makeItem "status" "all"]
+                     [makeItem "author" fasid, makeItem "status" "all",
+                      makeItem "per_page" "100"]
           case erecent of
             Left err -> error' err
             Right recent -> filterM (notExistingRequest recent) newbranches

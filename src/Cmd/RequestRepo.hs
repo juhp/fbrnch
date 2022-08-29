@@ -76,7 +76,11 @@ requestRepo mock retry breq pkg = do
     existingRepoRequests :: IO [IssueTitleStatus]
     existingRepoRequests = do
       fasid <- fasIdFromKrb
-      erecent <- pagureListProjectIssueTitlesStatus pagureio "releng/fedora-scm-requests" [makeItem "author" fasid, makeItem "status" "all"]
+      erecent <-
+        pagureListProjectIssueTitlesStatus pagureio
+        "releng/fedora-scm-requests"
+        [makeItem "author" fasid, makeItem "status" "all",
+         makeItem "per_page" "100"]
       case erecent of
         Left err -> error' err
         Right recent ->
