@@ -65,8 +65,16 @@ requestPkgBranches multiple mock breq pkg = do
           when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
           when multiple $ putStr (unPackage pkg)
           when (length branches' > 1) $ putStr (show br)
-          -- Can timeout like this:
+          -- 1. Can timeout like this:
           -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
+          -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
+          -- &
+          -- 2. Can fail like this:
+          -- Could not execute request_branch: The following error occurred while trying to get the active release branches in PDC: <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+          -- <title>500 Internal Server Error</title>
+          -- <p>The server encountered an internal error or
+          -- misconfiguration and was unable to complete
+          -- your request.</p> [...]
           -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
           u <- fedpkg "request-branch" [show br]
           putStrLn $ ' ' : u
