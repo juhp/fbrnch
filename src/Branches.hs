@@ -226,7 +226,7 @@ getRequestedBranches existing breq = do
   case breq of
     Branches brs -> if null brs
                     then branchingPrompt activenew
-                    else return brs
+                    else return $ [b | b <- brs, b `elem` activenew]
     BranchOpt request -> do
       let requested = case request of
                         AllBranches -> activenew
