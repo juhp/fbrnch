@@ -47,7 +47,13 @@ requestPkgBranches multiple mock breq pkg = do
     putPkgHdr pkg
   brs <- localBranches False
   branches <- getRequestedBranches brs breq
-  unless (null branches) $ do
+  if null branches
+    then do
+    when multiple $ putStr $ unPackage pkg ++ " "
+    case breq of
+      Branches [_] -> putStrLn "exists"
+      _ -> putStrLn "branches exist"
+    else do
     gitFetchSilent
     brs' <- localBranches False
     branches' <- getRequestedBranches brs' (Branches branches)
