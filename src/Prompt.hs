@@ -43,11 +43,13 @@ refPrompt :: [String] -> String -> IO (Maybe (Maybe String))
 refPrompt commits txt = do
   let commitrefs = tail $ map (head . words) commits
   ref <- prompt txt
-  if null ref then return (Just Nothing) else
-    if lower ref == "no" then return Nothing
-    else if ref `elem` commitrefs
-      then return $ Just (Just ref)
-      else refPrompt commits txt
+  case lower ref of
+    "" -> return $ Just Nothing
+    "no" -> return Nothing
+    "n" -> return Nothing
+    _ -> if ref `elem` commitrefs
+         then return $ Just (Just ref)
+         else refPrompt commits txt
 
 -- FIXME also include branch
 conflictPrompt :: [String] -> String -> IO (Maybe String)
