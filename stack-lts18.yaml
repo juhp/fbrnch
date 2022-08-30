@@ -4,3 +4,4 @@ extra-deps:
   - bugzilla-redhat-1.0.0
   - rpm-nvr-0.1.2
   - rpmbuild-order-0.4.8
+  - simple-cmd-args-0.1.8
