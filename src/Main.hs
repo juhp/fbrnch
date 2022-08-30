@@ -274,7 +274,8 @@ main = do
       <*> branchesPackages
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranchesCmd
-      <$> mockOpt False
+      <$> switchWith 'q' "quiet" "Just output package name"
+      <*> mockOpt False
       <*> branchesPackages
     , Subcommand "find-review" "Find package review bug" $
       findReview

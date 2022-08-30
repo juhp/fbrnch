@@ -25,30 +25,31 @@ import Package
 import Pagure
 
 -- FIXME option to do koji scratch build instead of mock
-requestBranchesCmd :: Bool -> (BranchesReq,[String]) -> IO ()
-requestBranchesCmd mock (breq, ps) = do
+requestBranchesCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
+requestBranchesCmd quiet mock (breq, ps) = do
   if null ps
     then do
     isPkgGit <- isPkgGitSshRepo
     if isPkgGit
-      then getDirectoryName >>= requestPkgBranches False mock breq . Package
+      then getDirectoryName >>= requestPkgBranches quiet False mock breq . Package
       else do
       pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
-      mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches (length pkgs > 1) mock breq (Package p)) pkgs
+      mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches quiet (length pkgs > 1) mock breq (Package p)) pkgs
     else
     forM_ ps $ \ p ->
     withExistingDirectory p $ do
     pkg <- getDirectoryName
-    requestPkgBranches (length ps > 1) mock breq (Package pkg)
+    requestPkgBranches quiet (length ps > 1) mock breq (Package pkg)
 
-requestPkgBranches :: Bool -> Bool -> BranchesReq -> Package -> IO ()
-requestPkgBranches multiple mock breq pkg = do
+requestPkgBranches :: Bool -> Bool -> Bool -> BranchesReq -> Package -> IO ()
+requestPkgBranches quiet multiple mock breq pkg = do
   when (breq == Branches []) $
     putPkgHdr pkg
   brs <- localBranches False
   branches <- getRequestedBranches brs breq
   if null branches
-    then do
+    then
+    unless quiet $ do
     when multiple $ putStr $ unPackage pkg ++ " "
     case breq of
       Branches [_] -> putStrLn "exists"
