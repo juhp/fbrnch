@@ -94,7 +94,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           return True
         else do
           unless (br == Rawhide) $
-            putStrLn "newer branch is not ancestor"
+            putStrLn "no newer branch can be merged"
           return False
   let spec = packageSpec pkg
   checkForSpecFile spec
