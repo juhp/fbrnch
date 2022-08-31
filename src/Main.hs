@@ -88,6 +88,9 @@ main = do
       <$> switchWith 'c' "count" "Print number of packages"
       <*> optional packagerOpt
       <*> many (pkgArg "PKGPAT...")
+    , Subcommand "list-local" "List packages in branch" $
+      listLocalCmd
+      <$> maybeBranchPackages True
     , Subcommand "branches" "List package branches" $
       branchesCmd
       <$> switchWith 'd' "skip-dead" "Skip if dead.package exists"
