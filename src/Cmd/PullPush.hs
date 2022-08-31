@@ -56,7 +56,7 @@ fetchPkgs args =
   where
     fetchPkg :: Package -> AnyBranch -> IO ()
     fetchPkg _pkg _br =
-      gitFetchSilent
+      gitFetchSilent False
 
 pushPkgs :: (BranchesReq, [String]) -> IO ()
 pushPkgs =

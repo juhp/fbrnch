@@ -647,7 +647,7 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
             _ -> when (fetch || header /= HeaderNone) $ putPkgHdr pkg
         when haveGit $
           when (have gitOptClean) checkWorkingDirClean
-        when fetch gitFetchSilent
+        when fetch $ gitFetchSilent False
         -- FIXME!! no branch restriction
         when (breq `elem` map BranchOpt [AllBranches,AllFedora,AllEPEL]) $
           putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"

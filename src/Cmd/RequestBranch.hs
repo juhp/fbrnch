@@ -55,7 +55,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
       Branches [_] -> putStrLn "exists"
       _ -> putStrLn "branches exist"
     else do
-    gitFetchSilent
+    gitFetchSilent True
     brs' <- localBranches False
     branches' <- getRequestedBranches brs' (Branches branches)
     whenM (havePkgAccess pkg) $ do

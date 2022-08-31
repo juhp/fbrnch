@@ -138,11 +138,11 @@ gitRepoName :: IO String
 gitRepoName =
   dropSuffix ".git" . takeFileName <$> git "remote" ["get-url", "origin"]
 
--- FIXME flag for really silent?
-gitFetchSilent :: IO ()
-gitFetchSilent = do
+gitFetchSilent :: Bool -> IO ()
+gitFetchSilent quiet = do
   name <- gitRepoName
-  putStr $ "git fetching " ++ name ++ "... "
+  unless quiet $
+    putStr $ "git fetching " ++ name ++ "... "
   (ok, out, err) <- cmdFull "git" ["fetch"] ""
   unless (null out) $ putStrLn out
   unless ok $ error' err
@@ -150,9 +150,9 @@ gitFetchSilent = do
         [] -> []
         (hd:tl) -> filter (/= "Already up to date.") $
                    if "From " `isPrefixOf` hd then tl else hd:tl
-  putStrLn $ if null filtered
-             then "done"
-             else "\n" ++ intercalate "\n" filtered
+  if null filtered
+    then unless quiet $ putStrLn "done"
+    else putStrLn $ "\n" ++ intercalate "\n" filtered
 
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
@@ -219,7 +219,7 @@ gitSwitchBranch br = do
       exists <- checkIfRemoteBranchExists br
       if exists
       then return True
-      else gitFetchSilent >> checkIfRemoteBranchExists br
+      else gitFetchSilent False >> checkIfRemoteBranchExists br
     if not remotebranch
       then do
       name <- getDirectoryName
@@ -228,8 +228,8 @@ gitSwitchBranch br = do
       git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]
 
 -- similar to gitSwitchBranch but does not error
-gitSwitchBranch' :: Branch -> IO Bool
-gitSwitchBranch' br = do
+gitSwitchBranch' :: Bool -> Branch -> IO Bool
+gitSwitchBranch' quiet br = do
   localbranches <- gitLines "branch" ["--format=%(refname:short)"]
   if show br `elem` localbranches
     then do
@@ -244,7 +244,7 @@ gitSwitchBranch' br = do
       if exists
         then return True
         -- FIXME this is redundant if we already fetched (eg for merge cmd)
-        else gitFetchSilent >> checkIfRemoteBranchExists (RelBranch br)
+        else gitFetchSilent quiet >> checkIfRemoteBranchExists (RelBranch br)
     if not remotebranch
       then do
       name <- getDirectoryName
