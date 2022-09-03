@@ -25,6 +25,7 @@ data ScratchOption = ScratchBuild | ScratchTask Int | SkipScratch
   deriving Eq
 
 -- FIXME add --dependent pkgreview
+-- FIXME verify tarball is same as upstream
 createReview :: ScratchOption -> Bool -> [FilePath] -> IO ()
 createReview scratchOpt mock pkgs =
   withPackagesByBranches HeaderMust False Nothing Zero createPkgReview (Branches [], pkgs)

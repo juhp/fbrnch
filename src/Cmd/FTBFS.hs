@@ -18,6 +18,7 @@ data FTBFSBugs = FtbfsUser (Maybe String) | FtbfsSubstring String
 
 -- FIXME option for status filter
 -- FIXME check arch
+-- FIXME ask resolution
 ftbfsCmd :: Bool -> Bool -> Maybe FTBFSBugs -> (Maybe Branch, [FilePath])
          -> IO ()
 ftbfsCmd dryrun short mbugsopt (mbr,pkgs) = do

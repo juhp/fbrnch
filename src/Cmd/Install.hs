@@ -12,7 +12,6 @@ import Git
 import Package
 import Prompt
 
--- FIXME package countdown
 -- FIXME --ignore-uninstalled subpackages
 -- FIXME --skip-unavailable
 -- FIXME --check any/all of package installed

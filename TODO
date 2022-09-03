@@ -21,10 +21,9 @@
 
 # new commands
 - 'unpushed' command, etc (from f-h-t)
-- 'push'
 - 'check-sources'
 - worktree support
-- 'update-sources'
+? 'update-sources'
 - 'clean-old-source-dirs' (--threshold SIZE)
 - 'chain'
 - 'check-deps'

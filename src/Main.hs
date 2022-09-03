@@ -413,6 +413,7 @@ main = do
             [br] -> (Just br,pkgs)
             _ -> error' $ "cannot have more than one branch: " ++ unwords (map show brs)
 
+    -- FIXME split later to prevent branches after packages
     branchesPackages :: Parser (BranchesReq, [String])
     branchesPackages =
       branchesReqPkgs <$> branchesOpt <*> many (pkgArg "BRANCH... PKGPATH...")
