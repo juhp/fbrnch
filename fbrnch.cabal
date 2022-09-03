@@ -89,6 +89,7 @@ executable fbrnch
                        ListReviews
                        Package
                        Pagure
+                       Patch
                        Paths_fbrnch
                        Prompt
                        Repoquery

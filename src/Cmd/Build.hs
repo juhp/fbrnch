@@ -84,13 +84,13 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       Just False -> return False
       Just True -> do
         whenJustM (getNewerBranch br) $ \newer ->
-          mergeBranch True True (ancestor,unmerged) newer br
+          mergeBranch True True False (ancestor,unmerged) newer br
         return True
       Nothing ->
         if ancestor && (newrepo || tty)
         then do
           whenJustM (getNewerBranch br) $ \newer ->
-            mergeBranch True False (ancestor,unmerged) newer br
+            mergeBranch True False True (ancestor,unmerged) newer br
           return True
         else do
           unless (br == Rawhide) $
@@ -108,13 +108,13 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       when (not merged || br == Rawhide) $ do
         putStrLn $ nvr ++ "\n"
         putStrLn "Local commits:"
-        mapM_ putStrLn unpushed
+        displayCommits True unpushed
         putStrLn ""
       -- see mergeBranch for: unmerged == 1 (774b5890)
       if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
         then do
         refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
-        else return $ Just Nothing
+        else return $ Just $ commitRef $ head unpushed
   let dryrun = buildoptDryrun opts
   buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
   let msidetagTarget = buildoptSidetagTarget opts
@@ -147,9 +147,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       whenJustM (kojiGetBuildTaskID fedoraHub nvr) kojiWatchTask
       -- FIXME do override
     _ -> do
-      mbuildref <- case mpush of
-        Nothing -> Just <$> git "show-ref" ["--hash", "origin/" ++ show br]
-        _ -> return $ join mpush
+      mbuildref <-
+        case mpush of
+          Nothing -> Just <$> git "show-ref" ["--hash", "origin/" ++ show br]
+          _ -> return mpush
       opentasks <- kojiOpenTasks pkg mbuildref target
       case opentasks of
         [task] -> do
@@ -182,11 +183,11 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                         prompt_ "Press Enter to continue"
                       return False
             unless dryrun krbTicket
-            whenJust mpush $ \ mref ->
+            whenJust mpush $ \ref ->
               unless dryrun $
-              gitPushSilent $ fmap (++ ":" ++ show br) mref
+              gitPushSilent $ Just $ ref ++ ":" ++ show br
             unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
-              when (mpush == Just Nothing && not dryrun) $
+              when (isJust mpush && not dryrun) $
               error' "Unpushed changes remain"
             unless (buildoptAllowDirty opts) $
               unlessM isGitDirClean $

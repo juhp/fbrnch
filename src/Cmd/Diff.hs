@@ -10,6 +10,7 @@ import Common
 import Common.System
 import Git
 import Package
+import Patch
 
 data DiffFormat =
   DiffDefault | DiffContext Int | DiffMinimal | DiffStatus | DiffStats
@@ -84,21 +85,7 @@ diffCmd speconly work fmt quiet mpatt mwbr =
             mapM_ putStrLn diffout
         where
           simplifyDiff :: DiffFormat -> [String] -> [String]
-          simplifyDiff DiffMinimal ds =
-            (maybeRemoveDiffGit . filterCommon) ds
-            where
-              filterCommon =
-                -- flist is from swish
-                let flist fs a = map ($ a) fs in
-                filter (not . or . flist (map isPrefixOf ["--- a/", "+++ b/", "index ", "@@ -"]))
-
-              maybeRemoveDiffGit ls =
-                let spec = unPackage pkg <.> "spec"
-                    specDiffGit = "diff --git a/" ++ spec ++ " b/" ++ spec
-                    gitDiffs = filter ("diff --git a/" `isPrefixOf`) ls in
-                  if gitDiffs == [specDiffGit]
-                  then delete specDiffGit ls
-                  else ls
+          simplifyDiff DiffMinimal ds = simplifyMinimalDiff ds
           -- drop "2 files changed, 113 insertions(+)"
           simplifyDiff DiffStats ds = if null ds then ds else init ds
           simplifyDiff _ ds = ds

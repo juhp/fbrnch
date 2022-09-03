@@ -53,7 +53,7 @@ statusBranch pkg rbr@(RelBranch br) = do
         Nothing -> do
           putStrLn "undefined NVR!\n"
           putStr "HEAD "
-          gitShortLog1 Nothing >>= putStrLn
+          whenJustM (gitShortLog1 Nothing) $ putStrLn . showCommit
         Just nvr -> do
           -- unless (br == Rawhide) $ do
           --   newerBr <- newerBranch br <$> getFedoraBranches
@@ -64,7 +64,8 @@ statusBranch pkg rbr@(RelBranch br) = do
           --       putStrLn $ "Newer commits in " ++ show newerBr ++ ":"
           --       mapM_ putStrLn unmerged
           unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
-          if null unpushed then do
+          if null unpushed
+            then do
             mbuild <- kojiGetBuildID fedoraHub nvr
             case mbuild of
               Nothing -> do
@@ -102,7 +103,7 @@ statusBranch pkg rbr@(RelBranch br) = do
                             putAge diff
                       _ -> putStrLn "More than one update found!"
                 putStrLn ""
-            else putStrLn $ show br ++ ": " ++ unpushed
+            else whenJust unpushed $ putStrLn . ((show br ++ ": ") ++) . showCommit
   where
     isStable :: [String] -> Bool
     isStable = not . all ("-testing" `isSuffixOf`)

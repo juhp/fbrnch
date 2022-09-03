@@ -119,9 +119,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       (ancestor,unmerged) <- newerMergeable br
       when (ancestor && not (null unmerged)) $
         putStrLn $ "Checking " ++ desc ++ ":"
-      unless dryrun $ do
-        whenJustM (getNewerBranch br) $ \newer ->
-          mergeBranch True (mmerge == Just True) (ancestor,unmerged) newer br
+      unless dryrun $
+        whenJustM (getNewerBranch br) $ \newer -> do
+        mergeBranch True (mmerge == Just True) False (ancestor,unmerged) newer br
         putStrLn ""
 
     -- FIXME time builds or layers
@@ -195,21 +195,19 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       gitSwitchBranch (RelBranch br)
       pkg <- getPackageName pkgdir
       putPkgBrnchHdr pkg br
-      unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
-      unless (null unpushed) $
-        mapM_ putStrLn unpushed
       let spec = packageSpec pkg
       checkForSpecFile spec
+      nvr <- pkgNameVerRel' br spec
+      unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+      unless (null unpushed) $ do
+        putStrLn $ nvr ++ " (" ++ target ++ ")"
+        putNewline
+        displayCommits True unpushed
       unless (null unpushed) $ do
         checkSourcesMatch spec
         unless dryrun $
           gitPushSilent Nothing
-      nvr <- pkgNameVerRel' br spec
-      putNewline
-      putStrLn $ nvr ++ " (" ++ target ++ ")"
       changelog <- unlines <$> getChangelog spec
-      when (null unpushed) $
-        putStrLn changelog
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
@@ -238,6 +236,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               kojiWaitTaskAndRepo (isNothing mlatest) nvr task
               return (nvr,changelog)
         _ -> do
+          when (null unpushed) $ do
+            putStrLn $ nvr ++ " (" ++ target ++ ")"
+            putNewline
+            putStrLn changelog
           buildref <- git "show-ref" ["--hash", "origin/" ++ show br]
           opentasks <- kojiOpenTasks pkg (Just buildref) target
           case opentasks of

@@ -77,6 +77,8 @@ main = do
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd
       <$> nopromptOpt
+      <*> optional (optionWith auto 's' "skip-bumps" "NUM" "Max num of rebuild commits to ignore [default 0]")
+      <*> switchWith 'a' "show-all" "List all commits [default first 20]"
       <*> optional (optionWith branchM 'f' "from" "BRANCH" "Branch to merge from [default newer]")
       <*> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $

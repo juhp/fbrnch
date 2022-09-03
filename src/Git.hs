@@ -12,6 +12,9 @@ module Git (
   gitFetchSilent,
   gitPushSilent,
   gitRepoName,
+  Commit(commitRef,commitLog),
+  showCommit,
+  displayCommits,
   gitShortLog,
   gitShortLogN,
   gitShortLog1,
@@ -25,9 +28,12 @@ module Git (
   isGitDirClean,
   checkIfRemoteBranchExists,
   CommitOpt (..),
+  refPrompt,
+  conflictPrompt,
   module SimpleCmd.Git
   ) where
 
+import Data.Char (isSpace)
 import SimpleCmd.Git
 
 import Branches
@@ -44,7 +50,7 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
-gitMergeable :: Bool -> Branch -> IO (Bool,[String])
+gitMergeable :: Bool -> Branch -> IO (Bool,[Commit])
 gitMergeable origin br = do
   let ref = (if origin then "origin/" else "") ++ show br
   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
@@ -85,7 +91,7 @@ gitMergeOrigin br = do
       putStr pull
 
 -- FIXME maybe require local branch already here
-newerMergeable :: Branch -> IO (Bool,[String])
+newerMergeable :: Branch -> IO (Bool,[Commit])
 newerMergeable br =
   if br == Rawhide
   then return (False,[])
@@ -96,35 +102,51 @@ newerMergeable br =
       Just newer -> gitMergeable (show newer `notElem` locals) newer
       Nothing -> return (False,[])
 
-gitShortLog :: String -> IO [String]
+data Commit = Commit
+              { commitRef :: String,
+                commitLog :: String,
+                commitDate :: String }
+
+showCommit :: Commit -> String
+showCommit c =
+  commitRef c +-+ commitLog c +-+ "(" ++ commitDate c ++ ")"
+
+
+displayCommits :: Bool -> [Commit] -> IO ()
+displayCommits showall =
+  mapM_ putStrLn . showAll showall . map showCommit
+  where
+    showAll :: Bool -> [String] -> [String]
+    showAll False cs =
+      if length cs > 20 then take 20 cs ++ [":"] else cs
+    showAll True cs = cs
+
+gitShortLog :: String -> IO [Commit]
 gitShortLog range =
-  map simplifyCommitLog <$> gitLines "log" ["--pretty=reference", range]
+  map mkCommit <$> gitLines "log" ["--pretty=reference", range]
 
-gitShortLogN :: Int -> Maybe String -> IO [String]
+gitShortLogN :: Int -> Maybe String -> IO [Commit]
 gitShortLogN num mrange =
-  map simplifyCommitLog <$> gitLines "log" (["--max-count=" ++ show num, "--pretty=reference"] ++ maybeToList mrange)
+  map mkCommit <$> gitLines "log" (["--max-count=" ++ show num, "--pretty=reference"] ++ maybeToList mrange)
 
-gitShortLog1 :: Maybe String -> IO String
-gitShortLog1 mrange =
-  simplifyCommitLog <$> git "log" (["--max-count=1", "--pretty=reference"] ++ maybeToList mrange)
+gitShortLog1 :: Maybe String -> IO (Maybe Commit)
+gitShortLog1 mrange = do
+  cs <- git "log" (["--max-count=1", "--pretty=reference"] ++ maybeToList mrange)
+  return $
+    if null cs
+    then Nothing
+    else Just $ mkCommit cs
 
 -- FIXME currently no-op with --format=reference
-simplifyCommitLog :: String -> String
-simplifyCommitLog = unwords . shortenHash . words
-  where
-    shortenHash :: [String] -> [String]
-    shortenHash [] = []
-    shortenHash (h:cs) = take 8 h : simplifyLog cs
-
-    simplifyLog [] = []
-    -- remove leading '('
-    simplifyLog (w:ws) =
-      case ws of
-        [] -> error "malformed changelog"
-        [_] -> init (tail w) : map ('(' :) ws
-        _ ->
-          let (mid,end) = splitAt (length ws - 2) ws
-          in tail w : mid ++ [init (head end),'(' : last end]
+mkCommit :: String -> Commit
+mkCommit cs =
+  case word1 cs of
+    ("",_) -> error' "empty commit log line!"
+    (hash,rest) ->
+      case breakEnd isSpace rest of
+        -- "(msg txt, date)"
+        (plogcs,datep) ->
+          Commit hash (init $ tail $ trim plogcs) (init datep)
 
 gitPushSilent :: Maybe String -> IO ()
 gitPushSilent mref = do
@@ -259,3 +281,36 @@ checkIfRemoteBranchExists br =
   gitBool "show-ref" ["--verify", "--quiet", "refs/remotes/origin/" ++ show br]
 
 data CommitOpt = CommitMsg String | CommitAmend
+
+-- FIXME select ref by number
+refPrompt :: [Commit] -> String -> IO (Maybe String)
+refPrompt commits txt = do
+  case map commitRef commits of
+    [] -> error' "empty commits list"
+    (c:cs) -> do
+      ref <- prompt txt
+      case lower ref of
+        "" -> return $ Just c
+        "no" -> return Nothing
+        "n" -> return Nothing
+        _ ->
+          case find (ref `isPrefixOf`) cs of
+            Just cref -> return $ Just cref
+            Nothing -> refPrompt commits txt
+
+-- FIXME also include branch
+conflictPrompt :: [Commit] -> String -> IO (Maybe String)
+conflictPrompt commits txt = do
+  case map commitRef commits of
+    [] -> error' "empty commits list"
+    commitrefs@(c:_) -> do
+      ref <- prompt txt
+      if null ref
+        then return Nothing
+        else
+        if ref `elem` commitrefs
+        then return $ Just ref
+        else
+          if lower ref == "head"
+          then return $ Just c
+          else conflictPrompt commits txt

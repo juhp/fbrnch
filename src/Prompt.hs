@@ -1,8 +1,6 @@
 module Prompt (
   prompt,
-  prompt_,
-  refPrompt,
-  conflictPrompt
+  prompt_
   ) where
 
 import Data.Char (isPrint)
@@ -37,28 +35,3 @@ prompt s = do
 
 prompt_ :: String -> IO ()
 prompt_ = void <$> prompt
-
--- FIXME select ref by number
-refPrompt :: [String] -> String -> IO (Maybe (Maybe String))
-refPrompt commits txt = do
-  let commitrefs = tail $ map (head . words) commits
-  ref <- prompt txt
-  case lower ref of
-    "" -> return $ Just Nothing
-    "no" -> return Nothing
-    "n" -> return Nothing
-    _ -> if ref `elem` commitrefs
-         then return $ Just (Just ref)
-         else refPrompt commits txt
-
--- FIXME also include branch
-conflictPrompt :: [String] -> String -> IO (Maybe String)
-conflictPrompt commits txt = do
-  let commitrefs = map (head . words) commits
-  ref <- prompt txt
-  if null ref then return Nothing
-    else if ref `elem` commitrefs
-      then return $ Just ref
-      else if lower ref == "head"
-           then return $ Just $ head commitrefs
-           else conflictPrompt commits txt

@@ -64,5 +64,5 @@ pushPkgs =
   where
     pushPkg :: Package -> AnyBranch -> IO ()
     pushPkg _pkg _br = do
-      gitShortLog1 Nothing >>= putStrLn
+      whenJustM (gitShortLog1 Nothing) $ putStrLn . showCommit
       gitPushSilent Nothing
