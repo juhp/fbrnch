@@ -15,9 +15,9 @@ import Git
 import Package
 import Patch
 
-mergeCmd :: Bool -> Maybe Natural -> Bool -> Maybe Branch
+mergeCmd :: Bool -> Bool -> Maybe Natural -> Bool -> Maybe Branch
          -> (BranchesReq,[String]) -> IO ()
-mergeCmd noprompt mnotrivial showall mfrom =
+mergeCmd dryrun noprompt mnotrivial showall mfrom =
   withPackagesByBranches HeaderMay False cleanGitFetchActive AnyNumber runMergeBranch
   where
     runMergeBranch :: Package -> AnyBranch -> IO ()
@@ -29,10 +29,11 @@ mergeCmd noprompt mnotrivial showall mfrom =
         whenJustM (return mfrom <|> getNewerBranch br) $ \from -> do
           when (from == br) $
             error' "cannot merge branch to itself"
-          gitMergeOrigin br
+          unless dryrun $
+            gitMergeOrigin br
           (ancestor,unmerged) <- mergeable from br
           unmerged' <- filterOutTrivial mnotrivial unmerged
-          mergeBranch False noprompt showall (ancestor,unmerged') from br
+          mergeBranch dryrun False noprompt showall (ancestor,unmerged') from br
       where
         filterOutTrivial :: Maybe Natural -> [Commit] -> IO [Commit]
         filterOutTrivial Nothing cs = return cs
@@ -55,11 +56,12 @@ mergeable from _ = do
   gitMergeable (show from `notElem` locals) from
 
 -- FIXME return merged ref
-mergeBranch :: Bool -> Bool -> Bool -> (Bool,[Commit]) -- (ancestor,unmerged)
+mergeBranch :: Bool -> Bool -> Bool -> Bool
+            -> (Bool,[Commit]) -- (ancestor,unmerged)
             -> Branch -> Branch -> IO ()
-mergeBranch _ _ _ _ _ Rawhide = return ()
-mergeBranch _ _ _ (_,[]) _ _ = return ()
-mergeBranch build noprompt showall (True, unmerged) from br = do
+mergeBranch _ _ _ _ _ _ Rawhide = return ()
+mergeBranch _ _ _ _ (_,[]) _ _ = return ()
+mergeBranch dryrun build noprompt showall (True, unmerged) from br = do
   isnewrepo <- initialPkgRepo
   putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show from ++ ":"
   displayCommits showall unmerged
@@ -80,8 +82,9 @@ mergeBranch build noprompt showall (True, unmerged) from br = do
     locals <- localBranches True
     unless (show from `elem` locals) $
       git_ "fetch" ["origin", show from ++ ":" ++ show from]
-    git_ "merge" ["--quiet", ref]
-mergeBranch build noprompt showall (False,unmerged) from br = do
+    unless dryrun $
+      git_ "merge" ["--quiet", ref]
+mergeBranch dryrun build noprompt showall (False,unmerged) from br = do
   putStrLn $ show from ++ " branch is not directly mergeable:"
   displayCommits False unmerged
   putStrLn ""
@@ -95,4 +98,5 @@ mergeBranch build noprompt showall (False,unmerged) from br = do
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ ref ->
+    unless dryrun $
     git_ "merge" [ref]
