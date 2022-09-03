@@ -32,6 +32,6 @@ waitrepoCmd dryrun fetch msidetagTarget = do
       gitSwitchBranch rbr
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
-      target <- targetMaybeSidetag br msidetagTarget
+      target <- targetMaybeSidetag dryrun br msidetagTarget
       timeIO $
         kojiWaitRepo dryrun True target nvr

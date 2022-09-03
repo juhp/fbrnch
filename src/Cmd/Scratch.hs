@@ -35,9 +35,10 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts msidetagTarget mref (
       when (not pkggit && breq == Branches [] && isNothing msidetagTarget) $
         error' "please specify a branch or target for non dist-git"
       spec <- localBranchSpecFile pkg br
-      target <- if isNothing msidetagTarget
-                then return (anyTarget br)
-                else targetMaybeSidetag (onlyRelBranch br) msidetagTarget
+      target <-
+        if isNothing msidetagTarget
+        then return (anyTarget br)
+        else targetMaybeSidetag dryrun (onlyRelBranch br) msidetagTarget
       putStrLn $ "Target: " ++ target
       archs <-
         case marchopts of

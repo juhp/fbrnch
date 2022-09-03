@@ -119,7 +119,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
   let msidetagTarget = buildoptSidetagTarget opts
       mwaitrepo = buildoptWaitrepo opts
-  target <- targetMaybeSidetag br msidetagTarget
+  target <- targetMaybeSidetag dryrun br msidetagTarget
   case buildstatus of
     Just BuildComplete -> do
       putStrLn $ nvr ++ " is already built"

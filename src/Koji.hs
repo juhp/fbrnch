@@ -246,8 +246,8 @@ maybeTimeout secs act = do
       maybeTimeout (secs + 5) act
     Just res -> return res
 
-targetMaybeSidetag :: Branch -> Maybe SideTagTarget -> IO String
-targetMaybeSidetag br msidetagTarget =
+targetMaybeSidetag :: Bool -> Branch -> Maybe SideTagTarget -> IO String
+targetMaybeSidetag dryrun br msidetagTarget =
   case msidetagTarget of
     Nothing -> return $ branchTarget br
     Just (Target t) -> return t
@@ -256,14 +256,18 @@ targetMaybeSidetag br msidetagTarget =
       case tags of
         [] -> do
           Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (show br)
-          out <- head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
+          out <-
+            if dryrun
+            then return $ "Side tag '" ++ buildtag ++ "-dryrun'"
+            else head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
           if "Side tag '" `isPrefixOf` out
             then do
             putStrLn out
             let sidetag =
                   init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
             putStrLn $ "waiting for " ++ sidetag ++ " repo"
-            cmd_ "koji" ["wait-repo", sidetag]
+            unless dryrun $
+              cmd_ "koji" ["wait-repo", sidetag]
             return sidetag
             else error' "'fedpkg request-side-tag' failed"
         [tag] -> return tag
