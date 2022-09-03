@@ -54,7 +54,6 @@ module Package (
   notInstalled,
   pkgInstalled,
   rpmInstalled,
-  repoquery,
   equivNVR,
   nameOfNVR
   ) where
@@ -792,23 +791,6 @@ rpmInstalled rpm =
 pkgInstalled :: String -> IO Bool
 pkgInstalled pkg =
   cmdBool "rpm" ["--quiet", "-q", pkg]
-
-repoquery :: Branch -> Branch -> [String] -> IO String
-repoquery sysbr br args = do
-  let brOpts =
-        if sysbr == br
-        then []
-        else
-          case br of
-            Rawhide -> ["--disablerepo=*", "--enablerepo=rawhide"]
-            Fedora _ -> ["--disablerepo=*", "--enablerepo=fedora",
-                         "--enablerepo=updates",
-                         "--releasever=" ++ branchVersion br]
-            EPEL _ -> ["--disablerepo=*", "--enablerepo=epel",
-                         "--releasever=" ++ branchVersion br]
-            EPELNext _ -> ["--disablerepo=*", "--enablerepo=epel-next",
-                         "--releasever=" ++ branchVersion br]
-  cmd "dnf" (["repoquery", "--quiet"] ++ brOpts ++ args)
 
 -- FIXME should be more strict about dist tag (eg .fcNN only)
 equivNVR :: String -> String -> Bool

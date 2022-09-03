@@ -11,6 +11,7 @@ import Common.System
 import Git
 import Package
 import Prompt
+import Repoquery
 
 -- FIXME --ignore-uninstalled subpackages
 -- FIXME --skip-unavailable

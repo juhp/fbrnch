@@ -4,7 +4,7 @@ where
 
 import Branches
 import Common.System
-import Package
+import Repoquery
 
 import qualified Data.List as L
 

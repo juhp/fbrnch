@@ -91,6 +91,7 @@ executable fbrnch
                        Pagure
                        Paths_fbrnch
                        Prompt
+                       Repoquery
                        Types
 
   hs-source-dirs:      src
