@@ -18,28 +18,42 @@ import Common.System
 
 import Branches
 import Bugzilla
+import Cmd.SrcDeps (srcDeps)
 import Git
 import Krb
 import ListReviews
 import Package
 import Pagure
+import Prompt (prompt_)
 
 -- FIXME option to do koji scratch build instead of mock
-requestBranchesCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
-requestBranchesCmd quiet mock (breq, ps) = do
+requestBranchesCmd :: Bool -> Maybe Branch -> Bool -> (BranchesReq,[String]) -> IO ()
+requestBranchesCmd quiet mrecursebr mock (breq, ps) = do
   if null ps
     then do
+    when (isJust mrecursebr) $
+      error' "please specify a package dir when using --recurse-deps"
     isPkgGit <- isPkgGitSshRepo
     if isPkgGit
-      then getDirectoryName >>= requestPkgBranches quiet False mock breq . Package
+      then
+      getDirectoryName >>= requestPkgBranches quiet False mock breq . Package
       else do
       pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches quiet (length pkgs > 1) mock breq (Package p)) pkgs
-    else
-    forM_ ps $ \ p ->
-    withExistingDirectory p $ do
-    pkg <- getDirectoryName
-    requestPkgBranches quiet (length ps > 1) mock breq (Package pkg)
+    else do
+    pkgs <-
+      case mrecursebr of
+        Just br -> do
+          deps <- concat <$> srcDeps False (br,ps)
+          putStrLn $ unwords deps
+          unless quiet $
+            prompt_ "\nPress Enter to check these packages for branches"
+          return deps
+        Nothing -> return ps
+    forM_ pkgs $ \ p ->
+      withExistingDirectory p $ do
+      pkg <- getDirectoryName
+      requestPkgBranches quiet (length pkgs > 1) mock breq (Package pkg)
 
 requestPkgBranches :: Bool -> Bool -> Bool -> BranchesReq -> Package -> IO ()
 requestPkgBranches quiet multiple mock breq pkg = do
@@ -55,6 +69,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
       Branches [_] -> putStrLn "exists"
       _ -> putStrLn "branches exist"
     else do
+    when multiple $ putStr $ unPackage pkg ++ " "
     gitFetchSilent True
     brs' <- localBranches False
     branches' <- getRequestedBranches brs' (Branches branches)
@@ -64,7 +79,6 @@ requestPkgBranches quiet multiple mock breq pkg = do
         mbidsession <- bzReviewSession
         urls <- forM newbranches $ \ br -> do
           when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
-          when multiple $ putStr $ unPackage pkg ++ " "
           when (length branches' > 1) $ putStr $ show br ++ " "
           -- 1. Can timeout like this:
           -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
@@ -142,7 +156,7 @@ havePkgAccess pkg = do
       -- FIXME exclude unprivileged roles
       let access = fasid `elem` concat (lookupKeyElems "access_users" pkginfo)
       unless access $
-        warning $ "-" +-+ fasid +-+ "does not have access to" +-+ unPackage pkg
+        warning $ "-" +-+ fasid +-+ "does not have access"
       return access
   where
     lookupKeyElems k o =
