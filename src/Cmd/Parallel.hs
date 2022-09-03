@@ -93,7 +93,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
-      (failures,nvrclogs) <- watchJobs [] [] jobs
+      (failures,nvrclogs) <- watchJobs Nothing [] [] jobs
       -- switch back to the original branch
       when (length brs /= 1) $
         gitSwitchBranch currentbranch
@@ -109,7 +109,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         setupBranch br = do
           target <- targetMaybeSidetag dryrun br msidetagTarget
           when (mmerge /= Just False) $ mergeNewerBranch (show br) br
-          job <- startBuild False False target br "." >>= async
+          job <- startBuild Nothing 0 False False target br "." >>= async
           unless dryrun $ sleep 3
           return (show br,job)
 
@@ -142,10 +142,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         in case layerspkgs of
              [l] -> plural l "package"
              _ -> show layerspkgs ++ " packages"
-      jobs <- mapM setupBuild layer
+      jobs <- zipWithM setupBuild (reverse [0..(length layer - 1)]) layer
       when (null jobs) $
         error' "No jobs run"
-      (failures,nvrs) <- watchJobs [] [] jobs
+      (failures,nvrs) <- watchJobs (Just layernum) [] [] jobs
       -- FIXME prompt to continue?
       if null failures
         then return nvrs
@@ -162,35 +162,35 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         nopkgs = length layer
         layersleft = length nextLayers
 
-        setupBuild :: String -> IO Job
-        setupBuild pkg = do
-          job <- startBuild (layersleft > 0) (nopkgs > 5) target br pkg
+        setupBuild :: Int -> String -> IO Job
+        setupBuild n pkg = do
+          job <- startBuild (Just layernum) n (layersleft > 0) (nopkgs > 5) target br pkg
                  >>= async
-          unless dryrun $ sleep 3
+          unless dryrun $ sleep 4
           return (pkg,job)
 
     -- (failures,successes)
-    watchJobs :: [String] -> [(String,String)] -> [Job]
+    watchJobs :: Maybe Int -> [String] -> [(String,String)] -> [Job]
               -> IO ([String],[(String,String)])
-    watchJobs fails results [] = return (fails,results)
-    watchJobs fails results (job:jobs) = do
+    watchJobs _ fails results [] = return (fails,results)
+    watchJobs mlayer fails results (job:jobs) = do
       status <- poll (snd job)
       case status of
-        Nothing -> sleep 1 >> watchJobs fails results (jobs ++ [job])
+        Nothing -> sleep 1 >> watchJobs mlayer fails results (jobs ++ [job])
         -- (nvr,changelog)
         Just (Right result) -> do
-          putStrLn $ color Yellow (fst result) ++ " job completed (" ++ show (length jobs) ++ " left in layer)"
-          watchJobs fails (result:results) jobs
+          putStrLn $ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer
+          watchJobs mlayer fails (result:results) jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
-          putStrLn $ "** " ++ color Magenta pkg ++ " job " ++ color Magenta "failed" ++ " ** (" ++ show (length jobs) ++ " left in layer)"
-          watchJobs (pkg : fails) results jobs
+          putStrLn $ "** " ++ color Magenta pkg +-+ "job" +-+ color Magenta "failed" ++ " ** (" ++ plural (length jobs) "job" +-+ "left in layer" +-+ maybe "" show mlayer ++ ")"
+          watchJobs mlayer (pkg : fails) results jobs
 
     -- FIXME prefix output with package name
-    startBuild :: Bool -> Bool -> String -> Branch -> String
-               -> IO (IO (String,String))
-    startBuild morelayers background target br pkgdir =
+    startBuild :: Maybe Int -> Int ->  Bool -> Bool -> String -> Branch
+               -> String -> IO (IO (String,String))
+    startBuild mlayer n morelayers background target br pkgdir =
       withExistingDirectory pkgdir $ do
       gitSwitchBranch (RelBranch br)
       pkg <- getPackageName pkgdir
@@ -200,7 +200,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       nvr <- pkgNameVerRel' br spec
       unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $ do
-        putStrLn $ nvr ++ " (" ++ target ++ ")"
+        putStrLn $ nvr ++ " (" ++ target ++ ")" +-+ show n +-+ "more" +-+
+          maybe "" (\l -> "in layer" +-+ show l) mlayer
         putNewline
         displayCommits True unpushed
       unless (null unpushed) $ do
@@ -237,7 +238,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               return (nvr,changelog)
         _ -> do
           when (null unpushed) $ do
-            putStrLn $ nvr ++ " (" ++ target ++ ")"
+            putStrLn $ nvr ++ " (" ++ target ++ ")" +-+ show n +-+ "more" +-+
+              maybe "" (\l -> "in layer" +-+ show l) mlayer
             putNewline
             putStrLn changelog
           buildref <- git "show-ref" ["--hash", "origin/" ++ show br]
