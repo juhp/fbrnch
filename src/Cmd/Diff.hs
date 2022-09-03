@@ -13,7 +13,8 @@ import Package
 import Patch
 
 data DiffFormat =
-  DiffDefault | DiffContext Int | DiffMinimal | DiffStatus | DiffStats
+  DiffDefault | DiffContext Int | DiffMinimal | DiffStatus | DiffStats |
+  DiffQuiet
   deriving Eq
 
 data DiffWork =
@@ -27,9 +28,9 @@ data DiffFilter =
 
 -- FIXME diff other branches without switching
 -- FIXME --older/--newer branch
-diffCmd :: Bool -> DiffWork -> DiffFormat -> Bool -> Maybe DiffFilter -> Maybe AnyBranch
-        -> (Maybe Branch,[String]) -> IO ()
-diffCmd speconly work fmt quiet mpatt mwbr =
+diffCmd :: Bool -> DiffWork -> DiffFormat -> Bool -> Maybe DiffFilter
+        -> Maybe AnyBranch -> (Maybe Branch,[String]) -> IO ()
+diffCmd speconly work fmt ignorebumps mpatt mwbr =
   withPackagesMaybeBranch HeaderNone False dirtyGit diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
@@ -78,7 +79,8 @@ diffCmd speconly work fmt quiet mpatt mwbr =
         let diffout = (maybe id filterPattern mpatt . simplifyDiff fmt) diff
         -- FIXME: sometimes we may want to list even if diff but no diffout
         unless (null diffout) $
-          if quiet
+          unless (ignorebumps && isTrivialRebuildCommit diffout) $
+          if fmt == DiffQuiet
           then putStrLn $ unPackage pkg
           else do
             putPkgAnyBrnchHdr pkg br

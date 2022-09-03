@@ -180,7 +180,7 @@ main = do
       <$> switchWith 'o' "spec-only" "Only diff spec file"
       <*> diffWorkOpt
       <*> diffFormatOpt
-      <*> switchWith 'q' "quiet" "Just output package name"
+      <*> switchWith 'i' "ignore-bumps" "Ignore pure release bumps"
       <*> optional diffFilterOpt
       <*> optional (optionWith anyBranchM 'w' "with-branch" "BRANCH" "branch")
       <*> maybeBranchPackages False
@@ -519,7 +519,8 @@ main = do
       DiffContext <$> optionWith auto 'u' "unified" "CONTEXT" "Lines of context" <|>
       flagWith' DiffMinimal 'm' "minimal" "Minimize diff noise" <|>
       flagWith' DiffStatus 'n' "status" "Show diff --name-status" <|>
-      flagWith DiffDefault DiffStats 's' "stats" "Show diff --stat"
+      flagWith' DiffStats 's' "stats" "Show diff --stat" <|>
+      flagWith DiffDefault DiffQuiet 'q' "quiet" "Just output package name"
 
     diffFilterOpt :: Parser DiffFilter
     diffFilterOpt =
