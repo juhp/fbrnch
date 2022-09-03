@@ -1,3 +1,4 @@
-resolver: lts-19.16
+resolver: lts-19.30
 extra-deps:
   - fedora-dists-2.1.1
+  - rpmbuild-order-0.4.10

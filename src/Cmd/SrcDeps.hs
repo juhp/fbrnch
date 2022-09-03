@@ -25,7 +25,7 @@ srcDeps rev (rbr,pkgs) = do
     error' "please run from the directory containing the dependency package set"
   listDirectory "." >>=
     filterM checkPackage . filter ((/= '.') . head) >>=
-    fmap (topsortGraph Combine) . depsGraph rev [] False [] [] False Nothing pkgs
+    fmap (topsortGraph Combine) . depsGraphDeps rev [] False [] [] False Nothing pkgs
   where
     checkPackage :: FilePath -> IO Bool
     checkPackage p = do
