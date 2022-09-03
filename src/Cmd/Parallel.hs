@@ -132,7 +132,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       krbTicket
       putStrLn $ "\n= Building parallel layer #" ++ show layernum ++
         if nopkgs > 1
-        then " (" ++ show nopkgs ++ " packages):"
+        then " (" ++ show nopkgs +-+ "packages):"
         else ":"
       putStrLn $ unwords layer
       -- maybe print total pending packages
@@ -141,7 +141,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         let layerspkgs = map length nextLayers
         in case layerspkgs of
              [l] -> plural l "package"
-             _ -> show layerspkgs ++ " packages"
+             _ -> show layerspkgs +-+ "packages"
       jobs <- zipWithM setupBuild (reverse [0..(length layer - 1)]) layer
       when (null jobs) $
         error' "No jobs run"
@@ -151,9 +151,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         then return nvrs
         else do
         let pending = sum $ map length nextLayers
-        error' $ "Build failures in layer " ++ show layernum ++ ": " ++
+        error' $ "Build failures in layer" +-+ show layernum ++ ": " ++
           unwords failures ++ "\n\n" ++
-          show pending ++ " pending packages" ++
+          plural pending "pending package" ++
           if pending > 0
           then
           ":\n" ++ unwords (map unwords nextLayers)
@@ -217,7 +217,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       case buildstatus of
         Just BuildComplete -> do
           -- FIXME detect old stable existing build
-          putStrLn $ color Green nvr ++ " is " ++ color Green "already built"
+          putStrLn $ color Green nvr +-+ "is already" +-+ color Green "built"
           when (br /= Rawhide && morelayers && target == branchTarget br) $ do
             tags <- kojiNVRTags nvr
             unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
@@ -228,7 +228,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               kojiWaitRepo dryrun background target nvr
             return (nvr,changelog)
         Just BuildBuilding -> do
-          putStrLn $ nvr ++ " is already building"
+          putStrLn $ color Yellow nvr +-+ "is already" +-+ color Yellow "building"
           mtask <- kojiGetBuildTaskID fedoraHub nvr
           case mtask of
             Nothing -> error' $ "Task for " ++ nvr ++ " not found"
