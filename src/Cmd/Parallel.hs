@@ -82,7 +82,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           putStrLn ""
           putStrLn changelog
           input <- prompt "Press Enter to use above or input update summary now; or 'no' to skip update"
-          unless (trim (lower input) == "no" || dryrun) $
+          unless (trim (lower input) `elem` ["no","n"] || dryrun) $
             bodhiSidetagUpdate rbr (map fst nvrclogs) target $
             if null input then changelog else input
   where
