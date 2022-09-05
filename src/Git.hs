@@ -270,7 +270,8 @@ gitSwitchBranch' quiet br = do
     if not remotebranch
       then do
       name <- getDirectoryName
-      warning $ name ++ " " ++ show br ++ " branch does not exist!"
+      unless quiet $
+        warning $ name ++ " " ++ show br ++ " branch does not exist!"
       return False
       else do
       git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]
