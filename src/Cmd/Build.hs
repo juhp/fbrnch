@@ -101,7 +101,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   checkSourcesMatch spec
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   nvr <- pkgNameVerRel' br spec
-  putStrLn ""
+  putNewLn
   mpush <-
     if null unpushed then return Nothing
     else do
@@ -109,7 +109,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         putStrLn $ nvr ++ "\n"
         putStrLn "Local commits:"
         displayCommits True unpushed
-        putStrLn ""
+        putNewLn
       -- see mergeBranch for: unmerged == 1 (774b5890)
       if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
         then do

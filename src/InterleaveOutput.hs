@@ -17,6 +17,6 @@ cmdSilentBool c args = do
   (ret, out) <- readProcessInterleaved (proc c args)
   let ok = ret == ExitSuccess
   unless ok $ do
-    putNewline
+    putNewLn
     putStrLn (B.toString out)
   return ok

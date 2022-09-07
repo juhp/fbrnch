@@ -87,14 +87,14 @@ ftbfsCmd dryrun short mbugsopt (mbr,pkgs) = do
               case status of
                 BuildFailed -> do
                   cmdLog "koji-tool" ["tasks", "-T", "-s", "fail", "-b", nvr]
-                  putChar '\n'
+                  putNewLn
                 BuildComplete -> do
                   if bugStatus bug `elem` ["NEW", "ASSIGNED", "POST"]
                   then do
                     when dryrun $ putBug bug
                     putBugBuild dryrun session (bugId bug) nvr
-                    putChar '\n'
+                    putNewLn
                   else do
                     putBugURLStatus bug
-                    putChar '\n'
+                    putNewLn
                 _ -> return ()

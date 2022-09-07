@@ -36,7 +36,7 @@ mockCmd dryrun mnoclean network mockshell mroot (breq, ps) = do
     mockBuildPkgs :: Bool -> [String] -> Branch -> IO ()
     mockBuildPkgs noswitch pkgs br = do
       srpms <- mapM (prepSrpm (RelBranch br)) pkgs
-      putStrLn ""
+      putNewLn
       rootBr <- maybe getReleaseBranch return mroot
       let resultdir =
             case srpms of

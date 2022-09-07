@@ -21,7 +21,7 @@ ownerCmd pkgs = do
     else do
     pkgowners <- mapM ownerPkg pkgs
     when (length pkgs > 1) $ do
-      putNewline
+      putNewLn
       let maintain = groupSort pkgowners
       forM_ maintain $ \(o,ps) ->
         putStrLn $ o ++ ": " ++ unwords (map unPackage ps)

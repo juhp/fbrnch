@@ -102,7 +102,7 @@ statusBranch pkg rbr@(RelBranch br) = do
                             let diff = diffUTCTime current since
                             putAge diff
                       _ -> putStrLn "More than one update found!"
-                putStrLn ""
+                putNewLn
             else whenJust unpushed $ putStrLn . ((show br ++ ": ") ++) . showCommit
   where
     isStable :: [String] -> Bool

@@ -87,7 +87,7 @@ mergeBranch dryrun build noprompt showall (True, unmerged) from br = do
 mergeBranch dryrun build noprompt showall (False,unmerged) from br = do
   putStrLn $ show from ++ " branch is not directly mergeable:"
   displayCommits False unmerged
-  putStrLn ""
+  putNewLn
   unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"

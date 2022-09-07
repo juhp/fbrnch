@@ -80,7 +80,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         unless (isNothing msidetagTarget) $
         when (target /= branchTarget rbr) $ do
         let changelog = intercalate "" $ renderChangelogs nvrclogs
-        putStrLn ""
+        putNewLn
         putStrLn changelog
         input <- prompt "Press Enter to use above or input update summary now; or 'no' to skip update"
         unless (trim (lower input) `elem` ["no","n"] || dryrun) $
@@ -123,7 +123,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       unless dryrun $
         whenJustM (getNewerBranch br) $ \newer -> do
         mergeBranch dryrun True (mmerge == Just True) False (ancestor,unmerged) newer br
-        putStrLn ""
+        putNewLn
 
     -- FIXME time builds or layers
     parallelBuild :: String -> Branch -> (Int,[[String]])
@@ -203,7 +203,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       unless (null unpushed) $ do
         putStrLn $ nvr ++ " (" ++ target ++ ")" +-+ show n +-+ "more" +-+
           maybe "" (\l -> "in layer" +-+ show l) mlayer
-        putNewline
+        putNewLn
         displayCommits True unpushed
       unless (null unpushed) $ do
         checkSourcesMatch spec
@@ -241,7 +241,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           when (null unpushed) $ do
             putStrLn $ nvr ++ " (" ++ target ++ ")" +-+ show n +-+ "more" +-+
               maybe "" (\l -> "in layer" +-+ show l) mlayer
-            putNewline
+            putNewLn
             putStrLn changelog
           buildref <- git "show-ref" ["--hash", "origin/" ++ show br]
           opentasks <- kojiOpenTasks pkg (Just buildref) target

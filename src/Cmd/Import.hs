@@ -35,7 +35,7 @@ importCmd mock (breq, ps) = do
       when (pkg /= takeFileName dir) $ do
         -- FIXME check git repo exists
         clonePkg True UserClone Nothing pkg
-        putStrLn ""
+        putNewLn
         setCurrentDirectory pkg
         -- FIXME: check branch is rawhide
       unlessM isGitRepo $ error' "Not a git repo"
@@ -47,13 +47,13 @@ importCmd mock (breq, ps) = do
         -- FIXME get session from importPkgs
         (bid,session) <- approvedReviewBugIdSession pkg
         putBugId bid
-        putStrLn ""
+        putNewLn
         comments <- getComments session bid
         mapM_ showComment comments
-        putStrLn ""
+        putNewLn
         putStr "Review bug: "
         putBugId bid
-        putStrLn ""
+        putNewLn
         prompt_ "Press Enter to continue"
         let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
         when (null srpms) $ error "No srpm urls found!"

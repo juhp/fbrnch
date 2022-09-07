@@ -49,10 +49,10 @@ requestRepo mock retry breq pkg = do
           error' "The last repo request was already successfully Processed"
       when (null requests || retry) $ do
         checkNoPagureRepo
-        putStrLn ""
+        putNewLn
         comments <- getComments session bid
         mapM_ showComment comments
-        putStrLn ""
+        putNewLn
         prompt_ "Press Enter to continue"
         -- FIXME check api key is still valid or open pagure ticket directly
         url <- fedpkg "request-repo" [pkg, show bid]
@@ -65,13 +65,13 @@ requestRepo mock retry breq pkg = do
         input <- prompt "Press Enter to post above comment, or input now"
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment
-        putStrLn ""
+        putNewLn
         branches <- getRequestedBranches [] breq
         forM_ branches $ \ br -> do
           when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
           putStr (show br ++ " ")
           fedpkg_ "request-branch" ["--repo", pkg, show br]
-        putStrLn ""
+        putNewLn
   where
     existingRepoRequests :: IO [IssueTitleStatus]
     existingRepoRequests = do
