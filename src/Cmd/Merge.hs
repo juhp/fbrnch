@@ -4,7 +4,6 @@ module Cmd.Merge (
   getNewerBranch)
 where
 
-import Control.Applicative ((<|>))
 import Numeric.Natural (Natural)
 
 import Common
@@ -25,8 +24,11 @@ mergeCmd dryrun noprompt mnotrivial showall mfrom =
       error' "merge only defined for release branches"
     runMergeBranch _pkg (RelBranch br) = do
       exists <- gitSwitchBranch' False br
-      when exists $
-        whenJustM (return mfrom <|> getNewerBranch br) $ \from -> do
+      when exists $ do
+        mfrom' <- if isJust mfrom
+                  then return mfrom
+                  else getNewerBranch br
+        whenJust mfrom' $ \from -> do
           when (from == br) $
             error' "cannot merge branch to itself"
           unless dryrun $
