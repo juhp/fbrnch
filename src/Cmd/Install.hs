@@ -6,6 +6,7 @@ module Cmd.Install (
 import Data.RPM
 
 import Branches
+import Cmd.Merge
 import Common
 import Common.System
 import Git
@@ -17,9 +18,9 @@ import Repoquery
 -- FIXME --skip-unavailable
 -- FIXME --check any/all of package installed
 -- FIXME add --debug or respect --verbose for dnf commands
-installCmd :: Bool -> Bool -> Maybe ForceShort -> [BCond] -> Bool
-           -> (Maybe Branch,[String]) -> IO ()
-installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
+installCmd :: Bool -> Bool -> Maybe Branch -> Maybe ForceShort -> [BCond]
+           -> Bool -> (Maybe Branch,[String]) -> IO ()
+installCmd verbose recurse mfrom mforceshort bconds reinstall (mbr, pkgs) = do
   when (recurse && isShortCircuit mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch (boolHeader (length pkgs > 1)) True Nothing ZeroOrOne installPkg (mbr, pkgs)
@@ -27,7 +28,12 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
       whenJust mbr $ gitSwitchBranch . RelBranch
-      spec <- localBranchSpecFile pkg br
+      spec <-
+        if isNothing mfrom
+        then localBranchSpecFile pkg br
+        else do
+          mergeCmd False True Nothing False mfrom (Branches [onlyRelBranch br], ["."])
+          localBranchSpecFile pkg br
       rpms <- builtRpms br spec
       -- removing arch
       let packages = map (readNVRA . takeFileName) rpms
@@ -50,7 +56,7 @@ installCmd verbose recurse mforceshort bconds reinstall (mbr, pkgs) = do
                 mpkgdir <- lookForPkgDir rbr ".." dep
                 case mpkgdir of
                   Nothing -> putStrLn $ dep ++ " not known"
-                  Just pkgdir -> installCmd verbose recurse mforceshort bconds reinstall (mbr, [pkgdir]) >> putStrLn ""
+                  Just pkgdir -> installCmd verbose recurse mfrom mforceshort bconds reinstall (mbr, [pkgdir]) >> putNewLn
               -- FIXME option to enable/disable installing missing deps
             else installDeps True spec
           wasbuilt <- buildRPMs (not verbose) False mforceshort' bconds rpms br spec

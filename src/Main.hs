@@ -212,6 +212,7 @@ main = do
       installCmd
       <$> switchWith 'v' "verbose" "verbose rpmbuild output"
       <*> switchWith 'R' "recurse" "build and install missing deps packages"
+      <*> optional (optionLongWith branchM "from" "BRANCH" "Merge branch first")
       <*> optional forceshortOpt
       <*> many bcondOpt
       <*> switchWith 'r' "reinstall" "reinstall rpms"
