@@ -216,6 +216,7 @@ main = do
       <*> optional forceshortOpt
       <*> many bcondOpt
       <*> switchWith 'r' "reinstall" "reinstall rpms"
+      <*> switchWith 'a' "all-subpackages" "install all subpackages (default if none currently installed)"
       <*> maybeBranchPackages False
     , Subcommand "not-installed" "Packages not installed locally" $
       notInstalledCmd

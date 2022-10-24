@@ -52,8 +52,8 @@ module Package (
   pkgNameVerRel',
   buildRequires,
   notInstalled,
+  nvraInstalled,
   pkgInstalled,
-  rpmInstalled,
   equivNVR,
   nameOfNVR
   ) where
@@ -784,8 +784,8 @@ notInstalled :: String -> IO Bool
 notInstalled pkg =
   not <$> cmdBool "rpm" ["--quiet", "-q", "--whatprovides", pkg]
 
-rpmInstalled :: NVRA -> IO Bool
-rpmInstalled rpm =
+nvraInstalled :: NVRA -> IO Bool
+nvraInstalled rpm =
   cmdBool "rpm" ["--quiet", "-q", showNVRA rpm]
 
 pkgInstalled :: String -> IO Bool
