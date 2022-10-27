@@ -131,7 +131,7 @@ main = do
       <*> rebuildSrpmOpt
       <*> noFailFastOpt
       <*> optional archesOpt
-      <*> optional (sidetagTargetOpt Nothing)
+      <*> many (sidetagTargetOpt Nothing)
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
     , Subcommand "scratch-aarch64" "Koji aarch64 scratch build of package" $
@@ -139,7 +139,7 @@ main = do
       <$> dryrunOpt
       <*> rebuildSrpmOpt
       <*> switchWith 'X' "exclude-arch" "Exclude aarch64"
-      <*> optional (sidetagTargetOpt Nothing)
+      <*> many (sidetagTargetOpt Nothing)
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
     , Subcommand "scratch-x86_64" "Koji x86_64 scratch build of package" $
@@ -147,7 +147,7 @@ main = do
       <$> dryrunOpt
       <*> rebuildSrpmOpt
       <*> switchWith 'X' "exclude-arch" "Exclude x86_64"
-      <*> optional (sidetagTargetOpt Nothing)
+      <*> many (sidetagTargetOpt Nothing)
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
     , Subcommand "update" "Update package in dist-git to newer version" $

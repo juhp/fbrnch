@@ -15,13 +15,13 @@ import Koji
 import Package
 import Types (Archs(..),SideTagTarget)
 
--- FIXME allow multiple --target's (parallel too)
+-- FIXME allow parallel targets
 -- FIXME tail build.log for failure
 -- FIXME append timestamp after %release (to help identify scratch builds)
 scratchCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Archs
-           -> Maybe SideTagTarget -> Maybe String -> (BranchesReq, [String])
+           -> [SideTagTarget] -> Maybe String -> (BranchesReq, [String])
            -> IO ()
-scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts msidetagTarget mref (breq,pkgs) =
+scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets mref (breq,pkgs) =
   withPackagesByBranches HeaderMust False Nothing AnyNumber scratchBuild (breq,pkgs)
   where
     anyTarget (RelBranch b) = branchTarget b
@@ -32,38 +32,39 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts msidetagTarget mref (
       when (isJust mref && length pkgs > 1) $
         error' "--ref is not supported for multiple packages"
       pkggit <- isPkgGitRepo
-      when (not pkggit && breq == Branches [] && isNothing msidetagTarget) $
+      when (not pkggit && breq == Branches [] && null sidetagTargets) $
         error' "please specify a branch or target for non dist-git"
       spec <- localBranchSpecFile pkg br
-      target <-
-        if isNothing msidetagTarget
-        then return (anyTarget br)
-        else targetMaybeSidetag dryrun (onlyRelBranch br) msidetagTarget
-      putStrLn $ "Target: " ++ target
-      archs <-
-        case marchopts of
-          Nothing -> return []
-          Just archopts ->
-            case archopts of
-              Archs as -> return as
-              ExcludedArchs as -> do
-                Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
-                tagArchs <- kojiTagArchs buildtag
-                return $ tagArchs \\ as
-      if stagger
-        then do
-        archlist <-
-          if null archs
+      targets <-
+        if null sidetagTargets
+        then return [anyTarget br]
+        else mapM (targetMaybeSidetag dryrun (onlyRelBranch br) . Just) sidetagTargets
+      forM_ targets $ \target -> do
+        putStrLn $ "Target: " ++ target
+        archs <-
+          case marchopts of
+            Nothing -> return []
+            Just archopts ->
+              case archopts of
+                Archs as -> return as
+                ExcludedArchs as -> do
+                  Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
+                  tagArchs <- kojiTagArchs buildtag
+                  return $ tagArchs \\ as
+        if stagger
           then do
-            Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
-            tagArchs <- kojiTagArchs buildtag
-            -- prioritize preferred archs
-            return $ nub $ priorityArchs ++ tagArchs
-          else return $ nub $ filter (`elem` archs) priorityArchs ++ archs
-        forM_ archlist $ \arch -> do
-          putStrLn $ arch ++ " scratch build"
-          doScratchBuild pkggit spec target [arch]
-        else doScratchBuild pkggit spec target archs
+          archlist <-
+            if null archs
+            then do
+              Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
+              tagArchs <- kojiTagArchs buildtag
+              -- prioritize preferred archs
+              return $ nub $ priorityArchs ++ tagArchs
+            else return $ nub $ filter (`elem` archs) priorityArchs ++ archs
+          forM_ archlist $ \arch -> do
+            putStrLn $ arch ++ " scratch build"
+            doScratchBuild pkggit spec target [arch]
+          else doScratchBuild pkggit spec target archs
       where
         priorityArchs = ["x86_64", "aarch64", "ppc64le"]
 
@@ -99,12 +100,12 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts msidetagTarget mref (
               void $ generateSrpm (Just br) spec >>= kojiScratchBuild target kojiargs
 
 -- FIXME default -X to --no-fastfail?
-scratchCmdX86_64 :: Bool -> Bool -> Bool -> Maybe SideTagTarget
+scratchCmdX86_64 :: Bool -> Bool -> Bool -> [SideTagTarget]
                  -> Maybe String -> (BranchesReq, [String]) -> IO ()
 scratchCmdX86_64 dryrun rebuildSrpm excludeArch =
   scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["x86_64"]))
 
-scratchCmdAarch64 :: Bool -> Bool -> Bool -> Maybe SideTagTarget
+scratchCmdAarch64 :: Bool -> Bool -> Bool -> [SideTagTarget]
                   -> Maybe String -> (BranchesReq, [String]) -> IO ()
 scratchCmdAarch64 dryrun rebuildSrpm excludeArch =
   scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["aarch64"]))
