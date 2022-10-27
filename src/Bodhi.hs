@@ -156,7 +156,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
                 warning "overriding update type with 'newpackage'"
               putStrLn $ "Creating Bodhi Update for " ++ unwords nvrs ++ ":"
               -- FIXME check for Bodhi URL to confirm update
-              cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ nvrs)
+              cmd_ "bodhi" (["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [intercalate "," nvrs])
               return True
         when updatedone $ do
           -- FIXME avoid this if we know the update URL
