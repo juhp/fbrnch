@@ -185,7 +185,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         Just (Left except) -> do
           print except
           let pkg = fst job
-          putStrLn $ "** " ++ color Magenta pkg +-+ "job" +-+ color Magenta "failed" ++ " ** (" ++ plural (length jobs) "job" +-+ "left in layer" +-+ maybe "" show mlayer ++ ")"
+          putStrLn $ "** " ++ color Magenta pkg +-+ "job" +-+ color Magenta "failed" ++ " ** (" ++ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer ++ ")"
           watchJobs mlayer (pkg : fails) results jobs
 
     -- FIXME prefix output with package name
