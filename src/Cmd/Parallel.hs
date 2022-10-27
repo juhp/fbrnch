@@ -25,8 +25,11 @@ import Package
 import Prompt
 import Types
 
--- (pkg, nvr)
-type Job = (String, Async (String,String))
+data JobDone = JobDone {jobNvr :: String,
+                        jobBranch :: Branch,
+                        _jobClog :: String
+                       }
+type JobAsync = (String, Async JobDone)
 
 -- FIXME print koji url of failed process or use koji-tool
 -- FIXME option to build multiple packages over branches in parallel
@@ -84,7 +87,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         putStrLn changelog
         input <- prompt "Press Enter to use above or input update summary now; or 'no' to skip update"
         unless (trim (lower input) `elem` ["no","n"] || dryrun) $
-          bodhiSidetagUpdate rbr (map fst nvrclogs) target $
+          bodhiSidetagUpdate rbr (map jobNvr nvrclogs) target $
           if null input then changelog else input
   where
     parallelBranches :: FilePath -> [Branch] -> IO ()
@@ -103,10 +106,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       when (isNothing msidetagTarget) $ do
         pkg <- getPackageName pkgdir
         let spec = packageSpec pkg
-        bodhiUpdate dryrun mupdate Nothing False spec $ map fst nvrclogs
+        bodhiUpdate dryrun mupdate Nothing False spec $
+          map jobNvr $ filter ((/= Rawhide) . jobBranch) nvrclogs
       where
         -- FIXME time jobs
-        setupBranch :: Branch -> IO Job
+        setupBranch :: Branch -> IO JobAsync
         setupBranch br = do
           target <- targetMaybeSidetag dryrun br msidetagTarget
           when (mmerge /= Just False) $ mergeNewerBranch (show br) br
@@ -127,7 +131,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
 
     -- FIXME time builds or layers
     parallelBuild :: String -> Branch -> (Int,[[String]])
-                  -> IO [(String,String)]
+                  -> IO [JobDone]
     parallelBuild _ _ (_,[]) = return [] -- should not reach here
     parallelBuild target br (layernum, layer:nextLayers) =  do
       krbTicket
@@ -163,16 +167,15 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         nopkgs = length layer
         layersleft = length nextLayers
 
-        setupBuild :: Int -> String -> IO Job
+        setupBuild :: Int -> String -> IO JobAsync
         setupBuild n pkg = do
           job <- startBuild (Just layernum) n (layersleft > 0) (nopkgs > 5) target br pkg
                  >>= async
           unless dryrun $ sleep 4
           return (pkg,job)
 
-    -- (failures,successes)
-    watchJobs :: Maybe Int -> [String] -> [(String,String)] -> [Job]
-              -> IO ([String],[(String,String)])
+    watchJobs :: Maybe Int -> [String] -> [JobDone] -> [JobAsync]
+              -> IO ([String],[JobDone]) -- (failures,successes)
     watchJobs _ fails results [] = return (fails,results)
     watchJobs mlayer fails results (job:jobs) = do
       status <- poll (snd job)
@@ -190,7 +193,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
 
     -- FIXME prefix output with package name
     startBuild :: Maybe Int -> Int ->  Bool -> Bool -> String -> Branch
-               -> String -> IO (IO (String,String))
+               -> String -> IO (IO JobDone)
     startBuild mlayer n morelayers background target br pkgdir =
       withExistingDirectory pkgdir $ do
       gitSwitchBranch (RelBranch br)
@@ -227,7 +230,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           return $ do
             when morelayers $
               kojiWaitRepo dryrun background target nvr
-            return (nvr,changelog)
+            return $ JobDone nvr br changelog
         Just BuildBuilding -> do
           putStrLn $ color Yellow nvr +-+ "is already" +-+ color Yellow "building"
           mtask <- kojiGetBuildTaskID fedoraHub nvr
@@ -236,7 +239,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
             Just task ->
               return $ do
               kojiWaitTaskAndRepo (isNothing mlatest) nvr task
-              return (nvr,changelog)
+              return $ JobDone nvr br changelog
         _ -> do
           when (null unpushed) $ do
             putStrLn $ nvr ++ " (" ++ target ++ ")" +-+ show n +-+ "more" +-+
@@ -250,7 +253,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               putStrLn $ nvr ++ " task is already open"
               return $ do
                 kojiWaitTaskAndRepo (isNothing mlatest) nvr task
-                return (nvr,changelog)
+                return $ JobDone nvr br changelog
             (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
             [] -> do
               if equivNVR nvr (fromMaybe "" mlatest)
@@ -259,12 +262,12 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                 else do
                 -- FIXME parse build output
                 if dryrun
-                  then return $ return (nvr,"<changelog>")
+                  then return $ return $ JobDone nvr br "<changelog>"
                   else do
                   task <- kojiBuildBranchNoWait target pkg Nothing $ "--fail-fast" : ["--background" | background]
                   return $ do
                     kojiWaitTaskAndRepo (isNothing mlatest) nvr task
-                    return (nvr,changelog)
+                    return $ JobDone nvr br changelog
       where
         kojiWaitTaskAndRepo :: Bool -> String -> TaskID -> IO ()
         kojiWaitTaskAndRepo newpkg nvr task = do
@@ -289,10 +292,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
             kojiWaitRepo dryrun background target nvr
 
     -- FIXME map nvr to package?
-    renderChangelogs :: [(String,String)] -> [String]
+    renderChangelogs :: [JobDone] -> [String]
     renderChangelogs [] = []
-    renderChangelogs ((nvr,clog):nvrclogs) =
-      unlines [nvr, "", clog] : renderChangelogs nvrclogs
+    renderChangelogs ((JobDone nvr _ clog):jobs) =
+      unlines [nvr, "", clog] : renderChangelogs jobs
 
     -- FIXME how to catch authentication errors?
     bodhiSidetagUpdate :: Branch -> [String] -> String -> String -> IO ()
