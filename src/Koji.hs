@@ -107,10 +107,11 @@ kojiBuild' wait target args = do
   -- [ERROR] koji: AuthError: unable to obtain a session
   -- readCreateProcess: koji "build" "--nowait" "f33-build-side-25385" "--fail-fast" "--background" ... (exit 1): failed
   (ret,out) <- readProcessStdout $ proc "koji" $ ["build", "--nowait", target] ++ args
-    -- for srpm: drop uploading line until doing tee
-    -- for git: drop "Created task: "
-    -- init to drop final newline
-  logMsg $ (B.unpack . B.init . B.unlines . tail . B.lines) out
+  -- for srpm: drop uploading line until doing tee
+  -- for git: drop "Created task: "
+  -- init to drop final newline
+  unless (B.null out) $
+    logMsg $ (B.unpack . B.init . B.unlines . tail . B.lines) out
   if ret == ExitSuccess then do
     let kojiurl = B.unpack $ last $ B.words out
         task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
