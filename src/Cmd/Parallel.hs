@@ -67,7 +67,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       forM_ branches $ \rbr -> do
       forM_ pkgs $ \p ->
         when (mmerge /= Just False) $
-        withExistingDirectory p $ mergeNewerBranch p rbr
+        withExistingDirectory p $ mergeNewerBranch rbr
       allLayers <- dependencyLayers pkgs
       let layers = drop firstlayer allLayers
       when (isNothing msidetagTarget && length allLayers > 1) $
@@ -96,7 +96,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       currentbranch <- gitCurrentBranch
       putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
       putStrLn $ unwords $ map show brs
-      jobs <- mapM setupBranch brs
+      pkg <- getPackageName pkgdir
+      jobs <- mapM (setupBranch pkg) brs
       (failures,nvrclogs) <- timeIO $ watchJobs Nothing [] [] jobs
       -- switch back to the original branch
       when (length brs /= 1) $
@@ -104,30 +105,27 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       unless (null failures) $
         error' $ "Build failures: " ++ unwords failures
       when (isNothing msidetagTarget) $ do
-        pkg <- getPackageName pkgdir
         let spec = packageSpec pkg
         bodhiUpdate dryrun mupdate Nothing False spec $
           map jobNvr $ filter ((/= Rawhide) . jobBranch) nvrclogs
       where
         -- FIXME time jobs
-        setupBranch :: Branch -> IO JobAsync
-        setupBranch br = do
+        setupBranch :: Package -> Branch -> IO JobAsync
+        setupBranch pkg br = do
+          putPkgBrnchHdr pkg br
           target <- targetMaybeSidetag dryrun br msidetagTarget
-          when (mmerge /= Just False) $ mergeNewerBranch (show br) br
-          job <- startBuild Nothing 0 False False target br "." >>= async
+          when (mmerge /= Just False) $ mergeNewerBranch br
+          job <- startBuild Nothing 0 False False target pkg br "." >>= async
           unless dryrun $ sleep 3
           return (show br,job)
 
-    mergeNewerBranch :: String -> Branch -> IO ()
-    mergeNewerBranch desc br = do
+    mergeNewerBranch :: Branch -> IO ()
+    mergeNewerBranch br = do
       gitSwitchBranch (RelBranch br)
       (ancestor,unmerged) <- newerMergeable br
-      when (ancestor && not (null unmerged)) $
-        putStrLn $ "Checking " ++ desc ++ ":"
       unless dryrun $
         whenJustM (getNewerBranch br) $ \newer -> do
         mergeBranch dryrun True (mmerge == Just True) False (ancestor,unmerged) newer br
-        putNewLn
 
     -- FIXME time builds or layers
     parallelBuild :: String -> Branch -> (Int,[[String]])
@@ -168,11 +166,13 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         layersleft = length nextLayers
 
         setupBuild :: Int -> String -> IO JobAsync
-        setupBuild n pkg = do
-          job <- startBuild (Just layernum) n (layersleft > 0) (nopkgs > 5) target br pkg
+        setupBuild n dir = do
+          pkg <- getPackageName dir
+          putPkgBrnchHdr pkg br
+          job <- startBuild (Just layernum) n (layersleft > 0) (nopkgs > 5) target pkg br dir
                  >>= async
           unless dryrun $ sleep 4
-          return (pkg,job)
+          return (unPackage pkg,job)
 
     watchJobs :: Maybe Int -> [String] -> [JobDone] -> [JobAsync]
               -> IO ([String],[JobDone]) -- (failures,successes)
@@ -192,13 +192,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           watchJobs mlayer (pkg : fails) results jobs
 
     -- FIXME prefix output with package name
-    startBuild :: Maybe Int -> Int ->  Bool -> Bool -> String -> Branch
-               -> String -> IO (IO JobDone)
-    startBuild mlayer n morelayers background target br pkgdir =
-      withExistingDirectory pkgdir $ do
+    startBuild :: Maybe Int -> Int ->  Bool -> Bool -> String -> Package
+               -> Branch -> String -> IO (IO JobDone)
+    startBuild mlayer n morelayers background target pkg br dir =
+      withExistingDirectory dir $ do
       gitSwitchBranch (RelBranch br)
-      pkg <- getPackageName pkgdir
-      putPkgBrnchHdr pkg br
       let spec = packageSpec pkg
       checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
