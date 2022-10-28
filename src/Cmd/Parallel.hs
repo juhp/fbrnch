@@ -60,7 +60,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   case pkgs of
-    [] -> timeIO $ parallelBranches "." branches
+    [] -> parallelBranches "." branches
     [p] -> withExistingDirectory p $
            parallelBranches p branches
     _ ->
@@ -97,7 +97,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
-      (failures,nvrclogs) <- watchJobs Nothing [] [] jobs
+      (failures,nvrclogs) <- timeIO $ watchJobs Nothing [] [] jobs
       -- switch back to the original branch
       when (length brs /= 1) $
         gitSwitchBranch currentbranch
