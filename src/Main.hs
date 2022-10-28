@@ -169,6 +169,7 @@ main = do
     , Subcommand "local" "Build locally" $
       localCmd
       <$> switchWith 'q' "quiet" "Hide the build.log until it errors"
+      <*> switchWith 'd' "debug" "show the rpmbuild command"
       <*> optional forceshortOpt
       <*> many bcondOpt
       <*> branchesPackages

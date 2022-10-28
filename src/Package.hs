@@ -244,9 +244,9 @@ instance Show BCond where
 -- FIXME create build.log
 -- Note does not check if bcond changed
 -- FIXME check tarball timestamp
-buildRPMs :: Bool -> Bool -> Maybe ForceShort -> [BCond] -> [FilePath]
+buildRPMs :: Bool -> Bool -> Bool -> Maybe ForceShort -> [BCond] -> [FilePath]
           -> AnyBranch -> FilePath -> IO Bool
-buildRPMs quiet noclean mforceshort bconds rpms br spec = do
+buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
   needBuild <-
     if isJust mforceshort
     then return True
@@ -273,23 +273,26 @@ buildRPMs quiet noclean mforceshort bconds rpms br spec = do
                buildopt ++ map show bconds ++ [spec]
     date <- cmd "date" ["+%T"]
     putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
-    ok <-
+    ok <- do
+      rbr <- anyBranchToRelease br
+      nvr <- pkgNameVerRel' rbr spec
+      let buildlog = ".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"
       timeIO $
-      if not quiet || isShortCircuit mforceshort
-      then do
-        rbr <- anyBranchToRelease br
-        nvr <- pkgNameVerRel' rbr spec
-        -- FIXME would like to have pipeOutErr
-        shellBool $ unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [".build-" ++ showNVRVerRel (readNVR nvr) <.> "log" ++ " && exit ${PIPESTATUS[0]}"]
-      else do
-        rbr <- anyBranchToRelease br
-        nvr <- pkgNameVerRel' rbr spec
-        let buildlog = ".build-" ++ showNVRVerRel (readNVR nvr) <.> "log"
-        res <- shellBool $ unwords $ "rpmbuild" : map quoteArg args ++ [">&", buildlog]
-        if res
-          then putStrLn "done"
-          else cmd_ "tail" ["-n 100", buildlog]
-        return res
+        if not quiet || isShortCircuit mforceshort
+        then do
+          putNewLn
+          -- FIXME would like to have pipeOutErr
+          let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [buildlog ++ " && exit ${PIPESTATUS[0]}"]
+          when debug $ putStrLn buildcmd
+          shellBool buildcmd
+        else do
+          let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ [">&", buildlog]
+          when debug $ putStrLn buildcmd
+          res <- shellBool buildcmd
+          if res
+            then putStrLn "done"
+            else cmd_ "tail" ["-n 100", buildlog]
+          return res
     unless ok $
       error' $ takeBaseName spec ++ " failed to build"
   return needBuild

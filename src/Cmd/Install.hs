@@ -59,7 +59,7 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall allsubpkgs (mbr, p
                   Just pkgdir -> installCmd verbose recurse mfrom mforceshort bconds reinstall allsubpkgs (mbr, [pkgdir]) >> putNewLn
               -- FIXME option to enable/disable installing missing deps
             else installDeps True spec
-          wasbuilt <- buildRPMs (not verbose) False mforceshort' bconds rpms br spec
+          wasbuilt <- buildRPMs (not verbose) False False mforceshort' bconds rpms br spec
           unless (isShortCircuit mforceshort') $ do
             toinstalls <-
               if allsubpkgs

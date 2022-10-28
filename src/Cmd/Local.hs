@@ -20,9 +20,9 @@ import Common.System
 import Git
 import Package
 
-localCmd :: Bool -> Maybe ForceShort -> [BCond] -> (BranchesReq, [String])
-         -> IO ()
-localCmd quiet mforceshort bconds =
+localCmd :: Bool -> Bool -> Maybe ForceShort -> [BCond]
+         -> (BranchesReq, [String]) -> IO ()
+localCmd quiet debug mforceshort bconds =
   withPackagesByBranches HeaderNone False Nothing ZeroOrOne localBuildPkg
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
@@ -31,7 +31,7 @@ localCmd quiet mforceshort bconds =
       rpms <- if isJust mforceshort
               then return []
               else builtRpms br spec
-      void $ buildRPMs quiet True mforceshort bconds rpms br spec
+      void $ buildRPMs quiet debug True mforceshort bconds rpms br spec
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd =
