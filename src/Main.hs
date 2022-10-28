@@ -283,7 +283,7 @@ main = do
       <*> branchesPackages
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranchesCmd
-      <$> switchWith 'q' "quiet" "Just output package name"
+      <$> switchWith 'q' "quiet" "Quieter output"
       <*> optional (optionWith branchM 'r' "recurse-from" "BRANCH" "Add neighboring dependencies from branch")
       <*> mockOpt False
       <*> branchesPackages
