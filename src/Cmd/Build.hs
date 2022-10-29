@@ -132,7 +132,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         unless autoupdate $ do
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
             mbug <- bzReviewAnon
-            bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec [nvr]
+            bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec nvr
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
             whenJust moverride $ \days ->
             bodhiCreateOverride dryrun (Just days) nvr
@@ -208,7 +208,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 whenJust (fmap fst mBugSess) $
                   \bid -> putStr "review bug: " >> putBugId bid
                 -- FIXME diff previous changelog?
-                bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptUseChangelog opts) spec [nvr]
+                bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptUseChangelog opts) spec nvr
                 -- FIXME prompt for override note
                 whenJust moverride $ \days ->
                   bodhiCreateOverride dryrun (Just days) nvr

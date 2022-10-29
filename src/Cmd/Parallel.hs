@@ -107,7 +107,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       when (isNothing msidetagTarget) $ do
         let spec = packageSpec pkg
         bodhiUpdate dryrun mupdate Nothing False spec $
-          map jobNvr $ filter ((/= Rawhide) . jobBranch) nvrclogs
+          intercalate "," $
+          map jobNvr $
+          filter ((/= Rawhide) . jobBranch) nvrclogs
       where
         -- FIXME time jobs
         setupBranch :: Package -> Branch -> IO JobAsync

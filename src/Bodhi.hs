@@ -122,8 +122,9 @@ bodhiTestingRepo br = do
       Nothing -> Nothing
       Just _ -> lookupKey' "testing_tag" obj
 
+-- push comma separated list of builds for a package to bodhi
 bodhiUpdate :: Bool -> (Maybe UpdateType, UpdateSeverity) -> Maybe BugId
-            -> Bool -> FilePath -> [String] -> IO ()
+            -> Bool -> FilePath -> String -> IO ()
 bodhiUpdate _ _ _ _ _ [] = error' "cannot make empty update"
 bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
   case mupdate of
@@ -135,7 +136,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
           mtemplate <- maybeTemplate updateType
           case mtemplate of
             Just file -> do
-              cmd_ "bodhi" $ ["updates", "new", "--file", file] ++ [intercalate "," nvrs]
+              cmd_ "bodhi" ["updates", "new", "--file", file, nvrs]
               return True
             Nothing -> do
               -- FIXME also query for open existing bugs
@@ -159,23 +160,23 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
                 when (isJust mreview &&
                       updateType `elem` [SecurityUpdate,BugfixUpdate]) $
                   warning "overriding update type with 'newpackage'"
-                putStrLn $ "Creating Bodhi Update for " ++ unwords nvrs ++ ":"
+                putStrLn $ "Creating Bodhi Update for " ++ nvrs ++ ":"
                 -- FIXME check for Bodhi URL to confirm update
-                cmd_ "bodhi" $ ["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [intercalate "," nvrs]
+                cmd_ "bodhi" $ ["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvrs]
                 return True
         when updatedone $ do
-          -- FIXME avoid this if we know the update URL
-          let nvr = head nvrs
-          updatequery <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvr]
-          case updatequery of
-            [] -> do
-              putStrLn $ "bodhi submission failed for " ++ nvr
-              prompt_ "Press Enter to resubmit to Bodhi"
-              bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs
-            [update] -> case lookupKey "url" update of
+          -- FIXME avoid this if we know the update URLs (split update does not seem to return URLs)
+          updates <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvrs]
+          if null updates
+            then do
+            putStrLn $ "bodhi submission failed for " ++ nvrs
+            prompt_ "Press Enter to resubmit to Bodhi"
+            bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs
+            else
+            forM_ updates $ \update ->
+            case lookupKey "url" update of
               Nothing -> error' "Update created but no url"
               Just uri -> putStrLn uri
-            _ -> error' $ "impossible happened: more than one update found for " ++ nvr
   where
     extractBugReferences :: String -> [String]
     extractBugReferences clog =
