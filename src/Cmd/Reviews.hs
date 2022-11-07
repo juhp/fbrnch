@@ -14,7 +14,7 @@ reviewsCmd :: Bool -> Bool -> Bool -> Maybe String -> Maybe String
 reviewsCmd short allstates assignee muser mpat status = do
   listReviewsFull assignee muser mpat allstates status >>=
     mapM_ (putReviewBug short) . sortBugsByStatus . sortBugsByID
-  when short $ putNewLn
+  when short putNewLn
 
 findReview :: String -> IO ()
 findReview pkg = do
