@@ -1,14 +1,21 @@
 module Cmd.SideTags (sideTagsCmd) where
 
+import Control.Monad.Extra (whenM)
+import SimpleCmd (cmd_)
+
 import Branches
 import Koji
+import Prompt (yesno)
 
-sideTagsCmd :: [Branch] -> IO ()
-sideTagsCmd brs = do
-  if null brs
-    then kojiUserSideTags Nothing >>= mapM_ putStrLn
-    else mapM_ sideTagsBranch brs
+sideTagsCmd :: Bool -> [Branch] -> IO ()
+sideTagsCmd remove brs = do
+  sidetags <-
+    if null brs
+    then kojiUserSideTags Nothing
+    else concat <$> mapM (kojiUserSideTags . Just) brs
+  mapM_ (if remove then removeSideTag else putStrLn) sidetags
   where
-    sideTagsBranch :: Branch -> IO ()
-    sideTagsBranch br =
-      kojiUserSideTags (Just br) >>= mapM_ putStrLn
+    removeSideTag :: String -> IO ()
+    removeSideTag tag =
+      whenM (yesno $ "Remove " ++ tag) $
+      cmd_ "fedpkg" ["remove-side-tag", tag]

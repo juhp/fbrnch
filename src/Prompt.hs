@@ -1,6 +1,7 @@
 module Prompt (
   prompt,
-  prompt_
+  prompt_,
+  yesno
   ) where
 
 import Data.Char (isPrint)
@@ -35,3 +36,14 @@ prompt s = do
 
 prompt_ :: String -> IO ()
 prompt_ = void <$> prompt
+
+-- from dnf-repo Sudo.hs
+yesno :: String -> IO Bool
+yesno desc = do
+  inp <- prompt $ desc ++ "? [y/n]"
+  case lower inp of
+    "y" -> return True
+    "yes" -> return True
+    "n" -> return False
+    "no" -> return False
+    _ ->  yesno desc
