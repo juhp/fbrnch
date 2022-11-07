@@ -75,11 +75,10 @@ getNewerBranch br = do
   return $
     if newer > br
     then Just newer
-    else Nothing
-    -- -- FIXME? this can be dropped with next fedora-dists
-    -- else case elemIndex br branches of
-    --        Just i -> branches !! (i - 1)
-    --        Nothing -> error' $ show br ++ ": branch not found"
+    else
+      case elemIndex br branches of
+        Just i -> Just $ branches !! (i - 1)
+        Nothing -> Nothing
 
 gitMergeOrigin :: Branch -> IO ()
 gitMergeOrigin br = do
