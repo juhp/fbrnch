@@ -21,6 +21,7 @@ data RpmWith = RpmWith String | RpmWithout String
 
 data SortDisplay = SortParallel | SortChain | SortLayers | SortPlain
 
+-- FIXME ghc-attempt f37 branch does not exist! (coming from f29)
 sortCmd :: SortDisplay -> Maybe RpmWith -> (Branch,[String]) -> IO ()
 sortCmd _ _ (_,[]) = return ()
 sortCmd displaymode mrpmwith (br, pkgs) = do

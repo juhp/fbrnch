@@ -81,6 +81,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                        init $ tails layers) -- tails ends in []
       unless (isNothing (fst mupdate)) $
         unless (isNothing msidetagTarget) $
+        -- FIXME check for an existing sidetag update
         when (target /= branchTarget rbr) $ do
         let changelog = intercalate "" $ renderChangelogs nvrclogs
         putNewLn

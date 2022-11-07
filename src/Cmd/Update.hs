@@ -13,6 +13,7 @@ import Package
 
 import Data.RPM.VerCmp
 
+-- FIXME don't bump release if already bumped
 -- FIXME check EVR increased
 -- FIXME if multiple sources might need to bump release
 -- FIXME Haskell subpackages require release bump even with version bump
