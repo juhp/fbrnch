@@ -310,17 +310,13 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               putStrLn "Paste update template now:"
               template <- getContents
               cmdBool "bodhi" ["updates", "new", "--file", template, "--from-tag", sidetag]
-              -- perhaps testing works now? (though seems there is a delay at least)
             else cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--severity", show severity, "--request", "testing", "--notes", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
           if not ok
             then bodhiSidetagUpdate rbr nvrs sidetag notes
             else
             unlessM (checkAutoBodhiUpdate rbr) $ do
-            -- inp <- prompt "Edit the update.  Then enter 'yes' to remove the sidetag or Enter to skip"
-            -- when (lower (trim inp) == "yes") $
-            --   fedpkg_ "remove-side-tag" [sidetag]
-            -- arguably we already received the Updateid from the above bodhi
-              -- command, but we query it here via nvr
+            -- arguably we already received the Updateid from the above bodhi command,
+            -- but we query it here via nvr
             res <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" (last nvrs)]
             case res of
               [] -> do
@@ -331,11 +327,4 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                 case lookupKey "updateid" update :: Maybe String of
                   Nothing -> error' "could not determine Update id"
                   Just _updateid -> return ()
-                    -- -- disconnect the update from the sidetag
-                    -- -- so it can be changed after sidetag closed
-                    -- -- see https://github.com/fedora-infra/bodhi/issues/4563 for the auto options
-                    -- fails with: {"status": "error", "errors": [{"location": "body", "name": "from_tag", "description": "The supplied from_tag doesn't exist."}, {"location": "body", "name": "builds", "description": "ACL validation mechanism was unable to determine ACLs."}]}
-                    -- cmd_ "bodhi" ["updates", "edit", updateid,
-                    --               "--request", "testing"] -- was "--autokarma", "--autotime"
-                    -- putStrLn "Update edited to unlock from sidetag"
               _ -> error' $ "impossible happened: more than one update found for " ++ last nvrs
