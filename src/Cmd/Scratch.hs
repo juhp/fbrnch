@@ -84,7 +84,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets mref (
                   clean <- isGitDirClean
                   if clean && isRelBranch br
                     then
-                    null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")
+                    null <$> gitOneLineLog ("origin/" ++ show br ++ "..HEAD")
                     else return False
             rbr <- anyBranchToRelease br
             nvr <- pkgNameVerRel' rbr spec

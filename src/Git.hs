@@ -15,7 +15,7 @@ module Git (
   Commit(commitRef,commitLog),
   showCommit,
   displayCommits,
-  gitShortLog,
+  gitOneLineLog,
   gitShortLogN,
   gitShortLog1,
   gitSwitchBranch,
@@ -54,7 +54,7 @@ gitMergeable :: Bool -> Branch -> IO (Bool,[Commit])
 gitMergeable origin br = do
   let ref = (if origin then "origin/" else "") ++ show br
   ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
-  commits <- gitShortLog ("HEAD.." ++ ref)
+  commits <- gitOneLineLog ("HEAD.." ++ ref)
   when (not origin && null commits && not ancestor) $
     whenM (gitBool "merge-base" ["--is-ancestor", "HEAD", "origin/" ++ show br]) $ do
     rancestor <- gitBool "merge-base" ["--is-ancestor", ref, "HEAD"]
@@ -108,8 +108,7 @@ data Commit = Commit
 
 showCommit :: Commit -> String
 showCommit c =
-  commitRef c +-+ commitLog c +-+ "(" ++ commitDate c ++ ")"
-
+  take 7 (commitRef c) +-+ commitLog c +-+ "(" ++ commitDate c ++ ")"
 
 displayCommits :: Bool -> [Commit] -> IO ()
 displayCommits showall =
@@ -120,9 +119,9 @@ displayCommits showall =
       if length cs > 20 then take 20 cs ++ [":"] else cs
     showAll True cs = cs
 
-gitShortLog :: String -> IO [Commit]
-gitShortLog range =
-  map mkCommit <$> gitLines "log" ["--pretty=reference", range]
+gitOneLineLog :: String -> IO [Commit]
+gitOneLineLog range =
+  map mkCommit <$> gitLines "log" ["--pretty=format:%H (%s, %cs)", range]
 
 gitShortLogN :: Int -> Maybe String -> IO [Commit]
 gitShortLogN num mrange =
@@ -136,7 +135,7 @@ gitShortLog1 mrange = do
     then Nothing
     else Just $ mkCommit cs
 
--- FIXME currently no-op with --format=reference
+-- assumes reference style pretty format: "hash (title, date)"
 mkCommit :: String -> Commit
 mkCommit cs =
   case word1 cs of

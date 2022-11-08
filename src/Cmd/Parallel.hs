@@ -203,7 +203,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       let spec = packageSpec pkg
       checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
-      unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+      unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $ do
         putStrLn $ nvr ++ " (" ++ target ++ ")" +-+ show n +-+ "more" +-+
           maybe "" (\l -> "in layer" +-+ show l) mlayer

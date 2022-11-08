@@ -99,11 +99,12 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   let spec = packageSpec pkg
   checkForSpecFile spec
   checkSourcesMatch spec
-  unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+  unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
   nvr <- pkgNameVerRel' br spec
   putNewLn
   mpush <-
-    if null unpushed then return Nothing
+    if null unpushed
+    then return Nothing
     else do
       when (not merged || br == Rawhide) $ do
         putStrLn $ nvr ++ "\n"
@@ -186,7 +187,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             whenJust mpush $ \ref ->
               unless dryrun $
               gitPushSilent $ Just $ ref ++ ":" ++ show br
-            unlessM (null <$> gitShortLog ("origin/" ++ show br ++ "..HEAD")) $
+            unlessM (null <$> gitOneLineLog ("origin/" ++ show br ++ "..HEAD")) $
               when (isJust mpush && not dryrun) $
               error' "Unpushed changes remain"
             unless (buildoptAllowDirty opts) $

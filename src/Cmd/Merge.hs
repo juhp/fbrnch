@@ -67,7 +67,7 @@ mergeBranch dryrun build noprompt showall (True, unmerged) from br = do
   isnewrepo <- initialPkgRepo
   putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show from ++ ":"
   displayCommits showall unmerged
-  unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+  unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"
     displayCommits showall unpushed
@@ -90,7 +90,7 @@ mergeBranch dryrun build noprompt showall (False,unmerged) from br = do
   putStrLn $ show from ++ " branch is not directly mergeable:"
   displayCommits False unmerged
   putNewLn
-  unpushed <- gitShortLog $ "origin/" ++ show br ++ "..HEAD"
+  unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"
     displayCommits showall unpushed
