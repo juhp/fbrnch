@@ -33,5 +33,6 @@ waitrepoCmd dryrun fetch msidetagTarget = do
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
       target <- targetMaybeSidetag dryrun br msidetagTarget
+      putStrLn $ "waiting for " ++ nvr ++ " to appear in " ++ target
       timeIO $
         kojiWaitRepo dryrun True target nvr
