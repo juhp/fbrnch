@@ -47,14 +47,12 @@
 - 'parallel': dryrun for merge and delay until bodhiSidetagUpdate
 - 'parallel': filter out rawhide from parallel branch package builds update (#36)
 - 'parallel': formatting - use +-+, plural, don't color "is already"
-- 'parallel': no longer prompt for sidetag removal
+- 'parallel': no longer offers sidetag removal
 - 'parallel': only write "in layer" if there are layers
 - 'parallel': print pkg brnch header before merging
-- 'parallel': sidetag prompt now needs 'yes' to delete
 - 'request-branches/repos': check 100 fedora-scm-requests for duplicate
 - 'request-branches': add --quiet to suppress "exists" messages
 - 'request-branches': add --recurse-from BRANCH
-- 'request-branches': add another fedpkg failure error
 - 'request-branches': do not fetch if remote branch known
 - 'request-branches': improve --quiet help
 - 'request-branches': output if exists, again
