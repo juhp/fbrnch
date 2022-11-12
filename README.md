@@ -39,7 +39,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f36 [package] ...
+$ fbrnch switch f37 [package] ...
 ```
 
 You can also git pull over packages:
@@ -79,10 +79,10 @@ $ fbrnch bugs [package]
 ```
 
 ### Commit, Merging and Building in Koji
-The update command helps with updating a package after editing the spec file
-to a newer version:
+The update-version command helps with updating a package
+after editing the spec file to a newer version:
 ```
-$ fbrnch update
+$ fbrnch update-version
 ```
 which will download the new tarball and upload it, etc.
 
@@ -92,17 +92,18 @@ You can commit to the current branch:
 ```
 $ fbrnch commit
 ```
-It uses any rpm changelog, or you can pass `-m "..."` or amend with `-a`.
+It uses any rpm changelog for the commit message,
+or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f35 package
+$ fbrnch merge f36 package
 ```
-which will offer to merge f36 (or some of it) into f35.
+which will offer to merge f37 (or up to a git hash you choose) into f36.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build f36 package
+$ fbrnch build f37 package
 ```
 will ask if you want to merge newer commits from a newer branch,
 then push and build it.
@@ -111,15 +112,15 @@ If the branch is also already pushed and NVR built it will be skipped.
 If the NVR is currently building it will be picked up by `fbrnch build`.
 Completed branch builds can be pushed to Bodhi.
 
-You can also build all branches:
+You can also build all active branches:
 ```
 $ fbrnch build -B package
 ```
-or all fedora branches:
+or only all fedora branches:
 ```
 $ fbrnch build -F package
 ```
-or all epel branches:
+or only all epel branches:
 ```
 $ fbrnch build -E package
 ```
@@ -148,6 +149,7 @@ $ fbrnch local
 ```
 this works in the current package dir like other commands,
 installing any missing dependencies with `sudo dnf builddep`.
+(It also works for a non-git package dir.)
 
 Or one can specify the path to the package.
 
@@ -176,17 +178,21 @@ to avoid grabbing too many Koji resources).
 ```
 $ fbrnch parallel --sidetag rawhide pkg-x pkg-y pkg-z pkg-xy pkg-xy-z
 ```
-generates a sidetag and builds a list of packages there
-in parallel ordered by build dependencies. When building for a branch
-merging from newer branch will be offered unless using `--no-merge`.
+builds a list of packages in a sidetag (generating it if needed)
+in parallel ordered by build dependencies.
+
+When building for a branch, merging from newer branch will be offered
+unless using `--no-merge`
+(though you may prefer to run `fbrnch merge <branch> ...` first instead).
 
 Except for rawhide using a sidetag is required.
-If you have more than one branch sidetag, you can select one using `--target`.
+If you have more than one branch active sidetag for a branch,
+you can select one using `--target`.
 
 After parallel building you can create a Bodhi update from the sidetag.
 
 It is also possible to build a package in parallel across branches
-and push to Bodhi.
+and push them to Bodhi.
 
 ### Creating new packages/branches
 
@@ -211,7 +217,7 @@ To list one's open package reviews:
 $ fbrnch reviews
 ```
 They can be filtered by status with various options like
-`--approved` or `--created`.
+`--approved` or `--created` (or another bugzilla `--user`).
 
 One can also search for the review(s) of a specific package with:
 ```
@@ -223,21 +229,21 @@ Once a review has been approved
 ```
 $ fbrnch request-repos
 ```
-will request repos for approved package(s) and offer to request branches.
+will request repo(s) for approved package(s) and offer to request branches.
 
 #### Import a new package
 After the repo has been created
 ```
 $ fbrnch import
 ```
-will clone the repo and offer to import the srpm
-directly from the latest url in the approved package review,
+will clone the repo(s) and offer to import the srpm
+directly from the latest url in the approved package review(s),
 which can then be built directly into Koji Rawhide
-and the package review is updated.
+and the package review(s) updated.
 
 #### Request branches
 If you prefer you can request branches after the repo is created
-or package imported with
+(or package is imported) with
 ```
 $ fbrnch request-branches
 ```
@@ -251,7 +257,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 
 ```
 $ fbrnch --version
-1.1.2
+1.2
 $ fbrnch --help
 Fedora branch building tool
 
@@ -264,13 +270,14 @@ Available options:
   --version                Show version
 
 Available commands:
-  clone                    clone packages
+  clone                    Clone packages
   switch                   Switch branch
   nvr                      Print name-version-release
   status                   Status package/branch status
   merge                    Merge from newer branch
   build                    Build package(s) in Koji
   list                     List packages in pagure
+  list-local               List packages in branch
   branches                 List package branches
   parallel                 Parallel build packages in Koji
   sidetags                 List user's side-tags
@@ -279,13 +286,14 @@ Available commands:
   scratch                  Scratch build package in Koji
   scratch-aarch64          Koji aarch64 scratch build of package
   scratch-x86_64           Koji x86_64 scratch build of package
-  update                   Update package in dist-git to newer version
+  update-version           Update package in dist-git to newer version
   sort                     Sort packages in build dependency order
   prep                     Prep sources
   local                    Build locally
   srpm                     Build srpm
   diff                     Diff local changes
   compare                  Show commits between branches
+  src-deps                 List source package dependencies
   mock                     Local mock build
   install-deps             Install package build dependencies
   install                  Build locally and install package(s)
@@ -294,7 +302,9 @@ Available commands:
   bump                     Bump release for package
   commit                   Git commit packages
   pull                     Git pull packages
+  fetch                    Git fetch packages
   push                     Git push packages
+  owner                    List package owner(s)
   create-review            Create a Package Review request
   update-review            Update a Package Review
   review-package           Run fedora-review on a package Review Request bug
@@ -351,11 +361,11 @@ It also makes use of:
 
 ## rpmbuild configuration
 You may want to set `~/.rpmmacros` to use particular directories,
-since unlike fedpkg, fbrnch follows the macros set in `~/.rpmmacros`.
+since unlike fedpkg, fbrnch follows the local rpmbuild directory macros:
+rpmbuild defaults to directories under `~/rpmbuild/`
+but this can be overridden by the user in `~/.rpmmacros` as follows.
 
-By default rpmbuild uses `~/rpmbuild/`.
-
-Two common alternative configurations might be either:
+Two common alternative configurations in `~/.rpmmacros` might be either:
 
 1) use the package directory for everything (like fedpkg does):
 ```
@@ -402,11 +412,10 @@ You can create your key at
 - https checkouts are currently treated as anonymous git checkouts
 
 ## Motivation, history, talks
-This project started off (as "fedbrnch") basically as a simple tool to
-build a package across branches (ie for current releases).  Then bugzilla
-and Bodhi integration was added, and gradually more features, including
-some generic commands across packages which had already been done before
-in fedora-haskell-tools.
+This project started off as a simple tool to build a package across branches
+(ie for current releases).  Then bugzilla and Bodhi integration was added,
+and gradually more features, including some generic commands across packages
+inspired by the older fedora-haskell-tools project.
 
 I have given a couple of short talks about fbranch:
 - Nest with Fedora: [youtube](https://www.youtube.com/watch?v=40kTBsA674U) and [slides](https://github.com/juhp/presentations/blob/master/fedora-nest-2020-fbrnch/fbrnch-nest.md)
@@ -415,10 +424,9 @@ I have given a couple of short talks about fbranch:
 ## Contribute
 Bug reports, feedback, and pull requests are all highly appreciated.
 
-Please report any unsupported or unintuitive workflow steps.
+Do report any unsupported or inconsistent workflow steps.
 
 See the TODO list and also the FIXME comments scattered across the source.
-Do open an issue before embarking on larger changes.
 
 Authors of the code:
 
