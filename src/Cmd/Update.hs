@@ -10,6 +10,7 @@ import Git
 import InterleaveOutput (cmdSilent')
 import Krb
 import Package
+import Prompt (prompt_)
 
 import Data.RPM.VerCmp
 
@@ -41,7 +42,7 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
     updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
     updatePkg mver pkg br = do
       when (br /= RelBranch Rawhide) $
-        warning $ "Are you sure you want to update " ++ show br ++ "?\n"
+        prompt_ $ "Are you sure you want to update " ++ show br ++ "?"
       spec <- if allowHEAD
               then findSpecfile
               else localBranchSpecFile pkg br
