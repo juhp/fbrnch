@@ -64,8 +64,9 @@
 - 'sidetags': add --remove option
 - srcDeps uses depsGraphDeps from rpmbuild-order-0.4.10
 - targetMaybeSidetag: add dryrun parameter
-- update: check/download missing patches with spectool
-- update: warn if branch
+- 'update': renamed to update-version
+- 'update-version': check/download missing patches with spectool
+- 'update-version': warn if branch
 
 ## 1.1.2 (2022-07-30)
 - add scratch-x86_64 and scratch-aarch64 shortcut commands

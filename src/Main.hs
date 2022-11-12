@@ -151,7 +151,7 @@ main = do
       <*> many (sidetagTargetOpt Nothing)
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
       <*> branchesPackages
-    , Subcommand "update" "Update package in dist-git to newer version" $
+    , Subcommand "update-version" "Update package in dist-git to newer version" $
       updateCmd
       <$> switchWith 's' "sources-only" "Only update sources"
       <*> switchWith 'f' "force" "Download upstream sources even if they exist locally"
