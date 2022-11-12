@@ -100,7 +100,7 @@ executable fbrnch
 
   build-depends:       aeson,
                        async,
-                       -- pretty-terminal needs 4.9:
+                       -- pretty-terminal depends on base >= 4.9 (ghc8)
                        base >= 4.9 && < 5,
                        bodhi,
                        bugzilla-redhat >= 1.0,
@@ -118,8 +118,6 @@ executable fbrnch
                        http-query,
                        koji,
                        network-uri,
-                       -- (for simple_cmd_args < 0.1.7):
-                       optparse-applicative,
                        pagure >= 0.1,
                        pretty-terminal,
                        process,
@@ -131,6 +129,7 @@ executable fbrnch
                        text,
                        time,
                        typed-process >= 0.2.4.0,
+                       -- for aeson-1 compatibility:
                        unordered-containers,
                        utf8-string,
                        unix,
