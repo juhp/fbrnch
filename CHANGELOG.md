@@ -1,5 +1,72 @@
 # Changelog
 
+## 1.2 (2022-11-12)
+- Bodhi: for template file prompt instead of using fedpkg update
+- Bodhi: updates need to be comma separated (#36, Otto Liljalaakso)
+- Git gitMergeable: new logic for detecting older branch ahead/diverged
+- Git getNewerBranch: restore epel9 merge inheriting from fedora
+- Git: rename gitShortLog to gitOneLineLog with long hash format
+- Main: fix overlapping -s/-S options
+- Package buildRPMs: with tee return error if build failed
+- Package pkgNameVerRel: seq disttag for early error
+- Package: add withPackagesBranch, withPackagesMaybeBranch always ZeroOrOne
+- Prompt refPrompt: allow "n" for no
+- SrcDeps: factor out srcDeps (for request-branches --recursive)
+- bodhiUpdate: take comma-separated nvrs and check all the updates (#36)
+- 'build': initial support for --sidetag
+- buildRPMs: add --noclean switch for 'local' builds
+- 'compare': add --ignore to filter out matching commits
+- 'diff': fold --quiet into DiffFormat and add --ignore-bumps
+- getNewerBranch now only returns next branch
+- getRequestedBranches now only returns new branches out of specified
+- gitFetchSilent,gitFetchSilent': quiet option
+- gitFetchSilent: newline before filtered output
+- gitSwitchBranch': do not warn about missing branch if quiet
+- 'install': also count down when recursing
+- 'install': offer to merge and add --from to override branch
+- 'install': only update installed subpackages, unless --all-subpackages
+- kojiBuild': don't log if no output
+- 'local' --debug: outputs command (refactor buildRPMs)
+- 'local': add --short-compile and rename --short-circuit to --short-install
+- long-only options need simple-cmd-args-0.1.8
+- 'merge': --skip-bumps up to N (trivial) commits & --show-all; Commit and Patch
+- 'merge': add --dryrun
+- 'merge': fix getting newer branch when no --from
+- mergeBranch,gitMergeOrigin: no more gratuitous merge rebasing
+- 'mock': add simple --short-circuit option for install stage
+- new 'owner' command: prints owner and admins of package(s)
+- new 'fetch' command
+- new 'list-local' command: lists packages in branch with spec file
+- new 'src-deps' command: wrapper of rpmbuild-order (r)deps
+- 'override','waitrepo': print message before waiting
+- 'parallel' build: respect --no-merge
+- 'parallel': also accept "n" for "no" update
+- 'parallel': also time parallel branches dir
+- 'parallel': display package's number and layer
+- 'parallel': do not prompt for update when update disabled
+- 'parallel': dryrun for merge and delay until bodhiSidetagUpdate
+- 'parallel': filter out rawhide from parallel branch package builds update (#36)
+- 'parallel': formatting - use +-+, plural, don't color "is already"
+- 'parallel': no longer prompt for sidetag removal
+- 'parallel': only write "in layer" if there are layers
+- 'parallel': print pkg brnch header before merging
+- 'parallel': sidetag prompt now needs 'yes' to delete
+- 'request-branches/repos': check 100 fedora-scm-requests for duplicate
+- 'request-branches': add --quiet to suppress "exists" messages
+- 'request-branches': add --recurse-from BRANCH
+- 'request-branches': add another fedpkg failure error
+- 'request-branches': do not fetch if remote branch known
+- 'request-branches': improve --quiet help
+- 'request-branches': output if exists, again
+- 'scratch' builds now support multiple (serial) targets
+- 'scratch','waitrepo': now also accept --sidetag
+- 'scratch-x86_64','scratch-aarch64': add --exclude-arch to invert arch selection
+- 'sidetags': add --remove option
+- srcDeps uses depsGraphDeps from rpmbuild-order-0.4.10
+- targetMaybeSidetag: add dryrun parameter
+- update: check/download missing patches with spectool
+- update: warn if branch
+
 ## 1.1.2 (2022-07-30)
 - add scratch-x86_64 and scratch-aarch64 shortcut commands
 - bodhiUpdate now takes multiple builds: used for parallelBranches (#30)

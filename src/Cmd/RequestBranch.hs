@@ -128,6 +128,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
         if null newbranches then return []
           else do
           fasid <- fasIdFromKrb
+          -- FIXME retry on HttpExceptionRequest ... ConnectionTimeout
           erecent <- pagureListProjectIssueTitlesStatus "pagure.io"
                      "releng/fedora-scm-requests"
                      [makeItem "author" fasid, makeItem "status" "all",
