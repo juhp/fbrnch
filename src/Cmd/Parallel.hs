@@ -60,14 +60,16 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
   when (isJust mtarget && length branches > 1) $
     error' "You can only specify target with one branch"
   case pkgs of
-    [] -> parallelBranches "." branches
+    [] -> getPackageName "." >>= parallelBranches branches
     [p] -> withExistingDirectory p $
-           parallelBranches p branches
+           getPackageName p >>= parallelBranches branches
     _ ->
       forM_ branches $ \rbr -> do
       forM_ pkgs $ \p ->
         when (mmerge /= Just False) $
-        withExistingDirectory p $ mergeNewerBranch rbr
+        withExistingDirectory p $ do
+        pkg <- getPackageName p
+        mergeNewerBranch (Just pkg) rbr
       allLayers <- dependencyLayers pkgs
       let layers = drop firstlayer allLayers
       when (isNothing msidetagTarget && length allLayers > 1) $
@@ -91,14 +93,13 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           bodhiSidetagUpdate rbr (map jobNvr nvrclogs) target $
           if null input then changelog else input
   where
-    parallelBranches :: FilePath -> [Branch] -> IO ()
-    parallelBranches pkgdir brs = do
+    parallelBranches :: [Branch] -> Package -> IO ()
+    parallelBranches brs pkg = do
       krbTicket
       currentbranch <- gitCurrentBranch
       putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
       putStrLn $ unwords $ map show brs
-      pkg <- getPackageName pkgdir
-      jobs <- mapM (setupBranch pkg) brs
+      jobs <- mapM setupBranch brs
       (failures,nvrclogs) <- timeIO $ watchJobs Nothing [] [] jobs
       -- switch back to the original branch
       when (length brs /= 1) $
@@ -113,21 +114,22 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           filter ((/= Rawhide) . jobBranch) nvrclogs
       where
         -- FIXME time jobs
-        setupBranch :: Package -> Branch -> IO JobAsync
-        setupBranch pkg br = do
+        setupBranch :: Branch -> IO JobAsync
+        setupBranch br = do
           putPkgBrnchHdr pkg br
           target <- targetMaybeSidetag dryrun br msidetagTarget
-          when (mmerge /= Just False) $ mergeNewerBranch br
+          when (mmerge /= Just False) $ mergeNewerBranch Nothing br
           job <- startBuild Nothing 0 False False target pkg br "." >>= async
           unless dryrun $ sleep 3
           return (show br,job)
 
-    mergeNewerBranch :: Branch -> IO ()
-    mergeNewerBranch br = do
+    mergeNewerBranch :: Maybe Package -> Branch -> IO ()
+    mergeNewerBranch mpkg br = do
       gitSwitchBranch (RelBranch br)
       (ancestor,unmerged) <- newerMergeable br
       unless dryrun $
         whenJustM (getNewerBranch br) $ \newer -> do
+        whenJust mpkg $ flip putPkgBrnchHdr br
         mergeBranch dryrun True (mmerge == Just True) False (ancestor,unmerged) newer br
 
     -- FIXME time builds or layers
