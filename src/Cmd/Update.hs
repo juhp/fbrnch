@@ -60,33 +60,26 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
             error' $ "spec version already bumped to " ++ curver
           when (curver == nver) $
             putStrLn $ "already new version " ++ curver
+      let moldnewver =
+            case mver of
+              Just nver -> Just (curver,nver)
+              Nothing ->
+                case map (last . words) vdiff of
+                  [old,new] -> Just (old,new)
+                  _ -> Nothing
       unless onlysources $ do
         let (oldver,newver) =
-              case mver of
-                Just nver -> (curver,nver)
-                Nothing ->
-                  case map (last . words) vdiff of
-                    [old,new] -> (old,new)
-                    _ -> error' "complex version change"
+              fromMaybe (error' "complex version change") moldnewver
         -- FIXME take epoch into account
         when (rpmVerCompare oldver newver == GT) $
           putStrLn $ "current" +-+ oldver +-+ "is newer!"
         putStrLn $ oldver ++ " ->\n" ++ newver
-        if curver /= newver
-          then do
+        when (curver /= newver) $ do
           editSpecField "Version" newver spec
           editSpecField "Release" "0%{?dist}" spec
-          cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
           -- FIXME should be sure sources exists for distgit
           whenM (doesFileExist "sources") $
             cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
-          else do
-          versions <- changelogVersions spec
-          let missing = null versions || not ((newver ++ "-") `isPrefixOf` head versions)
-          when missing $ do
-            cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
-            -- FIXME need to commit after add sources
-            git_ "commit" ["-a", "-m", "update to " ++ newver]
       whenM isPkgGitSshRepo $ do
         -- FIXME forM_
         sources <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
@@ -106,10 +99,16 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
           cmd_ "spectool" ["-g", "-S", spec]
         krbTicket
         cmd_ "fedpkg" $ "new-sources" : filter isArchiveFile sources
-        putStr "Prepping... "
-        cmdSilent' "rpmbuild" ["-bp", spec]
-        putStrLn "done"
-        -- FIXME git amend (if previous commit was update)
+      whenJust moldnewver $ \(_old,newver) -> do
+        versions <- changelogVersions spec
+        let missing = null versions || not ((newver ++ "-") `isPrefixOf` head versions)
+        when missing $ do
+          cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
+          git_ "commit" ["-a", "-m", "update to " ++ newver]
+      putStr "Prepping... "
+      cmdSilent' "rpmbuild" ["-bp", spec]
+      putStrLn "done"
+      -- FIXME git amend (if previous commit was update)
 
     sourceFieldFile :: String -> FilePath
     sourceFieldFile field =
