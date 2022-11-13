@@ -77,7 +77,7 @@ mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
     then return $ Just $ commitRef (head unmerged)
     else refPrompt unmerged ("Press Enter to merge " ++ show from ++
          (if build then " and build" else "") ++
-         (if length unmerged > 1 then "; or give a ref to merge" else "") ++
+         (if length unmerged > 1 then "; or give ref to merge" else "") ++
          "; or 'no' to skip merge")
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
@@ -98,7 +98,7 @@ mergeBranch dryrun build noprompt showall mpkg (False,unmerged) from br = do
     displayCommits showall unpushed
   mmerge <-
     if noprompt then return Nothing
-    else conflictPrompt unmerged $ "Press Enter to skip merge" ++ (if build then " and build" else "") ++ "; or give a ref or 'HEAD' to attempt merge"
+    else conflictPrompt unmerged $ "Press Enter to skip merge" ++ (if build then " and build" else "") ++ "; or give ref or 'HEAD' to attempt merge"
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ ref ->

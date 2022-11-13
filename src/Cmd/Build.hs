@@ -115,7 +115,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       -- see mergeBranch for: unmerged == 1 (774b5890)
       if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
         then do
-        refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give a ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
+        refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
         else return $ Just $ commitRef $ head unpushed
   let dryrun = buildoptDryrun opts
   buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
