@@ -52,6 +52,7 @@ import Git (CommitOpt(..))
 import ListReviews
 import Package (ForceShort(..), BCond(..))
 import Paths_fbrnch (version)
+import Types (SideTagTarget(..))
 
 main :: IO ()
 main = do

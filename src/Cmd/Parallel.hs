@@ -2,7 +2,6 @@
 
 module Cmd.Parallel (
   parallelBuildCmd,
-  SideTagTarget(..)
   ) where
 
 import Common
