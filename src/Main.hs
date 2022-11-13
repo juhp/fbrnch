@@ -117,6 +117,7 @@ main = do
     , Subcommand "override" "Tag builds into buildroot override in Koji" $
       overrideCmd
       <$> dryrunOpt
+      <*> overrideModeOpt
       <*> optional (optionWith auto 'd' "duration" "DAYS" "Number of days until expiry [default 4]")
       <*> switchWith 'w' "no-wait" "Skip waitrepo step"
       <*> branchesPackages
@@ -599,3 +600,8 @@ main = do
     waitfetchOpt =
       flagWith' WaitDirty 'k' "allow-dirty" "Allow unclean git repo" <|>
       flagWith WaitFetch WaitNoFetch 'F' "no-fetch" "Skip git fetch"
+
+    overrideModeOpt :: Parser OverrideMode
+    overrideModeOpt =
+      flagWith' OverrideList 'l' "list" "List active override(s)" <|>
+      flagWith OverrideCreate OverrideExpire 'X' "expire" "Expire override(s)"
