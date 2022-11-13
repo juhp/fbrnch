@@ -186,7 +186,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         Nothing -> sleep 1 >> watchJobs mlayer fails results (jobs ++ [job])
         -- (nvr,changelog)
         Just (Right result) -> do
-          putStrLn $ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer
+          putStrLn $
+            if null jobs
+            then "ending layer" +-+ maybe "" show mlayer
+            else plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer
           watchJobs mlayer fails (result:results) jobs
         Just (Left except) -> do
           print except
