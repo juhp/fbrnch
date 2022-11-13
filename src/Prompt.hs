@@ -30,8 +30,9 @@ prompt s = do
   if all isPrint inp
     then return inp
     else do
-    warning $ "input rejected because of unprintable character(s): " ++
-      filter (not . isPrint) inp
+    warning $
+      "input rejected because of unprintable character(s): '" ++
+      show inp ++ "'"
     prompt s
 
 prompt_ :: String -> IO ()
