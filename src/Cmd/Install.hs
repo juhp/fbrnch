@@ -13,6 +13,7 @@ import Git
 import Package
 import Prompt
 import Repoquery
+import RpmBuild
 
 -- FIXME --ignore-uninstalled subpackages
 -- FIXME --skip-unavailable
@@ -132,3 +133,11 @@ notInstalledCmd =
           if null older
             then putStrLn $ unPackage pkg
             else putStrLn $ " " ++ unPackage pkg
+
+nvraInstalled :: NVRA -> IO Bool
+nvraInstalled rpm =
+  cmdBool "rpm" ["--quiet", "-q", showNVRA rpm]
+
+pkgInstalled :: String -> IO Bool
+pkgInstalled pkg =
+  cmdBool "rpm" ["--quiet", "-q", pkg]

@@ -142,3 +142,8 @@ splitBy sep xs =
 editSpecField :: String -> String -> FilePath -> IO ()
 editSpecField field new spec =
   cmd_ "sed" ["-i", "-e s/^\\(" ++ field ++ ":\\s\\+\\).*/\\1" ++ new ++ "/", spec]
+
+changelogVersions :: FilePath -> IO [String]
+changelogVersions spec = do
+  ns <- cmdLines "rpmspec" ["-q", "--srpm", "--qf", "%{changelogname}", spec]
+  return $ map (removePrefix "- " . dropWhile (/= '-')) ns

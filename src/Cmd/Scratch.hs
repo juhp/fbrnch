@@ -13,6 +13,7 @@ import Common.System
 import Git
 import Koji
 import Package
+import RpmBuild (generateSrpm)
 import Types (Archs(..),SideTagTarget)
 
 -- FIXME allow parallel targets

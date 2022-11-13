@@ -17,6 +17,7 @@ import Krb
 import Koji
 import Package
 import Prompt
+import RpmBuild (checkSourcesMatch)
 import Types
 
 data BuildOpts = BuildOpts

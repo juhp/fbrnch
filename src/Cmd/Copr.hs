@@ -7,19 +7,20 @@ module Cmd.Copr (
   )
 where
 
-import Branches
-import Common
-import Common.System
-import qualified Common.Text as T
-import Package
-import Types (Archs(..))
-
 import Data.Ini.Config
 import Network.HTTP.Query (lookupKey, lookupKey')
 import System.Environment.XDG.BaseDir (getUserConfigDir)
 import System.Time.Extra (sleep)
 import Web.Fedora.Copr (coprChroots, fedoraCopr)
 import Web.Fedora.Copr.API (coprGetBuild)
+
+import Branches
+import Common
+import Common.System
+import qualified Common.Text as T
+import Package
+import RpmBuild (generateSrpm)
+import Types (Archs(..))
 
 data BuildBy = SingleBuild | ValidateByRelease | ValidateByArch | BuildByRelease
   deriving (Eq)

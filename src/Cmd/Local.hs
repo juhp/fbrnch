@@ -19,6 +19,7 @@ import Common
 import Common.System
 import Git
 import Package
+import RpmBuild
 
 localCmd :: Bool -> Bool -> Maybe ForceShort -> [BCond]
          -> (BranchesReq, [String]) -> IO ()

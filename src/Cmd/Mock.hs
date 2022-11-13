@@ -11,6 +11,7 @@ import Common
 import Common.System
 import Git
 import Package
+import RpmBuild (generateSrpm)
 
 data NoClean = NoCleanBefore | NoCleanAfter | NoCleanAll | MockShortCircuit
   deriving Eq

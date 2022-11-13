@@ -21,6 +21,7 @@ import Git
 import Krb
 import Koji
 import Package
+import RpmBuild (checkSourcesMatch)
 import Prompt
 import Types
 

@@ -50,7 +50,7 @@ import Branches
 import Common.System
 import Git (CommitOpt(..))
 import ListReviews
-import Package (ForceShort(..), BCond(..))
+import RpmBuild (ForceShort(..), BCond(..))
 import Paths_fbrnch (version)
 import Types (SideTagTarget(..))
 

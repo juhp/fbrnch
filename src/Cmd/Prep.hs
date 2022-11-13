@@ -10,6 +10,7 @@ import Common.System
 import Git
 import InterleaveOutput (cmdSilent')
 import Package
+import RpmBuild
 
 data PrepPre = PrepClone | PrepPull
   deriving Eq

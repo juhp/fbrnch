@@ -20,6 +20,7 @@ import Koji
 import Krb
 import Package
 import Prompt
+import RpmBuild
 
 data ScratchOption = ScratchBuild | ScratchTask Int | SkipScratch
   deriving Eq

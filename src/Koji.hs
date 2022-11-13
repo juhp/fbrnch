@@ -42,7 +42,7 @@ import Common
 import Common.System
 import Git
 import Krb
-import Package
+import Package (fedpkg, Package, unPackage)
 import Pagure
 import Prompt
 import Types
@@ -219,6 +219,13 @@ kojiWaitRepo dryrun quiet target nvr = do
                   when (isNothing moldrepo && not quiet) $
                     logMsg $ "Waiting for " ++ buildtag ++ " to have " ++ nvr
                   waitRepo buildtag mrepo
+
+    -- FIXME: obsolete by using NVR
+    -- n-v-r -> n
+    nameOfNVR :: String -> String
+    nameOfNVR = removeSeg . removeSeg
+      where
+        removeSeg = init . dropWhileEnd (/= '-')
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do

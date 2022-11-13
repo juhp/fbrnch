@@ -93,6 +93,7 @@ executable fbrnch
                        Paths_fbrnch
                        Prompt
                        Repoquery
+                       RpmBuild
                        Types
 
   hs-source-dirs:      src
