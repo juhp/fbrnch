@@ -185,8 +185,8 @@ When building for a branch, merging from newer branch will be offered
 unless using `--no-merge`
 (though you may prefer to run `fbrnch merge <branch> ...` first instead).
 
-Except for rawhide using a sidetag is required.
-If you have more than one branch active sidetag for a branch,
+Except for rawhide using a --sidetag or --target is required.
+If you have more than one active sidetag for a branch,
 you can select one using `--target`.
 
 After parallel building you can create a Bodhi update from the sidetag.
