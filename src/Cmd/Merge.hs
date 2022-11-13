@@ -22,7 +22,7 @@ mergeCmd dryrun noprompt mnotrivial showall mfrom =
     runMergeBranch :: Package -> AnyBranch -> IO ()
     runMergeBranch _ (OtherBranch _) =
       error' "merge only defined for release branches"
-    runMergeBranch _pkg (RelBranch br) = do
+    runMergeBranch pkg (RelBranch br) = do
       exists <- gitSwitchBranch' False br
       when exists $ do
         mfrom' <- if isJust mfrom
@@ -35,7 +35,7 @@ mergeCmd dryrun noprompt mnotrivial showall mfrom =
             gitMergeOrigin br
           (ancestor,unmerged) <- mergeable from br
           unmerged' <- filterOutTrivial mnotrivial unmerged
-          mergeBranch dryrun False noprompt showall (ancestor,unmerged') from br
+          mergeBranch dryrun False noprompt showall (Just pkg) (ancestor,unmerged') from br
       where
         filterOutTrivial :: Maybe Natural -> [Commit] -> IO [Commit]
         filterOutTrivial Nothing cs = return cs
@@ -58,12 +58,13 @@ mergeable from _ = do
   gitMergeable (show from `notElem` locals) from
 
 -- FIXME return merged ref
-mergeBranch :: Bool -> Bool -> Bool -> Bool
+mergeBranch :: Bool -> Bool -> Bool -> Bool -> Maybe Package
             -> (Bool,[Commit]) -- (ancestor,unmerged)
             -> Branch -> Branch -> IO ()
-mergeBranch _ _ _ _ _ _ Rawhide = return ()
-mergeBranch _ _ _ _ (_,[]) _ _ = return ()
-mergeBranch dryrun build noprompt showall (True, unmerged) from br = do
+mergeBranch _ _ _ _ _ _ _ Rawhide = return ()
+mergeBranch _ _ _ _ _ (_,[]) _ _ = return ()
+mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
+  whenJust mpkg $ flip putPkgBrnchHdr br
   isnewrepo <- initialPkgRepo
   putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show from ++ ":"
   displayCommits showall unmerged
@@ -86,7 +87,8 @@ mergeBranch dryrun build noprompt showall (True, unmerged) from br = do
       git_ "fetch" ["origin", show from ++ ":" ++ show from]
     unless dryrun $
       git_ "merge" ["--quiet", ref]
-mergeBranch dryrun build noprompt showall (False,unmerged) from br = do
+mergeBranch dryrun build noprompt showall mpkg (False,unmerged) from br = do
+  whenJust mpkg $ flip putPkgBrnchHdr br
   putStrLn $ show from ++ " branch is not directly mergeable:"
   displayCommits False unmerged
   putNewLn

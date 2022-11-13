@@ -127,9 +127,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       gitSwitchBranch (RelBranch br)
       (ancestor,unmerged) <- newerMergeable br
       unless dryrun $
-        whenJustM (getNewerBranch br) $ \newer -> do
-        whenJust mpkg $ flip putPkgBrnchHdr br
-        mergeBranch dryrun True (mmerge == Just True) False (ancestor,unmerged) newer br
+        whenJustM (getNewerBranch br) $ \newer ->
+        mergeBranch dryrun False (mmerge == Just True) False mpkg (ancestor,unmerged) newer br
 
     -- FIXME time builds or layers
     parallelBuild :: String -> Branch -> (Int,[[String]])
