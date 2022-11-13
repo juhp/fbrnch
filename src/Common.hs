@@ -31,7 +31,7 @@ pluralException :: Int -> String -> String -> String
 pluralException i ns ps =
   mconcat
   [
-    show i,
+    if i == 0 then "no" else show i,
     " ",
     if i == 1 then ns else ps
   ]
