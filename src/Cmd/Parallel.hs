@@ -126,9 +126,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
     mergeNewerBranch :: Maybe Package -> Branch -> IO ()
     mergeNewerBranch mpkg br = do
       gitSwitchBranch (RelBranch br)
-      (ancestor,unmerged) <- newerMergeable br
+      (ancestor,unmerged,mnewer) <- newerMergeable br
       unless dryrun $
-        whenJustM (getNewerBranch br) $ \newer ->
+        whenJust mnewer $ \newer ->
         mergeBranch dryrun False (mmerge == Just True) False mpkg (ancestor,unmerged) newer br
 
     -- FIXME time builds or layers

@@ -90,16 +90,18 @@ gitMergeOrigin br = do
       putStr pull
 
 -- FIXME maybe require local branch already here
-newerMergeable :: Branch -> IO (Bool,[Commit])
+newerMergeable :: Branch -> IO (Bool,[Commit],Maybe Branch)
 newerMergeable br =
   if br == Rawhide
-  then return (False,[])
+  then return (False,[],Nothing)
   else do
     mnewer <- getNewerBranch br
     locals <- localBranches True
     case mnewer of
-      Just newer -> gitMergeable (show newer `notElem` locals) newer
-      Nothing -> return (False,[])
+      Just newer -> do
+        (ancestor,commits) <- gitMergeable (show newer `notElem` locals) newer
+        return (ancestor, commits, Just newer)
+      Nothing -> return (False,[],Nothing)
 
 data Commit = Commit
               { commitRef :: String,

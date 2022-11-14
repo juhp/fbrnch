@@ -78,24 +78,25 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   gitMergeOrigin br
   newrepo <- initialPkgRepo
   tty <- isTty
-  (ancestor,unmerged) <- newerMergeable br
+  (ancestor,unmerged,mnewer) <- newerMergeable br
   -- FIXME if already built or failed, also offer merge
   merged <-
     case buildoptMerge opts of
       Just False -> return False
       Just True -> do
-        whenJustM (getNewerBranch br) $ \newer ->
+        whenJust mnewer $ \newer ->
           mergeBranch (buildoptDryrun opts) True True False (Just pkg) (ancestor,unmerged) newer br
         return True
       Nothing ->
         if ancestor && (newrepo || tty)
         then do
-          whenJustM (getNewerBranch br) $ \newer ->
+          whenJust mnewer $ \newer ->
             mergeBranch (buildoptDryrun opts) True False True (Just pkg) (ancestor,unmerged) newer br
           return True
         else do
           unless (br == Rawhide) $
-            putStrLn "newer branch cannot be merged"
+            whenJust mnewer $ \newer ->
+            putStrLn $ show newer +-+ "branch not mergeable"
           return False
   let spec = packageSpec pkg
   checkForSpecFile spec
