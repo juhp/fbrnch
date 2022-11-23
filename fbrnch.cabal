@@ -104,7 +104,7 @@ executable fbrnch
                        -- pretty-terminal depends on base >= 4.9 (ghc8)
                        base >= 4.9 && < 5,
                        bodhi,
-                       bugzilla-redhat >= 1.0,
+                       bugzilla-redhat >= 1.0.1,
                        bytestring,
                        config-ini,
                        copr-api,
