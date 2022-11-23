@@ -309,9 +309,9 @@ conflictPrompt commits txt = do
       if null ref
         then return Nothing
         else
-        if ref `elem` commitrefs
-        then return $ Just ref
-        else
-          if lower ref == "head"
-          then return $ Just c
-          else conflictPrompt commits txt
+        case find (ref `isPrefixOf`) commitrefs of
+          Just cref -> return $ Just cref
+          Nothing ->
+            if lower ref == "head"
+            then return $ Just c
+            else conflictPrompt commits txt
