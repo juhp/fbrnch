@@ -214,7 +214,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       nvr <- pkgNameVerRel' br spec
       unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $ do
-        putStrLn $ nvr ++ " (" ++ target ++ ")" +-+ show n +-+ "more" +-+
+        putStrLn $ nvr ++ " (" ++ target ++ ")" +-+
+          pluralException n "more" "more" +-+
           maybe "" (\l -> "in layer" +-+ show l) mlayer
         putNewLn
         displayCommits True unpushed
