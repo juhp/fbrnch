@@ -162,6 +162,8 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
                   warning "overriding update type with 'newpackage'"
                 putStrLn $ "Creating Bodhi Update for " ++ nvrs ++ ":"
                 -- FIXME check for Bodhi URL to confirm update
+                -- FIXME returns json error string if it exists:
+                -- {"status": "error", "errors": [{"location": "body", "name": "builds", "description": "Update for ghc9.2-9.2.5-14.fc36 already exists"}]}
                 cmd_ "bodhi" $ ["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvrs]
                 return True
         when updatedone $ do

@@ -15,6 +15,8 @@ import Prompt
 import Repoquery
 import RpmBuild
 
+-- FIXME --force removal of existing incompatible dependent packages
+-- FIXME --subpackage to specify subpackage(s) to install/add
 -- FIXME --ignore-uninstalled subpackages
 -- FIXME --skip-unavailable
 -- FIXME --check any/all of package installed

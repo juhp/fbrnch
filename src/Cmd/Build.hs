@@ -34,6 +34,7 @@ data BuildOpts = BuildOpts
   , buildoptAllowDirty :: Bool
   }
 
+-- FIXME merge --from
 -- FIXME check bugs before building?
 -- FIXME --sidetag
 -- FIXME --sort

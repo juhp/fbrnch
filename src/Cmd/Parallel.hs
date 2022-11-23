@@ -34,13 +34,16 @@ data JobDone = JobDone {jobNvr :: String,
                        }
 type JobAsync = (String, Async JobDone)
 
+-- FIXME offer to untag overrides afterwards
+-- FIXME merge --from
 -- FIXME print koji url of failed process or use koji-tool
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources as early as possible
--- FIXME --single-layer to build packages at once regardless
+-- FIXME --ignore-dependencies to build packages at once regardless
 -- FIXME time builds
 -- FIXME copy bodhi notes from another branch update
+-- FIXME support non-sidetag update for parallel packages
 parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget
                  -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()

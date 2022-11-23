@@ -284,6 +284,7 @@ checkIfRemoteBranchExists br =
 data CommitOpt = CommitMsg String | CommitAmend
 
 -- FIXME select ref by number
+-- FIXME minimum length of hash
 refPrompt :: [Commit] -> String -> IO (Maybe String)
 refPrompt commits txt = do
   case map commitRef commits of
@@ -300,6 +301,7 @@ refPrompt commits txt = do
             Nothing -> refPrompt commits txt
 
 -- FIXME also include branch
+-- FIXME minimum length of hash
 conflictPrompt :: [Commit] -> String -> IO (Maybe String)
 conflictPrompt commits txt = do
   case map commitRef commits of
