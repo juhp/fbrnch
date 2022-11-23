@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.2.1 (2022-11-23)
+- 'install': if dnf install fails, include command in error message
+- 'override': check for kerberos ticket
+- 'override': new --list and --expire option subcommands
+- 'parallel': change "0 jobs left in layer" message to "end of layer"
+- 'parallel': print package header for merge
+- 'parallel': wait for sidetag update to transition to request testing
+- 'request-branches': check package owner and admins: drop unordered-containers
+- 'sidetags': ensure krb ticket
+- 'update-version': now commits sources too
+- 'update-version': prompt rather than warn if not updating rawhide
+- Common plural: use 'no' for zero
+- Git: fix conflictPrompt to handle long hashes correctly
+- Prompt: use show for unprintable characters
+- mergeBranch: print package branch header
+- new RpmBuild module for rpm/build related functions moved from Package
+- newerMergeable may now include the newer branch
+- require bugzilla-redhat-1.0.1 since b.r.c dropped Bug see_also field (juhp/hsbugzilla#18)
+- use logMsg when waiting for repo
+
 ## 1.2 (2022-11-12)
 - Bodhi: for template file prompt instead of using fedpkg update
 - Bodhi: updates need to be comma separated (#36, Otto Liljalaakso)

@@ -9,7 +9,7 @@ A tool to help Fedora Packagers build package branches.
 Fedora developers use a lot of time building packages across releases
 and workflow for adding new packages, etc.
 fbrnch was made to help (semi-)automate common workflows to save time
-and effort.
+and effort, and avoid common some mistakes.
 
 fbrnch is distributed under the GPL license version 2 or later.
 
@@ -257,7 +257,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 
 ```
 $ fbrnch --version
-1.2
+1.2.1
 $ fbrnch --help
 Fedora branch building tool
 
@@ -332,7 +332,7 @@ fbrnch is packaged in Fedora: `sudo dnf install fbrnch`.
 
 3. Then either:
 
-a) using stack >= 2.1: `stack install`
+a) using stack (probably 2.3 or later): `stack install`
 
 or
 
@@ -419,7 +419,7 @@ inspired by the older fedora-haskell-tools project.
 
 I have given a couple of short talks about fbranch:
 - Nest with Fedora: [youtube](https://www.youtube.com/watch?v=40kTBsA674U) and [slides](https://github.com/juhp/presentations/blob/master/fedora-nest-2020-fbrnch/fbrnch-nest.md)
-- Lightning talk at devconf.cz 2021: [youtube](https://www.youtube.com/watch?v=O2-6rDuPMRA&t=2s)
+- Lightning talk for devconf.cz 2021: [youtube](https://www.youtube.com/watch?v=O2-6rDuPMRA&t=2s)
 
 ## Contribute
 Bug reports, feedback, and pull requests are all highly appreciated.
