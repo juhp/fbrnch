@@ -273,7 +273,7 @@ targetMaybeSidetag dryrun br msidetagTarget =
             putStrLn out
             let sidetag =
                   init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
-            logMsg $ "waiting for " ++ sidetag ++ " repo"
+            logMsg $ "Waiting for " ++ sidetag ++ " repo"
             unless dryrun $
               cmd_ "koji" ["wait-repo", sidetag]
             return sidetag
