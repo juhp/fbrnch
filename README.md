@@ -417,7 +417,7 @@ This project started off as a simple tool to build a package across branches
 and gradually more features, including some generic commands across packages
 inspired by the older fedora-haskell-tools project.
 
-I have given a couple of short talks about fbranch:
+I have given a couple of short talks about fbrnch:
 - Nest with Fedora: [youtube](https://www.youtube.com/watch?v=40kTBsA674U) and [slides](https://github.com/juhp/presentations/blob/master/fedora-nest-2020-fbrnch/fbrnch-nest.md)
 - Lightning talk for devconf.cz 2021: [youtube](https://www.youtube.com/watch?v=O2-6rDuPMRA&t=2s)
 
