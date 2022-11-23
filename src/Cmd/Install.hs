@@ -69,7 +69,7 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall allsubpkgs (mbr, p
                 ps <- filterM (pkgInstalled . rpmName . readNVRA) rpms
                 return $ if null ps then rpms else ps
             if reinstall || mforceshort' == Just ForceBuild
-            then do
+              then do
               let reinstalls =
                     filter (\ f -> readNVRA f `elem` already) toinstalls
               unless (null reinstalls) $
@@ -77,11 +77,12 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall allsubpkgs (mbr, p
               let remaining = filterDebug $ toinstalls \\ reinstalls
               unless (null remaining) $
                 sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
-            else do
-              ok <- cmdBool "sudo" $ "/usr/bin/dnf" : "install" : "-q" : "-y" : filterDebug toinstalls
+              else do
+              let command = "/usr/bin/dnf" : "install" : "-q" : "-y" : filterDebug toinstalls
+              ok <- cmdBool "sudo" command
               unless ok $
                 if wasbuilt
-                then error' "build failed to install"
+                then error' $ "error from:" +-+ unwords command
                 else do
                   prompt_ "Press Enter to rebuild package"
                   doInstallPkg (Just ForceBuild) spec rpms already
