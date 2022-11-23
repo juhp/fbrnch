@@ -18,6 +18,7 @@ import Branches
 import Cmd.WaitRepo (waitrepoCmd, WaitFetch(WaitNoFetch))
 import Git
 import Koji
+import Krb (krbTicket)
 import Package
 import Prompt (yesno)
 
@@ -28,6 +29,7 @@ data OverrideMode = OverrideCreate | OverrideList | OverrideExpire
 overrideCmd :: Bool -> OverrideMode -> Maybe Int -> Bool
             -> (BranchesReq, [String]) -> IO ()
 overrideCmd dryrun OverrideCreate mduration nowait breqpkgs = do
+  krbTicket
   unless nowait $
     putStrLn "Overriding"
   withPackagesByBranches HeaderMay False cleanGitFetchActive AnyNumber overrideBranch breqpkgs
