@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 
 module Cmd.Parallel (
   parallelBuildCmd,
@@ -8,8 +8,16 @@ import Common
 import Common.System
 
 import Control.Concurrent.Async
+import Data.Aeson (Value(String))
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap as M
+#else
+import qualified Data.HashMap.Lazy as M
+#endif
+import qualified Data.Text as T
 import Distribution.RPM.Build.Order (dependencyLayers)
 import Fedora.Bodhi hiding (bodhiUpdate)
+import qualified Fedora.Bodhi as FedoraBodhi (bodhiUpdate)
 import System.Console.Pretty
 import System.Time.Extra (sleep)
 
@@ -320,8 +328,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
             then bodhiSidetagUpdate rbr nvrs sidetag notes
             else
             unlessM (checkAutoBodhiUpdate rbr) $ do
-            -- arguably we already received the Updateid from the above bodhi command,
-            -- but we query it here via nvr
+            -- FIXME get updateid from above bodhi command output
             res <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" (last nvrs)]
             case res of
               [] -> do
@@ -329,7 +336,33 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                 prompt_ "Press Enter to resubmit to Bodhi"
                 bodhiSidetagUpdate rbr nvrs sidetag notes
               [update] ->
-                case lookupKey "updateid" update :: Maybe String of
+                case lookupKey "updateid" update of
                   Nothing -> error' "could not determine Update id"
-                  Just _updateid -> return ()
+                  Just updateid -> do
+                    putStr "Waiting for sidetag update to transition to 'request testing'"
+                    sleep 80
+                    bodhiUpdateTestingRequesting 1 updateid update
               _ -> error' $ "impossible happened: more than one update found for " ++ last nvrs
+
+    bodhiUpdateTestingRequesting :: Double -> String ->
+#if MIN_VERSION_aeson(2,0,0)
+      M.KeyMap Value
+#else
+      M.HashMap T.Text Value
+#endif
+      -> IO ()
+    bodhiUpdateTestingRequesting retries updateid update =
+      if retries > 4
+      then error' "\nupdate still not in 'request testing' status"
+      else
+        case M.lookup "request" update of
+          Just (String request) ->
+            putStrLn $ "\nrequest:" +-+ T.unpack request
+          _ -> do
+            mupdate' <- FedoraBodhi.bodhiUpdate updateid
+            case mupdate' of
+              Just update' -> do
+                putChar '.'
+                sleep (retries * 10)
+                bodhiUpdateTestingRequesting (retries + 1) updateid update'
+              _ -> error' "\nfailed to get updated metadata"
