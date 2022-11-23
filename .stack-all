@@ -1,3 +1,5 @@
 [versions]
+# nightly missing https://github.com/Porges/email-validate-hs/pull/65
+newest = lts-20
 # bugzilla fails: missing setRequestCheckStatus
 oldest = lts-11
