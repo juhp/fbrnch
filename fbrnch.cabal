@@ -130,8 +130,6 @@ executable fbrnch
                        text,
                        time,
                        typed-process >= 0.2.4.0,
-                       -- for aeson-1 compatibility:
-                       unordered-containers,
                        utf8-string,
                        unix,
                        xdg-basedir

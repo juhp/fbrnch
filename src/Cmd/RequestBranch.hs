@@ -5,12 +5,6 @@ module Cmd.RequestBranch (
   requestPkgBranches
   ) where
 
-#if MIN_VERSION_aeson(2,0,0)
-import qualified Data.Aeson.KeyMap as M
-#else
-import qualified Data.HashMap.Lazy as M
-import Data.Text (Text)
-#endif
 import Network.HTTP.Query (lookupKey')
 
 import Common
@@ -154,16 +148,13 @@ havePkgAccess pkg = do
   case epkginfo of
     Left err -> error' err
     Right pkginfo -> do
-      -- FIXME exclude unprivileged roles
-      let access = fasid `elem` concat (lookupKeyElems "access_users" pkginfo)
+      let access = fasid `elem` (lookupOwnerAdmins pkginfo :: [String])
       unless access $
         warning $ "-" +-+ fasid +-+ "does not have access"
       return access
   where
-    lookupKeyElems k o =
-      lookupKey' k o ::
-#if MIN_VERSION_aeson(2,0,0)
-        M.KeyMap [String]
-#else
-        M.HashMap Text [String]
-#endif
+    lookupOwnerAdmins pkginfo =
+      let access = lookupKey' "access_users" pkginfo
+          owners = lookupKey' "owner" access
+          admins = lookupKey' "admin" access
+      in owners ++ admins

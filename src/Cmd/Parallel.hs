@@ -8,12 +8,7 @@ import Common
 import Common.System
 
 import Control.Concurrent.Async
-import Data.Aeson (Value(String))
-#if MIN_VERSION_aeson(2,0,0)
-import qualified Data.Aeson.KeyMap as M
-#else
-import qualified Data.HashMap.Lazy as M
-#endif
+import Data.Aeson (Object,Value(String))
 import qualified Data.Text as T
 import Distribution.RPM.Build.Order (dependencyLayers)
 import Fedora.Bodhi hiding (bodhiUpdate)
@@ -343,18 +338,12 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                     bodhiUpdateTestingRequesting 1 updateid update
               _ -> error' $ "impossible happened: more than one update found for " ++ last nvrs
 
-    bodhiUpdateTestingRequesting :: Double -> String ->
-#if MIN_VERSION_aeson(2,0,0)
-      M.KeyMap Value
-#else
-      M.HashMap T.Text Value
-#endif
-      -> IO ()
+    bodhiUpdateTestingRequesting :: Double -> String -> Object -> IO ()
     bodhiUpdateTestingRequesting retries updateid update =
       if retries > 4
       then error' "\nupdate still not in 'request testing' status"
       else
-        case M.lookup "request" update of
+        case lookupKey "request" update of
           Just (String request) ->
             putStrLn $ "\nrequest:" +-+ T.unpack request
           _ -> do
