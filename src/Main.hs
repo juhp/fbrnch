@@ -253,6 +253,9 @@ main = do
     , Subcommand "owner" "List package owner(s)" $
       ownerCmd
       <$> manyPackages
+    , Subcommand "bzusers" "Search bugzilla users" $
+      bzusersCmd
+      <$> strArg "NAME"
     , Subcommand "create-review" "Create a Package Review request" $
       createReview
       <$> scratchOpt

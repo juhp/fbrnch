@@ -66,7 +66,8 @@ module Bugzilla (
   putBugURLStatus,
   -- request
   newBzRequest,
-  makeTextItem
+  makeTextItem,
+  searchUsers
   ) where
 
 import Common
