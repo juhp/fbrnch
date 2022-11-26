@@ -91,7 +91,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         unless (isNothing msidetagTarget) $
         -- FIXME check for an existing sidetag update
         when (target /= branchTarget rbr) $ do
-        let changelog = intercalate "" $ renderChangelogs nvrclogs
+        let changelog = intercalate "" $ renderChangelogs $ reverse nvrclogs
         putNewLn
         putStrLn changelog
         input <- prompt "Press Enter to use above or input update summary now; or 'no' to skip update"
