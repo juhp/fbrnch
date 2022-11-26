@@ -124,7 +124,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           putPkgBrnchHdr pkg br
           target <- targetMaybeSidetag dryrun br msidetagTarget
           when (mmerge /= Just False) $ mergeNewerBranch Nothing br
-          job <- startBuild Nothing 0 False False target pkg br "." >>= async
+          job <- startBuild Nothing 0 False (length brs) target pkg br "." >>= async
           unless dryrun $ sleep 3
           return (show br,job)
 
@@ -181,7 +181,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         setupBuild n dir = do
           pkg <- getPackageName dir
           putPkgBrnchHdr pkg br
-          job <- startBuild (Just layernum) n (layersleft > 0) (nopkgs > 5) target pkg br dir
+          job <- startBuild (Just layernum) n (layersleft > 0) nopkgs target pkg br dir
                  >>= async
           unless dryrun $ sleep 4
           return (unPackage pkg,job)
@@ -207,9 +207,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           watchJobs mlayer (pkg : fails) results jobs
 
     -- FIXME prefix output with package name
-    startBuild :: Maybe Int -> Int ->  Bool -> Bool -> String -> Package
+    startBuild :: Maybe Int -> Int ->  Bool -> Int -> String -> Package
                -> Branch -> String -> IO (IO JobDone)
-    startBuild mlayer n morelayers background target pkg br dir =
+    startBuild mlayer n morelayers nopkgs target pkg br dir =
       withExistingDirectory dir $ do
       gitSwitchBranch (RelBranch br)
       let spec = packageSpec pkg
@@ -218,8 +218,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $ do
         putStrLn $ nvr ++ " (" ++ target ++ ")" +-+
-          pluralException n "more" "more" +-+
-          maybe "" (\l -> "in layer" +-+ show l) mlayer
+          if nopkgs > 1
+          then pluralException n "more" "more" +-+
+               maybe "" (\l -> "in layer" +-+ show l) mlayer
+          else ""
         putNewLn
         displayCommits True unpushed
       unless (null unpushed) $ do
@@ -243,7 +245,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               bodhiCreateOverride dryrun Nothing nvr
           return $ do
             when morelayers $
-              kojiWaitRepo dryrun background target nvr
+              kojiWaitRepo dryrun (nopkgs > 5) target nvr
             return $ JobDone nvr br changelog
         Just BuildBuilding -> do
           putStrLn $ color Yellow nvr +-+ "is already" +-+ color Yellow "building"
@@ -278,7 +280,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                 if dryrun
                   then return $ return $ JobDone nvr br "<changelog>"
                   else do
-                  task <- kojiBuildBranchNoWait target pkg Nothing $ "--fail-fast" : ["--background" | background]
+                  task <- kojiBuildBranchNoWait target pkg Nothing $ "--fail-fast" : ["--background" | nopkgs > 5]
                   return $ do
                     kojiWaitTaskAndRepo (isNothing mlatest) nvr task
                     return $ JobDone nvr br changelog
@@ -303,7 +305,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               -- bodhiUpdate (fmap fst mBugSess) changelog nvr
               bodhiCreateOverride dryrun Nothing nvr
           when morelayers $
-            kojiWaitRepo dryrun background target nvr
+            kojiWaitRepo dryrun (nopkgs > 5) target nvr
 
     -- FIXME map nvr to package?
     renderChangelogs :: [JobDone] -> [String]
