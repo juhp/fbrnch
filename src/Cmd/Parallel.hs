@@ -337,8 +337,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                 case lookupKey "updateid" update of
                   Nothing -> error' "could not determine Update id"
                   Just updateid -> do
-                    putStr "Waiting for sidetag update to transition to 'request testing'"
-                    sleep 80
+                    putStr "Waiting ~90s for sidetag update to transition to 'request testing'.."
+                    -- FIXME countdown timer
+                    sleep 90
                     bodhiUpdateTestingRequesting 1 updateid update
               _ -> error' $ "impossible happened: more than one update found for " ++ last nvrs
 
@@ -349,7 +350,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       else
         case lookupKey "request" update of
           Just (String request) ->
-            putStrLn $ "\nrequest:" +-+ T.unpack request
+            putStrLn $
+            if request == "testing"
+            then " done"
+            else "\nrequest:" +-+ T.unpack request
           _ -> do
             mupdate' <- FedoraBodhi.bodhiUpdate updateid
             case mupdate' of
