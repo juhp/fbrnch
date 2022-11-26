@@ -151,7 +151,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       unless (null nextLayers) $
         putStrLn $ plural layersleft "more layer" ++ " left with " ++
         let layerspkgs = map length nextLayers
-        in case layerspkgs of
+        in if all (== 1) layerspkgs
+           then plural (length layerspkgs) "package"
+           else
+             case layerspkgs of
              [l] -> plural l "package"
              _ -> show layerspkgs +-+ "packages"
       jobs <- zipWithM setupBuild (reverse [0..(length layer - 1)]) layer
