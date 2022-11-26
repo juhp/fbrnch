@@ -106,7 +106,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
-      (failures,nvrclogs) <- timeIO $ watchJobs Nothing [] [] jobs
+      (failures,nvrclogs) <- timeIO $ watchJobs (length jobs == 1) Nothing [] [] jobs
       -- switch back to the original branch
       when (length brs /= 1) $
         gitSwitchBranch currentbranch
@@ -160,7 +160,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       jobs <- zipWithM setupBuild (reverse [0..(length layer - 1)]) layer
       when (null jobs) $
         error' "No jobs run"
-      (failures,nvrs) <- watchJobs (Just layernum) [] [] jobs
+      (failures,nvrs) <- watchJobs (length jobs == 1) (Just layernum) [] [] jobs
       -- FIXME prompt to continue?
       if null failures
         then return nvrs
@@ -186,25 +186,26 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           unless dryrun $ sleep 4
           return (unPackage pkg,job)
 
-    watchJobs :: Maybe Int -> [String] -> [JobDone] -> [JobAsync]
+    watchJobs :: Bool -> Maybe Int -> [String] -> [JobDone] -> [JobAsync]
               -> IO ([String],[JobDone]) -- (failures,successes)
-    watchJobs _ fails results [] = return (fails,results)
-    watchJobs mlayer fails results (job:jobs) = do
+    watchJobs _ _ fails results [] = return (fails,results)
+    watchJobs singlejob mlayer fails results (job:jobs) = do
       status <- poll (snd job)
       case status of
-        Nothing -> sleep 1 >> watchJobs mlayer fails results (jobs ++ [job])
+        Nothing -> sleep 1 >> watchJobs singlejob mlayer fails results (jobs ++ [job])
         -- (nvr,changelog)
         Just (Right result) -> do
-          putStrLn $
+          unless singlejob $
+            putStrLn $
             if null jobs
             then "ending layer" +-+ maybe "" show mlayer
             else plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer
-          watchJobs mlayer fails (result:results) jobs
+          watchJobs singlejob mlayer fails (result:results) jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
-          putStrLn $ "** " ++ color Magenta pkg +-+ "job" +-+ color Magenta "failed" ++ " ** (" ++ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer ++ ")"
-          watchJobs mlayer (pkg : fails) results jobs
+          putStrLn $ "** " ++ color Magenta pkg +-+ "job" +-+ color Magenta "failed" ++ " **" +-+ if singlejob then "" else "(" ++ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer ++ ")"
+          watchJobs singlejob mlayer (pkg : fails) results jobs
 
     -- FIXME prefix output with package name
     startBuild :: Maybe Int -> Int ->  Bool -> Int -> String -> Package
