@@ -23,10 +23,10 @@ commitPkgs mopt firstLine unstaged paths = do
     else mapM_ commitPkg paths
   where
     commitPkg :: FilePath -> IO ()
-    commitPkg path =
-      withExistingDirectory path $
+    commitPkg dir =
+      withExistingDirectory dir $
         unlessM isGitDirClean $ do
-          getPackageName path >>= putPkgHdr
+          getPackageName dir >>= putPkgHdr
           addall <-
             if null paths
             then null <$> git "diff" ["--cached"]
