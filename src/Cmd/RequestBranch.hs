@@ -72,7 +72,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
       unless (null newbranches) $ do
         mbidsession <- bzReviewSession
         urls <- forM newbranches $ \ br -> do
-          when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
+          when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br Nothing]
           when (length branches' > 1) $ putStr $ show br ++ " "
           -- 1. Can timeout like this:
           -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)

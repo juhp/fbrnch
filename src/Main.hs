@@ -207,6 +207,7 @@ main = do
       <*> switchWith 'w' "network" "Use network during build"
       <*> switchWith 's' "shell" "Enter chroot shell after building"
       <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use")
+      <*> optional archOpt
       <*> branchesPackages
     , Subcommand "install-deps" "Install package build dependencies" $
       installDepsCmd
@@ -452,7 +453,7 @@ main = do
     mockOpt brs = switchWith 'm' "mock" $ "Do mock build to test" ++ if brs then " branches" else ""
 
     archOpt :: Parser String
-    archOpt = strOptionWith 'a' "arch" "ARCH[,ARCH].." "build for arch(s)"
+    archOpt = strOptionWith 'a' "arch" "ARCH" "build for arch(s)"
 
     rebuildSrpmOpt = switchWith 'S' "rebuild-srpm" "rebuild srpm in Koji"
 

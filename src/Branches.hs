@@ -35,7 +35,7 @@ import Data.Either
 import Data.Tuple
 import Distribution.Fedora.Branch
 import SimpleCmd.Git
-import System.Info (arch)
+import qualified System.Info (arch)
 
 import Pagure
 import Prompt
@@ -104,13 +104,15 @@ pagurePkgBranches pkg = do
   where
     include p e = e ++ ": " ++ p
 
-mockRoot :: Branch -> String
-mockRoot br = do
-  case br of
-    Rawhide -> "fedora-rawhide-" ++ arch
-    Fedora n -> "fedora-" ++ show n ++ "-" ++ arch
-    EPEL n -> "epel-" ++ show n ++ "-" ++ arch
-    EPELNext n -> "centos-stream+epel-next-" ++ show n ++ "-" ++ arch
+mockRoot :: Branch -> Maybe String -> String
+mockRoot br march =
+  let arch = fromMaybe System.Info.arch march
+  in
+    case br of
+      Rawhide -> "fedora-rawhide-" ++ arch
+      Fedora n -> "fedora-" ++ show n ++ "-" ++ arch
+      EPEL n -> "epel-" ++ show n ++ "-" ++ arch
+      EPELNext n -> "centos-stream+epel-next-" ++ show n ++ "-" ++ arch
 
 ------
 

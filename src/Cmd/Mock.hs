@@ -20,8 +20,8 @@ data NoClean = NoCleanBefore | NoCleanAfter | NoCleanAll | MockShortCircuit
 -- FIXME handle non-release branches (on-branch works)
 -- FIXME option for --shell without rebuild
 mockCmd :: Bool -> Maybe NoClean -> Bool -> Bool -> Maybe Branch
-        -> (BranchesReq, [String]) -> IO ()
-mockCmd dryrun mnoclean network mockshell mroot (breq, ps) = do
+        -> Maybe String -> (BranchesReq, [String]) -> IO ()
+mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
   branches <-
     case breq of
       Branches [] ->
@@ -53,7 +53,7 @@ mockCmd dryrun mnoclean network mockshell mroot (breq, ps) = do
                       Just NoCleanAfter -> ["--no-cleanup-after"]
                       Just NoCleanAll -> ["--no-clean", "--no-cleanup-after"]
                       Just MockShortCircuit -> ["--short-circuit", "install"]
-          mockopts_common c = [c, "--root", mockRoot rootBr] ++ noclean ++ ["--enable-network" | network]
+          mockopts_common c = [c, "--root", mockRoot rootBr march] ++ noclean ++ ["--enable-network" | network]
           mockbuild_opts = mockopts_common command ++ ["--config-opts=cleanup_on_failure=False" | mnoclean `elem` [Nothing, Just NoCleanBefore]] ++ resultdir ++ srpms
           mockshell_opts = mockopts_common "--shell" ++ ["--no-clean" | "--no-clean" `notElem` noclean]
       if dryrun
