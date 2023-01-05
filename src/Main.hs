@@ -135,7 +135,7 @@ main = do
       <*> noFailFastOpt
       <*> optional archesOpt
       <*> many (sidetagTargetOpt Nothing)
-      <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
+      <*> optional scratchSourceOpt
       <*> branchesPackages
     , Subcommand "scratch-aarch64" "Koji aarch64 scratch build of package" $
       scratchCmdAarch64
@@ -143,7 +143,7 @@ main = do
       <*> rebuildSrpmOpt
       <*> switchWith 'X' "exclude-arch" "Exclude aarch64"
       <*> many (sidetagTargetOpt Nothing)
-      <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
+      <*> optional scratchSourceOpt
       <*> branchesPackages
     , Subcommand "scratch-x86_64" "Koji x86_64 scratch build of package" $
       scratchCmdX86_64
@@ -151,7 +151,7 @@ main = do
       <*> rebuildSrpmOpt
       <*> switchWith 'X' "exclude-arch" "Exclude x86_64"
       <*> many (sidetagTargetOpt Nothing)
-      <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to build")
+      <*> optional scratchSourceOpt
       <*> branchesPackages
     , Subcommand "update-version" "Update package in dist-git to newer version" $
       updateCmd
@@ -585,6 +585,11 @@ main = do
     scratchOpt =
       ScratchTask <$> optionWith auto 's' "scratch-build" "TASKID" "Existing scratch build taskid" <|>
       flagWith ScratchBuild SkipScratch 'S' "no-scratch" "Skip scratch build"
+
+    scratchSourceOpt :: Parser ScratchSource
+    scratchSourceOpt =
+      ScratchSRPM <$> strOptionLongWith "srpm" "SRPM" "SRPM to use" <|>
+      ScratchRef <$> strOptionWith 'r' "ref" "COMMITHASH" "git commit to build"
 
     nocleanOpt :: Parser NoClean
     nocleanOpt =

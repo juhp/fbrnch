@@ -5,6 +5,7 @@ module Cmd.Scratch (
   scratchCmdAarch64,
   scratchCmdX86_64,
   Archs(..),
+  ScratchSource(..)
   ) where
 
 import Branches
@@ -16,13 +17,21 @@ import Package
 import RpmBuild (generateSrpm)
 import Types (Archs(..),SideTagTarget)
 
+data ScratchSource = ScratchRef String | ScratchSRPM String
+
+showScratchSource :: Bool -> String -> Maybe ScratchSource -> String
+showScratchSource pushed nvr Nothing = nvr  ++ (if pushed then "" else ".src.rpm")
+showScratchSource _ _ (Just (ScratchRef ref)) = ref
+showScratchSource _ _ (Just (ScratchSRPM srpm)) = srpm
+
+-- FIXME --with --without ?
 -- FIXME allow parallel targets
 -- FIXME tail build.log for failure
 -- FIXME append timestamp after %release (to help identify scratch builds)
 scratchCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Archs
-           -> [SideTagTarget] -> Maybe String -> (BranchesReq, [String])
+           -> [SideTagTarget] -> Maybe ScratchSource -> (BranchesReq, [String])
            -> IO ()
-scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets mref (breq,pkgs) =
+scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msource (breq,pkgs) =
   withPackagesByBranches HeaderMust False Nothing AnyNumber scratchBuild (breq,pkgs)
   where
     anyTarget (RelBranch b) = branchTarget b
@@ -30,8 +39,8 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets mref (
 
     scratchBuild :: Package -> AnyBranch -> IO ()
     scratchBuild pkg br = do
-      when (isJust mref && length pkgs > 1) $
-        error' "--ref is not supported for multiple packages"
+      when (isJust msource && length pkgs > 1) $
+        error' "source override is not supported for multiple packages"
       pkggit <- isPkgGitRepo
       when (not pkggit && breq == Branches [] && null sidetagTargets) $
         error' "please specify a branch or target for non dist-git"
@@ -75,12 +84,13 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets mref (
             then do
             gitSwitchBranch br
             pushed <- do
-              case mref of
-                Just ref ->
+              case msource of
+                Just (ScratchRef ref) ->
                   if length ref < 6
                   then error' $ "please use a longer ref: " ++ ref
                   -- FIXME print commit log
                   else return True
+                Just (ScratchSRPM _) -> return False
                 Nothing -> do
                   clean <- isGitDirClean
                   if clean && isRelBranch br
@@ -89,11 +99,17 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets mref (
                     else return False
             rbr <- anyBranchToRelease br
             nvr <- pkgNameVerRel' rbr spec
-            putStrLn $ target ++ " scratch build of " ++ fromMaybe nvr mref ++ (if pushed then "" else ".src.rpm")
-            unless dryrun $ do
-              if pushed
-                then kojiBuildBranch target pkg mref $ "--scratch" : kojiargs
-                else srpmBuild kojiargs
+            putStrLn $ target ++ " scratch build of " ++ showScratchSource pushed nvr msource
+            unless dryrun $
+              case msource of
+                Just (ScratchSRPM srpm) ->
+                  void $ kojiScratchBuild target kojiargs srpm
+                Nothing ->
+                  if pushed
+                  then kojiBuildBranch target pkg Nothing $ "--scratch" : kojiargs
+                  else srpmBuild kojiargs
+                Just (ScratchRef ref) ->
+                  kojiBuildBranch target pkg (Just ref) $ "--scratch" : kojiargs
             else srpmBuild kojiargs
           where
             srpmBuild :: [String] -> IO ()
@@ -102,12 +118,12 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets mref (
 
 -- FIXME default -X to --no-fastfail?
 scratchCmdX86_64 :: Bool -> Bool -> Bool -> [SideTagTarget]
-                 -> Maybe String -> (BranchesReq, [String]) -> IO ()
+                 -> Maybe ScratchSource -> (BranchesReq, [String]) -> IO ()
 scratchCmdX86_64 dryrun rebuildSrpm excludeArch =
   scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["x86_64"]))
 
 scratchCmdAarch64 :: Bool -> Bool -> Bool -> [SideTagTarget]
-                  -> Maybe String -> (BranchesReq, [String]) -> IO ()
+                  -> Maybe ScratchSource -> (BranchesReq, [String]) -> IO ()
 scratchCmdAarch64 dryrun rebuildSrpm excludeArch =
   scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["aarch64"]))
 
