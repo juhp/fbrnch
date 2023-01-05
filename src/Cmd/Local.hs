@@ -4,8 +4,9 @@ module Cmd.Local (
   installDepsCmd,
   localCmd,
   nvrCmd,
+  renameMasterCmd,
   srpmCmd,
-  renameMasterCmd
+  srpmSpecCmd
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -13,6 +14,7 @@ import System.Environment
 import qualified System.Process as P
 import qualified System.Process.Typed as TP
 import System.Exit
+import System.IO.Extra (withTempDir)
 
 import Branches
 import Common
@@ -130,3 +132,38 @@ countCmd (mbr,pkgs) =
           exists <- doesFileExist spec
           return $ n + if exists then 1 else 0
         Nothing -> return n
+
+srpmSpecCmd :: Bool -> [FilePath] -> IO ()
+srpmSpecCmd diff srpms =
+  if diff then
+    case srpms of
+      [] -> error' "impossible happened: no srpms given"
+      [srpm] -> do
+        withTempDir $ \tempdir -> do
+          spec <- getSrpmSpecfile False srpm tempdir
+          cmd_ "diff" ["-u", tempdir </> spec, spec]
+      [srpm1, srpm2] ->
+        withTempDir $ \tempdir -> do
+          spec1 <- getSrpmSpecfile True srpm1 tempdir
+          spec2 <- getSrpmSpecfile True srpm2 tempdir
+          withCurrentDirectory tempdir $
+            void $ cmdBool "diff" ["-u", spec1, spec2]
+      _ -> error' "too many srpm files"
+    else
+    forM_ srpms $ \srpm ->
+    pipe_ ("rpm2cpio", [srpm]) ("cpio",["--extract", "--quiet", "--to-stdout", "*.spec"])
+  where
+    getSrpmSpecfile :: Bool -> FilePath -> FilePath -> IO FilePath
+    getSrpmSpecfile sub srpm tempdir = do
+      exists <- doesFileExist srpm
+      if exists
+        then do
+        let subdir = if sub then takeBaseName srpm else ""
+            dir = tempdir </> subdir
+        ok <- pipeBool ("rpm2cpio", [srpm]) ("cpio", ["--extract", "--quiet", "--make-directories", "-D", dir , "--preserve-modification-time", "*.spec"])
+        if ok
+          then do
+          spec <- head <$> listDirectory dir
+          return $ subdir </> spec
+          else error' "failed to extract spec file"
+        else error' $ "no such file:" +-+ srpm

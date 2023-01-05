@@ -180,6 +180,10 @@ main = do
       srpmCmd
       <$> switchWith 'f' "force" "regenerate even if spec older than existing srpm"
       <*> maybeBranchPackages False
+    , Subcommand "srpm-spec" "Show the spec file in an srpm" $
+      srpmSpecCmd
+      <$> switchWith 'd' "diff" "Compare with current spec file"
+      <*> some (strArg "SRPM")
     , Subcommand "diff" "Diff local changes" $
       diffCmd
       <$> switchWith 'o' "spec-only" "Only diff spec file"
