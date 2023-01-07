@@ -191,8 +191,9 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               unless dryrun $
               gitPushSilent $ Just $ ref ++ ":" ++ show br
             unlessM (null <$> gitOneLineLog ("origin/" ++ show br ++ "..HEAD")) $
-              when (isJust mpush && not dryrun) $
-              error' "Unpushed changes remain"
+              unless dryrun $ do
+              ok <- yesno "Unpushed changes remain, continue"
+              unless ok $ error' "aborted"
             unless (buildoptAllowDirty opts) $
               unlessM isGitDirClean $
               error' "local changes remain (dirty)"
