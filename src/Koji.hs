@@ -112,7 +112,8 @@ kojiBuild' wait target args = do
   -- init to drop final newline
   unless (B.null out) $
     logMsg $ (B.unpack . B.init . B.unlines . tail . B.lines) out
-  if ret == ExitSuccess then do
+  if ret == ExitSuccess
+    then do
     let kojiurl = B.unpack $ last $ B.words out
         task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
     when wait $ do
@@ -141,7 +142,11 @@ kojiWatchTask task = do
   mst <- kojiGetTaskState fedoraHub task
   case mst of
     Just TaskClosed -> return ()
-    Just TaskFailed -> error' "Task failed!"
+    Just TaskFailed -> do
+      let kojitool = "/usr/bin/koji-tool"
+      whenM (doesFileExist kojitool) $
+        cmd_ kojitool ["tasks", displayID task, "--tail", "-s", "fail"]
+      error' "Task failed!"
     Just TaskCanceled -> return ()
     _ -> kojiWatchTask task
 
