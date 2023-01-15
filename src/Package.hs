@@ -39,7 +39,8 @@ module Package (
   packageSpec,
   pkgNameVerRel,
   pkgNameVerRel',
-  equivNVR
+  equivNVR,
+  editSpecField
   ) where
 
 import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
@@ -455,3 +456,7 @@ equivNVR nvr1 nvr2
 --         toPackage (IsPkg p) = p
 --         toPackage (Unknown p) = p
 --         toPackage (IsBr b) = error' $ "can't map branch to package: " ++ show b
+
+editSpecField :: String -> String -> FilePath -> IO ()
+editSpecField field new spec =
+  cmd_ "sed" ["-i", "-e s/^\\(" ++ field ++ ":\\s\\+\\).*/\\1" ++ new ++ "/", spec]

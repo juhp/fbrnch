@@ -342,6 +342,9 @@ main = do
                     <|>
                     FtbfsSubstring <$> strOptionWith 's' "substring" "STRING" "Component substring")
       <*> maybeBranchPackages False
+    , Subcommand "autospec" "Convert package to use rpmautospec" $
+      autospecCmd
+      <$> manyPackages
     ]
   where
     cloneRequest :: Parser CloneRequest
