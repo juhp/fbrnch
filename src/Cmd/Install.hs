@@ -15,6 +15,7 @@ import Prompt
 import Repoquery
 import RpmBuild
 
+-- FIXME --rpm to avoid dnf
 -- FIXME --force removal of existing incompatible dependent packages
 -- FIXME --subpackage to specify subpackage(s) to install/add
 -- FIXME --ignore-uninstalled subpackages
@@ -22,8 +23,8 @@ import RpmBuild
 -- FIXME --check any/all of package installed
 -- FIXME add --debug or respect --verbose for dnf commands
 installCmd :: Bool -> Bool -> Maybe Branch -> Maybe ForceShort -> [BCond]
-           -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
-installCmd verbose recurse mfrom mforceshort bconds reinstall allsubpkgs (mbr, pkgs) = do
+           -> Bool -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
+installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsubpkgs (mbr, pkgs) = do
   when (recurse && isShortCircuit mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch (boolHeader (recurse || length pkgs > 1)) True Nothing installPkg (mbr, pkgs)
@@ -48,20 +49,21 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall allsubpkgs (mbr, p
       where
         doInstallPkg mforceshort' spec rpms already = do
           putStrLn $ (showNVR . dropArch . readNVRA) (head rpms)
-          missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
-          unless (null missingdeps) $
-            if recurse
-            then do
-              -- srcs <- nub <$> mapM (derefSrcPkg topdir dist True) hmissing
-              rbr <- anyBranchToRelease br
-              forM_ missingdeps $ \ dep -> do
-                -- FIXME check not metadep with parens
-                mpkgdir <- lookForPkgDir rbr ".." dep
-                case mpkgdir of
-                  Nothing -> putStrLn $ dep ++ " not known"
-                  Just pkgdir -> installCmd verbose recurse mfrom mforceshort bconds reinstall allsubpkgs (mbr, [pkgdir]) >> putNewLn
-              -- FIXME option to enable/disable installing missing deps
-            else installDeps True spec
+          unless nobuilddeps $ do
+            missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
+            unless (null missingdeps) $
+              if recurse
+              then do
+                -- srcs <- nub <$> mapM (derefSrcPkg topdir dist True) hmissing
+                rbr <- anyBranchToRelease br
+                forM_ missingdeps $ \ dep -> do
+                  -- FIXME check not metadep with parens
+                  mpkgdir <- lookForPkgDir rbr ".." dep
+                  case mpkgdir of
+                    Nothing -> putStrLn $ dep ++ " not known"
+                    Just pkgdir -> installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsubpkgs (mbr, [pkgdir]) >> putNewLn
+                -- FIXME option to enable/disable installing missing deps
+              else installDeps True spec
           wasbuilt <- buildRPMs (not verbose) False False mforceshort' bconds rpms br spec
           unless (isShortCircuit mforceshort') $ do
             toinstalls <-
