@@ -169,27 +169,23 @@ srpmSpecCmd diff srpms =
           else error' "failed to extract spec file"
         else error' $ "no such file:" +-+ srpm
 
--- FIXME --force for updating changelog file
-autospecCmd :: [String] -> IO ()
-autospecCmd pkgs =
-  withPackagesByBranches HeaderMay False cleanGitFetchActive Zero autospecPkg (Branches [Rawhide], pkgs)
+autospecCmd :: Bool -> [String] -> IO ()
+autospecCmd force pkgs =
+  withPackagesByBranches HeaderMay False cleanGitFetchActive ExactlyOne autospecPkg (Branches [Rawhide], pkgs)
   where
   autospecPkg :: Package -> AnyBranch -> IO ()
-  autospecPkg pkg br = do
-    spec <- localBranchSpecFile pkg br
+  autospecPkg _pkg br = do
+    gitSwitchBranch br
     let changelogfile = "changelog"
-    changelogExists <- doesFileExist changelogfile
-    if changelogExists
-      then putStrLn $ "'" ++ changelogfile ++ "' file already exists"
-      else do
-      changelog <- cmd "rpmautospec" ["generate-changelog", spec]
-      writeFile changelogfile $ changelog ++ "\n"
-      speccontent <- lines <$!> readFile spec
-      withTempDir $ \tmpdir -> do
-         writeFile (tmpdir </> spec) $ unlines $ takeWhile (/= "%changelog") speccontent ++ ["%changelog", "%autochangelog"]
-         removeFile spec
-         renameFile (tmpdir </> spec) spec
-      -- FIXME check if already?
-      editSpecField "Release" "%autorelease" spec
-      git_ "add" [spec, changelogfile]
-      git_ "commit" ["-m", "converted to rpmautospec"]
+    exists <- doesFileExist changelogfile
+    if exists
+      then
+      if force
+      then do
+        cmd "rpmautospec" ["generate-changelog"] >>=
+          writeFile changelogfile
+        unlessM (null <$> git "status" ["--porcelain", "--untracked=no"]) $ do
+          git_ "add" [changelogfile]
+          git_ "commit" ["-m", "refresh changelog"]
+      else putStrLn $ "'changelog' file already exists"
+      else cmd_ "rpmautospec" ["convert"]

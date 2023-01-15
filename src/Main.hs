@@ -344,7 +344,8 @@ main = do
       <*> maybeBranchPackages False
     , Subcommand "autospec" "Convert package to use rpmautospec" $
       autospecCmd
-      <$> manyPackages
+      <$> switchWith 'f' "force" "Refresh changelog file to current"
+      <*> manyPackages
     ]
   where
     cloneRequest :: Parser CloneRequest
