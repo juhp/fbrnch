@@ -45,9 +45,9 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
     then mapM_ putStrLn chroots
     else
     if null pkgs then
-      getPackageName "." >>= coprBuildPkg chroots
+      getPackageName "." >>= coprBuildPkg chroots False
     else
-      mapM_ (\ p -> withExistingDirectory p $ coprBuildPkg chroots (Package p)) pkgs
+      mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg chroots (n>0) (Package p)) $ zip (reverse [0,length pkgs - 1]) pkgs
   where
     coprGetChroots = do
       username <- getUsername
@@ -76,7 +76,7 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
         then error' "No valid chroots"
         else return buildroots
 
-    coprBuildPkg buildroots pkg = do
+    coprBuildPkg buildroots morepkgs pkg = do
       -- FIXME check is pkg.spec
       spec <- localBranchSpecFile pkg (RelBranch Rawhide)
       -- pkg <- takeFileName <$> getCurrentDirectory
@@ -103,6 +103,7 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
           let initialChroots = groupBy sameRelease buildroots
               remainingChroots = buildroots \\ concat initialChroots
           staggerBuilds srpm initialChroots remainingChroots
+      when morepkgs $ putNewLn
 
     removeArch relarch = init $ dropWhileEnd (/= '-') relarch
     takeArch = takeWhileEnd (/= '-')
