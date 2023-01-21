@@ -12,6 +12,7 @@ module RpmBuild (
   isShortCircuit,
   checkSourcesMatch,
   notInstalled,
+  rpmEval
   )
 where
 

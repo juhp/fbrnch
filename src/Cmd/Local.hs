@@ -4,6 +4,7 @@ module Cmd.Local (
   countCmd,
   installDepsCmd,
   localCmd,
+  moveArtifactsCmd,
   nvrCmd,
   renameMasterCmd,
   srpmCmd,
@@ -11,6 +12,7 @@ module Cmd.Local (
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.Char (isDigit)
 import System.Environment
 import qualified System.Process as P
 import qualified System.Process.Typed as TP
@@ -189,3 +191,47 @@ autospecCmd force pkgs =
           git_ "commit" ["-m", "refresh changelog"]
       else putStrLn $ "'changelog' file already exists"
       else cmd_ "rpmautospec" ["convert"]
+
+moveArtifactsCmd :: [String] -> IO ()
+moveArtifactsCmd pkgs =
+  withPackagesByBranches HeaderMay False dirtyGit Zero moveArtifactsPkg (Branches [], pkgs)
+  where
+    moveArtifactsPkg :: Package -> AnyBranch -> IO ()
+    moveArtifactsPkg pkg br = do
+      cwd <- getCurrentDirectory
+      whenJustM (rpmEval "%_rpmdir") $ \rpmdir ->
+        unless (rpmdir == cwd) $ do
+        moveRPMS rpmdir "x86_64"
+        moveRPMS rpmdir "noarch"
+      ls <- listDirectory "."
+      whenJustM (rpmEval "%_srcrpmdir") $ \srcrpmdir ->
+        unless (srcrpmdir == cwd) $ do
+        let srpms = filter ("src.rpm" `isExtensionOf`) ls
+        forM_ srpms $ \srpm ->
+          unlessM (doesFileExist $ srcrpmdir </> srpm) $
+          renameFile srpm $ srcrpmdir </> srpm
+      whenJustM (rpmEval "%_builddir") $ \builddir ->
+        unless (builddir == cwd) $ do
+        dirs <- filterM (doesDirectoryExist) ls
+        let pkgtrees = filter ((unPackage pkg ++ "-") `isPrefixOf`) dirs
+        spec <- localBranchSpecFile pkg br
+        srcs <- map (takeWhile (not . isDigit) . takeBaseName) <$> cmdLines "spectool" ["-S", spec]
+        let srctrees =
+              if null srcs
+              then []
+              else filter (head srcs `isPrefixOf`) dirs
+        forM_ (pkgtrees ++ srctrees) $ \tree ->
+          unlessM (doesDirectoryExist $ builddir </> tree) $
+          renameDirectory tree $ builddir </> tree
+
+    moveRPMS :: FilePath -> FilePath -> IO ()
+    moveRPMS rpmdir dir =
+      whenM (doesDirectoryExist (rpmdir </> dir)) $ do
+      rpms <- listDirectory dir
+      forM_ rpms $ \rpm -> do
+        let file = dir </> rpm
+        unlessM (doesFileExist $ rpmdir </> file) $
+          renameFile file $ rpmdir </> file
+      left <- listDirectory dir
+      when (null left) $
+        removeDirectory dir
