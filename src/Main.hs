@@ -83,6 +83,9 @@ main = do
       <*> switchWith 'a' "show-all" "List all commits [default first 20]"
       <*> optional (optionWith branchM 'f' "from" "BRANCH" "Branch to merge from [default newer]")
       <*> branchesPackages
+    , Subcommand "unpushed" "Show unpushed commits" $
+      unpushedCmd
+      <$> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd
       <$> buildOpts

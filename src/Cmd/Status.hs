@@ -1,7 +1,11 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Cmd.Status (statusCmd) where
+module Cmd.Status (
+  statusCmd,
+  unpushedCmd
+  )
+where
 
 import Common
 import Common.System
@@ -119,3 +123,40 @@ statusBranch pkg rbr@(RelBranch br) = do
 #if !MIN_VERSION_time(1,8,0)
     nominalDay = 3600 * 24 :: NominalDiffTime
 #endif
+
+
+unpushedCmd :: (BranchesReq,[String]) -> IO ()
+unpushedCmd (breq, pkgs) = do
+  -- FIXME dirty not okay for multiple branches?
+  withPackagesByBranches HeaderMay False dirtyGit AnyNumber unpushedBranch (breq, pkgs)
+  where
+    -- FIXME note dirty when local changes
+    unpushedBranch :: Package -> AnyBranch -> IO ()
+    unpushedBranch _ (OtherBranch _) =
+      error' "status currently only defined for release branches"
+    unpushedBranch pkg rbr@(RelBranch br) = do
+      brExists <- checkIfRemoteBranchExists rbr
+      if not brExists
+        then do
+        name <- getDirectoryName
+        putStrLn $ name ++ " has no branch " ++ show br
+        else do
+        gitSwitchBranch rbr
+        let spec = packageSpec pkg
+        ifM (notM (doesFileExist spec))
+          (ifM initialPkgRepo
+            (putStrLn $ show br ++ ": initial repo")
+            (putStrLn $ "missing " ++ spec)) $
+          do
+          mnvr <- pkgNameVerRel br spec
+          case mnvr of
+            Nothing -> do
+              putStrLn "undefined NVR!\n"
+              putStr "HEAD "
+              whenJustM (gitShortLog1 Nothing) $ putStrLn . showCommit
+            Just _nvr -> do
+              unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
+              let prefix =
+                    (if length pkgs > 1 then unPackage pkg else "") +-+
+                    if breq /= Branches [br] then show br else ""
+              whenJust unpushed $ putStrLn . ((prefix ++ ": ") ++) . showCommit
