@@ -192,8 +192,8 @@ autospecCmd force pkgs =
       else putStrLn $ "'changelog' file already exists"
       else cmd_ "rpmautospec" ["convert"]
 
-moveArtifactsCmd :: [String] -> IO ()
-moveArtifactsCmd pkgs =
+moveArtifactsCmd :: Bool -> [String] -> IO ()
+moveArtifactsCmd remove pkgs =
   withPackagesByBranches HeaderMay False dirtyGit Zero moveArtifactsPkg (Branches [], pkgs)
   where
     moveArtifactsPkg :: Package -> AnyBranch -> IO ()
@@ -207,9 +207,13 @@ moveArtifactsCmd pkgs =
       whenJustM (rpmEval "%_srcrpmdir") $ \srcrpmdir ->
         unless (srcrpmdir == cwd) $ do
         let srpms = filter ("src.rpm" `isExtensionOf`) ls
-        forM_ srpms $ \srpm ->
-          unlessM (doesFileExist $ srcrpmdir </> srpm) $
-          renameFile srpm $ srcrpmdir </> srpm
+        forM_ srpms $ \srpm -> do
+          exists <- doesFileExist $ srcrpmdir </> srpm
+          if exists
+            then if remove
+                 then removeFile srpm
+                 else putStrLn $ "duplicate:" +-+ srpm
+            else renameFile srpm $ srcrpmdir </> srpm
       whenJustM (rpmEval "%_builddir") $ \builddir ->
         unless (builddir == cwd) $ do
         dirs <- filterM (doesDirectoryExist) ls
@@ -220,18 +224,27 @@ moveArtifactsCmd pkgs =
               if null srcs
               then []
               else filter (head srcs `isPrefixOf`) dirs
-        forM_ (pkgtrees ++ srctrees) $ \tree ->
-          unlessM (doesDirectoryExist $ builddir </> tree) $
-          renameDirectory tree $ builddir </> tree
+        forM_ (pkgtrees ++ srctrees) $ \tree -> do
+          exists <- doesDirectoryExist $ builddir </> tree
+          if exists
+            then if remove
+                 then removeDirectoryRecursive tree
+                 else putStrLn $ "duplicate:" +-+ tree
+            else renameDirectory tree $ builddir </> tree
 
     moveRPMS :: FilePath -> FilePath -> IO ()
     moveRPMS rpmdir dir =
+      whenM (doesDirectoryExist dir) $
       whenM (doesDirectoryExist (rpmdir </> dir)) $ do
       rpms <- listDirectory dir
       forM_ rpms $ \rpm -> do
         let file = dir </> rpm
-        unlessM (doesFileExist $ rpmdir </> file) $
-          renameFile file $ rpmdir </> file
+        exists <- doesFileExist $ rpmdir </> file
+        if exists
+          then if remove
+               then removeFile file
+               else putStrLn $ "duplicate:" +-+ file
+          else renameFile file $ rpmdir </> file
       left <- listDirectory dir
       when (null left) $
         removeDirectory dir

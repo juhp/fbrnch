@@ -346,9 +346,10 @@ main = do
       autospecCmd
       <$> switchWith 'f' "force" "Refresh changelog file to current"
       <*> manyPackages
-    , Subcommand "move-artifacts" "Move rpm artifacts into rpmbuild dirs" $
+    , Subcommand "move-artifacts" "Move old rpm artifacts into rpmbuild dirs" $
       moveArtifactsCmd
-      <$> manyPackages
+      <$> switchWith 'd' "delete" "Remove duplicate artifacts"
+      <*> manyPackages
     ]
   where
     cloneRequest :: Parser CloneRequest
