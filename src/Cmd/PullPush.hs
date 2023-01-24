@@ -7,6 +7,7 @@ where
 
 import Branches
 import Common
+import Common.System (error')
 import Git
 import Package
 
@@ -58,11 +59,15 @@ fetchPkgs args =
     fetchPkg _pkg _br =
       gitFetchSilent False
 
-pushPkgs :: (BranchesReq, [String]) -> IO ()
-pushPkgs =
-  withPackagesByBranches HeaderMay False cleanGitFetch AnyNumber pushPkg
+pushPkgs :: Bool -> Maybe String -> (BranchesReq, [String]) -> IO ()
+pushPkgs dryrun mref (breq, pkgs) = do
+  when (isJust mref && length pkgs > 1) $
+    error' "can only specify ref for single package"
+  withPackagesByBranches HeaderMay False cleanGitFetch AnyNumber pushPkg (breq, pkgs)
   where
     pushPkg :: Package -> AnyBranch -> IO ()
     pushPkg _pkg _br = do
       whenJustM (gitShortLog1 Nothing) $ putStrLn . showCommit
-      gitPushSilent Nothing
+      if dryrun
+        then checkOnBranch
+        else gitPushSilent mref

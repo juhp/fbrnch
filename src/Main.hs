@@ -259,7 +259,9 @@ main = do
       <$> manyPackages
     , Subcommand "push" "Git push packages" $
       pushPkgs
-      <$> branchesPackages
+      <$> dryrunOpt
+      <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to push")
+      <*> branchesPackages
     , Subcommand "owner" "List package owner(s)" $
       ownerCmd
       <$> manyPackages
