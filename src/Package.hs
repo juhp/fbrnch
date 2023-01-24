@@ -162,7 +162,7 @@ withExistingDirectory dir act = do
 -- newly created Fedora repos/branches have just one README commit
 initialPkgRepo :: IO Bool
 initialPkgRepo = do
-  commits <- length <$> gitShortLogN 2 Nothing
+  commits <- length <$> gitShortLogN (Just 2) Nothing
   return $ commits <= 1
 
 newtype Package = Package {unPackage :: String}

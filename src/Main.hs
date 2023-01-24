@@ -85,7 +85,8 @@ main = do
       <*> branchesPackages
     , Subcommand "unpushed" "Show unpushed commits" $
       unpushedCmd
-      <$> branchesPackages
+      <$> switchWith 'l' "latest" "Only show latest unpushed commit"
+      <*> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd
       <$> buildOpts

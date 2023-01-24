@@ -125,10 +125,10 @@ statusBranch pkg rbr@(RelBranch br) = do
 #endif
 
 
-unpushedCmd :: (BranchesReq,[String]) -> IO ()
-unpushedCmd (breq, pkgs) = do
+unpushedCmd :: Bool -> (BranchesReq,[String]) -> IO ()
+unpushedCmd latest (breq, pkgs) =
   -- FIXME dirty not okay for multiple branches?
-  withPackagesByBranches HeaderMay False dirtyGit AnyNumber unpushedBranch (breq, pkgs)
+  withPackagesByBranches (if latest then HeaderMay else HeaderMust) False dirtyGit AnyNumber unpushedBranch (breq, pkgs)
   where
     -- FIXME note dirty when local changes
     unpushedBranch :: Package -> AnyBranch -> IO ()
@@ -143,20 +143,26 @@ unpushedCmd (breq, pkgs) = do
         else do
         gitSwitchBranch rbr
         let spec = packageSpec pkg
+            prefix =
+              let pref =
+                    (if length pkgs > 1 then unPackage pkg else "") +-+
+                    case breq of
+                      Branches brs | length brs <= 1 -> ""
+                      _ -> show br
+              in if null pref then "" else pref ++ ":"
         ifM (notM (doesFileExist spec))
           (ifM initialPkgRepo
-            (putStrLn $ show br ++ ": initial repo")
-            (putStrLn $ "missing " ++ spec)) $
+            (putStrLn $ prefix +-+ "initial repo")
+            (unlessM (doesFileExist "dead.package") $
+             putStrLn $ "missing " ++ spec)) $
           do
-          mnvr <- pkgNameVerRel br spec
-          case mnvr of
-            Nothing -> do
-              putStrLn "undefined NVR!\n"
-              putStr "HEAD "
-              whenJustM (gitShortLog1 Nothing) $ putStrLn . showCommit
-            Just _nvr -> do
-              unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
-              let prefix =
-                    (if length pkgs > 1 then unPackage pkg else "") +-+
-                    if breq /= Branches [br] then show br else ""
-              whenJust unpushed $ putStrLn . ((prefix ++ ": ") ++) . showCommit
+          whenM (isNothing <$> pkgNameVerRel br spec) $ do
+            putStrLn "undefined NVR!\n"
+            putStr "HEAD "
+          unpushed <- gitShortLogN (if latest then Just 1 else Nothing) $
+                      Just $ "origin/" ++ show br ++ "..HEAD"
+          if latest
+            then whenJust (listToMaybe unpushed) $ putCommit prefix
+            else mapM_ (putCommit prefix) unpushed
+
+    putCommit prefix = putStrLn . (prefix +-+) . showCommit

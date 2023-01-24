@@ -125,9 +125,9 @@ gitOneLineLog :: String -> IO [Commit]
 gitOneLineLog range =
   map mkCommit <$> gitLines "log" ["--pretty=format:%H (%s, %cs)", range]
 
-gitShortLogN :: Int -> Maybe String -> IO [Commit]
-gitShortLogN num mrange =
-  map mkCommit <$> gitLines "log" (["--max-count=" ++ show num, "--pretty=reference"] ++ maybeToList mrange)
+gitShortLogN :: Maybe Int -> Maybe String -> IO [Commit]
+gitShortLogN mnum mrange =
+  map mkCommit <$> gitLines "log" (["--max-count=" ++ show num | num <- maybeToList mnum] ++ "--pretty=reference": maybeToList mrange)
 
 gitShortLog1 :: Maybe String -> IO (Maybe Commit)
 gitShortLog1 mrange = do
