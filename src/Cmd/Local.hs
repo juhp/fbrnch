@@ -117,6 +117,7 @@ renameMasterCmd pkgs =
       git_ "branch" ["--move", "master", "rawhide"]
       git_ "remote" ["set-head", "origin", "rawhide"]
       git_ "branch" ["--set-upstream-to", "origin/rawhide", "rawhide"]
+      git_ "pull" []
 
 countCmd :: (Maybe Branch,[String]) -> IO ()
 countCmd (mbr,pkgs) =
