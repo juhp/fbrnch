@@ -28,8 +28,9 @@ import Package
 -- FIXME silence fetching of new branches? (for --reviews etc)
 statusCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
 statusCmd nofetch reviews (breq, pkgs) = do
-  reviewpkgs <- if reviews then
-    map reviewBugToPackage <$> listReviewsAll True ReviewRepoCreated
+  reviewpkgs <-
+    if reviews
+    then map reviewBugToPackage <$> listReviewsAll True ReviewRepoCreated
     else return []
   -- FIXME dirty not okay for multiple branches?
   withPackagesByBranches HeaderMay False (if nofetch then dirtyGit else dirtyGitFetch) AnyNumber statusBranch (breq, pkgs ++ reviewpkgs)
