@@ -217,14 +217,13 @@ moveArtifactsCmd remove pkgs =
       whenJustM (rpmEval "%_builddir") $ \builddir ->
         unless (builddir == cwd) $ do
         dirs <- filterM (doesDirectoryExist) ls
-        let pkgtrees = filter ((unPackage pkg ++ "-") `isPrefixOf`) dirs
         spec <- localBranchSpecFile pkg br
         srcs <- map (takeWhile (not . isDigit) . takeBaseName) <$> cmdLines "spectool" ["-S", spec]
         let srctrees =
               if null srcs
               then []
               else filter (head srcs `isPrefixOf`) dirs
-        forM_ (pkgtrees ++ srctrees) $ \tree -> do
+        forM_ srctrees $ \tree -> do
           exists <- doesDirectoryExist $ builddir </> tree
           if exists
             then if remove
