@@ -212,8 +212,9 @@ main = do
       mockCmd
       <$> switchWith 'n' "dry-run" "Do not build (but creates srpm)"
       <*> optional nocleanOpt
-      <*> switchWith 'w' "network" "Use network during build"
-      <*> switchWith 's' "shell" "Enter chroot shell after building"
+      <*> switchWith 'N' "network" "Use network during build"
+      <*> optional (flagLongWith' ShellOnly "shell-only" "Skip mock build" <|>
+                    flagWith' BuildShell 's' "shell" "Enter chroot shell after building")
       <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use")
       <*> optional archOpt
       <*> branchesPackages

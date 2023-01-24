@@ -1,6 +1,7 @@
 module Cmd.Mock
   ( mockCmd,
-    NoClean(..)
+    NoClean(..),
+    MockShell(..)
   )
 where
 
@@ -16,10 +17,13 @@ import RpmBuild (generateSrpm)
 data NoClean = NoCleanBefore | NoCleanAfter | NoCleanAll | MockShortCircuit
   deriving Eq
 
+data MockShell = ShellOnly | BuildShell
+  deriving Eq
+
 -- FIXME add repo/copr for build
 -- FIXME handle non-release branches (on-branch works)
 -- FIXME option for --shell without rebuild
-mockCmd :: Bool -> Maybe NoClean -> Bool -> Bool -> Maybe Branch
+mockCmd :: Bool -> Maybe NoClean -> Bool-> Maybe MockShell -> Maybe Branch
         -> Maybe String -> (BranchesReq, [String]) -> IO ()
 mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
   branches <-
@@ -58,11 +62,15 @@ mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
           mockshell_opts = mockopts_common "--shell" ++ ["--no-clean" | "--no-clean" `notElem` noclean]
       if dryrun
         then do
-        cmdN "mock" mockbuild_opts
-        when mockshell $ cmdN "mock" mockshell_opts
+        unless (mockshell == Just ShellOnly) $
+          cmdN "mock" mockbuild_opts
+        when (isJust mockshell) $ cmdN "mock" mockshell_opts
         else do
-        ok <- cmdBool "mock" mockbuild_opts
-        when mockshell $ cmd_ "mock" mockshell_opts
+        ok <-
+          if mockshell == Just ShellOnly
+          then return True
+          else cmdBool "mock" mockbuild_opts
+        when (isJust mockshell) $ cmd_ "mock" mockshell_opts
         unless ok $ error' "mockbuild failed"
       where
         prepSrpm :: AnyBranch -> FilePath -> IO FilePath
