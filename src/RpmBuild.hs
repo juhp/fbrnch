@@ -234,10 +234,10 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
         args = sourcediropt ++ ["--define", "dist " ++ rpmDistTag dist] ++
                buildopt ++ map show bconds ++ [spec]
     date <- cmd "date" ["+%T"]
-    putStr $ date ++ " Building " ++ takeBaseName spec ++ " locally... "
+    rbr <- anyBranchToRelease br
+    nvr <- pkgNameVerRel' rbr spec
+    putStr $ date ++ " Building " ++ nvr ++ " locally... "
     ok <- do
-      rbr <- anyBranchToRelease br
-      nvr <- pkgNameVerRel' rbr spec
       let buildlog = ".build-" ++ (showVerRel . nvrVerRel . readNVR) nvr <.> "log"
       timeIO $
         if not quiet || isShortCircuit mforceshort
@@ -256,7 +256,7 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
             else cmd_ "tail" ["-n 100", buildlog]
           return res
     unless ok $
-      error' $ takeBaseName spec ++ " failed to build"
+      error' $ nvr ++ " failed to build"
   return needBuild
   where
     quoteArg :: String -> String
