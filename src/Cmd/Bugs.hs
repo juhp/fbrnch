@@ -5,9 +5,8 @@ module Cmd.Bugs
    bzusersCmd)
 where
 
-import Data.List.Extra (trim)
-
 import Bugzilla
+import Common
 import Common.System (error')
 import qualified Common.Text as T
 import Package
