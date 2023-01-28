@@ -32,20 +32,24 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsub
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
       whenJust mbr $ gitSwitchBranch . RelBranch
-      spec <-
-        if isNothing mfrom
-        then localBranchSpecFile pkg br
+      dead <- doesFileExist "dead.package"
+      if dead
+        then putStrLn "dead package"
         else do
-          mergeCmd False True Nothing False mfrom (Branches [onlyRelBranch br], ["."])
-          localBranchSpecFile pkg br
-      rpms <- builtRpms br spec
-      -- removing arch
-      let nvras = map readNVRA rpms
-      already <- filterM nvraInstalled nvras
-      if isJust mforceshort || null already || reinstall
-        then doInstallPkg mforceshort spec rpms already
-        else putStrLn $ unlines (map showNVRA already) ++
-             "\nalready installed!\n"
+        spec <-
+          if isNothing mfrom
+          then localBranchSpecFile pkg br
+          else do
+            mergeCmd False True Nothing False mfrom (Branches [onlyRelBranch br], ["."])
+            localBranchSpecFile pkg br
+        rpms <- builtRpms br spec
+        -- removing arch
+        let nvras = map readNVRA rpms
+        already <- filterM nvraInstalled nvras
+        if isJust mforceshort || null already || reinstall
+          then doInstallPkg mforceshort spec rpms already
+          else putStrLn $ unlines (map showNVRA already) ++
+               "\nalready installed!\n"
       where
         doInstallPkg mforceshort' spec rpms already = do
           putStrLn $ (showNVR . dropArch . readNVRA) (head rpms)
