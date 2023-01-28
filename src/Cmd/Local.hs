@@ -190,7 +190,7 @@ autospecCmd force pkgs =
         unlessM (null <$> git "status" ["--porcelain", "--untracked=no"]) $ do
           git_ "add" [changelogfile]
           git_ "commit" ["-m", "refresh changelog"]
-      else putStrLn $ "'changelog' file already exists"
+      else putStrLn "'changelog' file already exists"
       else cmd_ "rpmautospec" ["convert"]
 
 moveArtifactsCmd :: Bool -> [String] -> IO ()
@@ -217,7 +217,7 @@ moveArtifactsCmd remove pkgs =
             else renameFile srpm $ srcrpmdir </> srpm
       whenJustM (rpmEval "%_builddir") $ \builddir ->
         unless (builddir == cwd) $ do
-        dirs <- filterM (doesDirectoryExist) ls
+        dirs <- filterM doesDirectoryExist ls
         spec <- localBranchSpecFile pkg br
         srcs <- map (takeWhile (not . isDigit) . takeBaseName) <$> cmdLines "spectool" ["-S", spec]
         let srctrees =
