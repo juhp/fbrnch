@@ -142,7 +142,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
     parallelBuild _ _ (_,[]) = return [] -- should not reach here
     parallelBuild target br (layernum, layer:nextLayers) =  do
       krbTicket
-      putStrLn $ "\n= Building parallel layer #" ++ show layernum ++
+      let singlelayer = layernum == 0 && null nextLayers
+      putStrLn $ "\n= Building" +-+
+        (if singlelayer
+         then "in parallel"
+         else "parallel layer #" ++ show layernum) ++
         if nopkgs > 1
         then " (" ++ show nopkgs +-+ "packages):"
         else ":"
@@ -157,16 +161,18 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
              case layerspkgs of
              [l] -> plural l "package"
              _ -> show layerspkgs +-+ "packages"
-      jobs <- zipWithM setupBuild (reverse [0..(length layer - 1)]) layer
+      jobs <- zipWithM (setupBuild singlelayer) (reverse [0..(length layer - 1)]) layer
       when (null jobs) $
         error' "No jobs run"
-      (failures,nvrs) <- watchJobs (length jobs == 1) (Just layernum) [] [] jobs
+      (failures,nvrs) <- watchJobs (length jobs == 1) (if singlelayer then Nothing else Just layernum) [] [] jobs
       -- FIXME prompt to continue?
       if null failures
         then return nvrs
         else do
         let pending = sum $ map length nextLayers
-        error' $ "Build failures in layer" +-+ show layernum ++ ": " ++
+        error' $ "Build failures" +-+
+          (if singlelayer then ":" else "in layer" +-+ show layernum ++ ": ")
+          ++
           unwords failures ++ "\n\n" ++
           plural pending "pending package" ++
           if pending > 0
@@ -177,11 +183,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         nopkgs = length layer
         layersleft = length nextLayers
 
-        setupBuild :: Int -> String -> IO JobAsync
-        setupBuild n dir = do
+        setupBuild :: Bool -> Int -> String -> IO JobAsync
+        setupBuild singlelayer n dir = do
           pkg <- getPackageName dir
           putPkgBrnchHdr pkg br
-          job <- startBuild (Just layernum) n (layersleft > 0) nopkgs target pkg br dir
+          job <- startBuild (if singlelayer then Nothing else Just layernum) n (layersleft > 0) nopkgs target pkg br dir
                  >>= async
           unless dryrun $ sleep 4
           return (unPackage pkg,job)
@@ -198,7 +204,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           unless singlejob $
             putStrLn $
             if null jobs
-            then "ending layer" +-+ maybe "" show mlayer
+            then "ending" +-+ maybe "" (\l -> "layer" +-+ show l) mlayer
             else plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer
           watchJobs singlejob mlayer fails (result:results) jobs
         Just (Left except) -> do
