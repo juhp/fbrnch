@@ -239,6 +239,8 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
     putStr $ date ++ " Building " ++ nvr ++ " locally... "
     ok <- do
       let buildlog = ".build-" ++ (showVerRel . nvrVerRel . readNVR) nvr <.> "log"
+      whenM (doesFileExist buildlog) $
+        copyFile buildlog (buildlog <.> "prev")
       timeIO $
         if not quiet || isShortCircuit mforceshort
         then do
