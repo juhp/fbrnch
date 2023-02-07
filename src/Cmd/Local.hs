@@ -214,7 +214,9 @@ moveArtifactsCmd remove pkgs =
             then if remove
                  then removeFile srpm
                  else putStrLn $ "duplicate:" +-+ srpm
-            else renameFile srpm $ srcrpmdir </> srpm
+            else do
+            createDirectoryIfMissing False srcrpmdir
+            renameFile srpm $ srcrpmdir </> srpm
       whenJustM (rpmEval "%_builddir") $ \builddir ->
         unless (builddir == cwd) $ do
         dirs <- filterM doesDirectoryExist ls
@@ -244,7 +246,9 @@ moveArtifactsCmd remove pkgs =
           then if remove
                then removeFile file
                else putStrLn $ "duplicate:" +-+ file
-          else renameFile file $ rpmdir </> file
+          else do
+          createDirectoryIfMissing False rpmdir
+          renameFile file $ rpmdir </> file
       left <- listDirectory dir
       when (null left) $
         removeDirectory dir
