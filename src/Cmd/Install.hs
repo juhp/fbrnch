@@ -1,9 +1,14 @@
+{-# LANGUAGE CPP #-}
+
 module Cmd.Install (
   installCmd,
   notInstalledCmd
   ) where
 
 import Data.RPM
+#if !MIN_VERSION_simple_cmd(0,2,7)
+import System.Posix.User (getEffectiveUserID)
+#endif
 
 import Branches
 import Cmd.Merge
@@ -81,12 +86,13 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsub
               let reinstalls =
                     filter (\ f -> readNVRA f `elem` already) toinstalls
               unless (null reinstalls) $
-                sudo_ "/usr/bin/dnf" $ "reinstall" : "-q" : "-y" : reinstalls
+                sudoLog "/usr/bin/dnf" $ "reinstall" : "-q" : "-y" : reinstalls
               let remaining = filterDebug $ toinstalls \\ reinstalls
               unless (null remaining) $
-                sudo_ "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
+                sudoLog "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
               else do
               let command = "/usr/bin/dnf" : "install" : "-q" : "-y" : filterDebug toinstalls
+              cmdN "sudo" command
               ok <- cmdBool "sudo" command
               unless ok $
                 if wasbuilt
@@ -150,3 +156,21 @@ nvraInstalled rpm =
 pkgInstalled :: String -> IO Bool
 pkgInstalled pkg =
   cmdBool "rpm" ["--quiet", "-q", pkg]
+
+#if !MIN_VERSION_simple_cmd(0,2,7)
+sudoLog :: String -- ^ command
+     -> [String] -- ^ arguments
+     -> IO ()
+sudoLog = sudoInternal cmdLog
+  where
+    sudoInternal :: (String -> [String] -> IO a) -> String -> [String] -> IO a
+    sudoInternal exc c args = do
+      uid <- getEffectiveUserID
+      sd <- if uid == 0
+        then return Nothing
+        else findExecutable "sudo"
+      let noSudo = isNothing sd
+      when (uid /= 0 && noSudo) $
+        warning "'sudo' not found"
+      exc (fromMaybe c sd) (if noSudo then args else c:args)
+#endif
