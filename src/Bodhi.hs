@@ -6,7 +6,8 @@ module Bodhi (
   checkAutoBodhiUpdate,
   UpdateType(..),
   UpdateSeverity(..),
-  bodhiUpdate
+  bodhiUpdate,
+  bodhiBuildExists
   )
 where
 
@@ -201,3 +202,8 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
         putStrLn ("no such file: " ++ file)
         maybeTemplate TemplateUpdate
     maybeTemplate _ = return Nothing
+
+bodhiBuildExists :: String -> IO Bool
+bodhiBuildExists nvr = do
+  obj <- bodhiBuild nvr
+  return $ isNothing (lookupKey "status" obj :: Maybe String)

@@ -130,13 +130,16 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       when (isJust mpush) $
         error' "Please bump the spec file"
       when (br /= Rawhide && isNothing msidetagTarget) $ do
-        tags <- maybeTimeout 30 $ kojiNVRTags nvr
+        updateExists <- maybeTimeout 30 $ bodhiBuildExists nvr
         autoupdate <- checkAutoBodhiUpdate br
         -- FIXME update referenced bugs for autoupdate branch
         unless autoupdate $ do
-          unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-updates-pending", show br ++ "-updates-testing", show br ++ "-updates-testing-pending"]) $ do
+          if updateExists
+            then putStrLn "update exists"
+            else do
             mbug <- bzReviewAnon
             bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec nvr
+          tags <- maybeTimeout 30 $ kojiNVRTags nvr
           unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
             whenJust moverride $ \days ->
             bodhiCreateOverride dryrun (Just days) nvr
