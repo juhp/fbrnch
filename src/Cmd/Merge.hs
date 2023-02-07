@@ -88,7 +88,7 @@ mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
     unless dryrun $
       git_ "merge" ["--quiet", ref]
 mergeBranch dryrun build noprompt showall mpkg (False,unmerged) from br = do
-  whenJust mpkg $ flip putPkgBrnchHdr br
+  unless build $ whenJust mpkg $ flip putPkgBrnchHdr br
   putStrLn $ show from ++ " branch is not directly mergeable:"
   displayCommits False unmerged
   putNewLn
