@@ -125,7 +125,7 @@ branchRelease :: Branch -> String
 branchRelease Rawhide = "fedora-rawhide"
 branchRelease (Fedora n) = "fedora-" ++ show n
 branchRelease (EPEL n) = "epel-" ++ show n
-branchRelease (EPELNext n) = error' $ show (EPELNext n) ++ " is unsupported"
+branchRelease (EPELNext n) = "epel-" ++ show n ++ "-next"
 
 --data Chroot = Chroot Release Arch
 
