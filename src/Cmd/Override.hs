@@ -75,7 +75,7 @@ overrideCmd _dryrun OverrideExpire _mduration _nowait (_breq,pkgs) =
 
 withPackages :: [FilePath] -> (Package -> IO ()) -> IO ()
 withPackages pkgs act =
-  forM_ pkgs $ \pkgdir ->
+  forM_ (if null pkgs then ["."] else pkgs) $ \pkgdir ->
   withExistingDirectory pkgdir $
   getPackageName "." >>= act
 
