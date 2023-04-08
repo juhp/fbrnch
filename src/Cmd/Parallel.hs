@@ -155,14 +155,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       putStrLn $ unwords layer
       -- maybe print total pending packages
       unless (null nextLayers) $
-        putStrLn $ plural layersleft "more layer" ++ " left with " ++
+        putStrLn $
         let layerspkgs = map length nextLayers
-        in if all (== 1) layerspkgs
-           then plural (length layerspkgs) "package"
-           else
-             case layerspkgs of
-             [l] -> plural l "package"
-             _ -> show layerspkgs +-+ "packages"
+        in case layerspkgs of
+          [n] -> plural n "more package" +-+ "left in next final layer"
+          _ -> "more package layers left:" +-+ show layerspkgs
       jobs <- zipWithM (setupBuild singlelayer) (reverse [0..(length layer - 1)]) layer
       when (null jobs) $
         error' "No jobs run"
@@ -226,10 +223,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       nvr <- pkgNameVerRel' br spec
       unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $ do
-        putStrLn $ nvr ++ " (" ++ target ++ ")" +-+
+        putStrLn $ nvr +-+ "(" ++ target ++ ")" +-+
           if nopkgs > 1
-          then pluralException n "more" "more" +-+
-               maybe "" (\l -> "in layer" +-+ show l) mlayer
+          then pluralException n "more" "more" +-+ maybe "" (\l -> "in layer" +-+ show l) mlayer
           else ""
         putNewLn
         displayCommits True unpushed
@@ -282,8 +278,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
             (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
             [] -> do
               if equivNVR nvr (fromMaybe "" mlatest)
-                then return $ error' $
-                     color Red $ nvr ++ " is already latest (modulo disttag)"
+                then do
+                -- FIXME add a retry prompt
+                putStrLn $ color Red $ nvr ++ " is already latest (modulo disttag)"
+                return $ error' $ nvr +-+ "failed"
                 else do
                 -- FIXME parse build output
                 if dryrun
