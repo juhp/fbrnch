@@ -9,6 +9,7 @@ import Data.RPM
 #if !MIN_VERSION_simple_cmd(0,2,7)
 import System.Posix.User (getEffectiveUserID)
 #endif
+import SimplePrompt
 
 import Branches
 import Cmd.Merge
@@ -16,10 +17,10 @@ import Common
 import Common.System
 import Git
 import Package
-import Prompt
 import Repoquery
 import RpmBuild
 
+-- FIXME --nobuild
 -- FIXME --rpm to avoid dnf
 -- FIXME --force removal of existing incompatible dependent packages
 -- FIXME --subpackage to specify subpackage(s) to install/add

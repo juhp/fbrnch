@@ -16,7 +16,7 @@ import Koji
 import Krb
 import ListReviews
 import Package
-import Prompt
+import SimplePrompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 -- FIXME add --dryrun

@@ -10,9 +10,9 @@ import Git
 import InterleaveOutput (cmdSilent')
 import Krb
 import Package
-import Prompt (prompt_)
 
 import Data.RPM.VerCmp
+import SimplePrompt (prompt_)
 
 -- FIXME don't bump release if already bumped
 -- FIXME check EVR increased

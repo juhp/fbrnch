@@ -19,7 +19,7 @@ import Bugzilla
 import Koji
 import Krb
 import Package
-import Prompt
+import SimplePrompt
 import RpmBuild
 
 data ScratchOption = ScratchBuild | ScratchTask Int | SkipScratch

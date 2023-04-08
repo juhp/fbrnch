@@ -6,7 +6,7 @@ import Branches
 import Common
 import Koji
 import Krb (krbTicket)
-import Prompt (yesno)
+import SimplePrompt (yesno)
 
 sideTagsCmd :: Bool -> [Branch] -> IO ()
 sideTagsCmd remove brs = do
@@ -19,5 +19,5 @@ sideTagsCmd remove brs = do
   where
     removeSideTag :: String -> IO ()
     removeSideTag tag =
-      whenM (yesno $ "Remove " ++ tag) $
+      whenM (yesno Nothing $ "Remove " ++ tag) $
       cmd_ "fedpkg" ["remove-side-tag", tag]

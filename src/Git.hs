@@ -35,11 +35,11 @@ module Git (
 
 import Data.Char (isSpace)
 import SimpleCmd.Git
+import SimplePrompt
 
 import Branches
 import Common
 import Common.System
-import Prompt
 
 #if !MIN_VERSION_simple_cmd(0,2,2)
 -- | 'gitBool c args' runs git command and return result

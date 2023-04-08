@@ -1,3 +1,3 @@
-resolver: nightly-2022-11-23
+resolver: nightly-2023-04-05
 extra-deps:
-  - bugzilla-redhat-1.0.1
+  - simple-prompt-0.1.0

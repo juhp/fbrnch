@@ -73,7 +73,7 @@ module Bugzilla (
 import Common
 import Common.System
 import qualified Common.Text as T
-import Prompt
+import SimplePrompt
 
 import Data.Aeson.Types (Array, Object)
 import qualified Data.ByteString.Char8 as B

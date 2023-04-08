@@ -14,7 +14,7 @@ import Krb
 import ListReviews
 import Package
 import Pagure
-import Prompt
+import SimplePrompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 requestRepos :: Bool -> Bool -> Bool -> (BranchesReq, [String]) -> IO ()

@@ -25,7 +25,7 @@ import Krb
 import Koji
 import Package
 import RpmBuild (checkSourcesMatch)
-import Prompt
+import SimplePrompt
 import Types
 
 data JobDone = JobDone {jobNvr :: String,

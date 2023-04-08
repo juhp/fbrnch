@@ -45,13 +45,13 @@ module Package (
 
 import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
 import SimpleCmd.Rpm
+import SimplePrompt
 
 import Branches
 import Common
 import Common.System
 import Git
 import Krb
-import Prompt
 
 fedpkg :: String -> [String] -> IO String
 fedpkg c args =

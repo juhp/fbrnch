@@ -22,6 +22,7 @@ import Data.RPM
 import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
 import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import SimpleCmd.Rpm
+import SimplePrompt (prompt_)
 import System.Console.Pretty
 import System.IO.Extra (withTempDir)
 import System.Posix.Files
@@ -31,7 +32,6 @@ import Common
 import Common.System
 import Git
 import Package
-import Prompt (prompt_)
 
 builtRpms :: AnyBranch -> FilePath -> IO [FilePath]
 builtRpms br spec = do

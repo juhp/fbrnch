@@ -32,6 +32,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Fixed (Micro)
 import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
+import SimplePrompt
 import System.Exit
 import System.Process.Typed
 import System.Timeout (timeout)
@@ -44,7 +45,6 @@ import Git
 import Krb
 import Package (fedpkg, Package, unPackage)
 import Pagure
-import Prompt
 import Types
 
 fedoraHub :: String

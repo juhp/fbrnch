@@ -35,10 +35,10 @@ import Data.Either
 import Data.Tuple
 import Distribution.Fedora.Branch
 import SimpleCmd.Git
+import SimplePrompt
 import qualified System.Info (arch)
 
 import Pagure
-import Prompt
 
 data AnyBranch = RelBranch Branch | OtherBranch String
   deriving Eq

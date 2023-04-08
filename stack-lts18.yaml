@@ -5,3 +5,4 @@ extra-deps:
   - rpm-nvr-0.1.2
   - rpmbuild-order-0.4.10
   - simple-cmd-args-0.1.8
+  - simple-prompt-0.1.0

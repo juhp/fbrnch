@@ -16,7 +16,7 @@ import Git
 import Krb
 import Koji
 import Package
-import Prompt
+import SimplePrompt
 import RpmBuild (checkSourcesMatch)
 import Types
 
@@ -116,8 +116,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         putNewLn
       -- see mergeBranch for: unmerged == 1 (774b5890)
       if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
-        then do
-        refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
+        then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
         else return $ Just $ commitRef $ head unpushed
   let dryrun = buildoptDryrun opts
   buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
@@ -195,7 +194,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               gitPushSilent $ Just $ ref ++ ":" ++ show br
             unlessM (null <$> gitOneLineLog ("origin/" ++ show br ++ "..HEAD")) $
               unless dryrun $ do
-              ok <- yesno "Unpushed changes remain, continue"
+              ok <- yesno Nothing "Unpushed changes remain, continue"
               unless ok $ error' "aborted"
             unless (buildoptAllowDirty opts) $
               unlessM isGitDirClean $

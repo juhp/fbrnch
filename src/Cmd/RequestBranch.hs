@@ -18,7 +18,7 @@ import Krb
 import ListReviews
 import Package
 import Pagure
-import Prompt (prompt_)
+import SimplePrompt (prompt_)
 
 -- FIXME option to do koji scratch build instead of mock
 requestBranchesCmd :: Bool -> Maybe Branch -> Bool -> (BranchesReq,[String]) -> IO ()

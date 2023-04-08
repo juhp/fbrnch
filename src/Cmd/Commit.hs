@@ -7,7 +7,7 @@ import Common
 import Common.System
 import Git
 import Package
-import Prompt
+import SimplePrompt
 
 -- FIXME reject if nvr ahead of newer branch
 -- FIXME use branches after all?

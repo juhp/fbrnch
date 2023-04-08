@@ -17,6 +17,7 @@ import Data.Aeson.Key (fromText)
 import Data.Aeson.Types (Object, (.:), parseEither)
 import Data.Char (isDigit)
 import Fedora.Bodhi hiding (bodhiUpdate)
+import SimplePrompt
 import Text.Read
 import qualified Text.ParserCombinators.ReadP as R
 import qualified Text.ParserCombinators.ReadPrec as RP
@@ -27,7 +28,6 @@ import Common
 import Common.System
 import qualified Common.Text as T
 import Package
-import Prompt
 
 checkAutoBodhiUpdate :: Branch -> IO Bool
 checkAutoBodhiUpdate Rawhide = return True

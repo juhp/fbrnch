@@ -16,3 +16,4 @@ extra-deps:
   - bugzilla-redhat-1.0.1
   - HsOpenSSL-0.11.7.2
   - simple-cmd-0.2.3
+  - simple-prompt-0.1.0
