@@ -14,10 +14,10 @@ import Git
 import Package
 import Patch
 
-mergeCmd :: Bool -> Bool -> Maybe Natural -> Bool -> Maybe Branch
+mergeCmd :: Bool -> Bool -> Bool -> Maybe Natural -> Bool -> Maybe Branch
          -> (BranchesReq,[String]) -> IO ()
-mergeCmd dryrun noprompt mnotrivial showall mfrom =
-  withPackagesByBranches HeaderMay False cleanGitFetchActive AnyNumber runMergeBranch
+mergeCmd dryrun nofetch noprompt mnotrivial showall mfrom =
+  withPackagesByBranches HeaderMay False (if nofetch then cleanGitActive else cleanGitFetchActive) AnyNumber runMergeBranch
   where
     runMergeBranch :: Package -> AnyBranch -> IO ()
     runMergeBranch _ (OtherBranch _) =
@@ -35,7 +35,7 @@ mergeCmd dryrun noprompt mnotrivial showall mfrom =
             gitMergeOrigin br
           (ancestor,unmerged) <- mergeable from br
           unmerged' <- filterOutTrivial mnotrivial unmerged
-          mergeBranch dryrun False noprompt showall (Just pkg) (ancestor,unmerged') from br
+          mergeBranch dryrun False noprompt showall (if nofetch then Just pkg else Nothing) (ancestor,unmerged') from br
       where
         filterOutTrivial :: Maybe Natural -> [Commit] -> IO [Commit]
         filterOutTrivial Nothing cs = return cs

@@ -46,7 +46,7 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsub
           if isNothing mfrom
           then localBranchSpecFile pkg br
           else do
-            mergeCmd False True Nothing False mfrom (Branches [onlyRelBranch br], ["."])
+            mergeCmd False False True Nothing False mfrom (Branches [onlyRelBranch br], ["."])
             localBranchSpecFile pkg br
         rpms <- builtRpms br spec
         -- removing arch

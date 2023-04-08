@@ -78,6 +78,7 @@ main = do
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd
       <$> dryrunOpt
+      <*> switchLongWith "no-fetch" "Skip git fetch"
       <*> nopromptOpt
       <*> optional (optionWith auto 's' "skip-bumps" "NUM" "Max num of rebuild commits to ignore [default 0]")
       <*> switchWith 'a' "show-all" "List all commits [default first 20]"
