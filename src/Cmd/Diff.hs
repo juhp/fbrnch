@@ -28,10 +28,10 @@ data DiffFilter =
 
 -- FIXME diff other branches without switching
 -- FIXME --older/--newer branch
-diffCmd :: Bool -> DiffWork -> DiffFormat -> Bool -> Maybe DiffFilter
+diffCmd :: Bool -> Bool -> DiffWork -> DiffFormat -> Bool -> Maybe DiffFilter
         -> Maybe AnyBranch -> (Maybe Branch,[String]) -> IO ()
-diffCmd speconly work fmt ignorebumps mpatt mwbr =
-  withPackagesMaybeBranch HeaderNone False dirtyGit diffPkg
+diffCmd debug speconly work fmt ignorebumps mpatt mwbr =
+  withPackagesMaybeBranch (if debug then HeaderMust else HeaderNone) False dirtyGit diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
     diffPkg pkg br = do

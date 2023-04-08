@@ -191,7 +191,8 @@ main = do
       <*> some (strArg "SRPM")
     , Subcommand "diff" "Diff local changes" $
       diffCmd
-      <$> switchWith 'o' "spec-only" "Only diff spec file"
+      <$> switchWith 'd' "debug" "use package headers"
+      <*> switchWith 'o' "spec-only" "Only diff spec file"
       <*> diffWorkOpt
       <*> diffFormatOpt
       <*> switchWith 'i' "ignore-bumps" "Ignore pure release bumps"
