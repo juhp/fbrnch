@@ -15,8 +15,8 @@ import System.IO.Extra
 -- FIXME --force
 -- FIXME --target
 -- FIXME detect rpmautospec and add empty commit
-bumpPkgs :: Bool -> Maybe CommitOpt -> (BranchesReq,[String]) -> IO ()
-bumpPkgs local mopt =
+bumpPkgs :: Bool -> Maybe CommitOpt -> Maybe String -> (BranchesReq,[String]) -> IO ()
+bumpPkgs local mopt mclog =
   withPackagesByBranches (boolHeader local) False (if local then cleanGit else cleanGitFetchActive)
   AnyNumber bumpPkg
   where
@@ -49,19 +49,23 @@ bumpPkgs local mopt =
           then do
           git_ "log" ["origin..HEAD", "--pretty=oneline"]
           let clmsg =
-                case mopt of
-                  Just (CommitMsg msg) -> msg
-                  _ -> "rebuild"
-          -- FIXME check for rpmautospec first
-          cmd_ "rpmdev-bumpspec" ["-c", clmsg, spec]
+                case mclog of
+                  Just clog -> clog
+                  Nothing ->
+                    case mopt of
+                      Just (CommitMsg msg) -> msg
+                      _ -> "rebuild"
+          autorelease <- grep_ " %autorelease" spec
+          unless autorelease $
+            cmd_ "rpmdev-bumpspec" ["-c", clmsg, spec]
           let copts =
                 case mopt of
-                  Nothing -> ["-m", "bump release"]
+                  Nothing -> ["-m", if autorelease then "rebuild" else "bump release"]
                   Just opt ->
                     case opt of
                       CommitMsg msg -> ["-m", msg]
                       -- FIXME reject amend if already pushed
                       CommitAmend -> ["--amend", "--no-edit"]
           -- FIXME quiet commit?
-          git_ "commit" $ "-a" : copts
+          git_ "commit" $ "-a" : (if autorelease then ("--allow-empty" :) else id) copts
           else putStrLn "already bumped"

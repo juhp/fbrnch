@@ -244,6 +244,8 @@ main = do
       bumpPkgs
       <$> switchWith 'l' "local" "Use local origin rather than checking latest koji"
       <*> optional commitOpts
+      <*> optional (strOptionWith 'c' "changelog" "CLOGENTRY"
+                    "Override changelog entry [default: rebuild]")
       <*> branchesPackages
     , Subcommand "commit" "Git commit packages" $
       commitPkgs
