@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.3 (2023-04-08)
+- new 'autospec' command converts packages to use rpmautospec
+- new 'move-artifacts' command moves rpmbuild artifacts into dirs (--delete)
+- new 'srpm-spec' command shows or diffs srpm specfiles
+- new 'unpushed' command shows unpushed commits; and --latest option
+- new 'bzusers' command searches users in bugzilla
+- 'build': check for Bodhi update before koji tags
+- 'build': do not repeat header when merging
+- 'build': improve logic and prompt for unpushed check
+- 'bump': add --changelog override and handle %autorelease
+- 'copr': intersperse newlines between packages
+- 'diff': --debug option to print package header
+- 'diff': handle missing and non-release branches
+- 'install': add --ignore-builddeps (for existing built rpms)
+- 'install': ignore dead.package's
+- 'install': show dnf commands with sudoLog and cmdN sudo
+- 'merge': --no-fetch option
+- 'mock': add --arch option
+- 'mock': new --shell-only option which skips build
+- 'override': default to ./ when no pkg path given
+- 'parallel': if single layer, don't output layer #
+- 'parallel': improve sidetag update transition messages, now waits 90s
+- 'parallel': output tweaks for more packages/layers and existing nvr
+- 'parallel': prompt whether to continue after failure
+- 'parallel': reverse the package order for update changelog
+- 'parallel': be quieter when many parallel packages
+- 'push': --no-fetch option and also print header
+- 'push': allow specifying a ref
+- 'rename-rawhide': now pulls to get latest
+- 'scratch': add --srpm option to build existing srpm
+- 'status': add pkg/branch prefix before latest log
+- Bugzilla: update checkRepoCreatedComment for fedora-admin automation
+- Copr branchRelease: do not error for EPELNext!
+- buildRPMs: backup the build.log file to build.log.prev
+- buildRPMs: print NVR instead of package name
+- changeLogPrompt: no trailing newline after showing changelog
+- gitPush replaces gitPushSilent
+- kojiWaitRepo: knowntag assurance parameter for build and parallel
+- kojiWatchTask: use koji-tool to get build.log tail on failure
+- use simple-prompt
+
 ## 1.2.1 (2022-11-23)
 - 'install': if dnf install fails, include command in error message
 - 'override': check for kerberos ticket

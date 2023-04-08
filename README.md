@@ -39,7 +39,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f37 [package] ...
+$ fbrnch switch f38 [package] ...
 ```
 
 You can also git pull over packages:
@@ -97,13 +97,13 @@ or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f36 package
+$ fbrnch merge f37 package
 ```
-which will offer to merge f37 (or up to a git hash you choose) into f36.
+which will offer to merge f38 (or up to a git hash you choose) into f37.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build f37 package
+$ fbrnch build f38 package
 ```
 will ask if you want to merge newer commits from a newer branch,
 then push and build it.
@@ -255,13 +255,16 @@ Optionally a mock build per branch can be done first.
 ### Other commands
 There are a lot more commands, like eg `copr` and `graph`:
 
+Here is an "extreme" [example](https://github.com/fedora-haskell/haskell-language-server/blob/main/build.sh) of a script using `fbrnch copr` to do multiple staggered builds.
+
 ```
 $ fbrnch --version
-1.2.1
+1.3
 $ fbrnch --help
 Fedora branch building tool
 
 Usage: fbrnch [--version] COMMAND
+
   A tool to help with updating and building package branches
   https://github.com/juhp/fbrnch#readme
 
@@ -275,6 +278,7 @@ Available commands:
   nvr                      Print name-version-release
   status                   Status package/branch status
   merge                    Merge from newer branch
+  unpushed                 Show unpushed commits
   build                    Build package(s) in Koji
   list                     List packages in pagure
   list-local               List packages in branch
@@ -291,6 +295,7 @@ Available commands:
   prep                     Prep sources
   local                    Build locally
   srpm                     Build srpm
+  srpm-spec                Show the spec file in an srpm
   diff                     Diff local changes
   compare                  Show commits between branches
   src-deps                 List source package dependencies
@@ -305,6 +310,7 @@ Available commands:
   fetch                    Git fetch packages
   push                     Git push packages
   owner                    List package owner(s)
+  bzusers                  Search bugzilla users
   create-review            Create a Package Review request
   update-review            Update a Package Review
   review-package           Run fedora-review on a package Review Request bug
@@ -320,6 +326,8 @@ Available commands:
   count                    Count number of living packages
   graph                    Output dependency graph
   ftbfs                    Check FTBFS status
+  autospec                 Convert package to use rpmautospec
+  move-artifacts           Move old rpm artifacts into rpmbuild dirs
 ```
 
 ## Installation

@@ -1,8 +1,10 @@
 - tag builds without disttag
 - scratch/build: show total build times
 - filter bz# out from bodhi notes
-- rpmautospec: conversion command
 - layers command to print
+- diff commit trees (eg version 0.30.2 vs 0.30.3)
+
+- abstract rpmspec and spectool: for better errors if missing
 
 - color warnings
 
@@ -30,8 +32,10 @@
 - 'clone-deps'
 - 'remove-sidetag(s)'
 - 'retire': more than one branch pre-release branch with merge
-- 'package-owner'
-- 'fas-email'
+- 'fas-email': https://fasjson.fedoraproject.org/docs/v1/
+- 'source': only fetch sources
+- 'grep'
+- 'state': summary of current state of repo: branch,clean/dirty etc
 
 # other namespaces
 - support containers/ and modules/
