@@ -145,7 +145,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
           when ((isJust moverride && mwaitrepo /= Just False) ||
                 (autoupdate && mwaitrepo == Just True)) $
-            kojiWaitRepo dryrun True target nvr
+            kojiWaitRepo dryrun True True target nvr
     Just BuildBuilding -> do
       putStrLn $ nvr ++ " is already building"
       when (isJust mpush) $
@@ -222,4 +222,4 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
               when ((isJust moverride && mwaitrepo /= Just False) ||
                     (autoupdate && mwaitrepo == Just True)) $
-              kojiWaitRepo dryrun True target nvr
+              kojiWaitRepo dryrun True True target nvr

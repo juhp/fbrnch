@@ -252,7 +252,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               bodhiCreateOverride dryrun Nothing nvr
           return $ do
             when morelayers $
-              kojiWaitRepo dryrun (nopkgs > 5) target nvr
+              kojiWaitRepo dryrun (nopkgs > 5) True target nvr
             return $ JobDone nvr br changelog
         Just BuildBuilding -> do
           putStrLn $ color Yellow nvr +-+ "is already" +-+ color Yellow "building"
@@ -312,7 +312,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               -- bodhiUpdate (fmap fst mBugSess) changelog nvr
               bodhiCreateOverride dryrun Nothing nvr
           when morelayers $
-            kojiWaitRepo dryrun (nopkgs > 5) target nvr
+            kojiWaitRepo dryrun (nopkgs > 5) True target nvr
 
     -- FIXME map nvr to package?
     renderChangelogs :: [JobDone] -> [String]

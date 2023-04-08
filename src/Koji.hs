@@ -193,11 +193,31 @@ kojiBuildBranchNoWait target pkg mref args = do
   Left task <- kojiBuildBranch' False target pkg mref args
   return task
 
-kojiWaitRepo :: Bool -> Bool -> String -> String -> IO ()
-kojiWaitRepo dryrun quiet target nvr = do
-  Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
-  unless dryrun $
-    waitRepo buildtag Nothing
+kojiWaitRepo :: Bool -> Bool -> Bool -> String -> String -> IO ()
+kojiWaitRepo dryrun quiet knowntag target nvr = do
+  Just (buildtag,desttag) <- kojiBuildTarget fedoraHub target
+  unless dryrun $ do
+    mlatest <- kojiLatestNVR buildtag (nameOfNVR nvr)
+    if Just nvr == mlatest
+      then waitRepo buildtag Nothing
+      else do
+      tags <- cmdLines "koji" ["list-tags", "--build=" ++ nvr]
+      if knowntag
+        then do
+        putStrLn $ "current tags:" +-+ unwords tags
+        waitRepo buildtag Nothing
+        else do
+        mbuilt <- kojiLatestNVR desttag (nameOfNVR nvr)
+        if mbuilt == Just nvr
+          then do
+          sleep 40
+          kojiWaitRepo dryrun quiet knowntag target nvr
+          else do
+          putStrLn $ "current tags:" +-+ unwords tags
+          unless (buildtag `elem` tags) $ do
+            putStrLn $ "no" +-+ nvr +-+ "tagged" +-+ buildtag
+            prompt_ "Press Enter to continue anyway"
+          waitRepo buildtag Nothing
   where
     waitRepo :: String -> Maybe Struct -> IO ()
     waitRepo buildtag moldrepo = do

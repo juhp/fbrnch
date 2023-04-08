@@ -15,9 +15,9 @@ import Types
 data WaitFetch = WaitNoFetch | WaitDirty | WaitFetch
 
 -- FIXME first check/wait for build to actually exist
-waitrepoCmd :: Bool -> WaitFetch -> Maybe SideTagTarget
+waitrepoCmd :: Bool -> Bool -> WaitFetch -> Maybe SideTagTarget
             -> (BranchesReq, [String]) -> IO ()
-waitrepoCmd dryrun fetch msidetagTarget = do
+waitrepoCmd dryrun knowntag fetch msidetagTarget = do
   withPackagesByBranches HeaderMay False
     (case fetch of
        WaitFetch -> cleanGitFetchActive
@@ -34,5 +34,4 @@ waitrepoCmd dryrun fetch msidetagTarget = do
       nvr <- pkgNameVerRel' br spec
       target <- targetMaybeSidetag dryrun br msidetagTarget
       logMsg $ "Waiting for " ++ nvr ++ " to appear in " ++ target
-      timeIO $
-        kojiWaitRepo dryrun True target nvr
+      timeIO $ kojiWaitRepo dryrun True knowntag target nvr
