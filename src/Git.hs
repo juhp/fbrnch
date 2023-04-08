@@ -10,7 +10,7 @@ module Git (
   getNewerBranch,
   newerMergeable,
   gitFetchSilent,
-  gitPushSilent,
+  gitPush,
   gitRepoName,
   Commit(commitRef,commitLog),
   showCommit,
@@ -148,12 +148,24 @@ mkCommit cs =
         (plogcs,datep) ->
           Commit hash (init $ tail $ trim plogcs) (init datep)
 
-gitPushSilent :: Maybe String -> IO ()
-gitPushSilent mref = do
+gitPush :: Bool -> Maybe String -> IO ()
+gitPush quiet mref = do
   checkOnBranch
-  putStr "git pushing... "
-  out <- cmdQuiet "git" $ ["push", "--quiet", "origin"] ++ maybeToList mref
-  putStrLn $ if null out then "done" else "\n" ++ out
+  when quiet $
+    putStr "git pushing... "
+  -- Can error like this:
+  -- kex_exchange_identification: Connection closed by remote host
+  -- Connection closed by 38.145.60.17 port 22
+  -- fatal: Could not read from remote repository.
+  let args = ["push"] ++ ["--quiet" | quiet] ++ ["origin"] ++ maybeToList mref
+  (ok, _out, err) <- cmdFull "git" args ""
+  if ok
+    then putStrLn $ if quiet then "done" else last (lines err)
+    else do
+    when quiet $ putStrLn ""
+    putStrLn $ unwords ("git" : args) +-+ "failed with\n" ++ err
+    yes <- yesno Nothing "Retry git push"
+    when yes $ gitPush quiet mref
 
 -- FIXME use this in more places
 gitRepoName :: IO String

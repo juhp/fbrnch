@@ -191,7 +191,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             unless dryrun krbTicket
             whenJust mpush $ \ref ->
               unless dryrun $
-              gitPushSilent $ Just $ ref ++ ":" ++ show br
+              gitPush False $ Just $ ref ++ ":" ++ show br
             unlessM (null <$> gitOneLineLog ("origin/" ++ show br ++ "..HEAD")) $
               unless dryrun $ do
               ok <- yesno Nothing "Unpushed changes remain, continue"

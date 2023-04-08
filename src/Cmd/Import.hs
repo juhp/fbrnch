@@ -70,7 +70,7 @@ importCmd mock (breq, ps) = do
         git_ "commit" ["--message", "import #" ++ show bid]
         nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
         prompt_ $ "Press Enter to push and build " ++ nvr
-        gitPushSilent Nothing
+        gitPush True Nothing
         -- FIXME build more branches
         kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
         putBugBuild False session bid nvr

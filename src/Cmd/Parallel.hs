@@ -234,7 +234,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       unless (null unpushed) $ do
         checkSourcesMatch spec
         unless dryrun $
-          gitPushSilent Nothing
+          gitPush True Nothing
       changelog <- unlines <$> getChangelog spec
       -- FIXME should compare git refs
       -- FIXME check for target

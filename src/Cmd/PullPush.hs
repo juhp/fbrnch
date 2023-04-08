@@ -70,4 +70,4 @@ pushPkgs dryrun nofetch mref (breq, pkgs) = do
       whenJustM (gitShortLog1 Nothing) $ putStrLn . showCommit
       if dryrun
         then checkOnBranch
-        else gitPushSilent mref
+        else gitPush False mref
