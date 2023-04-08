@@ -400,10 +400,11 @@ showComment cmt = do
   mapM_ (T.putStrLn . ("  " <>)) $ dropDuplicates . removeLeadingNewline . T.lines $ commentText cmt
   putNewLn
 
+-- FIXME check for Fedora Admin user for bugzilla script actions <fedora-admin-xmlrpc@fedoraproject.org>
 checkRepoCreatedComment :: BugzillaSession -> BugId -> IO Bool
 checkRepoCreatedComment session bid =
     checkForComment session bid
-      "(fedscm-admin):  The Pagure repository was created at"
+      "The Pagure repository was created at https://src.fedoraproject.org/"
 
 checkForComment :: BugzillaSession -> BugId -> T.Text -> IO Bool
 checkForComment session bid text = do
