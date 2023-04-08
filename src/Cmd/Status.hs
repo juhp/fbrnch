@@ -68,56 +68,56 @@ statusCmd nofetch reviews (breq, pkgs) = do
               --     unless (null unmerged) $ do
               --       putStrLn $ "Newer commits in " ++ show newerBr ++ ":"
               --       mapM_ putStrLn unmerged
-              unpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
-              if null unpushed
-                then do
-                mbuild <- kojiGetBuildID fedoraHub nvr
-                case mbuild of
-                  Nothing -> do
-                    mlatest <- kojiLatestNVR (branchDestTag br) (unPackage pkg)
-                    case mlatest of
-                      Nothing -> putStrLn $ "new " ++ nvr
-                      Just latest ->
-                        putStrLn $ if equivNVR nvr latest then latest ++ " is latest modulo disttag" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
-                  Just buildid -> do
-                    tags <- kojiBuildTags fedoraHub (buildIDInfo buildid)
-                    if null tags
-                      then do
-                      mstatus <- kojiBuildStatus nvr
-                      -- FIXME show pending archs building
-                      whenJust mstatus $ \ status ->
-                        -- FIXME better Show BuildStatus
-                        putStr $ nvr ++ " (" ++ show status ++ ")"
-                      else do
-                      -- FIXME hide testing if ga/stable
-                      putStr $ nvr ++ " (" ++ unwords tags ++ ")"
-                      unless (isStable tags) $ do
-                        updates <- bodhiUpdates
-                                   [makeItem "display_user" "0",
-                                    makeItem "builds" nvr]
-                        case updates of
-                          [] -> putStrLn "No update found"
-                          [update] -> do
-                            -- FIXME could show minus time left using stable_days?
-                            let msince = lookupKey "date_testing" update :: Maybe LocalTime
-                            case msince of
-                              Nothing -> return ()
-                              Just date -> do
-                                let since = localTimeToUTC utc date
-                                current <- getCurrentTime
-                                let diff = diffUTCTime current since
-                                putAge diff
-                          _ -> putStrLn "More than one update found!"
-                    putNewLn
-                else
-                let prefix =
-                      let pref =
-                            (if length pkgs > 1 then unPackage pkg else "") +-+
-                            case breq of
-                              Branches brs | length brs <= 1 -> ""
-                              _ -> show br
-                      in if null pref then "" else pref ++ ":"
-                in whenJust unpushed $ putStrLn . (prefix +-+) . showCommit
+              munpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
+              case munpushed of
+                Nothing -> do
+                  mbuild <- kojiGetBuildID fedoraHub nvr
+                  case mbuild of
+                    Nothing -> do
+                      mlatest <- kojiLatestNVR (branchDestTag br) (unPackage pkg)
+                      case mlatest of
+                        Nothing -> putStrLn $ "new " ++ nvr
+                        Just latest ->
+                          putStrLn $ if equivNVR nvr latest then latest ++ " is latest modulo disttag" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
+                    Just buildid -> do
+                      tags <- kojiBuildTags fedoraHub (buildIDInfo buildid)
+                      if null tags
+                        then do
+                        mstatus <- kojiBuildStatus nvr
+                        -- FIXME show pending archs building
+                        whenJust mstatus $ \ status ->
+                          -- FIXME better Show BuildStatus
+                          putStr $ nvr ++ " (" ++ show status ++ ")"
+                        else do
+                        -- FIXME hide testing if ga/stable
+                        putStr $ nvr ++ " (" ++ unwords tags ++ ")"
+                        unless (isStable tags) $ do
+                          updates <- bodhiUpdates
+                                     [makeItem "display_user" "0",
+                                      makeItem "builds" nvr]
+                          case updates of
+                            [] -> putStrLn "No update found"
+                            [update] -> do
+                              -- FIXME could show minus time left using stable_days?
+                              let msince = lookupKey "date_testing" update :: Maybe LocalTime
+                              case msince of
+                                Nothing -> return ()
+                                Just date -> do
+                                  let since = localTimeToUTC utc date
+                                  current <- getCurrentTime
+                                  let diff = diffUTCTime current since
+                                  putAge diff
+                            _ -> putStrLn "More than one update found!"
+                      putNewLn
+                Just unpushed ->
+                  let prefix =
+                        let pref =
+                              (if length pkgs > 1 then unPackage pkg else "") +-+
+                              case breq of
+                                Branches brs | length brs <= 1 -> ""
+                                _ -> show br
+                        in if null pref then "" else pref ++ ":"
+                  in putStrLn $ prefix +-+ showCommit unpushed
       where
         isStable :: [String] -> Bool
         isStable = not . all ("-testing" `isSuffixOf`)
