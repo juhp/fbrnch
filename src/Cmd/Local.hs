@@ -226,6 +226,7 @@ moveArtifactsCmd remove pkgs =
               if null srcs
               then []
               else filter (head srcs `isPrefixOf`) dirs
+        createDirectoryIfMissing False builddir
         forM_ srctrees $ \tree -> do
           exists <- doesDirectoryExist $ builddir </> tree
           if exists
