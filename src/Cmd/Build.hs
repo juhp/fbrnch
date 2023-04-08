@@ -86,14 +86,14 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       Just False -> return False
       Just True -> do
         whenJust mnewer $ \newer ->
-          mergeBranch (buildoptDryrun opts) True True False (Just pkg) (ancestor,unmerged) newer br
+          mergeBranch (buildoptDryrun opts) True True False Nothing (ancestor,unmerged) newer br
         return True
       Nothing ->
         if ancestor && (newrepo || tty)
         then do
           whenJust mnewer $ \newer ->
-            mergeBranch (buildoptDryrun opts) True False True (Just pkg) (ancestor,unmerged) newer br
-          return True
+            mergeBranch (buildoptDryrun opts) True False True Nothing (ancestor,unmerged) newer br
+          return $ isJust mnewer
         else do
           unless (br == Rawhide) $
             whenJust mnewer $ \newer ->
