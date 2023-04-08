@@ -263,6 +263,7 @@ main = do
     , Subcommand "push" "Git push packages" $
       pushPkgs
       <$> dryrunOpt
+      <*> switchLongWith "no-fetch" "Skip git fetch"
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to push")
       <*> branchesPackages
     , Subcommand "owner" "List package owner(s)" $

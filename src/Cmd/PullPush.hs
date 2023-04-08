@@ -59,11 +59,11 @@ fetchPkgs args =
     fetchPkg _pkg _br =
       gitFetchSilent False
 
-pushPkgs :: Bool -> Maybe String -> (BranchesReq, [String]) -> IO ()
-pushPkgs dryrun mref (breq, pkgs) = do
+pushPkgs :: Bool -> Bool -> Maybe String -> (BranchesReq, [String]) -> IO ()
+pushPkgs dryrun nofetch mref (breq, pkgs) = do
   when (isJust mref && length pkgs > 1) $
     error' "can only specify ref for single package"
-  withPackagesByBranches HeaderMay False cleanGitFetch AnyNumber pushPkg (breq, pkgs)
+  withPackagesByBranches HeaderMust False (if nofetch then cleanGit else cleanGitFetch) AnyNumber pushPkg (breq, pkgs)
   where
     pushPkg :: Package -> AnyBranch -> IO ()
     pushPkg _pkg _br = do
