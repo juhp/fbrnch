@@ -110,8 +110,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       -- switch back to the original branch
       when (length brs /= 1) $
         gitSwitchBranch currentbranch
-      unless (null failures) $
-        error' $ "Build failures: " ++ unwords failures
+      unless (null failures) $ do
+        putStrLn $ "Build failures:" +-+ unwords failures
+        okay <- yesno Nothing "Do you want to continue nevertheless"
+        unless okay $ error' "Quitting"
       when (isNothing msidetagTarget) $ do
         let spec = packageSpec pkg
         bodhiUpdate dryrun mupdate Nothing False spec $
@@ -165,19 +167,20 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       when (null jobs) $
         error' "No jobs run"
       (failures,nvrs) <- watchJobs (length jobs == 1) (if singlelayer then Nothing else Just layernum) [] [] jobs
-      -- FIXME prompt to continue?
       if null failures
         then return nvrs
         else do
         let pending = sum $ map length nextLayers
-        error' $ "Build failures" +-+
-          (if singlelayer then ":" else "in layer" +-+ show layernum ++ ": ")
-          ++
-          unwords failures ++ "\n\n" ++
+        putStrLn $ "\nBuild failures" +-+
+          (if singlelayer then ":" else "in layer" +-+ show layernum ++ ":")
+          +-+ unwords failures
+        okay <- yesno Nothing "Do you want to continue nevertheless"
+        if okay
+          then return nvrs
+          else error' $
           plural pending "pending package" ++
           if pending > 0
-          then
-          ":\n" ++ unwords (map unwords nextLayers)
+          then ":\n" ++ unwords (map unwords nextLayers)
           else ""
       where
         nopkgs = length layer
