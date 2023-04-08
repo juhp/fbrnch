@@ -71,7 +71,7 @@ changeLogPrompt mcontext spec = do
   clog <- cleanChangelog spec
   putNewLn
   putStrLn "```"
-  putStrLn clog
+  putStr clog
   putStrLn "```"
   -- FIXME is this actually useful?
   tty <- isTty
