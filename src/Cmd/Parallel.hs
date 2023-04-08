@@ -28,10 +28,10 @@ import RpmBuild (checkSourcesMatch)
 import SimplePrompt
 import Types
 
-data JobDone = JobDone {jobNvr :: String,
-                        jobBranch :: Branch,
-                        _jobClog :: String
-                       }
+data JobDone = Done {jobNvr :: String,
+                     jobBranch :: Branch,
+                     _jobClog :: String}
+
 type JobAsync = (String, Async JobDone)
 
 -- FIXME offer to untag overrides afterwards
@@ -194,24 +194,23 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
 
     watchJobs :: Bool -> Maybe Int -> [String] -> [JobDone] -> [JobAsync]
               -> IO ([String],[JobDone]) -- (failures,successes)
-    watchJobs _ _ fails results [] = return (fails,results)
-    watchJobs singlejob mlayer fails results (job:jobs) = do
+    watchJobs _ _ fails dones [] = return (fails,dones)
+    watchJobs singlejob mlayer fails dones (job:jobs) = do
       status <- poll (snd job)
       case status of
-        Nothing -> sleep 1 >> watchJobs singlejob mlayer fails results (jobs ++ [job])
+        Nothing -> sleep 1 >> watchJobs singlejob mlayer fails dones (jobs ++ [job])
         -- (nvr,changelog)
-        Just (Right result) -> do
+        Just (Right done) -> do
           unless singlejob $
-            putStrLn $
-            if null jobs
-            then "ending" +-+ maybe "" (\l -> "layer" +-+ show l) mlayer
-            else plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer
-          watchJobs singlejob mlayer fails (result:results) jobs
+            when (null jobs) $
+            putStrLn $ "ending" +-+ maybe "" (\l -> "layer" +-+ show l) mlayer
+            -- else plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer
+          watchJobs singlejob mlayer fails (done:dones) jobs
         Just (Left except) -> do
           print except
           let pkg = fst job
           putStrLn $ "** " ++ color Magenta pkg +-+ "job" +-+ color Magenta "failed" ++ " **" +-+ if singlejob then "" else "(" ++ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer ++ ")"
-          watchJobs singlejob mlayer (pkg : fails) results jobs
+          watchJobs singlejob mlayer (pkg : fails) dones jobs
 
     -- FIXME prefix output with package name
     startBuild :: Maybe Int -> Int ->  Bool -> Int -> String -> Package
@@ -253,7 +252,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           return $ do
             when morelayers $
               kojiWaitRepo dryrun (nopkgs > 5) True target nvr
-            return $ JobDone nvr br changelog
+            return $ Done nvr br changelog
         Just BuildBuilding -> do
           putStrLn $ color Yellow nvr +-+ "is already" +-+ color Yellow "building"
           mtask <- kojiGetBuildTaskID fedoraHub nvr
@@ -262,7 +261,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
             Just task ->
               return $ do
               kojiWaitTaskAndRepo (isNothing mlatest) nvr task
-              return $ JobDone nvr br changelog
+              return $ Done nvr br changelog
         _ -> do
           when (null unpushed) $ do
             putStrLn $ nvr ++ " (" ++ target ++ ")" +-+ show n +-+ "more" +-+
@@ -276,7 +275,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               putStrLn $ nvr ++ " task is already open"
               return $ do
                 kojiWaitTaskAndRepo (isNothing mlatest) nvr task
-                return $ JobDone nvr br changelog
+                return $ Done nvr br changelog
             (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
             [] -> do
               if equivNVR nvr (fromMaybe "" mlatest)
@@ -285,12 +284,12 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                 else do
                 -- FIXME parse build output
                 if dryrun
-                  then return $ return $ JobDone nvr br "<changelog>"
+                  then return $ return $ Done nvr br "<changelog>"
                   else do
                   task <- kojiBuildBranchNoWait target pkg Nothing $ "--fail-fast" : ["--background" | nopkgs > 5]
                   return $ do
                     kojiWaitTaskAndRepo (isNothing mlatest) nvr task
-                    return $ JobDone nvr br changelog
+                    return $ Done nvr br changelog
       where
         kojiWaitTaskAndRepo :: Bool -> String -> TaskID -> IO ()
         kojiWaitTaskAndRepo newpkg nvr task = do
@@ -317,7 +316,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
     -- FIXME map nvr to package?
     renderChangelogs :: [JobDone] -> [String]
     renderChangelogs [] = []
-    renderChangelogs ((JobDone nvr _ clog):jobs) =
+    renderChangelogs ((Done nvr _ clog):jobs) =
       unlines [nvr, "", clog] : renderChangelogs jobs
 
     -- FIXME how to catch authentication errors?
