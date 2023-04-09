@@ -72,7 +72,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
               return $ nub $ priorityArchs ++ tagArchs
             else return $ nub $ filter (`elem` archs) priorityArchs ++ archs
           forM_ archlist $ \arch -> do
-            putStrLn $ arch ++ " scratch build"
+            putStrLn $ arch +-+ "scratch build"
             doScratchBuild pkggit spec target [arch]
           else doScratchBuild pkggit spec target archs
       where
@@ -99,7 +99,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
                     else return False
             rbr <- anyBranchToRelease br
             nvr <- pkgNameVerRel' rbr spec
-            putStrLn $ target ++ " scratch build of " ++ showScratchSource pushed nvr msource
+            putStrLn $ target +-+ "scratch build of" +-+ showScratchSource pushed nvr msource
             unless dryrun $
               case msource of
                 Just (ScratchSRPM srpm) ->
