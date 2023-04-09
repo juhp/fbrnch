@@ -55,7 +55,7 @@ bumpPkgs local mopt mclog =
                     case mopt of
                       Just (CommitMsg msg) -> msg
                       _ -> "rebuild"
-          autorelease <- grep_ " %autorelease" spec
+          autorelease <- isAutoRelease spec
           unless autorelease $
             cmd_ "rpmdev-bumpspec" ["-c", clmsg, spec]
           let copts =

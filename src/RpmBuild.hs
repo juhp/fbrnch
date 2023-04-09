@@ -294,7 +294,7 @@ installMissingMacros spec = do
 -- from fedora-haskell-tools
 buildRequires :: FilePath -> IO [String]
 buildRequires spec = do
-  autorelease <- grep_ " %autorelease" spec
+  autorelease <- isAutoRelease spec
   dynbr <- grep_ "^%generate_buildrequires" spec
   brs <- mapMaybe primary <$>
     if dynbr

@@ -40,7 +40,8 @@ module Package (
   pkgNameVerRel,
   pkgNameVerRel',
   equivNVR,
-  editSpecField
+  editSpecField,
+  isAutoRelease
   ) where
 
 import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
@@ -345,16 +346,22 @@ clonePkg quiet cloneuser mbr pkg = do
     msgout =
       putStrLn $ if quiet then "cloning..." else "Cloning: " ++ pkg
 
+isAutoRelease :: FilePath -> IO Bool
+isAutoRelease spec = do
+  matches <- filter ("Release:" `isPrefixOf`) <$> grep "%autorelease" spec
+  return $ not (null matches)
+
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
 pkgNameVerRel br spec = do
   disttag <- rpmDistTag <$> branchDist br
   -- workaround dist with bootstrap
   hostdist <- cmd "rpm" ["--eval", "%{dist}"]
   -- FIXME more precise regexp with "Release:"
-  autorelease <- grep_ " %autorelease" spec
+  autorelease <- isAutoRelease spec
   nvrs <-
     if autorelease
     then do
+      --putStrLn "%autorelease detected"
       mautospec <- findExecutable "rpmautospec"
       when (isNothing mautospec) $
         error' "requires rpmautospec.."
