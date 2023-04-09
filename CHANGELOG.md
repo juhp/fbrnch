@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 (2023-04-09)
+- check for %autorelease more carefully
+- buildRequires: fix dynamic BRs with getSources and space after %_srcrpmdir
+  (reported by kiilerix)
+
 ## 1.3 (2023-04-08)
 - new 'autospec' command converts packages to use rpmautospec
 - new 'move-artifacts' command moves rpmbuild artifacts into dirs (--delete)
