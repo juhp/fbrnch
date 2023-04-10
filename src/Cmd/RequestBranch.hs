@@ -148,9 +148,10 @@ havePkgAccess pkg = do
   case epkginfo of
     Left err -> error' err
     Right pkginfo -> do
-      let access = fasid `elem` (lookupOwnerAdmins pkginfo :: [String])
+      let owneradmins = lookupOwnerAdmins pkginfo :: [String]
+          access = fasid `elem` owneradmins
       unless access $
-        warning $ "-" +-+ fasid +-+ "does not have access"
+        warning $ "-" +-+ fasid +-+ "does not have access, ask:" +-+ unwords owneradmins
       return access
   where
     lookupOwnerAdmins pkginfo =
