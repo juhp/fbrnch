@@ -35,8 +35,7 @@ prepCmd mpre verbose (mbr,pkgs) = do
         spec <- localBranchSpecFile pkg br
         unlessM (doesFileExist spec) $
           error' $ spec +-+ "not found"
-        void $ getSources spec
-        installMissingMacros spec
+        getSourcesMacros spec
         case br of
           RelBranch rbr -> do
             nvr <- pkgNameVerRel' rbr spec

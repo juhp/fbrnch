@@ -2,9 +2,9 @@ module RpmBuild (
   builtRpms,
   buildRPMs,
   installDeps,
-  installMissingMacros,
   buildRequires,
   getSources,
+  getSourcesMacros,
   generateSrpm,
   generateSrpm',
   BCond(..),
@@ -363,3 +363,8 @@ checkSourcesMatch spec = do
 notInstalled :: String -> IO Bool
 notInstalled pkg =
   not <$> cmdBool "rpm" ["--quiet", "-q", "--whatprovides", pkg]
+
+getSourcesMacros :: FilePath -> IO ()
+getSourcesMacros spec = do
+  void $ getSources spec
+  installMissingMacros spec
