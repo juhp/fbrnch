@@ -148,14 +148,15 @@ havePkgAccess pkg = do
   case epkginfo of
     Left err -> error' err
     Right pkginfo -> do
-      let owneradmins = lookupOwnerAdmins pkginfo :: [String]
-          access = fasid `elem` owneradmins
+      let (admins, committers) = usersWithAccess pkginfo :: ([String],[String])
+          access = fasid `elem` admins ++ committers
       unless access $
-        warning $ "-" +-+ fasid +-+ "does not have access, ask:" +-+ unwords owneradmins
+        warning $ "-" +-+ fasid +-+ "does not have access, ask:" +-+ unwords admins
       return access
   where
-    lookupOwnerAdmins pkginfo =
+    usersWithAccess pkginfo =
       let access = lookupKey' "access_users" pkginfo
           owners = lookupKey' "owner" access
           admins = lookupKey' "admin" access
-      in owners ++ admins
+          collabs = lookupKey' "collaborator" access
+      in (owners ++ admins, collabs)
