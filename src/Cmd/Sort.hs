@@ -16,6 +16,7 @@ import Distribution.RPM.Build.Order (dependencySortRpmOpts,
 import Branches
 import Git
 import Package
+import RpmBuild (getDynSourcesMacros)
 
 data RpmWith = RpmWith String | RpmWithout String
 
@@ -25,7 +26,7 @@ data SortDisplay = SortParallel | SortChain | SortLayers | SortPlain
 sortCmd :: SortDisplay -> Maybe RpmWith -> (Branch,[String]) -> IO ()
 sortCmd _ _ (_,[]) = return ()
 sortCmd displaymode mrpmwith (br, pkgs) = do
-  withPackagesBranch HeaderNone False Nothing noop (br, pkgs)
+  withPackagesBranch HeaderNone False Nothing setupPkg (br, pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
   case displaymode of
     -- reverse because rpmbuild-order reverses the order of independent pkgs?
@@ -40,9 +41,10 @@ sortCmd displaymode mrpmwith (br, pkgs) = do
     SortPlain ->
       dependencySortRpmOpts rpmopts (reverse pkgs) >>= putStrLn . unwords
 
-noop :: Package -> AnyBranch -> IO ()
-noop _pkg br =
+setupPkg :: Package -> AnyBranch -> IO ()
+setupPkg pkg br = do
   whenM isPkgGitRepo $ gitSwitchBranch br
+  getDynSourcesMacros $ packageSpec pkg
 
 toRpmOption :: RpmWith -> [String]
 toRpmOption (RpmWith opt) = ["--with=" ++ opt]
@@ -50,7 +52,7 @@ toRpmOption (RpmWithout opt) = ["--without=" ++ opt]
 
 graphCmd :: Bool -> Maybe RpmWith -> (Maybe Branch,[FilePath]) -> IO ()
 graphCmd dot mrpmwith (mbr, pkgs) = do
-  withPackagesMaybeBranchNoHeadergit noop (mbr, pkgs)
+  withPackagesMaybeBranchNoHeadergit setupPkg (mbr, pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
   createGraph4 False [] rpmopts False False True Nothing pkgs >>=
     if dot then printGraph else renderGraph

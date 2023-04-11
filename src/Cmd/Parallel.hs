@@ -24,7 +24,7 @@ import Git
 import Krb
 import Koji
 import Package
-import RpmBuild (checkSourcesMatch)
+import RpmBuild (checkSourcesMatch, getDynSourcesMacros)
 import SimplePrompt
 import Types
 
@@ -76,6 +76,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         withExistingDirectory p $ do
         pkg <- getPackageName p
         mergeNewerBranch (Just pkg) rbr
+        getDynSourcesMacros $ packageSpec pkg
       allLayers <- dependencyLayers pkgs
       let layers = drop firstlayer allLayers
       when (isNothing msidetagTarget && length allLayers > 1) $

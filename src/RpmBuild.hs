@@ -5,6 +5,7 @@ module RpmBuild (
   buildRequires,
   getSources,
   getSourcesMacros,
+  getDynSourcesMacros,
   generateSrpm,
   generateSrpm',
   BCond(..),
@@ -368,3 +369,8 @@ getSourcesMacros :: FilePath -> IO ()
 getSourcesMacros spec = do
   void $ getSources spec
   installMissingMacros spec
+
+getDynSourcesMacros :: FilePath -> IO ()
+getDynSourcesMacros spec =
+  whenM (grep_ "^%generate_buildrequires" spec) $
+   getSourcesMacros spec
