@@ -8,6 +8,7 @@ module Common (
   (<>),
 #endif
   (+/+),
+  (+-+),
   plural,
   pluralException,
   putNewLn
@@ -22,6 +23,7 @@ import Data.Semigroup ((<>))
 #endif
 
 import Network.HTTP.Query ((+/+))
+import SimpleCmd ((+-+))
 
 plural :: Int -> String -> String
 plural i ns =

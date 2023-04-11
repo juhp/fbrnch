@@ -53,7 +53,7 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
       username <- getUsername
       chroots <- map T.unpack <$> coprChroots coprServer username project
       when (null chroots) $
-        error' $ "No chroots found for " ++ username ++ "/" ++ project
+        error' $ "No chroots found for" +-+ username ++ "/" ++ project
       branches <-
         case breq of
           Branches brs ->
@@ -144,7 +144,7 @@ readIniConfig :: FilePath -> IniParser a -> (a -> b) -> IO b
 readIniConfig inifile iniparser record = do
   havefile <- doesFileExist inifile
   if not havefile
-    then error' $ inifile ++ " not found: try https://" ++ coprServer ++ "/api"
+    then error' $ inifile +-+ "not found: try https://" ++ coprServer ++ "/api"
     else do
     ini <- T.readFile inifile
     let config = parseIniFile ini iniparser
@@ -163,7 +163,7 @@ coprBuild dryrun project srpm buildroots = do
     let bid = read $ last $ words $ last $ lines output
     ok <- timeIO $ coprWatchBuild bid Nothing
     unless ok $
-      error' $ "Failed: copr " ++ unwords buildargs
+      error' $ "Failed: copr" +-+ unwords buildargs
 
 -- FIXME idea: Maybe Seconds to increment sleep
 coprWatchBuild :: Int -> Maybe String -> IO Bool
@@ -174,7 +174,7 @@ coprWatchBuild bid mstate = do
       if mstate == Just state
       then sleep 20 >> coprWatchBuild bid mstate
       else do
-        logMsg $ "Build " ++ show bid ++ " " ++ state
+        logMsg $ "Build" +-+ show bid +-+ state
         case state of
           "succeeded" -> return True
           "skipped" -> return True
@@ -183,7 +183,7 @@ coprWatchBuild bid mstate = do
           _ -> sleep 1 >> coprWatchBuild bid (Just state)
     Nothing -> do
       let err = lookupKey' "error" res
-      logMsg $ "Error: " ++ err
+      logMsg $ "Error:" +-+ err
       return False
 
 -- #if !MIN_VERSION_simple_cmd(0,1,4)

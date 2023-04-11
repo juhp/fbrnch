@@ -109,7 +109,7 @@ commentBug session bid comment = do
     case lookupKey "message" res of
       Nothing -> print res
       Just msg -> T.putStrLn msg
-    error' $ "failed to update bug " ++ show bid
+    error' $ "failed to update bug" +-+ show bid
   putStrLn "Comment added"
 
 updateBug :: BugzillaSession -> BugId -> [(String,String)] -> IO ()
@@ -126,7 +126,7 @@ updateBug session bid params = do
     case lookupKey "message" res of
       Nothing -> print res
       Just msg -> T.putStrLn msg
-    error' $ "failed to update bug " ++ show bid
+    error' $ "failed to update bug" +-+ show bid
 
 encodeParams :: [(String, String)] -> [(ByteString, ByteString)]
 encodeParams [] = []
@@ -139,7 +139,7 @@ putBugBuild dryrun session bid nvr = do
   unless dryrun $
     void $ updateBug session bid
     [("cf_fixed_in", nvr), ("status", "MODIFIED")]
-  putStrLn $ "bug " ++ show bid ++ (if dryrun then " would be" else "") ++ " moved to MODIFIED with " ++ nvr
+  putStrLn $ "bug" +-+ show bid ++ (if dryrun then " would be" else "") +-+ "moved to MODIFIED with" +-+ nvr
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"
@@ -192,7 +192,7 @@ getBzUser = do
       configDirExists <- doesDirectoryExist configDir
       unless configDirExists $ createDirectory configDir
       T.writeFile config $ "[" <> brc <> "]\nuser = " <> T.pack email <> "\n"
-      putStrLn $ "Saved in " ++ config ++ "\n"
+      putStrLn $ "Saved in" +-+ config ++ "\n"
     getBzUser
   where
     rcParser :: IniParser BzUserRC
@@ -233,7 +233,7 @@ bzApiKeySession = do
      "Create a key at https://bugzilla.redhat.com/userprefs.cgi?tab=apikey",
      "Save the key under in '" ++ config ++ "' under:",
      "[bugzilla.redhat.com]",
-     apiKeyField ++ " = <YourApiKey>"]
+     apiKeyField +-+ "= <YourApiKey>"]
     else do
     apikey <- readIniConfig config rcParser bzApiKey
     return $ ApiKeySession brc $ BugzillaApiKey apikey
@@ -283,12 +283,12 @@ reviewApproved =
 
 pkgReviews :: String -> SearchExpression
 pkgReviews pkg =
-  SummaryField `contains` T.pack ("Review Request: " ++ pkg ++ " - ") .&&.
+  SummaryField `contains` T.pack ("Review Request:" +-+ pkg +-+ "- ") .&&.
   packageReview
 
 pkgReviewsPrefix :: String -> SearchExpression
 pkgReviewsPrefix prefix =
-  SummaryField `contains` T.pack ("Review Request: " ++ prefix) .&&.
+  SummaryField `contains` T.pack ("Review Request:" +-+ prefix) .&&.
   packageReview
 
 pkgBugs :: String -> SearchExpression
@@ -327,7 +327,7 @@ reviewBugIdSession :: String -> IO (BugId,BugzillaSession)
 reviewBugIdSession pkg = do
   bugs <- bugIdsAnon $ pkgReviews pkg .&&. statusOpen
   case bugs of
-    [] -> error $ "No review bug found for " ++ pkg
+    [] -> error $ "No review bug found for" +-+ pkg
     [bug] -> do
       session <- bzApiKeySession
       return (bug, session)
@@ -338,7 +338,7 @@ approvedReviewBugIdSession pkg = do
   bugs <- bugIdsAnon $
           pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bugs of
-    [] -> error $ "No review bug found for " ++ pkg
+    [] -> error $ "No review bug found for" +-+ pkg
     [bug] -> do
       session <- bzApiKeySession
       return (bug, session)
@@ -349,7 +349,7 @@ approvedReviewBugSession pkg = do
   bugs <- bugsAnon $
           pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bugs of
-    [] -> error $ "No review bug found for " ++ pkg
+    [] -> error $ "No review bug found for" +-+ pkg
     [bug] -> do
       session <- bzApiKeySession
       return (bug, session)
@@ -367,7 +367,7 @@ readIniConfig inifile iniparser fn = do
   ini <- T.readFile inifile
   return $
     case parseIniFile ini iniparser of
-      Left err -> error' $ err ++ "\nin " ++ inifile
+      Left err -> error' $ err ++ "\nin" +-+ inifile
       Right res -> fn res
 
 sortBugsByID :: [Bug] -> [Bug]
@@ -416,7 +416,7 @@ putReviewBug short bug = do
   if short
     then putStr $ reviewBugToPackage bug ++ " "
     else do
-    putStr $ T.unpack (bugStatus bug) ++ " " ++ reviewBugToPackage bug ++ ": "
+    putStr $ T.unpack (bugStatus bug) +-+ reviewBugToPackage bug ++ ": "
     putBugId $ bugId bug
 
 putBug :: Bug -> IO ()
@@ -477,7 +477,7 @@ getBzAccountId session muser = do
       else do
         users <- listBzUsers session userid
         case users of
-          [] -> error' $ "No user found for " ++ userid
+          [] -> error' $ "No user found for" +-+ userid
           [obj] -> return $ T.pack $ lookupKey' "email" obj
-          objs -> error' $ "Found multiple user matches: " ++
+          objs -> error' $ "Found multiple user matches:" +-+
                   unwords (map (lookupKey' "email") objs)

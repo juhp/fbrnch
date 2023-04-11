@@ -61,7 +61,7 @@ importCmd mock (breq, ps) = do
         let srpm = (head . filter isURI . filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms
         let srpmfile = takeFileName srpm
         -- FIXME if havesrpm then print local filename
-        prompt_ $ "Press Enter to import " ++ srpmfile
+        prompt_ $ "Press Enter to import" +-+ srpmfile
         havesrpm <- doesFileExist srpmfile
         unless havesrpm $
           cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
@@ -69,7 +69,7 @@ importCmd mock (breq, ps) = do
         fedpkg_ "import" [srpmfile]
         git_ "commit" ["--message", "import #" ++ show bid]
         nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
-        prompt_ $ "Press Enter to push and build " ++ nvr
+        prompt_ $ "Press Enter to push and build" +-+ nvr
         gitPush True Nothing
         -- FIXME build more branches
         kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]

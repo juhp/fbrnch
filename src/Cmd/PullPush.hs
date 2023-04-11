@@ -36,7 +36,7 @@ pullPkgs pullopts (breq,args) =
         haveGit <- isPkgGitRepo
         if haveGit
           then doPullPkg
-          else putStrLn $ "ignoring " ++ unPackage pkg
+          else putStrLn $ "ignoring" +-+ unPackage pkg
       else doPullPkg
       where
         doPullPkg :: IO ()

@@ -54,7 +54,7 @@ kojiNVRTags :: String -> IO [String]
 kojiNVRTags nvr = do
   mbldid <- kojiGetBuildID fedoraHub nvr
   case mbldid of
-    Nothing -> error' $ nvr ++ " koji build not found"
+    Nothing -> error' $ nvr +-+ "koji build not found"
     Just bldid -> kojiBuildTags fedoraHub (buildIDInfo bldid)
 
 kojiBuildStatus :: String -> IO (Maybe BuildState)
@@ -170,7 +170,7 @@ kojiWaitTask task = do
         kojiWaitTask task
       else return $ ts == TaskClosed
     Nothing -> do
-      error $ "failed to get info for koji task " ++ displayID task
+      error $ "failed to get info for koji task" +-+ displayID task
 
 kojiSource :: Package -> String -> String
 kojiSource pkg ref =
@@ -186,7 +186,7 @@ kojiBuildBranch :: String -> Package -> Maybe String -> [String] -> IO ()
 kojiBuildBranch target pkg mref args =
   checkResult <$> kojiBuildBranch' True target pkg mref args
   where
-    checkResult = either (\ task -> error' (displayID task ++ " not completed")) (const ())
+    checkResult = either (\ task -> error' (displayID task +-+ "not completed")) (const ())
 
 kojiBuildBranchNoWait ::String -> Package -> Maybe String -> [String] -> IO TaskID
 kojiBuildBranchNoWait target pkg mref args = do
@@ -225,7 +225,7 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
         threadDelay (fromEnum (50 :: Micro)) -- 50s
       mrepo <- kojiGetRepo fedoraHub buildtag Nothing Nothing
       case mrepo of
-        Nothing -> error' $ "failed to find koji repo for " ++ buildtag
+        Nothing -> error' $ "failed to find koji repo for" +-+ buildtag
         Just repo ->
           if moldrepo == mrepo
           then waitRepo buildtag mrepo
@@ -236,13 +236,13 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
               Just event -> do
                 latest <- kojiLatestNVRRepo buildtag event (nameOfNVR nvr)
                 if latest == Just nvr
-                  then logMsg $ nvr ++
+                  then logMsg $ nvr +-+
                        if isNothing moldrepo
-                       then " is in " ++ buildtag
-                       else " appeared"
+                       then "is in" +-+ buildtag
+                       else "appeared"
                   else do
                   when (isNothing moldrepo && not quiet) $
-                    logMsg $ "Waiting for " ++ buildtag ++ " to have " ++ nvr
+                    logMsg $ "Waiting for" +-+ buildtag +-+ "to have" +-+ nvr
                   waitRepo buildtag mrepo
 
     -- FIXME: obsolete by using NVR
@@ -298,10 +298,10 @@ targetMaybeSidetag dryrun br msidetagTarget =
             putStrLn out
             let sidetag =
                   init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
-            logMsg $ "Waiting for " ++ sidetag ++ " repo"
+            logMsg $ "Waiting for" +-+ sidetag +-+ "repo"
             unless dryrun $
               cmd_ "koji" ["wait-repo", sidetag]
             return sidetag
             else error' "'fedpkg request-side-tag' failed"
         [tag] -> return tag
-        _ -> error' $ "More than one user side-tag found for " ++ show br
+        _ -> error' $ "More than one user side-tag found for" +-+ show br

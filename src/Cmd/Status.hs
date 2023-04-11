@@ -44,14 +44,14 @@ statusCmd nofetch reviews (breq, pkgs) = do
       if not brExists
         then do
         name <- getDirectoryName
-        putStrLn $ name ++ " has no branch " ++ show br
+        putStrLn $ name +-+ "has no branch" +-+ show br
         else do
         gitSwitchBranch rbr
         let spec = packageSpec pkg
         ifM (notM (doesFileExist spec))
           (ifM initialPkgRepo
             (putStrLn $ show br ++ ": initial repo")
-            (putStrLn $ "missing " ++ spec)) $
+            (putStrLn $ "missing" +-+ spec)) $
           do
           mnvr <- pkgNameVerRel br spec
           case mnvr of
@@ -66,7 +66,7 @@ statusCmd nofetch reviews (breq, pkgs) = do
               --   when ancestor $ do
               --     unmerged <- gitOneLineLog $ "HEAD..origin/" ++ show newerBr
               --     unless (null unmerged) $ do
-              --       putStrLn $ "Newer commits in " ++ show newerBr ++ ":"
+              --       putStrLn $ "Newer commits in" +-+ show newerBr ++ ":"
               --       mapM_ putStrLn unmerged
               munpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
               case munpushed of
@@ -76,9 +76,9 @@ statusCmd nofetch reviews (breq, pkgs) = do
                     Nothing -> do
                       mlatest <- kojiLatestNVR (branchDestTag br) (unPackage pkg)
                       case mlatest of
-                        Nothing -> putStrLn $ "new " ++ nvr
+                        Nothing -> putStrLn $ "new" +-+ nvr
                         Just latest ->
-                          putStrLn $ if equivNVR nvr latest then latest ++ " is latest modulo disttag" else (if null latest then "new " else (head . words) latest ++ " ->\n") ++ nvr
+                          putStrLn $ if equivNVR nvr latest then latest +-+ "is latest modulo disttag" else (if null latest then "new " else (head . words) latest +-+ "->\n") ++ nvr
                     Just buildid -> do
                       tags <- kojiBuildTags fedoraHub (buildIDInfo buildid)
                       if null tags
@@ -87,10 +87,10 @@ statusCmd nofetch reviews (breq, pkgs) = do
                         -- FIXME show pending archs building
                         whenJust mstatus $ \ status ->
                           -- FIXME better Show BuildStatus
-                          putStr $ nvr ++ " (" ++ show status ++ ")"
+                          putStr $ nvr +-+ "(" ++ show status ++ ")"
                         else do
                         -- FIXME hide testing if ga/stable
-                        putStr $ nvr ++ " (" ++ unwords tags ++ ")"
+                        putStr $ nvr +-+ "(" ++ unwords tags ++ ")"
                         unless (isStable tags) $ do
                           updates <- bodhiUpdates
                                      [makeItem "display_user" "0",
@@ -149,7 +149,7 @@ unpushedCmd latest (breq, pkgs) =
       if not brExists
         then do
         name <- getDirectoryName
-        putStrLn $ name ++ " has no branch " ++ show br
+        putStrLn $ name +-+ "has no branch" +-+ show br
         else do
         gitSwitchBranch rbr
         let spec = packageSpec pkg
@@ -164,7 +164,7 @@ unpushedCmd latest (breq, pkgs) =
           (ifM initialPkgRepo
             (putStrLn $ prefix +-+ "initial repo")
             (unlessM (doesFileExist "dead.package") $
-             putStrLn $ "missing " ++ spec)) $
+             putStrLn $ "missing" +-+ spec)) $
           do
           whenM (isNothing <$> pkgNameVerRel br spec) $ do
             putStrLn "undefined NVR!\n"

@@ -176,7 +176,7 @@ gitFetchSilent :: Bool -> IO ()
 gitFetchSilent quiet = do
   name <- gitRepoName
   unless quiet $
-    putStr $ "git fetching " ++ name ++ "... "
+    putStr $ "git fetching" +-+ name ++ "... "
   (ok, out, err) <- cmdFull "git" ["fetch"] ""
   unless (null out) $ putStrLn out
   unless ok $ error' err
@@ -193,7 +193,7 @@ checkWorkingDirClean = do
   clean <- isGitDirClean
   unless clean $ do
     dir <- getCurrentDirectory
-    error' $ "Working dir is not clean: " ++ dir
+    error' $ "Working dir is not clean:" +-+ dir
 
 isGitDirClean :: IO Bool
 isGitDirClean =
@@ -257,7 +257,7 @@ gitSwitchBranch br = do
     if not remotebranch
       then do
       name <- getDirectoryName
-      error' $ name ++ " " ++ show br ++ " branch does not exist!"
+      error' $ name +-+ show br +-+ "branch does not exist!"
       else
       git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]
 
@@ -283,7 +283,7 @@ gitSwitchBranch' quiet br = do
       then do
       name <- getDirectoryName
       unless quiet $
-        warning $ name ++ " " ++ show br ++ " branch does not exist!"
+        warning $ name +-+ show br +-+ "branch does not exist!"
       return False
       else do
       git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]

@@ -47,7 +47,7 @@ diffCmd debug speconly work fmt ignorebumps mpatt mwbr =
         if speconlyNone
           then do
           dead <- doesFileExist "dead.package"
-          unless dead $ putStrLn $ "no " ++ packageSpec pkg
+          unless dead $ putStrLn $ "no" +-+ packageSpec pkg
           else do
           let contxt = case fmt of
                          DiffContext n -> ["--unified=" ++ show n]

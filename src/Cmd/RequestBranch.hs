@@ -109,7 +109,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
       let pkgPrefix = if multiple then unPackage pkg ++ ": " else ""
       forM_ branches $ \ br ->
         when (br `elem` existing) $
-        putStrLn $ pkgPrefix ++ show br ++ " branch already exists"
+        putStrLn $ pkgPrefix ++ show br +-+ "branch already exists"
       let brs' = branches \\ existing
       if null brs'
         then return []
@@ -117,7 +117,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
         current <- fedoraBranchesNoRawhide $ pagurePkgBranches (unPackage pkg)
         forM_ brs' $ \ br ->
           when (br `elem` current) $
-          putStrLn $ pkgPrefix ++ show br ++ " remote branch already exists"
+          putStrLn $ pkgPrefix ++ show br +-+ "remote branch already exists"
         let newbranches = brs' \\ current
         if null newbranches then return []
           else do
@@ -136,7 +136,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
     notExistingRequest requests br = do
       let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"") ==) . pagureIssueTitle) requests
       unless (null pending) $ do
-        putStrLn $ "Branch request already exists for " ++ unPackage pkg ++ ":" ++ show br
+        putStrLn $ "Branch request already exists for" +-+ unPackage pkg ++ ":" ++ show br
         mapM_ printScmIssue pending
       return $ null pending
 

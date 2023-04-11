@@ -50,7 +50,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
         then return [anyTarget br]
         else mapM (targetMaybeSidetag dryrun (onlyRelBranch br) . Just) sidetagTargets
       forM_ targets $ \target -> do
-        putStrLn $ "Target: " ++ target
+        putStrLn $ "Target:" +-+ target
         archs <-
           case marchopts of
             Nothing -> return []
@@ -87,7 +87,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
               case msource of
                 Just (ScratchRef ref) ->
                   if length ref < 6
-                  then error' $ "please use a longer ref: " ++ ref
+                  then error' $ "please use a longer ref:" +-+ ref
                   -- FIXME print commit log
                   else return True
                 Just (ScratchSRPM _) -> return False

@@ -82,7 +82,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         unlessM (checkAutoBodhiUpdate rbr) $
           error' "You must use --target/--sidetag to build package layers for this branch"
       when (length branches > 1) $
-        putStrLn $ "# " ++ show rbr
+        putStrLn $ "#" +-+ show rbr
       target <- targetMaybeSidetag dryrun rbr msidetagTarget
       nvrclogs <- concatMapM (timeIO . parallelBuild target rbr)
                       (zip [firstlayer..length allLayers] $
@@ -103,7 +103,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
     parallelBranches brs pkg = do
       krbTicket
       currentbranch <- gitCurrentBranch
-      putStrLn $ "= Building " ++ pluralException (length brs) "branch" "branches" ++ " in parallel:"
+      putStrLn $ "= Building" +-+ pluralException (length brs) "branch" "branches" +-+ "in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
       (failures,nvrclogs) <- timeIO $ watchJobs (length jobs == 1) Nothing [] [] jobs
@@ -209,7 +209,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         Just (Left except) -> do
           print except
           let pkg = fst job
-          putStrLn $ "** " ++ color Magenta pkg +-+ "job" +-+ color Magenta "failed" ++ " **" +-+ if singlejob then "" else "(" ++ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer ++ ")"
+          putStrLn $ "**" +-+ color Magenta pkg +-+ "job" +-+ color Magenta "failed" +-+ "**" +-+ if singlejob then "" else "(" ++ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer ++ ")"
           watchJobs singlejob mlayer (pkg : fails) dones jobs
 
     -- FIXME prefix output with package name
@@ -256,14 +256,14 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           putStrLn $ color Yellow nvr +-+ "is already" +-+ color Yellow "building"
           mtask <- kojiGetBuildTaskID fedoraHub nvr
           case mtask of
-            Nothing -> error' $ "Task for " ++ nvr ++ " not found"
+            Nothing -> error' $ "Task for" +-+ nvr +-+ "not found"
             Just task ->
               return $ do
               kojiWaitTaskAndRepo (isNothing mlatest) nvr task
               return $ Done nvr br changelog
         _ -> do
           when (null unpushed) $ do
-            putStrLn $ nvr ++ " (" ++ target ++ ")" +-+ show n +-+ "more" +-+
+            putStrLn $ nvr +-+ "(" ++ target ++ ")" +-+ show n +-+ "more" +-+
               maybe "" (\l -> "in layer" +-+ show l) mlayer
             putNewLn
             putStrLn changelog
@@ -271,16 +271,16 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           opentasks <- kojiOpenTasks pkg (Just buildref) target
           case opentasks of
             [task] -> do
-              putStrLn $ nvr ++ " task is already open"
+              putStrLn $ nvr +-+ "task is already open"
               return $ do
                 kojiWaitTaskAndRepo (isNothing mlatest) nvr task
                 return $ Done nvr br changelog
-            (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already"
+            (_:_) -> error' $ show (length opentasks) +-+ "open" +-+ unPackage pkg +-+ "tasks already"
             [] -> do
               if equivNVR nvr (fromMaybe "" mlatest)
                 then do
                 -- FIXME add a retry prompt
-                putStrLn $ color Red $ nvr ++ " is already latest (modulo disttag)"
+                putStrLn $ color Red $ nvr +-+ "is already latest (modulo disttag)"
                 return $ error' $ nvr +-+ "failed"
                 else do
                 -- FIXME parse build output
@@ -296,9 +296,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         kojiWaitTaskAndRepo newpkg nvr task = do
           finish <- kojiWaitTask task
           if finish
-            then putStrLn $ color Green $ nvr ++ " build success"
+            then putStrLn $ color Green $ nvr +-+ "build success"
             -- FIXME print koji task url
-            else error' $ color Red $ nvr ++ " build failed"
+            else error' $ color Red $ nvr +-+ "build failed"
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then
             when newpkg $ do
@@ -326,7 +326,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       case mupdate of
         (Nothing, _) -> return ()
         (Just updateType, severity) -> do
-          putStrLn $ "Creating Bodhi Update for " ++ sidetag
+          putStrLn $ "Creating Bodhi Update for" +-+ sidetag
           ok <-
             if updateType == TemplateUpdate
             then do
@@ -353,7 +353,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
                     -- FIXME countdown timer
                     sleep 90
                     bodhiUpdateTestingRequesting 1 updateid update
-              _ -> error' $ "impossible happened: more than one update found for " ++ last nvrs
+              _ -> error' $ "impossible happened: more than one update found for" +-+ last nvrs
 
     bodhiUpdateTestingRequesting :: Double -> String -> Object -> IO ()
     bodhiUpdateTestingRequesting retries updateid update =

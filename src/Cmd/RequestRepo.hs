@@ -57,7 +57,7 @@ requestRepo mock retry breq pkg = do
         -- FIXME check api key is still valid or open pagure ticket directly
         url <- fedpkg "request-repo" [pkg, show bid]
         let assignee = userRealName (bugAssignedToDetail bug)
-        let draft = "Thank you for the review" ++ maybe "" (", " ++) (getFirstname assignee)
+        let draft = "Thank you for the review" ++ maybe "" ("," +-+) (getFirstname assignee)
         putStrLn "```"
         putStrLn draft
         putStrLn "```"
@@ -69,7 +69,7 @@ requestRepo mock retry breq pkg = do
         branches <- getRequestedBranches [] breq
         forM_ branches $ \ br -> do
           when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br Nothing]
-          putStr (show br ++ " ")
+          putStr $ show br ++ " "
           fedpkg_ "request-branch" ["--repo", pkg, show br]
         putNewLn
   where
@@ -92,7 +92,7 @@ requestRepo mock retry breq pkg = do
       mgr <- httpManager
       exists <- httpExists mgr $ "https://" ++ srcfpo +/+ "rpms" +/+ pkg
       when exists $
-        error' $ "Repo for " ++ pkg ++ " already exists"
+        error' $ "Repo for" +-+ pkg +-+ "already exists"
 
     -- FIXME handle "email name"
     getFirstname :: T.Text -> Maybe String

@@ -34,14 +34,14 @@ prepCmd mpre verbose (mbr,pkgs) = do
         else do
         spec <- localBranchSpecFile pkg br
         unlessM (doesFileExist spec) $
-          error' $ spec ++ " not found"
+          error' $ spec +-+ "not found"
         void $ getSources spec
         installMissingMacros spec
         case br of
           RelBranch rbr -> do
             nvr <- pkgNameVerRel' rbr spec
             -- newline avoids error starting on same line
-            putStr $ "Prepping " ++ nvr ++ ": "
+            putStr $ "Prepping" +-+ nvr ++ ": "
           _ -> return ()
         timeIO $
           (if verbose then cmdLog else cmdSilent') "rpmbuild" ["-bp", spec]

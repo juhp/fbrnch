@@ -38,9 +38,9 @@ builtRpms br spec = do
   dist <- getBranchDist br
   -- previously was "" for pkggit
   rpmdir <- fromMaybe "" <$> rpmEval "%{_rpmdir}"
-  rpms <- rpmspec ["--builtrpms", "--define", "dist " ++ rpmDistTag dist] (Just (rpmdir </>  "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm")) spec
+  rpms <- rpmspec ["--builtrpms", "--define", "dist" +-+ rpmDistTag dist] (Just (rpmdir </>  "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm")) spec
   if null rpms
-    then error' $ spec ++ " does not seem to create any rpms"
+    then error' $ spec +-+ "does not seem to create any rpms"
     else return rpms
 
 rpmEval :: String -> IO (Maybe String)
@@ -51,7 +51,7 @@ rpmEval s = do
 -- rpmEval' :: String -> IO String
 -- rpmEval' s = do
 --   mres <- rpmEval s
---   fromMaybe (error' (show s ++ " undefined!")) mres
+--   fromMaybe (error' (show s +-+ "undefined!")) mres
 
 getSources :: FilePath -> IO [FilePath]
 getSources spec = do
@@ -93,7 +93,7 @@ getSources spec = do
           else do
           cmd_ "spectool" ["-g", "-S", spec]
           unlessM (doesFileExist src) $
-            error' $ "download failed: " ++ src
+            error' $ "download failed:" +-+ src
     unless inSrcdir $
       whenJust msrcdir $ \srcdir ->
       createLink src (srcdir </> src)
@@ -105,7 +105,7 @@ getSources spec = do
       else do
       cmd_ "spectool" ["-g", "-P", spec]
       unlessM (doesFileExist patch) $
-        error' $ "missing patch: " ++ patch
+        error' $ "missing patch:" +-+ patch
   return $ srcs ++ patches
   where
     sourceFieldFile :: String -> Either FilePath FilePath
@@ -117,7 +117,7 @@ getSources spec = do
           (case lower (dropWhileEnd isDigit (init f)) of
              "source" -> Right
              "patch" -> Left
-             _ -> error' $! "illegal field: " ++ f)
+             _ -> error' $! "illegal field:" +-+ f)
           $ takeFileName v
 
     checkCompression :: FilePath -> IO Bool
@@ -135,7 +135,7 @@ getSources spec = do
         Just prog -> do
           have <- findExecutable prog
           when (isNothing have) $ do
-            putStrLn $ "Running 'dnf install' " ++ prog
+            putStrLn $ "Running 'dnf install'" +-+ prog
             cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"install": ["--assumeyes", prog]
           cmdBool prog ["-t", file]
         Nothing -> return True
@@ -161,11 +161,11 @@ generateSrpm' force mbr spec = do
                Nothing -> return []
                Just br -> do
                  dist <- getBranchDist br
-                 return ["--define", "dist " ++ rpmDistTag dist]
+                 return ["--define", "dist" +-+ rpmDistTag dist]
   msrcrpmdir <- rpmEval "%{_srcrpmdir}"
   srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", fromMaybe "" msrcrpmdir </> "%{name}-%{version}-%{release}.src.rpm", spec]
   cwd <- getCurrentDirectory
-  let sourcediropt = ["--define", "_sourcedir " ++ cwd]
+  let sourcediropt = ["--define", "_sourcedir" +-+ cwd]
       opts = distopt ++ sourcediropt
   if force then
     buildSrpm opts
@@ -180,12 +180,12 @@ generateSrpm' force mbr spec = do
         then buildSrpm opts
         else do
         -- pretty print with ~/
-        putStrLn $ srpmfile ++ " is up to date"
+        putStrLn $ srpmfile +-+ "is up to date"
         return srpmfile
   where
     buildSrpm opts = do
       srpm <- last . words <$> cmd "rpmbuild" (opts ++ ["-bs", spec])
-      putStrLn $ "Created " ++ takeFileName srpm
+      putStrLn $ "Created" +-+ takeFileName srpm
       return srpm
 
 data ForceShort = ForceBuild | ShortCompile | ShortInstall
@@ -230,13 +230,13 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
             Just ShortCompile -> ["-bc", "--short-circuit"]
             Just ShortInstall -> ["-bi", "--short-circuit"]
             _ -> "-bb" : ["--noclean" | noclean]
-        sourcediropt = ["--define", "_sourcedir " ++ cwd]
-        args = sourcediropt ++ ["--define", "dist " ++ rpmDistTag dist] ++
+        sourcediropt = ["--define", "_sourcedir" +-+ cwd]
+        args = sourcediropt ++ ["--define", "dist" +-+ rpmDistTag dist] ++
                buildopt ++ map show bconds ++ [spec]
     date <- cmd "date" ["+%T"]
     rbr <- anyBranchToRelease br
     nvr <- pkgNameVerRel' rbr spec
-    putStr $ date ++ " Building " ++ nvr ++ " locally... "
+    putStr $ date +-+ "Building" +-+ nvr +-+ "locally... "
     ok <- do
       let buildlog = ".build-" ++ (showVerRel . nvrVerRel . readNVR) nvr <.> "log"
       whenM (doesFileExist buildlog) $
@@ -246,7 +246,7 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
         then do
           putNewLn
           -- FIXME would like to have pipeOutErr
-          let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [buildlog ++ " && exit ${PIPESTATUS[0]}"]
+          let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [buildlog +-+ "&& exit ${PIPESTATUS[0]}"]
           when debug $ putStrLn buildcmd
           shellBool buildcmd
         else do
@@ -258,7 +258,7 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
             else cmd_ "tail" ["-n 100", buildlog]
           return res
     unless ok $
-      error' $ nvr ++ " failed to build"
+      error' $ nvr +-+ "failed to build"
   return needBuild
   where
     quoteArg :: String -> String
@@ -270,7 +270,7 @@ installDeps :: Bool -> FilePath -> IO ()
 installDeps strict spec = do
   missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
   unless (null missingdeps) $ do
-    putStrLn $ "Running 'dnf install' " ++ unwords missingdeps
+    putStrLn $ "Running 'dnf install'" +-+ unwords missingdeps
     cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"install": ["--skip-broken" | not strict] ++ ["--assumeyes"] ++ missingdeps
 
 installMissingMacros :: FilePath -> IO ()
@@ -338,7 +338,7 @@ checkSourcesMatch spec = do
                                 src `notElem` gitfiles)
                 sourcefiles
   unless (null missing) $ do
-    prompt_ $ color Red $ unwords missing ++ " not in sources, please fix"
+    prompt_ $ color Red $ unwords missing +-+ "not in sources, please fix"
     checkOnBranch
     checkSourcesMatch spec
   mgr <- httpManager
@@ -356,8 +356,8 @@ checkSourcesMatch spec = do
                 (file', "https://src.fedoraproject.org/lookaside/pkgs" +/+ pkg +/+ file +/+ "md5" +/+ hash +/+ file)
               _ -> error' $ "invalid/unknown source:\n" ++ source
       unlessM (httpExists mgr url) $ do
-        putStrLn $ url ++ " not found"
-        putStrLn $ "uploading " ++ file ++ " to lookaside source repo"
+        putStrLn $ url +-+ "not found"
+        putStrLn $ "uploading" +-+ file +-+ "to lookaside source repo"
         fedpkg_ "upload" [file]
 
 notInstalled :: String -> IO Bool

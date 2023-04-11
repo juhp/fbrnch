@@ -65,7 +65,7 @@ fedpkg_ c args =
 checkForSpecFile :: String -> IO ()
 checkForSpecFile spec = do
   have <- doesFileExist spec
-  unless have $ error' $ spec ++ " not found"
+  unless have $ error' $ spec +-+ "not found"
 
 changeLogPrompt :: Maybe String -> FilePath -> IO String
 changeLogPrompt mcontext spec = do
@@ -79,7 +79,7 @@ changeLogPrompt mcontext spec = do
   if not tty
     then return clog
     else do
-    userlog <- prompt $ "Press Enter to use above or input " ++ fromMaybe "change" mcontext ++ " summary now" ++ if isJust mcontext then "; or 'no' to skip update" else ""
+    userlog <- prompt $ "Press Enter to use above or input" +-+ fromMaybe "change" mcontext +-+ "summary now" ++ if isJust mcontext then "; or 'no' to skip update" else ""
     return $ if null userlog then clog else userlog
 
 getChangelog :: FilePath -> IO [String]
@@ -124,7 +124,7 @@ findSpecfile = do
     Just spec -> return spec
     Nothing -> do
       dir <- getDirectoryName
-      error' $ "No spec file found in: " ++ dir
+      error' $ "No spec file found in:" +-+ dir
 
 -- adapted from fileWithExtension
 maybeFindSpecfile :: IO (Maybe FilePath)
@@ -133,7 +133,7 @@ maybeFindSpecfile = do
   case files of
     [] -> return Nothing
     [spec] -> return $ Just spec
-    _ -> error' $ "More than one .spec file: " ++ unwords files
+    _ -> error' $ "More than one .spec file:" +-+ unwords files
 
 localBranchSpecFile :: Package -> AnyBranch -> IO FilePath
 localBranchSpecFile pkg br = do
@@ -148,9 +148,9 @@ localBranchSpecFile pkg br = do
         mspec <- maybeFindSpecfile
         case mspec of
           Just spc -> do
-            putStrLn $ "Warning: directory name differs from " ++ spc ++ "\n"
+            putStrLn $ "Warning: directory name differs from" +-+ spc ++ "\n"
             return spc
-          Nothing -> error' $ "No spec file for: " ++ unPackage pkg
+          Nothing -> error' $ "No spec file for:" +-+ unPackage pkg
     else findSpecfile
 
 withExistingDirectory :: FilePath -> IO a -> IO a
@@ -158,7 +158,7 @@ withExistingDirectory dir act = do
   exists <- doesDirectoryExist dir
   if exists
   then withCurrentDirectory dir act
-  else error' $ "No such directory: " ++ dir
+  else error' $ "No such directory:" +-+ dir
 
 -- newly created Fedora repos/branches have just one README commit
 initialPkgRepo :: IO Bool
@@ -171,15 +171,15 @@ newtype Package = Package {unPackage :: String}
 
 putPkgHdr :: Package -> IO ()
 putPkgHdr pkg =
-  putStrLn $ "\n= " ++ unPackage pkg ++ " ="
+  putStrLn $ "\n=" +-+ unPackage pkg +-+ "="
 
 putPkgBrnchHdr :: Package -> Branch -> IO ()
 putPkgBrnchHdr pkg br =
-  putStrLn $ "\n== " ++ unPackage pkg ++ " " ++ show br ++ " =="
+  putStrLn $ "\n==" +-+ unPackage pkg +-+ show br +-+ "=="
 
 putPkgAnyBrnchHdr :: Package -> AnyBranch -> IO ()
 putPkgAnyBrnchHdr pkg br =
-  putStrLn $ "\n== " ++ unPackage pkg ++ " " ++ show br ++ " =="
+  putStrLn $ "\n==" +-+ unPackage pkg +-+ show br +-+ "=="
 
 packageSpec :: Package -> FilePath
 packageSpec pkg = unPackage pkg <.> "spec"
@@ -255,7 +255,7 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
           putStrLn $ "Warning: package name (" ++ unPackage pkg ++ ") differs from spec filename!"
         haveGit <- isPkgGitRepo
         when (isJust mgitopts && not haveGit) $
-          error' $ "Not a pkg git dir: " ++ unPackage pkg
+          error' $ "Not a pkg git dir:" +-+ unPackage pkg
         mcurrentbranch <-
           if haveGit
           then
@@ -271,7 +271,7 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
         case limitBranches of
           ZeroOrOne | length brs > 1 ->
             -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
-            error' $ "more than one branch given: " ++ unwords (map show brs)
+            error' $ "more than one branch given:" +-+ unwords (map show brs)
           ExactlyOne | null brs ->
             error' "please specify one branch"
           ExactlyOne | length brs > 1 ->
@@ -287,7 +287,7 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
         when fetch $ gitFetchSilent False
         -- FIXME!! no branch restriction
         when (breq `elem` map BranchOpt [AllBranches,AllFedora,AllEPEL]) $
-          putStrLn $ "Branches: " ++ unwords (map show brs) ++ "\n"
+          putStrLn $ "Branches:" +-+ unwords (map show brs) ++ "\n"
         -- FIXME add newline at end?
         let action' p b = do
               when (header /= HeaderNone && length brs > 1) $ putPkgAnyBrnchHdr p b
@@ -344,7 +344,7 @@ clonePkg quiet cloneuser mbr pkg = do
         git_ "clone" $ ["--quiet"] ++ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg <.> "git"]
   where
     msgout =
-      putStrLn $ if quiet then "cloning..." else "Cloning: " ++ pkg
+      putStrLn $ if quiet then "cloning..." else "Cloning:" +-+ pkg
 
 isAutoRelease :: FilePath -> IO Bool
 isAutoRelease spec = do
@@ -379,7 +379,7 @@ pkgNameVerRel' :: Branch -> FilePath -> IO String
 pkgNameVerRel' br spec = do
   mnvr <- pkgNameVerRel br spec
   case mnvr of
-    Nothing -> error' $ "rpmspec failed to parse " ++ spec
+    Nothing -> error' $ "rpmspec failed to parse" +-+ spec
     Just nvr -> return nvr
 
 getBranchDist :: AnyBranch -> IO Dist
@@ -435,13 +435,13 @@ equivNVR nvr1 nvr2
 --           if ".spec" `isExtensionOf` fp
 --           then do
 --             exists' <- doesFileExist fp
---             unless exists' $ error' $ fp ++ " file not found"
+--             unless exists' $ error' $ fp +-+ "file not found"
 --             return True
 --           else do
 --             exists' <- doesDirectoryExist fp
 --             let ispath = '/' `elem` fp
 --             when (not exists' && ispath) $
---               error' $ fp ++ " directory not found"
+--               error' $ fp +-+ "directory not found"
 --             return exists'
 
 --     brPkgsToBranchesPkgs :: [BrPkg] -> ([AnyBranch], [String])
@@ -457,12 +457,12 @@ equivNVR nvr1 nvr2
 --         toBranch :: BrPkg -> AnyBranch
 --         toBranch (IsBr br) = br
 --         toBranch (Unknown br) = OtherBranch br
---         toBranch (IsPkg p) = error' $ "can't map package to branch: " ++ p
+--         toBranch (IsPkg p) = error' $ "can't map package to branch:" +-+ p
 
 --         toPackage :: BrPkg -> String
 --         toPackage (IsPkg p) = p
 --         toPackage (Unknown p) = p
---         toPackage (IsBr b) = error' $ "can't map branch to package: " ++ show b
+--         toPackage (IsBr b) = error' $ "can't map branch to package:" +-+ show b
 
 editSpecField :: String -> String -> FilePath -> IO ()
 editSpecField field new spec =

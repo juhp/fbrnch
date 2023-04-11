@@ -70,7 +70,7 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsub
                   -- FIXME check not metadep with parens
                   mpkgdir <- lookForPkgDir rbr ".." dep
                   case mpkgdir of
-                    Nothing -> putStrLn $ dep ++ " not known"
+                    Nothing -> putStrLn $ dep +-+ "not known"
                     Just pkgdir -> installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsubpkgs (mbr, [pkgdir]) >> putNewLn
                 -- FIXME option to enable/disable installing missing deps
               else installDeps True spec

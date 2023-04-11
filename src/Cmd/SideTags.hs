@@ -19,5 +19,5 @@ sideTagsCmd remove brs = do
   where
     removeSideTag :: String -> IO ()
     removeSideTag tag =
-      whenM (yesno Nothing $ "Remove " ++ tag) $
+      whenM (yesno Nothing $ "Remove" +-+ tag) $
       cmd_ "fedpkg" ["remove-side-tag", tag]

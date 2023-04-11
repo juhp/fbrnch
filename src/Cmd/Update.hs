@@ -42,7 +42,7 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
     updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
     updatePkg mver pkg br = do
       when (br /= RelBranch Rawhide) $
-        prompt_ $ "Are you sure you want to update " ++ show br ++ "?"
+        prompt_ $ "Are you sure you want to update" +-+ show br ++ "?"
       spec <- if allowHEAD
               then findSpecfile
               else localBranchSpecFile pkg br
@@ -54,12 +54,12 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
         Nothing -> do
           when (null vdiff && not onlysources) $
             error' "specify or edit version to update"
-          putStrLn $ "current version: " ++ curver
+          putStrLn $ "current version:" +-+ curver
         Just nver -> do
           when (length vdiff == 2) $
-            error' $ "spec version already bumped to " ++ curver
+            error' $ "spec version already bumped to" +-+ curver
           when (curver == nver) $
-            putStrLn $ "already new version " ++ curver
+            putStrLn $ "already new version" +-+ curver
       let moldnewver =
             case mver of
               Just nver -> Just (curver,nver)
@@ -73,7 +73,7 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
         -- FIXME take epoch into account
         when (rpmVerCompare oldver newver == GT) $
           putStrLn $ "current" +-+ oldver +-+ "is newer!"
-        putStrLn $ oldver ++ " ->\n" ++ newver
+        putStrLn $ oldver +-+ "->\n" ++ newver
         when (curver /= newver) $ do
           editSpecField "Version" newver spec
           editSpecField "Release" "0%{?dist}" spec
@@ -103,8 +103,8 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
         versions <- changelogVersions spec
         let missing = null versions || not ((newver ++ "-") `isPrefixOf` head versions)
         when missing $ do
-          cmd_ "rpmdev-bumpspec" ["-c", "update to " ++ newver, spec]
-          git_ "commit" ["-a", "-m", "update to " ++ newver]
+          cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
+          git_ "commit" ["-a", "-m", "update to" +-+ newver]
       putStr "Prepping... "
       cmdSilent' "rpmbuild" ["-bp", spec]
       putStrLn "done"
@@ -129,7 +129,7 @@ pkgVerRel spec = do
   --hostdist <- cmd "rpm" ["--eval", "%{dist}"]
   mvr <- cmdMaybe "rpmspec" ["-q", "--srpm", "--qf", "%{version}-%{release}", spec]
   case mvr of
-    Nothing -> error' $ "Failed to read package ver-rel: " ++ spec
+    Nothing -> error' $ "Failed to read package ver-rel:" +-+ spec
     Just vr -> return $ splitBy "-" vr
 
 splitBy :: String -> String -> (String,String)
@@ -137,7 +137,7 @@ splitBy sep xs =
   let ws = splitOn sep xs in
     case ws of
       [f,v] -> (f,v)
-      _ -> error $ "inconsistent field: " ++ xs
+      _ -> error $ "inconsistent field:" +-+ xs
 
 changelogVersions :: FilePath -> IO [String]
 changelogVersions spec = do

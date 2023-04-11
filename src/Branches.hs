@@ -102,7 +102,7 @@ pagurePkgBranches pkg = do
   res <- pagureListGitBranches srcfpo project
   return $ either (error' . include project) id res
   where
-    include p e = e ++ ": " ++ p
+    include p e = e ++ ":" +-+ p
 
 mockRoot :: Branch -> Maybe String -> String
 mockRoot br march =
@@ -121,7 +121,7 @@ data BranchOpts = AllBranches | AllFedora | AllEPEL | ExcludeBranches [Branch]
 
 onlyRelBranch :: AnyBranch -> Branch
 onlyRelBranch (RelBranch br) = br
-onlyRelBranch (OtherBranch br) = error' $ "Non-release branch not allowed: " ++ br
+onlyRelBranch (OtherBranch br) = error' $ "Non-release branch not allowed:" +-+ br
 
 systemBranch :: IO Branch
 systemBranch =
@@ -158,13 +158,13 @@ listOfBranches distgit active (Branches brs) =
     forM_ brs $ \ br ->
           if active
             then when (br `notElem` activeBrs) $
-                 error' $ show br ++ " is not an active branch"
+                 error' $ show br +-+ "is not an active branch"
             else
             case br of
               Fedora _ -> do
                 let latest = maximum (delete Rawhide activeBrs)
                 when (br > latest) $
-                  error' $ show br ++ " is newer than latest branch"
+                  error' $ show br +-+ "is newer than latest branch"
               -- FIXME also check for too new EPEL
               _ -> return ()
     return brs
@@ -189,7 +189,7 @@ gitCurrentBranch = do
   if br == OtherBranch "HEAD"
     then do
     dir <- getDirectoryName
-    prompt_ $ dir ++ ": " ++ show br ++ " is not a branch, please fix"
+    prompt_ $ dir ++ ":" +-+ show br +-+ "is not a branch, please fix"
     gitCurrentBranch
     else return br
 
@@ -203,7 +203,7 @@ gitCurrentBranchWarn = do
   if br == OtherBranch "master"
     then do
     dir <- getDirectoryName
-    prompt_ $ dir ++ ": " ++ show br ++ " is not a valid branch, please use 'rename-rawhide'"
+    prompt_ $ dir ++ ":" +-+ show br +-+ "is not a valid branch, please use 'rename-rawhide'"
     gitCurrentBranchWarn
     else return br
 

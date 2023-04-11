@@ -125,7 +125,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   target <- targetMaybeSidetag dryrun br msidetagTarget
   case buildstatus of
     Just BuildComplete -> do
-      putStrLn $ nvr ++ " is already built"
+      putStrLn $ nvr +-+ "is already built"
       when (isJust mpush) $
         error' "Please bump the spec file"
       when (br /= Rawhide && isNothing msidetagTarget) $ do
@@ -147,7 +147,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 (autoupdate && mwaitrepo == Just True)) $
             kojiWaitRepo dryrun True True target nvr
     Just BuildBuilding -> do
-      putStrLn $ nvr ++ " is already building"
+      putStrLn $ nvr +-+ "is already building"
       when (isJust mpush) $
         error' "Please bump the spec file"
       whenJustM (kojiGetBuildTaskID fedoraHub nvr) kojiWatchTask
@@ -160,17 +160,17 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       opentasks <- kojiOpenTasks pkg mbuildref target
       case opentasks of
         [task] -> do
-          putStrLn $ nvr ++ " task " ++ displayID task ++ " is already open"
+          putStrLn $ nvr +-+ "task" +-+ displayID task +-+ "is already open"
           when (isJust mpush) $
             error' "Please bump the spec file"
           kojiWatchTask task
-        (_:_) -> error' $ show (length opentasks) ++ " open " ++ unPackage pkg ++ " tasks already!"
+        (_:_) -> error' $ show (length opentasks) +-+ "open" +-+ unPackage pkg +-+ "tasks already!"
         [] -> do
           let tag =
                 if target == branchTarget br then branchDestTag br else target
           mlatest <- kojiLatestNVR tag $ unPackage pkg
           if equivNVR nvr (fromMaybe "" mlatest)
-            then putStrLn $ nvr ++ " is already latest" ++ if Just nvr /= mlatest then " (modulo disttag)" else ""
+            then putStrLn $ nvr +-+ "is already latest" +-+ if Just nvr /= mlatest then "(modulo disttag)" else ""
             else do
             when (null unpushed || merged && br /= Rawhide) $ do
               putStrLn $ nvr ++ "\n"
@@ -185,7 +185,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                     Just newest -> do
                       newestTags <- kojiNVRTags newest
                       unless (any (`elem` newestTags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $ do
-                        putStrLn $ "Warning: " ++ newest ++ " still in testing?"
+                        putStrLn $ "Warning:" +-+ newest +-+ "still in testing?"
                         prompt_ "Press Enter to continue"
                       return False
             unless dryrun krbTicket

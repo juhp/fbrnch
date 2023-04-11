@@ -44,7 +44,7 @@ timeIO action = do
     (\start -> do
         end <- getCurrentTime
         let duration = diffUTCTime end start
-        putStrLn $ "took " ++ show duration)
+        putStrLn $ "took" +-+ show duration)
     (const action)
 #endif
 

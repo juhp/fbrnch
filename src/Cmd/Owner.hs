@@ -24,7 +24,7 @@ ownerCmd pkgs = do
       putNewLn
       let maintain = groupSort pkgowners
       forM_ maintain $ \(o,ps) ->
-        putStrLn $ o ++ ": " ++ unwords (map unPackage ps)
+        putStrLn $ o ++ ":" +-+ unwords (map unPackage ps)
   where
     ownerPkg :: String -> IO (String,Package)
     ownerPkg path = do

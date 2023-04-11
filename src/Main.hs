@@ -436,7 +436,7 @@ main = do
           in case brs of
             [] -> error' "specify one branch"
             [br] -> (br,pkgs)
-            _ -> error' $ "cannot have more than one branch: " ++ unwords (map show brs)
+            _ -> error' $ "cannot have more than one branch:" +-+ unwords (map show brs)
 
     maybeBranchPackages :: Bool -> Parser (Maybe Branch,[String])
     maybeBranchPackages oneplus =
@@ -451,7 +451,7 @@ main = do
           in case brs of
             [] -> (Nothing, pkgs)
             [br] -> (Just br,pkgs)
-            _ -> error' $ "cannot have more than one branch: " ++ unwords (map show brs)
+            _ -> error' $ "cannot have more than one branch:" +-+ unwords (map show brs)
 
     -- FIXME split later to prevent branches after packages
     branchesPackages :: Parser (BranchesReq, [String])

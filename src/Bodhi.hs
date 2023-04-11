@@ -41,7 +41,7 @@ checkAutoBodhiUpdate br =
     -- Error in $: key "create_automatic_updates" not found
     lookupKey'' :: T.Text -> Object -> Bool
     lookupKey'' k obj =
-      let errMsg e = error $ e ++ " " ++ show obj in
+      let errMsg e = error $ e +-+ show obj in
         -- bodhi-hs has lookupKeyEither
         either errMsg id $ parseEither (.: fromText k) obj
 
@@ -54,7 +54,7 @@ checkAutoBodhiUpdate br =
 -- FIXME handle expired override?
 bodhiCreateOverride :: Bool -> Maybe Int -> String -> IO ()
 bodhiCreateOverride dryrun mduration nvr = do
-  putStrLn $ "Creating Bodhi Override for " ++ nvr ++ ":"
+  putStrLn $ "Creating Bodhi Override for" +-+ nvr ++ ":"
   unless dryrun $ do
     ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", show (fromMaybe 4 mduration), "--no-wait", nvr]
     if ok
@@ -161,7 +161,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
                 when (isJust mreview &&
                       updateType `elem` [SecurityUpdate,BugfixUpdate]) $
                   warning "overriding update type with 'newpackage'"
-                putStrLn $ "Creating Bodhi Update for " ++ nvrs ++ ":"
+                putStrLn $ "Creating Bodhi Update for" +-+ nvrs ++ ":"
                 -- FIXME check for Bodhi URL to confirm update
                 -- FIXME returns json error string if it exists:
                 -- {"status": "error", "errors": [{"location": "body", "name": "builds", "description": "Update for ghc9.2-9.2.5-14.fc36 already exists"}]}
@@ -172,7 +172,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
           updates <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvrs]
           if null updates
             then do
-            putStrLn $ "bodhi submission failed for " ++ nvrs
+            putStrLn $ "bodhi submission failed for" +-+ nvrs
             prompt_ "Press Enter to resubmit to Bodhi"
             bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs
             else
@@ -199,7 +199,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
       if exists
         then return $ Just file
         else do
-        putStrLn ("no such file: " ++ file)
+        putStrLn ("no such file:" +-+ file)
         maybeTemplate TemplateUpdate
     maybeTemplate _ = return Nothing
 

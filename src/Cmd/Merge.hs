@@ -66,7 +66,7 @@ mergeBranch _ _ _ _ _ (_,[]) _ _ = return ()
 mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
   whenJust mpkg $ flip putPkgBrnchHdr br
   isnewrepo <- initialPkgRepo
-  putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") ++ " " ++ show from ++ ":"
+  putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") +-+ show from ++ ":"
   displayCommits showall unmerged
   unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
@@ -75,7 +75,7 @@ mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
   mmerge <-
     if isnewrepo && length unmerged == 1 || noprompt
     then return $ Just $ commitRef (head unmerged)
-    else refPrompt unmerged ("Press Enter to merge " ++ show from ++
+    else refPrompt unmerged ("Press Enter to merge" +-+ show from ++
          (if build then " and build" else "") ++
          (if length unmerged > 1 then "; or give ref to merge" else "") ++
          "; or 'no' to skip merge")
@@ -89,7 +89,7 @@ mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
       git_ "merge" ["--quiet", ref]
 mergeBranch dryrun build noprompt showall mpkg (False,unmerged) from br = do
   unless build $ whenJust mpkg $ flip putPkgBrnchHdr br
-  putStrLn $ show from ++ " branch is not directly mergeable:"
+  putStrLn $ show from +-+ "branch is not directly mergeable:"
   displayCommits False unmerged
   putNewLn
   unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"

@@ -114,7 +114,7 @@ uploadPkgFiles pkg spec srpm = do
       where
         checkUrlOk mgr url = do
           okay <- httpExists mgr url
-          unless okay $ error' $ "Could not access: " ++ url
+          unless okay $ error' $ "Could not access:" +-+ url
 
 mockRpmLint :: Bool -> Bool -> String -> FilePath -> FilePath -> IO ()
 mockRpmLint mock scratch pkg spec srpm = do
@@ -128,7 +128,7 @@ mockRpmLint mock scratch pkg spec srpm = do
       builtRpms (RelBranch Rawhide) spec >>= filterM doesFileExist
   -- FIXME parse # of errors/warnings
   void $ cmdBool "rpmlint" $ spec:srpm:rpms
-  prompt_ $ "Press Enter to " ++ if scratch then "submit" else "upload"
+  prompt_ $ "Press Enter to" +-+ if scratch then "submit" else "upload"
 
 -- FIXME does not work with pkg dir/spec:
 -- 'fbrnch: No spec file found'
@@ -152,4 +152,4 @@ reviewPackage mpkg = do
       spec <- findSpecfile
       srpm <- generateSrpm Nothing spec
       cmd_ "fedora-review" ["-rn", srpm]
-    _ -> error' $ "More than one review bug found for " ++ pkg
+    _ -> error' $ "More than one review bug found for" +-+ pkg
