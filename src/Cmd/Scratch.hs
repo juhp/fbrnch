@@ -50,7 +50,6 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
         then return [anyTarget br]
         else mapM (targetMaybeSidetag dryrun (onlyRelBranch br) . Just) sidetagTargets
       forM_ targets $ \target -> do
-        putStrLn $ "Target:" +-+ target
         archs <-
           case marchopts of
             Nothing -> return []
@@ -113,7 +112,8 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
             else srpmBuild kojiargs
           where
             srpmBuild :: [String] -> IO ()
-            srpmBuild kojiargs =
+            srpmBuild kojiargs = do
+              putStrLn $ "Target:" +-+ target
               void $ generateSrpm (Just br) spec >>= kojiScratchBuild target kojiargs
 
 -- FIXME default -X to --no-fastfail?
