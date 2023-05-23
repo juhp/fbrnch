@@ -93,9 +93,10 @@ getChangelog spec = do
 cleanChangelog :: FilePath -> IO String
 cleanChangelog spec = do
   ls <- getChangelog spec
-  return $ case filter ("- " `isPrefixOf`) ls of
-             [l] -> removePrefix "- " l
-             _ -> unlines ls
+  return $
+    case filter ("- " `isPrefixOf`) ls of
+      [l] -> removePrefix "- " l ++ "\n"
+      _ -> unlines ls
 
 getSummaryURL :: FilePath -> IO String
 getSummaryURL spec = do
