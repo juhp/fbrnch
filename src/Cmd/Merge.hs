@@ -72,6 +72,7 @@ mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
   unless (null unpushed) $ do
     putStrLn "Local commits:"
     displayCommits showall unpushed
+    putNewLn
   mmerge <-
     if isnewrepo && length unmerged == 1 || noprompt
     then return $ Just $ commitRef (head unmerged)
