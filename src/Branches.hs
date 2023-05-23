@@ -25,7 +25,8 @@ module Branches (
   branchVersion,
   anyBranchToRelease,
   getRequestedBranches,
-  BranchesReq(..)
+  BranchesReq(..),
+  gitLines
 ) where
 
 import Common
@@ -89,11 +90,12 @@ localBranches :: Bool -> IO [String]
 localBranches local =
   if local
   then do
-    locals <- cmdLines "git" ["branch", "--list", "--format=%(refname:lstrip=-1)"]
+    locals <- gitLines "branch" ["--list", "--format=%(refname:lstrip=-1)"]
     return $ locals \\ ["HEAD", "master"]
   else do
-    origins <- filter ("origin/" `isPrefixOf`) <$>
-               cmdLines "git" ["branch", "--remote", "--list", "--format=%(refname:lstrip=-2)"]
+    origins <-
+      filter ("origin/" `isPrefixOf`) <$>
+      gitLines "branch" ["--remote", "--list", "--format=%(refname:lstrip=-2)"]
     return $ map (removePrefix "origin/") origins \\ ["HEAD", "master"]
 
 pagurePkgBranches :: String -> IO [String]
@@ -257,3 +259,6 @@ getRequestedBranches existing breq = do
 data BranchesReq =
   BranchOpt BranchOpts | Branches [Branch]
   deriving Eq
+
+gitLines :: String -> [String] -> IO [String]
+gitLines c args = lines <$> git c args

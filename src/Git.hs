@@ -233,9 +233,6 @@ grepGitConfig' key =
       egrep_ key $ gitdir </> "config"
       else return False
 
-gitLines :: String -> [String] -> IO [String]
-gitLines c args = lines <$> git c args
-
 gitSwitchBranch :: AnyBranch -> IO ()
 gitSwitchBranch (OtherBranch "HEAD") = do
   dir <- getDirectoryName
