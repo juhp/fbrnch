@@ -43,5 +43,5 @@ prepCmd mpre verbose (mbr,pkgs) = do
             putStr $ "Prepping" +-+ nvr ++ ": "
           _ -> return ()
         timeIO $
-          (if verbose then cmdLog else cmdSilent') "rpmbuild" ["-bp", spec]
+          (if verbose then cmdLog else cmdSilent') "rpmbuild" ["-bp", "--nodeps", spec]
         putStrLn "done"
