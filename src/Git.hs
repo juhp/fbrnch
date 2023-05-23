@@ -302,6 +302,8 @@ refPrompt commits txt = do
       ref <- prompt txt
       case lower ref of
         "" -> return $ Just c
+        "y" -> return $ Just c
+        "yes" -> return $ Just c
         "no" -> return Nothing
         "n" -> return Nothing
         _ ->
