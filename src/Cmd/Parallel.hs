@@ -85,6 +85,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
       when (length branches > 1) $
         putStrLn $ "#" +-+ show rbr
       target <- targetMaybeSidetag dryrun rbr msidetagTarget
+      when (msidetagTarget == Just SideTag) $
+        putStrLn $ "Target:" +-+ target
       nvrclogs <- concatMapM (timeIO . parallelBuild target rbr)
                       (zip [firstlayer..length allLayers] $
                        init $ tails layers) -- tails ends in []
