@@ -291,7 +291,7 @@ targetMaybeSidetag dryrun br msidetagTarget =
           Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (show br)
           out <-
             if dryrun
-            then return $ "Side tag '" ++ buildtag ++ "-dryrun'"
+            then return $ "Side tag '" ++ buildtag ++ "'"
             else head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
           if "Side tag '" `isPrefixOf` out
             then do
