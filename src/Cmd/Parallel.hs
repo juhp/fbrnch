@@ -160,7 +160,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         let layerspkgs = map length nextLayers
         in case layerspkgs of
           [n] -> plural n "more package" +-+ "left in next final layer"
-          _ -> "more package layers left:" +-+ show layerspkgs
+          _ -> plural (length layerspkgs) "more package layer" +-+ "left:" +-+
+               show layerspkgs
       jobs <- zipWithM (setupBuild singlelayer) (reverse [0..(length layer - 1)]) layer
       when (null jobs) $
         error' "No jobs run"
