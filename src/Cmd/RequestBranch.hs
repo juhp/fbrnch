@@ -38,7 +38,8 @@ requestBranchesCmd quiet mrecursebr mock (breq, ps) = do
     pkgs <-
       case mrecursebr of
         Just br -> do
-          deps <- concat <$> srcDeps False (br,ps)
+          -- FIXME --rpmopt
+          deps <- concat <$> srcDeps False [] (br,ps)
           putStrLn $ unwords deps
           unless quiet $
             prompt_ "\nPress Enter to check these packages for branches"

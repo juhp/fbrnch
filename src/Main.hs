@@ -210,6 +210,7 @@ main = do
     , Subcommand "src-deps" "List source package dependencies" $
       srcDepsCmd
       <$> switchWith 'r' "reverse" "Reverse dependencies"
+      <*> many (strOptionWith 'D' "define" "'MACRO DEF'" "Define RPM macro")
       <*> branchPackages
     , Subcommand "mock" "Local mock build" $
       mockCmd
