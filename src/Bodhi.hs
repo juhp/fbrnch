@@ -148,7 +148,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
                              then cleanChangelog spec
                              else
                                -- FIXME list open bugs
-                               changeLogPrompt (Just "update") spec
+                               changeLogPrompt True spec
               if trim (lower changelog) `elem` ["no","n"]
                 then return False
                 else do

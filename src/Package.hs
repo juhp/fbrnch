@@ -65,8 +65,9 @@ checkForSpecFile spec = do
   have <- doesFileExist spec
   unless have $ error' $ spec +-+ "not found"
 
-changeLogPrompt :: Maybe String -> FilePath -> IO String
-changeLogPrompt mcontext spec = do
+-- FIXME allow editor to be used
+changeLogPrompt :: Bool -> FilePath -> IO String
+changeLogPrompt isupdate spec = do
   clog <- cleanChangelog spec
   putNewLn
   putStrLn "```"
@@ -77,7 +78,7 @@ changeLogPrompt mcontext spec = do
   if not tty
     then return clog
     else do
-    userlog <- prompt $ "Press Enter to use above or input" +-+ fromMaybe "change" mcontext +-+ "summary now" ++ if isJust mcontext then "; or 'no' to skip update" else ""
+    userlog <- prompt $ "Press Enter to use above or input" +-+ (if isupdate then "update" else "change") +-+ "summary now" ++ if isupdate then "; or 'no' to skip update" else ""
     return $ if null userlog then clog else userlog
 
 getChangelog :: FilePath -> IO [String]
