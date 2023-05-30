@@ -73,6 +73,7 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsub
                     Nothing -> putStrLn $ dep +-+ "not known"
                     Just pkgdir -> installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsubpkgs (mbr, [pkgdir]) >> putNewLn
                 -- FIXME option to enable/disable installing missing deps
+                -- FIXME --skip-missing-deps or prompt
               else installDeps True spec
           wasbuilt <- buildRPMs (not verbose) False False mforceshort' bconds rpms br spec
           unless (isShortCircuit mforceshort') $ do

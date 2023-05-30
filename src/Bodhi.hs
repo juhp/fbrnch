@@ -123,6 +123,7 @@ bodhiTestingRepo br = do
       Nothing -> Nothing
       Just _ -> lookupKey' "testing_tag" obj
 
+-- FIXME support --no-close-bugs
 -- push comma separated list of builds for a package to bodhi
 bodhiUpdate :: Bool -> (Maybe UpdateType, UpdateSeverity) -> Maybe BugId
             -> Bool -> FilePath -> String -> IO ()

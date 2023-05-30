@@ -35,6 +35,7 @@ data BuildOpts = BuildOpts
   , buildoptAllowDirty :: Bool
   }
 
+-- FIXME --yes
 -- FIXME merge --from
 -- FIXME check bugs before building?
 -- FIXME --sidetag
@@ -47,7 +48,7 @@ data BuildOpts = BuildOpts
 -- FIXME --auto-override for deps in testing
 -- FIXME -B fails to find new branches (fixed?)
 -- FIXME disallow override for autoupdate?
--- FIXME --yes
+-- FIXME --scratch build first
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptSidetagTarget opts)
@@ -186,6 +187,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                     Just newest -> do
                       newestTags <- kojiNVRTags newest
                       unless (any (`elem` newestTags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $ do
+                        -- FIXME print how many days left
                         putStrLn $ "Warning:" +-+ newest +-+ "still in testing?"
                         promptEnter "Press Enter to continue"
                       return False

@@ -259,7 +259,7 @@ Here is an "extreme" [example](https://github.com/fedora-haskell/haskell-languag
 
 ```
 $ fbrnch --version
-1.3
+1.3.2
 $ fbrnch --help
 Fedora branch building tool
 
@@ -418,6 +418,8 @@ You can create your key at
     (specifically koji, bodhi-client, fedpkg),
     but all queries are done directly by Web APIs for speed and control.
 - https checkouts are currently treated as anonymous git checkouts
+- parallel and sort, etc do not take pkgconfig() and other meta() deps into
+  account yet (this will be fixed in rpmbuild-order)
 
 ## Motivation, history, talks
 This project started off as a simple tool to build a package across branches

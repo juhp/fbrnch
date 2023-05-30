@@ -14,6 +14,8 @@ import Package
 import Data.RPM.VerCmp
 import SimplePrompt (promptEnter)
 
+-- FIXME if autorelease, drop -b baserelease
+-- FIXME --no-prep to avoid overwriting ongoing build
 -- FIXME don't bump release if already bumped
 -- FIXME check EVR increased
 -- FIXME if multiple sources might need to bump release

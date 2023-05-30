@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.3.2 (2023-05-30)
+- 'parallel', 'sort', 'graph': use getDynSourcesMacros
+- 'parallel': include no of layers in "more package layers" message
+- 'parallel': output sidetag
+- 'prep': default to --nodeps
+- 'request-branches': committers can also request branches
+- 'request-branches': output owners (to ask) if no permission
+- 'scratch': print target for srpm build (only)
+- 'src-deps': add --define 'MACRO DEF'
+- 'update-version': munch spectool patch filenames too
+- Bodhi only accepts update notes <= 10000 characters now
+- Git refPrompt: also accept y/yes
+- Koji targetMaybeSidetag dryrun: do not append "-dryrun" to buildtag
+- Merge: newline after local commits
+- Package cleanChangelog: append a newline
+- prompts now support line-editting thanks to simple-prompt-0.2 using haskeline
+
 ## 1.3.1 (2023-04-09)
 - check for %autorelease more carefully
 - buildRequires: fix dynamic BRs with getSources and space after %_srcrpmdir

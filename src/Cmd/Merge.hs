@@ -14,6 +14,7 @@ import Git
 import Package
 import Patch
 
+-- FIXME should rawhide default to no-op
 mergeCmd :: Bool -> Bool -> Bool -> Maybe Natural -> Bool -> Maybe Branch
          -> (BranchesReq,[String]) -> IO ()
 mergeCmd dryrun nofetch noprompt mnotrivial showall mfrom =
