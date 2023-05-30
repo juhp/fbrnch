@@ -73,7 +73,7 @@ module Bugzilla (
 import Common
 import Common.System
 import qualified Common.Text as T
-import SimplePrompt
+import SimplePrompt (promptNonEmpty)
 
 import Data.Aeson.Types (Array, Object)
 import qualified Data.ByteString.Char8 as B
@@ -186,7 +186,7 @@ getBzUser = do
     then readIniConfig config rcParser rcUserEmail
     else do
     -- FIXME: option to override email
-    email <- prompt "Bugzilla Username"
+    email <- promptNonEmpty "Bugzilla Username"
     when (emailIsValid email) $ do
       let configDir = takeDirectory config
       configDirExists <- doesDirectoryExist configDir

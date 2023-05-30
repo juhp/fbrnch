@@ -12,7 +12,7 @@ import Krb
 import Package
 
 import Data.RPM.VerCmp
-import SimplePrompt (prompt_)
+import SimplePrompt (promptEnter)
 
 -- FIXME don't bump release if already bumped
 -- FIXME check EVR increased
@@ -42,7 +42,7 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
     updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
     updatePkg mver pkg br = do
       when (br /= RelBranch Rawhide) $
-        prompt_ $ "Are you sure you want to update" +-+ show br ++ "?"
+        promptEnter $ "Are you sure you want to update" +-+ show br +-+ "branch?!"
       spec <- if allowHEAD
               then findSpecfile
               else localBranchSpecFile pkg br

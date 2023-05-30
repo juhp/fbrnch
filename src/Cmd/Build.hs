@@ -5,6 +5,8 @@ module Cmd.Build (
   BuildOpts(..)
   ) where
 
+import SimplePrompt (promptEnter, yesNo)
+
 import Common
 import Common.System
 
@@ -16,7 +18,6 @@ import Git
 import Krb
 import Koji
 import Package
-import SimplePrompt
 import RpmBuild (checkSourcesMatch)
 import Types
 
@@ -186,7 +187,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                       newestTags <- kojiNVRTags newest
                       unless (any (`elem` newestTags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $ do
                         putStrLn $ "Warning:" +-+ newest +-+ "still in testing?"
-                        prompt_ "Press Enter to continue"
+                        promptEnter "Press Enter to continue"
                       return False
             unless dryrun krbTicket
             whenJust mpush $ \ref ->
@@ -194,7 +195,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               gitPush False $ Just $ ref ++ ":" ++ show br
             unlessM (null <$> gitOneLineLog ("origin/" ++ show br ++ "..HEAD")) $
               unless dryrun $ do
-              ok <- yesno Nothing "Unpushed changes remain, continue"
+              ok <- yesNo "Unpushed changes remain, continue"
               unless ok $ error' "aborted"
             unless (buildoptAllowDirty opts) $
               unlessM isGitDirClean $

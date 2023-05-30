@@ -17,7 +17,7 @@ import Data.Aeson.Key (fromText)
 import Data.Aeson.Types (Object, (.:), parseEither)
 import Data.Char (isDigit)
 import Fedora.Bodhi hiding (bodhiUpdate)
-import SimplePrompt
+import SimplePrompt (promptEnter, promptNonEmpty)
 import Text.Read
 import qualified Text.ParserCombinators.ReadP as R
 import qualified Text.ParserCombinators.ReadPrec as RP
@@ -64,7 +64,7 @@ bodhiCreateOverride dryrun mduration nvr = do
       case moverride of
         Nothing -> do
           putStrLn "bodhi override failed"
-          prompt_ "Press Enter to retry"
+          promptEnter "Press Enter to retry"
           bodhiCreateOverride dryrun mduration nvr
         -- FIXME prettyprint
         Just obj -> error' $ show obj
@@ -173,7 +173,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
           if null updates
             then do
             putStrLn $ "bodhi submission failed for" +-+ nvrs
-            prompt_ "Press Enter to resubmit to Bodhi"
+            promptEnter "Press Enter to resubmit to Bodhi"
             bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs
             else
             forM_ updates $ \update ->
@@ -194,7 +194,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
 
     maybeTemplate :: UpdateType -> IO (Maybe FilePath)
     maybeTemplate TemplateUpdate = do
-      file <- prompt "Please input the update template filepath"
+      file <- promptNonEmpty "Please input the update template filepath"
       exists <- doesFileExist file
       if exists
         then return $ Just file

@@ -23,7 +23,7 @@ import Data.RPM
 import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
 import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import SimpleCmd.Rpm
-import SimplePrompt (prompt_)
+import SimplePrompt (promptEnter)
 import System.Console.Pretty
 import System.IO.Extra (withTempDir)
 import System.Posix.Files
@@ -339,7 +339,7 @@ checkSourcesMatch spec = do
                                 src `notElem` gitfiles)
                 sourcefiles
   unless (null missing) $ do
-    prompt_ $ color Red $ unwords missing +-+ "not in sources, please fix"
+    promptEnter $ color Red $ unwords missing +-+ "not in sources, please fix"
     checkOnBranch
     checkSourcesMatch spec
   mgr <- httpManager

@@ -1,12 +1,12 @@
 module Cmd.SideTags (sideTagsCmd) where
 
 import SimpleCmd (cmd_)
+import SimplePrompt (yesNo)
 
 import Branches
 import Common
 import Koji
 import Krb (krbTicket)
-import SimplePrompt (yesno)
 
 sideTagsCmd :: Bool -> [Branch] -> IO ()
 sideTagsCmd remove brs = do
@@ -19,5 +19,5 @@ sideTagsCmd remove brs = do
   where
     removeSideTag :: String -> IO ()
     removeSideTag tag =
-      whenM (yesno Nothing $ "Remove" +-+ tag) $
+      whenM (yesNo $ "Remove" +-+ tag) $
       cmd_ "fedpkg" ["remove-side-tag", tag]

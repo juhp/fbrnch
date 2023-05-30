@@ -9,7 +9,7 @@ import Data.RPM
 #if !MIN_VERSION_simple_cmd(0,2,7)
 import System.Posix.User (getEffectiveUserID)
 #endif
-import SimplePrompt
+import SimplePrompt (promptEnter)
 
 import Branches
 import Cmd.Merge
@@ -99,7 +99,7 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall nobuilddeps allsub
                 if wasbuilt
                 then error' $ "error from:" +-+ unwords command
                 else do
-                  prompt_ "Press Enter to rebuild package"
+                  promptEnter "Press Enter to rebuild package"
                   doInstallPkg (Just ForceBuild) spec rpms already
 
         lookForPkgDir :: Branch -> FilePath -> String -> IO (Maybe FilePath)

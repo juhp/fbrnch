@@ -126,7 +126,7 @@ executable fbrnch
                        rpm-nvr >= 0.1.2,
                        simple-cmd >= 0.2.3,
                        simple-cmd-args >= 0.1.8,
-                       simple-prompt >= 0.1.1,
+                       simple-prompt >= 0.2,
                        text,
                        time,
                        typed-process >= 0.2.4.0,

@@ -3,11 +3,12 @@ module Cmd.Commit
   )
 where
 
+import SimplePrompt (promptNonEmpty)
+
 import Common
 import Common.System
 import Git
 import Package
-import SimplePrompt
 
 -- FIXME reject if nvr ahead of newer branch
 -- FIXME use branches after all?
@@ -64,9 +65,5 @@ readCommitMsg :: IO String
 readCommitMsg = do
   tty <- isTty
   if tty
-    then do
-    clog <- prompt "\nPlease input the commit message"
-    if null clog
-      then readCommitMsg
-      else return clog
+    then promptNonEmpty "\nPlease input the commit message"
     else error' "please input commit message in a terminal"

@@ -6,6 +6,7 @@ module Cmd.RequestBranch (
   ) where
 
 import Network.HTTP.Query (lookupKey')
+import SimplePrompt (promptEnter)
 
 import Common
 import Common.System
@@ -18,7 +19,6 @@ import Krb
 import ListReviews
 import Package
 import Pagure
-import SimplePrompt (prompt_)
 
 -- FIXME option to do koji scratch build instead of mock
 requestBranchesCmd :: Bool -> Maybe Branch -> Bool -> (BranchesReq,[String]) -> IO ()
@@ -42,7 +42,7 @@ requestBranchesCmd quiet mrecursebr mock (breq, ps) = do
           deps <- concat <$> srcDeps False [] (br,ps)
           putStrLn $ unwords deps
           unless quiet $
-            prompt_ "\nPress Enter to check these packages for branches"
+            promptEnter "\nPress Enter to check these packages for branches"
           return deps
         Nothing -> return ps
     forM_ pkgs $ \ p ->

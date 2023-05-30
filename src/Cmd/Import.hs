@@ -7,6 +7,7 @@ import Common.System
 import qualified Common.Text as T
 
 import Network.URI
+import SimplePrompt (promptEnter)
 
 import Branches
 import Bugzilla
@@ -16,7 +17,6 @@ import Koji
 import Krb
 import ListReviews
 import Package
-import SimplePrompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 -- FIXME add --dryrun
@@ -54,14 +54,14 @@ importCmd mock (breq, ps) = do
         putStr "Review bug: "
         putBugId bid
         putNewLn
-        prompt_ "Press Enter to continue"
+        promptEnter "Press Enter to continue"
         let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
         when (null srpms) $ error "No srpm urls found!"
         mapM_ T.putStrLn srpms
         let srpm = (head . filter isURI . filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms
         let srpmfile = takeFileName srpm
         -- FIXME if havesrpm then print local filename
-        prompt_ $ "Press Enter to import" +-+ srpmfile
+        promptEnter $ "Press Enter to import" +-+ srpmfile
         havesrpm <- doesFileExist srpmfile
         unless havesrpm $
           cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
@@ -69,7 +69,7 @@ importCmd mock (breq, ps) = do
         fedpkg_ "import" [srpmfile]
         git_ "commit" ["--message", "import #" ++ show bid]
         nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
-        prompt_ $ "Press Enter to push and build" +-+ nvr
+        promptEnter $ "Press Enter to push and build" +-+ nvr
         gitPush True Nothing
         -- FIXME build more branches
         kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]

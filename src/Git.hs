@@ -63,7 +63,7 @@ gitMergeable origin br = do
       diff <- git "diff" [ref]
       unless (null diff) $ do
         putStrLn $ "current branch is ahead of newer" +-+ show br +-+ "!!"
-        prompt_ "Press Enter if you want to continue"
+        promptEnter "Press Enter if you want to continue"
       else putStrLn $ "current branch" +-+ "is diverged from" +-+ show br
   return (ancestor, commits)
 
@@ -164,7 +164,7 @@ gitPush quiet mref = do
     else do
     when quiet $ putStrLn ""
     putStrLn $ unwords ("git" : args) +-+ "failed with\n" ++ err
-    yes <- yesno Nothing "Retry git push"
+    yes <- yesNo "Retry git push"
     when yes $ gitPush quiet mref
 
 -- FIXME use this in more places
@@ -299,8 +299,9 @@ refPrompt commits txt = do
   case map commitRef commits of
     [] -> error' "empty commits list"
     (c:cs) -> do
+      -- FIXME use promptMap
       ref <- prompt txt
-      case lower ref of
+      case lower (trim ref) of
         "" -> return $ Just c
         "y" -> return $ Just c
         "yes" -> return $ Just c

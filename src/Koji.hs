@@ -32,7 +32,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Fixed (Micro)
 import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
-import SimplePrompt
+import SimplePrompt (promptEnter)
 import System.Exit
 import System.Process.Typed
 import System.Timeout (timeout)
@@ -121,7 +121,7 @@ kojiBuild' wait target args = do
       cmd_ "date" ["+%T"]
     return $ if wait then Right kojiurl else Left task
     else do
-    prompt_ "Press Enter to resubmit Koji build"
+    promptEnter "Press Enter to resubmit Koji build"
     kojiBuild' wait target args
 
 -- kojiBuild :: String -> [String] -> IO String
@@ -216,7 +216,7 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
           putStrLn $ "current tags:" +-+ unwords tags
           unless (buildtag `elem` tags) $ do
             putStrLn $ "no" +-+ nvr +-+ "tagged" +-+ buildtag
-            prompt_ "Press Enter to continue anyway"
+            promptEnter "Press Enter to continue anyway"
           waitRepo buildtag Nothing
   where
     waitRepo :: String -> Maybe Struct -> IO ()

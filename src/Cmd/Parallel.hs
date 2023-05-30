@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import Distribution.RPM.Build.Order (dependencyLayers)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import qualified Fedora.Bodhi as FedoraBodhi (bodhiUpdate)
+import SimplePrompt (prompt, promptEnter, yesNo)
 import System.Console.Pretty
 import System.Time.Extra (sleep)
 
@@ -25,7 +26,6 @@ import Krb
 import Koji
 import Package
 import RpmBuild (checkSourcesMatch, getDynSourcesMacros)
-import SimplePrompt
 import Types
 
 data JobDone = Done {jobNvr :: String,
@@ -115,7 +115,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         gitSwitchBranch currentbranch
       unless (null failures) $ do
         putStrLn $ "Build failures:" +-+ unwords failures
-        okay <- yesno Nothing "Do you want to continue nevertheless"
+        okay <- yesNo "Do you want to continue nevertheless"
         unless okay $ error' "Quitting"
       when (isNothing msidetagTarget) $ do
         let spec = packageSpec pkg
@@ -175,7 +175,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         putStrLn $ "\nBuild failures" +-+
           (if singlelayer then ":" else "in layer" +-+ show layernum ++ ":")
           +-+ unwords failures
-        okay <- yesno Nothing "Do you want to continue nevertheless"
+        okay <- yesNo "Do you want to continue nevertheless"
         if okay
           then return nvrs
           else error' $
@@ -347,7 +347,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
             case res of
               [] -> do
                 putStrLn "bodhi submission failed"
-                prompt_ "Press Enter to resubmit to Bodhi"
+                promptEnter "Press Enter to resubmit to Bodhi"
                 bodhiSidetagUpdate rbr nvrs sidetag notes
               [update] ->
                 case lookupKey "updateid" update of

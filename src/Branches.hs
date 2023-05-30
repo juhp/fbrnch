@@ -36,7 +36,7 @@ import Data.Either
 import Data.Tuple
 import Distribution.Fedora.Branch
 import SimpleCmd.Git
-import SimplePrompt
+import SimplePrompt (promptEnter, promptInitial)
 import qualified System.Info (arch)
 
 import Pagure
@@ -191,7 +191,7 @@ gitCurrentBranch = do
   if br == OtherBranch "HEAD"
     then do
     dir <- getDirectoryName
-    prompt_ $ dir ++ ":" +-+ show br +-+ "is not a branch, please fix"
+    promptEnter $ dir ++ ":" +-+ show br +-+ "is not a branch, please fix"
     gitCurrentBranch
     else return br
 
@@ -205,7 +205,7 @@ gitCurrentBranchWarn = do
   if br == OtherBranch "master"
     then do
     dir <- getDirectoryName
-    prompt_ $ dir ++ ":" +-+ show br +-+ "is not a valid branch, please use 'rename-rawhide'"
+    promptEnter $ dir ++ ":" +-+ show br +-+ "is not a valid branch, please use 'rename-rawhide'"
     gitCurrentBranchWarn
     else return br
 
@@ -237,24 +237,17 @@ getRequestedBranches existing breq = do
                         AllFedora -> filter isFedoraBranch activenew
                         AllEPEL -> filter isEPELBranch activenew
                         ExcludeBranches xbrs -> activenew \\ xbrs
-      inp <- prompt $ "Confirm branches request [" ++ unwords (map show requested) ++ "]"
-      return $ if null inp
-               then requested
-               else map (readActiveBranch' activenew) $ words inp
+      inp <- promptInitial "Confirm branches to request" $ unwords (map show requested)
+      return $ map (readActiveBranch' activenew) $ words inp
   where
     branchingPrompt :: [Branch] -> IO [Branch]
     branchingPrompt active = do
-      inp <- prompt "Enter required branches [default: latest 2], or no/none"
-      if null inp
-        then return $ take 2 active
-        else
-        if lower (trim inp) `elem` ["no", "none"]
-        then return []
-        else
-          let abrs = map anyBranch $ words inp
-          in if all isRelBranch abrs
-             then return $ map onlyRelBranch abrs
-             else branchingPrompt active
+      inp <- promptInitial "Enter required branches" $
+             unwords $ map show $ take 2 active
+      let abrs = map anyBranch $ words inp
+        in if all isRelBranch abrs
+           then return $ map onlyRelBranch abrs
+           else branchingPrompt active
 
 data BranchesReq =
   BranchOpt BranchOpts | Branches [Branch]

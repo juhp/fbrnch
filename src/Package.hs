@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP #-}
-
 module Package (
   clonePkg,
   CloneUser(..),
@@ -46,7 +44,7 @@ module Package (
 
 import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
 import SimpleCmd.Rpm
-import SimplePrompt
+import SimplePrompt (prompt)
 
 import Branches
 import Common

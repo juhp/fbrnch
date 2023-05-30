@@ -7,6 +7,7 @@ import qualified Common.Text as T
 
 import Network.HTTP.Directory (httpExists, httpManager)
 import SimpleCmd
+import SimplePrompt (promptEnter, promptInitial)
 
 import Branches
 import Bugzilla
@@ -14,7 +15,6 @@ import Krb
 import ListReviews
 import Package
 import Pagure
-import SimplePrompt
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 requestRepos :: Bool -> Bool -> Bool -> (BranchesReq, [String]) -> IO ()
@@ -53,7 +53,7 @@ requestRepo mock retry breq pkg = do
         comments <- getComments session bid
         mapM_ showComment comments
         putNewLn
-        prompt_ "Press Enter to continue"
+        promptEnter "Press Enter to continue"
         -- FIXME check api key is still valid or open pagure ticket directly
         url <- fedpkg "request-repo" [pkg, show bid]
         let assignee = userRealName (bugAssignedToDetail bug)
@@ -62,7 +62,7 @@ requestRepo mock retry breq pkg = do
         putStrLn draft
         putStrLn "```"
         putStrLn $ url ++ "\n"
-        input <- prompt "Press Enter to post above comment, or input now"
+        input <- promptInitial "Enter comment" draft
         let comment = (if null input then draft else input) ++ "\n\n" <> url
         commentBug session bid comment
         putNewLn

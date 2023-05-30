@@ -9,6 +9,7 @@ where
 import Data.Aeson (Object)
 import Fedora.Bodhi (bodhiOverrides)
 import Network.HTTP.Query
+import SimplePrompt (yesNo)
 
 import Common
 import Common.System
@@ -20,7 +21,6 @@ import Git
 import Koji
 import Krb (krbTicket)
 import Package
-import SimplePrompt (yesno)
 
 data OverrideMode = OverrideCreate | OverrideList | OverrideExpire
   deriving Eq
@@ -69,7 +69,7 @@ overrideCmd _dryrun OverrideExpire _mduration _nowait (_breq,pkgs) =
         Just _expired -> return ()
         Nothing -> do
           whenJust (lookupKey "nvr" override) $ \nvr -> do
-            ok <- yesno Nothing $ "Expire override" +-+ nvr
+            ok <- yesNo $ "Expire override" +-+ nvr
             when ok $
               cmd_ "bodhi" ["overrides", "edit", "--expire", nvr]
 

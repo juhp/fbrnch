@@ -13,13 +13,13 @@ import qualified Common.Text as T
 
 import Data.Char
 import Network.HTTP.Directory (httpExists, httpManager)
+import SimplePrompt (promptEnter)
 
 import Branches
 import Bugzilla
 import Koji
 import Krb
 import Package
-import SimplePrompt
 import RpmBuild
 
 data ScratchOption = ScratchBuild | ScratchTask Int | SkipScratch
@@ -43,7 +43,7 @@ createReview scratchOpt mock pkgs =
         putStrLn "Existing review(s):"
         mapM_ putBug bugs
         -- FIXME abort if open review (unless --force?)
-        prompt_ "Press Enter to continue"
+        promptEnter "Press Enter to continue"
       srpm <- generateSrpm Nothing spec
       mockRpmLint mock (scratchOpt == ScratchBuild) pkg spec srpm
       (mkojiurl,specSrpmUrls) <- buildAndUpload scratchOpt srpm pkg spec
@@ -128,7 +128,7 @@ mockRpmLint mock scratch pkg spec srpm = do
       builtRpms (RelBranch Rawhide) spec >>= filterM doesFileExist
   -- FIXME parse # of errors/warnings
   void $ cmdBool "rpmlint" $ spec:srpm:rpms
-  prompt_ $ "Press Enter to" +-+ if scratch then "submit" else "upload"
+  promptEnter $ "Press Enter to" +-+ if scratch then "submit" else "upload"
 
 -- FIXME does not work with pkg dir/spec:
 -- 'fbrnch: No spec file found'
@@ -144,7 +144,7 @@ reviewPackage mpkg = do
   case bugs of
     [bug] -> do
       putReviewBug False bug
-      prompt_ "Press Enter to run fedora-review"
+      promptEnter "Press Enter to run fedora-review"
       -- FIXME support copr build
       -- FIXME if toolbox set REVIEW_NO_MOCKGROUP_CHECK
       cmd_ "fedora-review" ["-b", show (bugId bug)]
