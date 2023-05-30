@@ -97,6 +97,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
         let changelog = intercalate "" $ renderChangelogs $ reverse nvrclogs
         putNewLn
         putStrLn changelog
+        when (length changelog > 10000) $
+          putStrLn "Bodhi only accepts up to 10000 chars: will be truncated"
+        -- FIXME allow editor
         input <- prompt "Press Enter to use above or input update summary now; or 'no' to skip update"
         unless (trim (lower input) `elem` ["no","n"] || dryrun) $
           bodhiSidetagUpdate rbr (map jobNvr nvrclogs) target $
@@ -337,7 +340,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
               putStrLn "Paste update template now:"
               template <- getContents
               cmdBool "bodhi" ["updates", "new", "--file", template, "--from-tag", sidetag]
-            else cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--severity", show severity, "--request", "testing", "--notes", if null notes then "to be written" else notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
+            else cmdBool "bodhi" ["updates", "new", "--type", show updateType , "--severity", show severity, "--request", "testing", "--notes", if null notes then "to be written" else take 10000 notes, "--autokarma", "--autotime", "--close-bugs", "--from-tag", sidetag]
           if not ok
             then bodhiSidetagUpdate rbr nvrs sidetag notes
             else
