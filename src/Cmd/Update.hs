@@ -39,11 +39,11 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
         in if pkgGit
            then dirty
            else if null pkgs then Nothing else dirty
-  withPackagesMaybeBranch HeaderMay False mgitops (updatePkg mver) (mbr, pkgs)
+  withPackagesMaybeBranch HeaderMay False mgitops (updatePkg pkgGit mver) (mbr, pkgs)
   where
-    updatePkg :: Maybe String -> Package -> AnyBranch -> IO ()
-    updatePkg mver pkg br = do
-      when (br /= RelBranch Rawhide) $
+    updatePkg :: Bool -> Maybe String -> Package -> AnyBranch -> IO ()
+    updatePkg distgit mver pkg br = do
+      when (distgit && br /= RelBranch Rawhide) $
         promptEnter $ "Are you sure you want to update" +-+ show br +-+ "branch?!"
       spec <- if allowHEAD
               then findSpecfile
