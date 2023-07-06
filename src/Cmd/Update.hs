@@ -122,7 +122,9 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
     -- FIXME handle .tgz?
     isArchiveFile :: FilePath -> Bool
     isArchiveFile f =
-      ".tar." `isInfixOf` f || ".zip" `isSuffixOf` f
+      any ($ f) [(".tar." `isInfixOf`),
+                 (".zip" `isSuffixOf`),
+                 (".gpg" `isSuffixOf`)]
 
 pkgVerRel :: FilePath -> IO (String,String)
 pkgVerRel spec = do
