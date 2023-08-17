@@ -17,6 +17,7 @@ module RpmBuild (
   )
 where
 
+import Control.Exception (uninterruptibleMask_)
 import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 import Data.RPM
@@ -185,7 +186,9 @@ generateSrpm' force mbr spec = do
         return srpmfile
   where
     buildSrpm opts = do
-      srpm <- last . words <$> cmd "rpmbuild" (opts ++ ["-bs", spec])
+      -- prevent Ctrl-c from truncating srpm to corrupted file:
+      -- 'Error: Downloaded rpm http://kojipkgs-cache01.s390.fedoraproject.org/work/cli-build/1691493908.5614614.AzJmareV/ghc9.4-9.4.6-22.fc39.src.rpm is corrupted:'
+      srpm <- last . words <$> uninterruptibleMask_ (cmd "rpmbuild" (opts ++ ["-bs", spec]))
       putStrLn $ "Created" +-+ takeFileName srpm
       return srpm
 
