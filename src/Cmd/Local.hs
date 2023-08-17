@@ -112,7 +112,7 @@ renameMasterCmd pkgs =
       --    (refs/remotes/origin/HEAD has become dangling)
       -- Branch 'rawhide' set up to track remote branch 'rawhide' from 'origin'.
     -- compare commands with github rename
-    when ("rawhide" `notElem` locals) $ do
+    unless ("rawhide" `elem` locals) $ do
       git_ "fetch" ["--prune"]
       git_ "branch" ["--move", "master", "rawhide"]
       git_ "remote" ["set-head", "origin", "rawhide"]

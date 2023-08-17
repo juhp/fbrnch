@@ -159,7 +159,7 @@ listOfBranches distgit active (Branches brs) =
     activeBrs <- getFedoraBranches
     forM_ brs $ \ br ->
           if active
-            then when (br `notElem` activeBrs) $
+            then unless (br `elem` activeBrs) $
                  error' $ show br +-+ "is not an active branch"
             else
             case br of
