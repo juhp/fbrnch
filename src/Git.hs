@@ -186,7 +186,7 @@ gitFetchSilent quiet = do
                    if "From " `isPrefixOf` hd then tl else hd:tl
   if null filtered
     then unless quiet $ putStrLn "done"
-    else putStrLn $ intercalate "\n" filtered
+    else putStrLn $ '\r' : intercalate "\n" filtered
 
 checkWorkingDirClean :: IO ()
 checkWorkingDirClean = do
