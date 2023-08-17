@@ -301,7 +301,7 @@ refPrompt commits txt = do
     (c:cs) -> do
       -- FIXME use promptMap
       ref <- prompt txt
-      case lower (trim ref) of
+      case lower ref of
         "" -> return $ Just c
         "y" -> return $ Just c
         "yes" -> return $ Just c
