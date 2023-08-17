@@ -143,10 +143,9 @@ kojiWatchTask task = do
   case mst of
     Just TaskClosed -> return ()
     Just TaskFailed -> do
-      let kojitool = "/usr/bin/koji-tool"
-      whenM (doesFileExist kojitool) $
-        -- FIXME fails to output when run immediately? (cmdlog deprecated)
-        cmdlog kojitool ["tasks", displayID task, "--tail", "-s", "fail"]
+      whenJustM (findExecutable "koji-tool") $ \kojitool ->
+        -- FIXME cmdLog deprecated
+        cmdLog kojitool ["tasks", displayID task, "--tail", "-s", "fail"]
       error' "Task failed!"
     Just TaskCanceled -> return ()
     _ -> kojiWatchTask task
