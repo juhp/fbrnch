@@ -100,7 +100,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
         when (length changelog > 10000) $
           putStrLn "Bodhi only accepts up to 10000 chars: will be truncated"
         -- FIXME allow editor
-        input <- prompt "Press Enter to use above or input update summary now; or 'no' to skip update"
+        input <- prompt "Press Enter to submit above or input Bodhi update summary now; or 'no' to skip update"
         unless (trim (lower input) `elem` ["no","n"] || dryrun) $
           bodhiSidetagUpdate rbr (map jobNvr nvrclogs) target $
           if null input then changelog else input
