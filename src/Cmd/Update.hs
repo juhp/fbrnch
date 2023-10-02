@@ -108,7 +108,7 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
           cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
           git_ "commit" ["-a", "-m", "update to" +-+ newver]
       putStr "Prepping... "
-      cmdSilent' "rpmbuild" ["-bp", spec]
+      cmdSilent' "rpmbuild" ["-bp", "--nodeps", spec]
       putStrLn "done"
       -- FIXME git amend (if previous commit was update)
 
