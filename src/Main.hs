@@ -77,7 +77,7 @@ main = do
       <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd
-      <$> dryrunOpt
+      <$> dryrunOpt "Dry run (do not merge)"
       <*> switchLongWith "no-fetch" "Skip git fetch"
       <*> nopromptOpt
       <*> optional (optionWith auto 's' "skip-bumps" "NUM" "Max num of rebuild commits to ignore [default 0]")
@@ -109,7 +109,7 @@ main = do
       <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd
-      <$> dryrunOpt
+      <$> dryrunOpt "Dry run: do not build anything"
       <*> mergeOpt
       <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
       <*> optional (sidetagTargetOpt $ Just "or creates one for you (with 'fedpkg request-side-tag --base-tag')")
@@ -121,21 +121,21 @@ main = do
       <*> many branchArg
     , Subcommand "override" "Tag builds into buildroot override in Koji" $
       overrideCmd
-      <$> dryrunOpt
+      <$> dryrunOpt "Dry run: do not override"
       <*> overrideModeOpt
       <*> optional (optionWith auto 'd' "duration" "DAYS" "Number of days until expiry [default 4]")
       <*> switchWith 'w' "no-wait" "Skip waitrepo step"
       <*> branchesPackages
     , Subcommand "waitrepo" "Wait for build to appear in Koji buildroot" $
       waitrepoCmd
-      <$> dryrunOpt
+      <$> dryrunOpt "Dry run: do not wait"
       <*> pure False
       <*> waitfetchOpt
       <*> optional (sidetagTargetOpt Nothing)
       <*> branchesPackages
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd
-      <$> dryrunOpt
+      <$> dryrunOpt "Dry run: do not build"
       <*> switchLongWith "stagger" "Stagger archs"
       <*> rebuildSrpmOpt
       <*> noFailFastOpt
@@ -145,7 +145,7 @@ main = do
       <*> branchesPackages
     , Subcommand "scratch-aarch64" "Koji aarch64 scratch build of package" $
       scratchCmdAarch64
-      <$> dryrunOpt
+      <$> dryrunOpt "Dry run: do not build"
       <*> rebuildSrpmOpt
       <*> switchWith 'X' "exclude-arch" "Exclude aarch64"
       <*> many (sidetagTargetOpt Nothing)
@@ -153,7 +153,7 @@ main = do
       <*> branchesPackages
     , Subcommand "scratch-x86_64" "Koji x86_64 scratch build of package" $
       scratchCmdX86_64
-      <$> dryrunOpt
+      <$> dryrunOpt "Dry run: do not build"
       <*> rebuildSrpmOpt
       <*> switchWith 'X' "exclude-arch" "Exclude x86_64"
       <*> many (sidetagTargetOpt Nothing)
@@ -214,7 +214,7 @@ main = do
       <*> branchPackages
     , Subcommand "mock" "Local mock build" $
       mockCmd
-      <$> switchWith 'n' "dry-run" "Do not build (but creates srpm)"
+      <$> dryrunOpt "Do not build (but creates srpm)"
       <*> optional nocleanOpt
       <*> switchWith 'N' "network" "Use network during build"
       <*> optional (flagLongWith' ShellOnly "shell-only" "Skip mock build" <|>
@@ -266,7 +266,7 @@ main = do
       <$> manyPackages
     , Subcommand "push" "Git push packages" $
       pushPkgs
-      <$> dryrunOpt
+      <$> dryrunOpt "Dry run: do not push"
       <*> switchLongWith "no-fetch" "Skip git fetch"
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to push")
       <*> branchesPackages
@@ -327,7 +327,7 @@ main = do
       <*> branchesPackages
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
       coprCmd
-      <$> dryrunOpt
+      <$> dryrunOpt "Dry run: do not build"
       <*> switchWith 'l' "list-chroots" "Show project chroots"
       <*> buildByOpt
       <*> optional archesOpt
@@ -348,7 +348,7 @@ main = do
     --   <$> branchesPackages
     , Subcommand "ftbfs" "Check FTBFS status" $
       ftbfsCmd
-      <$> dryrunOpt
+      <$> dryrunOpt "dry run"
       <*> switchWith 'l' "short" "Only list packages"
       <*> optional (flagWith' (FtbfsUser Nothing) 'M' "mine" "Your packages"
                     <|>
@@ -495,7 +495,7 @@ main = do
       <*> optional (sidetagTargetOpt Nothing)
       <*> overrideOpt
       <*> waitrepoOpt
-      <*> dryrunOpt
+      <*> dryrunOpt "Dry run: do not merge/push/build"
       <*> skipFetchOpt
       <*> updateOpt
       <*> useChangelogOpt
@@ -523,7 +523,8 @@ main = do
     archesOpt :: Parser Archs
     archesOpt = Archs <$> some archOpt <|> ExcludedArchs <$> some excludeArch
 
-    dryrunOpt = switchWith 'n' "dry-run" "Do not write (push, build, post, override)"
+    -- FIXME allow "dryrun"
+    dryrunOpt = switchWith 'n' "dry-run"
 
     skipFetchOpt = switchWith 'S' "skip-fetch" "Do not git fetch"
 
