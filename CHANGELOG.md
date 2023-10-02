@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.3.3 (2023-10-02)
+- 'bump': add --dry-run
+- 'copr': track pkg name to output build results url on failure
+- 'diff': allow origin as alias for origin/<branch>
+- 'import': encode url from bz comment if needed (#40)
+- 'parallel': --delay to override default inter-package pause [default 3s]
+- 'parallel': print if no more layers
+- 'parallel': try to make Bodhi update prompt more obvious
+- 'request-repo': no longer post request url to avoid duplication
+- 'unpushed': add --bump
+- 'unpushed': output improvements for --latest and dead.package/missing
+- 'update-sources': alias for "update-version --source-only"
+- 'update-version': take .gpg and .tgz file for lookaside archive!
+- 'update-version': only warn about branch if dist-git
+- 'update-version': rpm prep with --nodeps
+- Krb: loop fkinit until okay
+- Main: --dry-run options now better described
+- pkgNameVerRel: use fedpkg to determine correct %autorelease (#39)
+- RpmBuild: prevent srpm creation from being interrupted (eg ctrl-c)
+- gitFetchSilent: use \r to hide "git fetching..."
+- kojiWatchTask: use whenJustM for koji-tool
+- refPrompt: require precise input - do not trim input
+
 ## 1.3.2 (2023-05-30)
 - prompts now support line-editting thanks to simple-prompt-0.2 using haskeline
 - 'parallel', 'sort', 'graph': use getDynSourcesMacros

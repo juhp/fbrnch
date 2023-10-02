@@ -1,6 +1,6 @@
 cabal-version:       2.0
 name:                fbrnch
-version:             1.3.2
+version:             1.3.3
 synopsis:            Fedora packager tool to build package branches
 description:
             fbrnch (fedora branch) is a convenient packaging tool for
