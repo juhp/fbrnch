@@ -160,7 +160,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
         else ":"
       putStrLn $ unwords layer
       -- maybe print total pending packages
-      unless (null nextLayers) $
+      if null nextLayers
+        then
+        unless singlelayer $
+        putStrLn "no more layers"
+        else
         putStrLn $
         let layerspkgs = map length nextLayers
         in case layerspkgs of
