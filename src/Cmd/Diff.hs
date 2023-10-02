@@ -77,6 +77,9 @@ diffCmd debug speconly work fmt ignorebumps mpatt mwbr =
                       wbexists <- checkIfRemoteBranchExists wbr
                       if wbexists
                         then return $ Just ["origin/" ++ brn]
+                        else
+                        if brn == "origin"
+                        then return $ Just ["origin/" ++ show br]
                         else do
                           putStrLn $ "no" +-+ show wbr +-+ "for" +-+ unPackage pkg
                           return Nothing
