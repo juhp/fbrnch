@@ -44,10 +44,10 @@ type JobAsync = (String, Async JobDone)
 -- FIXME time builds
 -- FIXME copy bodhi notes from another branch update
 -- FIXME support non-sidetag update for parallel packages
-parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget
+parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget -> Double
                  -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()
-parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
+parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pkgs) =
   do
   branches <-
     case pkgs of
@@ -133,7 +133,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           target <- targetMaybeSidetag dryrun br msidetagTarget
           when (mmerge /= Just False) $ mergeNewerBranch Nothing br
           job <- startBuild Nothing 0 False (length brs) target pkg br "." >>= async
-          unless dryrun $ sleep 3
+          unless dryrun $ sleep delay
           return (show br,job)
 
     mergeNewerBranch :: Maybe Package -> Branch -> IO ()
@@ -196,7 +196,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mupdate (breq, pkgs) =
           putPkgBrnchHdr pkg br
           job <- startBuild (if singlelayer then Nothing else Just layernum) n (layersleft > 0) nopkgs target pkg br dir
                  >>= async
-          unless dryrun $ sleep 4
+          unless dryrun $ sleep delay
           return (unPackage pkg,job)
 
     watchJobs :: Bool -> Maybe Int -> [String] -> [JobDone] -> [JobAsync]
