@@ -135,8 +135,8 @@ statusCmd nofetch reviews (breq, pkgs) = do
 #endif
 
 
-unpushedCmd :: Bool -> (BranchesReq,[String]) -> IO ()
-unpushedCmd latest (breq, pkgs) =
+unpushedCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
+unpushedCmd latest bump (breq, pkgs) =
   -- FIXME dirty not okay for multiple branches?
   withPackagesByBranches (if latest then HeaderMay else HeaderMust) False dirtyGit AnyNumber unpushedBranch (breq, pkgs)
   where
@@ -175,8 +175,24 @@ unpushedCmd latest (breq, pkgs) =
             putStr "HEAD "
           unpushed <- gitShortLogN (if latest then Just 1 else Nothing) $
                       Just $ "origin/" ++ show br ++ "..HEAD"
-          if latest
+          if null unpushed
+            then
+            when bump $ doBump spec
+            else
+            if latest
             then whenJust (listToMaybe unpushed) $ putCommit prefix
             else mapM_ (putCommit prefix) unpushed
 
     putCommit prefix = putStrLn . (prefix +-+) . showCommit
+
+    doBump spec = do
+      checkWorkingDirClean
+      dead <- doesFileExist "dead.package"
+      if dead
+        then putStrLn "dead package"
+        else do
+        putStrLn "bumping"
+        autorelease <- isAutoRelease spec
+        unless autorelease $
+          cmd_ "rpmdev-bumpspec" ["-c", "rebuild", spec]
+        git_ "commit" $ "-a" : (if autorelease then ("--allow-empty" :) else id) ["-m", "bump release"]

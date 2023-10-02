@@ -87,6 +87,7 @@ main = do
     , Subcommand "unpushed" "Show unpushed commits" $
       unpushedCmd
       <$> switchWith 'l' "latest" "Only show latest unpushed commit"
+      <*> switchWith 'b' "bump" "Bump release (and commit) if no local commits"
       <*> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
       buildCmd
