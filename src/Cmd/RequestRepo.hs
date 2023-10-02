@@ -55,15 +55,14 @@ requestRepo mock retry breq pkg = do
         putNewLn
         promptEnter "Press Enter to continue"
         -- FIXME check api key is still valid or open pagure ticket directly
-        url <- fedpkg "request-repo" [pkg, show bid]
+        fedpkg_ "request-repo" [pkg, show bid]
         let assignee = userRealName (bugAssignedToDetail bug)
         let draft = "Thank you for the review" ++ maybe "" ("," +-+) (getFirstname assignee)
         putStrLn "```"
         putStrLn draft
         putStrLn "```"
-        putStrLn $ url ++ "\n"
         input <- promptInitial "Enter comment" draft
-        let comment = (if null input then draft else input) ++ "\n\n" <> url
+        let comment = (if null input then draft else input)
         commentBug session bid comment
         putNewLn
         branches <- getRequestedBranches [] breq
