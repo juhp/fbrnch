@@ -246,7 +246,8 @@ main = do
       <*> manyPackages
     , Subcommand "bump" "Bump release for package" $
       bumpPkgs
-      <$> switchWith 'l' "local" "Use local origin rather than checking latest koji"
+      <$> dryrunOpt "Dry run: do not bump"
+      <*> switchWith 'l' "local" "Use local origin rather than checking latest koji"
       <*> optional commitOpts
       <*> optional (strOptionWith 'c' "changelog" "CLOGENTRY"
                     "Override changelog entry [default: rebuild]")

@@ -14,10 +14,11 @@ import System.IO.Extra
 
 -- FIXME --force
 -- FIXME --target
--- FIXME detect rpmautospec and add empty commit
-bumpPkgs :: Bool -> Maybe CommitOpt -> Maybe String -> (BranchesReq,[String]) -> IO ()
-bumpPkgs local mopt mclog =
-  withPackagesByBranches (boolHeader local) False (if local then cleanGit else cleanGitFetchActive)
+bumpPkgs :: Bool -> Bool -> Maybe CommitOpt -> Maybe String
+         -> (BranchesReq,[String]) -> IO ()
+bumpPkgs dryrun local mopt mclog =
+  withPackagesByBranches (boolHeader local) False
+  (if local then cleanGit else cleanGitFetchActive)
   AnyNumber bumpPkg
   where
     bumpPkg :: Package -> AnyBranch -> IO ()
@@ -34,10 +35,10 @@ bumpPkgs local mopt mclog =
         newnvr <- pkgNameVerRel' rbr spec
         moldnvr <-
           if local
-          then do
+          then
             withTempFile $ \tempfile -> do
-              git "show" ["origin:" ++ spec] >>= writeFile tempfile
-              pkgNameVerRel rbr tempfile
+            git "show" ["origin:" ++ spec] >>= writeFile tempfile
+            pkgNameVerRel rbr tempfile
           else
             case br of
               RelBranch rbr' ->
@@ -56,7 +57,7 @@ bumpPkgs local mopt mclog =
                       Just (CommitMsg msg) -> msg
                       _ -> "rebuild"
           autorelease <- isAutoRelease spec
-          unless autorelease $
+          unless (autorelease || dryrun) $
             cmd_ "rpmdev-bumpspec" ["-c", clmsg, spec]
           let copts =
                 case mopt of
@@ -67,5 +68,7 @@ bumpPkgs local mopt mclog =
                       -- FIXME reject amend if already pushed
                       CommitAmend -> ["--amend", "--no-edit"]
           -- FIXME quiet commit?
-          git_ "commit" $ "-a" : (if autorelease then ("--allow-empty" :) else id) copts
+          if dryrun
+            then putStrLn "would be bumped with commit"
+            else git_ "commit" $ "-a" : (if autorelease then ("--allow-empty" :) else id) copts
           else putStrLn "already bumped"
