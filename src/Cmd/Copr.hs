@@ -44,8 +44,14 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
   if listchroots
     then mapM_ putStrLn chroots
     else
-    if null pkgs then
-      getPackageName "." >>= coprBuildPkg chroots False
+    if null pkgs then do
+      pkg <- do
+        dirpkg <- getPackageName "."
+        exists <- doesFileExist $ packageSpec dirpkg
+        if exists
+          then return dirpkg
+          else Package . takeBaseName <$> findSpecfile
+      coprBuildPkg chroots False pkg
     else
       mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg chroots (n>0) (Package p)) $ zip (reverse [0,length pkgs - 1]) pkgs
   where
@@ -85,32 +91,32 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
               then generateSrpm Nothing spec -- FIXME: let distopt = ["--undefine", "dist"]
               else return spec
       case buildBy of
-        SingleBuild -> coprBuild dryrun project srpm buildroots
+        SingleBuild -> coprBuild dryrun project srpm pkg buildroots
         -- FIXME or default to secondary parallel to previous primary
         ValidateByRelease -> do
           let initialChroots =
                 let primaryArch = releaseArch $ head buildroots
                 in map pure $ filter (isArch primaryArch) buildroots
               remainingChroots = buildroots \\ concat initialChroots
-          staggerBuilds srpm initialChroots remainingChroots
+          staggerBuilds srpm pkg initialChroots remainingChroots
         ValidateByArch -> do
           let initialChroots =
                 let newestRelease = removeArch $ head buildroots
                 in map pure $ filter (newestRelease `isPrefixOf`) buildroots
               remainingChroots = buildroots \\ concat initialChroots
-          staggerBuilds srpm initialChroots remainingChroots
+          staggerBuilds srpm pkg initialChroots remainingChroots
         BuildByRelease -> do
           let releaseChroots = groupBy sameRelease buildroots
-          staggerBuilds srpm releaseChroots []
+          staggerBuilds srpm pkg releaseChroots []
       when morepkgs putNewLn
 
     removeArch relarch = init $ dropWhileEnd (/= '-') relarch
     takeArch = takeWhileEnd (/= '-')
 
-    staggerBuilds srpm initialChroots remainingChroots = do
-      mapM_ (coprBuild dryrun project srpm) initialChroots
+    staggerBuilds srpm pkg initialChroots remainingChroots = do
+      mapM_ (coprBuild dryrun project srpm pkg) initialChroots
       unless (null remainingChroots) $
-        coprBuild dryrun project srpm remainingChroots
+        coprBuild dryrun project srpm pkg remainingChroots
 
     releaseArch = takeWhileEnd (/= '-')
 
@@ -149,9 +155,9 @@ readIniConfig inifile iniparser record = do
     let config = parseIniFile ini iniparser
     return $ either error' record config
 
-coprBuild :: Bool -> String -> FilePath -> [String] -> IO ()
-coprBuild _ _ _ [] = error' "No chroots chosen"
-coprBuild dryrun project srpm buildroots = do
+coprBuild :: Bool -> String -> FilePath -> Package -> [String] -> IO ()
+coprBuild _ _ _ _ [] = error' "No chroots chosen"
+coprBuild dryrun project srpm pkg buildroots = do
   let chrootargs = mconcat [["-r", bldrt] | bldrt <- buildroots]
       buildargs = ["build", "--nowait"] ++ chrootargs ++ [project, srpm]
   putNewLn
@@ -161,8 +167,15 @@ coprBuild dryrun project srpm buildroots = do
     putStrLn output
     let bid = read $ last $ words $ last $ lines output
     ok <- timeIO $ coprWatchBuild bid Nothing
-    unless ok $
-      error' $ "Failed: copr" +-+ unwords buildargs
+    unless ok $ do
+      putStrLn $ "Failed: copr" +-+ unwords buildargs
+      -- FIXME determine which chroot(s) failed
+      username <- getUsername
+      -- eg 06482247
+      let zbid =
+            let s = show bid
+            in (if length s < 8 then ('0' :) else id) s
+      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ username +/+ project +/+ head buildroots +/+ zbid ++ "-" ++ unPackage pkg
 
 -- FIXME idea: Maybe Seconds to increment sleep
 coprWatchBuild :: Int -> Maybe String -> IO Bool
