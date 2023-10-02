@@ -124,7 +124,8 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
     isArchiveFile f =
       any ($ f) [(".tar." `isInfixOf`),
                  (".zip" `isSuffixOf`),
-                 (".gpg" `isSuffixOf`)]
+                 (".gpg" `isSuffixOf`),
+                 (".tgz" `isSuffixOf`)]
 
 pkgVerRel :: FilePath -> IO (String,String)
 pkgVerRel spec = do
