@@ -155,17 +155,21 @@ unpushedCmd latest (breq, pkgs) =
         let spec = packageSpec pkg
             prefix =
               let pref =
-                    (if length pkgs > 1 then unPackage pkg else "") +-+
+                    (if length pkgs > 1 && latest
+                     then unPackage pkg else "") +-+
                     case breq of
                       Branches brs | length brs <= 1 -> ""
                       _ -> show br
               in if null pref then "" else pref ++ ":"
-        ifM (notM (doesFileExist spec))
-          (ifM initialPkgRepo
-            (putStrLn $ prefix +-+ "initial repo")
-            (unlessM (doesFileExist "dead.package") $
-             putStrLn $ "missing" +-+ spec)) $
-          do
+        haveSpec <- doesFileExist spec
+        if not haveSpec
+          then
+          ifM initialPkgRepo
+          (putStrLn $ prefix +-+ "initial repo") $
+          ifM (doesFileExist "dead.package")
+          (putStrLn $ prefix +-+ "dead package") $
+          putStrLn $ prefix +-+ "missing" +-+ spec
+          else do
           whenM (isNothing <$> pkgNameVerRel br spec) $ do
             putStrLn "undefined NVR!\n"
             putStr "HEAD "
