@@ -56,31 +56,42 @@ importCmd mock (breq, ps) = do
         putNewLn
         promptEnter "Press Enter to continue"
         let srpms = map (T.replace "/reviews//" "/reviews/") $ concatMap findSRPMs comments
-        when (null srpms) $ error "No srpm urls found!"
         mapM_ T.putStrLn srpms
-        let srpm = (head . filter isURI . filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms
-        let srpmfile = takeFileName srpm
-        -- FIXME if havesrpm then print local filename
-        promptEnter $ "Press Enter to import" +-+ srpmfile
-        havesrpm <- doesFileExist srpmfile
-        unless havesrpm $
-          cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpm]
-        krbTicket
-        fedpkg_ "import" [srpmfile]
-        git_ "commit" ["--message", "import #" ++ show bid]
-        nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
-        promptEnter $ "Press Enter to push and build" +-+ nvr
-        gitPush True Nothing
-        -- FIXME build more branches
-        kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
-        putBugBuild False session bid nvr
-        existing <- fedoraBranchesNoRawhide (localBranches False)
-        when (null existing) $ do
-          brs <- getRequestedBranches [] breq
-          requestPkgBranches False False mock (Branches brs) (Package pkg)
+        case (filter (".src.rpm" `isSuffixOf`) . words . T.unpack . last) srpms of
+          [] -> error' "no srpm filename found"
+          srcrpms ->
+            case filter (isURI . maybeEncodeURI) srcrpms of
+              [] -> error "no valid srpm urls found"
+              [srpmurl] -> do
+                let srpmfile = takeFileName srpmurl
+                -- FIXME if havesrpm then print local filename
+                promptEnter $ "Press Enter to import" +-+ srpmfile
+                havesrpm <- doesFileExist srpmfile
+                unless havesrpm $
+                  cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpmurl]
+                krbTicket
+                fedpkg_ "import" [srpmfile]
+                git_ "commit" ["--message", "import #" ++ show bid]
+                nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
+                promptEnter $ "Press Enter to push and build" +-+ nvr
+                gitPush True Nothing
+                -- FIXME build more branches
+                kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
+                putBugBuild False session bid nvr
+                existing <- fedoraBranchesNoRawhide (localBranches False)
+                when (null existing) $ do
+                  brs <- getRequestedBranches [] breq
+                  requestPkgBranches False False mock (Branches brs) (Package pkg)
+              srpmurls -> error' $ "multiple srpm urls:" +-+ unwords srpmurls
       when (pkg /= takeFileName dir) $
         setCurrentDirectory dir
+
       where
         findSRPMs :: Comment -> [T.Text]
         findSRPMs =
           filter (\ l -> "https://" `T.isInfixOf` l && any (`T.isPrefixOf` T.toLower l) ["srpm url:", "srpm:", "new srpm:", "updated srpm:"] && ".src.rpm" `T.isSuffixOf` l) . T.lines . commentText
+
+        maybeEncodeURI cs =
+          if '%' `elem` cs
+          then cs
+          else escapeURIString isUnescapedInURI cs
