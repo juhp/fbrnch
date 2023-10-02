@@ -100,9 +100,8 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
               remainingChroots = buildroots \\ concat initialChroots
           staggerBuilds srpm initialChroots remainingChroots
         BuildByRelease -> do
-          let initialChroots = groupBy sameRelease buildroots
-              remainingChroots = buildroots \\ concat initialChroots
-          staggerBuilds srpm initialChroots remainingChroots
+          let releaseChroots = groupBy sameRelease buildroots
+          staggerBuilds srpm releaseChroots []
       when morepkgs putNewLn
 
     removeArch relarch = init $ dropWhileEnd (/= '-') relarch
