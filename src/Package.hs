@@ -362,11 +362,10 @@ pkgNameVerRel br spec = do
     if autorelease
     then do
       --putStrLn "%autorelease detected"
-      mautospec <- findExecutable "rpmautospec"
-      when (isNothing mautospec) $
-        error' "requires rpmautospec.."
-      autorel <- last . words <$> cmd "rpmautospec" ["calculate-release", spec]
-      rpmspec ["--srpm"] (Just ("%{name}-%{version}-" ++ autorel ++ disttag)) spec
+      mfedpkg <- findExecutable "fedpkg"
+      when (isNothing mfedpkg) $
+        error' "requires fedpkg.."
+      cmdLines "fedpkg" ["verrel"]
     else rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
   seq disttag $
     return $
