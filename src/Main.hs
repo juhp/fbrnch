@@ -161,6 +161,11 @@ main = do
       <*> many (sidetagTargetOpt Nothing)
       <*> optional scratchSourceOpt
       <*> branchesPackages
+    , Subcommand "update-sources" "Download and update newer sources" $
+      updateCmd True
+      <$> switchWith 'f' "force" "Download upstream sources even if they exist locally"
+      <*> switchWith 'H' "allow-head" "For updating inside rebase"
+      <*> maybeBranchPackages False
     , Subcommand "update-version" "Update package in dist-git to newer version" $
       updateCmd
       <$> switchWith 's' "sources-only" "Only update sources"
