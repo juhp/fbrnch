@@ -111,7 +111,7 @@ kojiBuild' wait target args = do
   -- for git: drop "Created task: "
   -- init to drop final newline
   unless (B.null out) $
-    logMsg $ (B.unpack . B.init . B.unlines . tail . B.lines) out
+    logMsg $ (dropPrefix "Task info: " . B.unpack . B.init . B.unlines . tail . B.lines) out
   if ret == ExitSuccess
     then do
     let kojiurl = B.unpack $ last $ B.words out
