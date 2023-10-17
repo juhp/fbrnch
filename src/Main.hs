@@ -620,8 +620,8 @@ main = do
 
     scratchOpt :: Parser ScratchOption
     scratchOpt =
-      ScratchTask <$> optionWith auto 's' "scratch-build" "TASKID" "Existing scratch build taskid" <|>
-      flagWith ScratchBuild SkipScratch 'S' "no-scratch" "Skip scratch build"
+      ScratchTask <$> optionLongWith auto "scratch-task" "TASKID" "Existing scratch build taskid" <|>
+      flagWith SkipScratch ScratchBuild 's' "scratch" "Do koji scratch build"
 
     scratchSourceOpt :: Parser ScratchSource
     scratchSourceOpt =

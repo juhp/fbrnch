@@ -46,7 +46,7 @@ createReview scratchOpt mock pkgs =
         -- FIXME abort if open review (unless --force?)
         promptEnter "Press Enter to continue"
       srpm <- generateSrpm Nothing spec
-      mockRpmLint mock (scratchOpt == ScratchBuild) pkg spec srpm
+      mockRpmLint mock pkg spec srpm
       (mkojiurl,specSrpmUrls) <- buildAndUpload scratchOpt srpm pkg spec
       bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
       putStrLn "Review request posted:"
@@ -66,6 +66,9 @@ createReview scratchOpt mock pkgs =
 buildAndUpload :: ScratchOption -> String -> String -> FilePath
                -> IO (Maybe String, String)
 buildAndUpload scratchOpt srpm pkg spec = do
+  promptEnter $ "Press Enter to" +-+ if scratchOpt == ScratchBuild
+                                     then "submit"
+                                     else "upload"
   mkojiurl <- case scratchOpt of
                 ScratchBuild -> Just <$> kojiScratchBuild "rawhide" [] srpm
                 ScratchTask tid -> return $ Just ("https://koji.fedoraproject.org/koji/taskinfo?taskID=" ++ show tid)
@@ -83,7 +86,7 @@ updateReview scratchOpt mock mspec = do
   submitted <- checkForComment session bid (T.pack srpm)
   when submitted $
     error' "This NVR was already posted on the review bug: please bump"
-  mockRpmLint mock (scratchOpt == ScratchBuild) pkg spec srpm
+  mockRpmLint mock pkg spec srpm
   (mkojiurl,specSrpmUrls) <- buildAndUpload scratchOpt srpm pkg spec
   changelog <- changeLogPrompt False spec
   commentBug session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
@@ -117,8 +120,8 @@ uploadPkgFiles pkg spec srpm = do
           okay <- httpExists mgr url
           unless okay $ error' $ "Could not access:" +-+ url
 
-mockRpmLint :: Bool -> Bool -> String -> FilePath -> FilePath -> IO ()
-mockRpmLint mock scratch pkg spec srpm = do
+mockRpmLint :: Bool -> String -> FilePath -> FilePath -> IO ()
+mockRpmLint mock pkg spec srpm = do
   rpms <-
     if mock then do
       -- FIXME check that mock is installed
@@ -129,7 +132,6 @@ mockRpmLint mock scratch pkg spec srpm = do
       builtRpms (RelBranch Rawhide) spec >>= filterM doesFileExist
   -- FIXME parse # of errors/warnings
   void $ cmdBool "rpmlint" $ spec:srpm:rpms
-  promptEnter $ "Press Enter to" +-+ if scratch then "submit" else "upload"
 
 -- FIXME does not work with pkg dir/spec:
 -- 'fbrnch: No spec file found'
