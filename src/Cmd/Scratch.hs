@@ -59,7 +59,13 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
                 ExcludedArchs as -> do
                   Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
                   tagArchs <- kojiTagArchs buildtag
-                  return $ tagArchs \\ as
+                  excludedarchs <- do
+                    excluded <- map words . filter ("ExcludeArch:" `isPrefixOf`) <$> cmdLines "rpmspec" ["-P", spec]
+                    return $
+                      if null excluded
+                      then return []
+                      else concatMap tail excluded
+                  return $ tagArchs \\ (as ++ excludedarchs)
         if stagger
           then do
           archlist <-
