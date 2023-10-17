@@ -124,8 +124,6 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
 
     sameRelease r1 r2 = removeArch r1 == removeArch r2
 
-    reverseSort = reverse . sort
-
 branchRelease :: Branch -> String
 branchRelease Rawhide = "fedora-rawhide"
 branchRelease (Fedora n) = "fedora-" ++ show n

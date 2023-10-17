@@ -65,7 +65,7 @@ partitionBranches args =
 activeBranches :: [Branch] -> [String] -> [Branch]
 activeBranches active =
   -- newest branch first
-  reverse . sort . mapMaybe (readActiveBranch active)
+  reverseSort . mapMaybe (readActiveBranch active)
 
 fedoraBranches :: IO [String] -> IO [Branch]
 fedoraBranches mthd = do

@@ -11,12 +11,14 @@ module Common (
   (+-+),
   plural,
   pluralException,
-  putNewLn
+  putNewLn,
+  reverseSort
   ) where
 
 import Control.Monad.Extra -- hiding (loop)
 import Data.List.Extra hiding (list, merge)
 import Data.Maybe
+import Data.Ord (comparing, Down(Down))
 
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup ((<>))
@@ -40,3 +42,6 @@ pluralException i ns ps =
 
 putNewLn :: IO ()
 putNewLn = putChar '\n'
+
+reverseSort :: Ord a => [a] -> [a]
+reverseSort = sortBy (comparing Down)
