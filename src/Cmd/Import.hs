@@ -71,7 +71,7 @@ importCmd mock (breq, ps) = do
                   cmd_ "curl" ["--silent", "--show-error", "--remote-name", srpmurl]
                 krbTicket
                 fedpkg_ "import" [srpmfile]
-                git_ "commit" ["--message", "import #" ++ show bid]
+                git_ "commit" ["--message", "import rhbz#" ++ show bid]
                 nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
                 promptEnter $ "Press Enter to push and build" +-+ nvr
                 gitPush True Nothing
