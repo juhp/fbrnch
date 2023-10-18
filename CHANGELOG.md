@@ -1,27 +1,34 @@
 # Changelog
 
-## 1.3.3 (2023-10-02)
+## 1.3.3 (2023-10-19)
 - 'bump': add --dry-run
 - 'copr': track pkg name to output build results url on failure
+- 'create-review','update-review': default to no scratch build (#43)
 - 'diff': allow origin as alias for origin/<branch>
 - 'import': encode url from bz comment if needed (#40)
+- 'import': prefix bug# with rhbz in commit (#38)
+- 'install': add --no-build to install existing built rpms
 - 'parallel': --delay to override default inter-package pause [default 3s]
+- 'parallel': use pkg name in changelog instead of nvr
 - 'parallel': print if no more layers
 - 'parallel': try to make Bodhi update prompt more obvious
+- 'request-repo': avoid head crash on firstname (#45)
 - 'request-repo': no longer post request url to avoid duplication
+- 'scratch': with --exclude-arch respect ExcludeArch: fields
 - 'unpushed': add --bump
 - 'unpushed': output improvements for --latest and dead.package/missing
 - 'update-sources': alias for "update-version --source-only"
-- 'update-version': take .gpg and .tgz file for lookaside archive!
 - 'update-version': only warn about branch if dist-git
 - 'update-version': rpm prep with --nodeps
+- 'update-version': take .gpg and .tgz file for lookaside archive!
 - Krb: loop fkinit until okay
 - Main: --dry-run options now better described
-- pkgNameVerRel: use fedpkg to determine correct %autorelease (#39)
 - RpmBuild: prevent srpm creation from being interrupted (eg ctrl-c)
 - gitFetchSilent: use \r to hide "git fetching..."
-- kojiWatchTask: use whenJustM for koji-tool
-- refPrompt: require precise input - do not trim input
+- kojiBuild: remove "Take info: " prefix before koji task url
+- kojiWatchTask: do not hardcode koji-tool path
+- pkgNameVerRel: use fedpkg to determine correct %autorelease (#39)
+- refPrompt: do not trim input for more precision
 
 ## 1.3.2 (2023-05-30)
 - prompts now support line-editting thanks to simple-prompt-0.2 using haskeline
