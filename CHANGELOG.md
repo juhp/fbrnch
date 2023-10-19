@@ -25,7 +25,7 @@
 - Main: --dry-run options now better described
 - RpmBuild: prevent srpm creation from being interrupted (eg ctrl-c)
 - gitFetchSilent: use \r to hide "git fetching..."
-- kojiBuild: remove "Take info: " prefix before koji task url
+- kojiBuild: remove "Task info: " prefix before koji task url
 - kojiWatchTask: do not hardcode koji-tool path
 - pkgNameVerRel: use fedpkg to determine correct %autorelease (#39)
 - refPrompt: do not trim input for more precision
