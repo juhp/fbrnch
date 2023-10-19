@@ -39,7 +39,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f38 [package] ...
+$ fbrnch switch f39 [package] ...
 ```
 
 You can also git pull over packages:
@@ -79,10 +79,10 @@ $ fbrnch bugs [package]
 ```
 
 ### Commit, Merging and Building in Koji
-The update-version command helps with updating a package
-after editing the spec file to a newer version:
+The update-sources and update-version commands can help with updating
+a package after editing the spec file to a newer version:
 ```
-$ fbrnch update-version
+$ fbrnch update-sources
 ```
 which will download the new tarball and upload it, etc.
 
@@ -97,9 +97,9 @@ or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f37 package
+$ fbrnch merge f38 package
 ```
-which will offer to merge f38 (or up to a git hash you choose) into f37.
+which will offer to merge f39 (or up to a git hash you choose) into f38.
 
 Merging can also be done together with building:
 ```
@@ -155,7 +155,7 @@ Or one can specify the path to the package.
 
 Locally build and install:
 ```
-$ fbrnch install package1 package2 package3 ...
+$ fbrnch install package1 package2/ package3 ...
 ```
 
 You can use:
@@ -168,7 +168,7 @@ Use
 ```
 $ fbrnch rename-rawhide [package]
 ```
-to rename an old master branch locally to rawhide.
+to rename an old local master branch to rawhide.
 
 ### Parallel building
 fbrnch can sort packages automatically and build them in parallel
@@ -178,16 +178,17 @@ to avoid grabbing too many Koji resources).
 ```
 $ fbrnch parallel --sidetag rawhide pkg-x pkg-y pkg-z pkg-xy pkg-xy-z
 ```
-builds a list of packages in a sidetag (generating it if needed)
+builds a list of packages in a sidetag (generating it if no sidetags exist)
 in parallel ordered by build dependencies.
 
-When building for a branch, merging from newer branch will be offered
+When building for a branch, merging from the next newer branch will be offered
 unless using `--no-merge`
-(though you may prefer to run `fbrnch merge <branch> ...` first instead).
+(then you may prefer to run `fbrnch merge <branch> ...` first instead).
 
 Except for rawhide using a --sidetag or --target is required.
 If you have more than one active sidetag for a branch,
 you can select one using `--target`.
+They can be listed with `fbrnch sidetags`.
 
 After parallel building you can create a Bodhi update from the sidetag.
 
@@ -200,16 +201,18 @@ and push them to Bodhi.
 ```
 $ fbrnch create-review [my-new-package]
 ```
-This will create (or update) an srpm, run rpmlint,
-then upload it to fedorapeople, perform a scratch build,
-and open a Review Request in Bugzilla (similar to fedora-create-review).
+This will create an srpm (or update it if the spec file is newer), run rpmlint,
+optionally perform a scratch build, then upload the spec and srpm to
+fedorapeople, and open a Review Request in Bugzilla
+(similar to fedora-create-review).
 
 #### Update a package review
 ```
 $ fbrnch update-review [my-new-package]
 ```
 Similar to create-review: it uploads the updated files to fedorapeople
-and posts the updated package urls to the open package review.
+and posts the updated package urls to the open package review
+with an optional scratch build.
 
 #### List open package reviews
 To list one's open package reviews:
@@ -259,7 +262,7 @@ Here is an "extreme" [example](https://github.com/fedora-haskell/haskell-languag
 
 ```
 $ fbrnch --version
-1.3.2
+1.3.3
 $ fbrnch --help
 Fedora branch building tool
 
@@ -290,6 +293,7 @@ Available commands:
   scratch                  Scratch build package in Koji
   scratch-aarch64          Koji aarch64 scratch build of package
   scratch-x86_64           Koji x86_64 scratch build of package
+  update-sources           Download and update newer sources
   update-version           Update package in dist-git to newer version
   sort                     Sort packages in build dependency order
   prep                     Prep sources
@@ -330,6 +334,9 @@ Available commands:
   move-artifacts           Move old rpm artifacts into rpmbuild dirs
 ```
 
+Use `fbrnch <cmd> --help` to get specific help about each of the above commands
+and their options.
+
 ## Installation
 fbrnch is packaged in Fedora: `sudo dnf install fbrnch`.
 
@@ -340,11 +347,11 @@ fbrnch is packaged in Fedora: `sudo dnf install fbrnch`.
 
 3. Then either:
 
-a) using stack (probably 2.3 or later): `stack install`
+a) using stack: `stack install`
 
 or
 
-b) with cabal-install (probably 2.4 or later) and cabal-rpm:
+b) with cabal-install and cabal-rpm:
 
 ```
 $ cabal-rpm builddep
@@ -410,16 +417,16 @@ You can create your key at
 <https://bugzilla.redhat.com/userprefs.cgi?tab=apikey>.
 
 ## Known issues
-- parallel builds will push local package commits without asking
 - currently it only checks if already built by NVR not githash
+- parallel and sort, etc do not take pkgconfig() and other meta() deps into
+  account yet (this should be fixed soon in rpmbuild-order)
+
+## To do
 - authentication is not implemented yet natively for Koji, Bodhi, Pagure
   (and source upload)
   - so python clients are used for "writing"
     (specifically koji, bodhi-client, fedpkg),
     but all queries are done directly by Web APIs for speed and control.
-- https checkouts are currently treated as anonymous git checkouts
-- parallel and sort, etc do not take pkgconfig() and other meta() deps into
-  account yet (this will be fixed in rpmbuild-order)
 
 ## Motivation, history, talks
 This project started off as a simple tool to build a package across branches
