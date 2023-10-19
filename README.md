@@ -260,10 +260,14 @@ There are a lot more commands, like eg `copr` and `graph`:
 
 Here is an "extreme" [example](https://github.com/fedora-haskell/haskell-language-server/blob/main/build.sh) of a script using `fbrnch copr` to do multiple staggered builds.
 
+## Help
+`$ fbrnch --version`
 ```
-$ fbrnch --version
 1.3.3
-$ fbrnch --help
+```
+
+`$ fbrnch --help`
+```
 Fedora branch building tool
 
 Usage: fbrnch [--version] COMMAND
