@@ -13,7 +13,7 @@ import qualified Common.Text as T
 
 import Data.Char
 import Network.HTTP.Directory (httpExists, httpManager)
-import SimplePrompt (promptEnter)
+import SimplePrompt (promptEnter, yesNoDefault)
 
 import Branches
 import Bugzilla
@@ -28,8 +28,8 @@ data ScratchOption = ScratchBuild | ScratchTask Int | SkipScratch
 -- FIXME add --dependent pkgreview
 -- FIXME verify tarball is same as upstream
 -- FIXME post URL field too
-createReview :: ScratchOption -> Bool -> [FilePath] -> IO ()
-createReview scratchOpt mock pkgs =
+createReview :: Maybe ScratchOption -> Bool -> [FilePath] -> IO ()
+createReview mscratchOpt mock pkgs =
   withPackagesByBranches HeaderMust False Nothing Zero createPkgReview (Branches [], pkgs)
   where
     createPkgReview :: Package -> AnyBranch -> IO ()
@@ -47,7 +47,7 @@ createReview scratchOpt mock pkgs =
         promptEnter "Press Enter to continue"
       srpm <- generateSrpm Nothing spec
       mockRpmLint mock pkg spec srpm
-      (mkojiurl,specSrpmUrls) <- buildAndUpload scratchOpt srpm pkg spec
+      (mkojiurl,specSrpmUrls) <- buildAndUpload mscratchOpt srpm pkg spec
       bugid <- postReviewReq session spec specSrpmUrls mkojiurl pkg
       putStrLn "Review request posted:"
       putBugId bugid
@@ -63,21 +63,28 @@ createReview scratchOpt mock pkgs =
             , ("summary", "Review Request: " <> pkg <> " - " <> summary)
             , ("description", specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl)]
 
-buildAndUpload :: ScratchOption -> String -> String -> FilePath
+buildAndUpload :: Maybe ScratchOption -> String -> String -> FilePath
                -> IO (Maybe String, String)
-buildAndUpload scratchOpt srpm pkg spec = do
-  promptEnter $ "Press Enter to" +-+ if scratchOpt == ScratchBuild
+buildAndUpload mscratchOpt srpm pkg spec = do
+  scratch <-
+    if isNothing mscratchOpt
+    then yesNoDefault False "Would you like to do a koji scratch build"
+    else do
+      return $ mscratchOpt == Just ScratchBuild
+  promptEnter $ "Press Enter to" +-+ if scratch
                                      then "submit"
                                      else "upload"
-  mkojiurl <- case scratchOpt of
-                ScratchBuild -> Just <$> kojiScratchBuild "rawhide" [] srpm
-                ScratchTask tid -> return $ Just ("https://koji.fedoraproject.org/koji/taskinfo?taskID=" ++ show tid)
-                SkipScratch -> return Nothing
+  mkojiurl <- case mscratchOpt of
+                Just (ScratchTask tid) -> return $ Just ("https://koji.fedoraproject.org/koji/taskinfo?taskID=" ++ show tid)
+                _ ->
+                  if scratch
+                  then Just <$> kojiScratchBuild "rawhide" [] srpm
+                  else return Nothing
   specSrpmUrls <- uploadPkgFiles pkg spec srpm
   return (mkojiurl, specSrpmUrls)
 
-updateReview :: ScratchOption -> Bool -> Maybe FilePath -> IO ()
-updateReview scratchOpt mock mspec = do
+updateReview :: Maybe ScratchOption -> Bool -> Maybe FilePath -> IO ()
+updateReview mscratchOpt mock mspec = do
   spec <- maybe findSpecfile checkLocalFile mspec
   pkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
   (bid,session) <- reviewBugIdSession pkg
@@ -87,7 +94,7 @@ updateReview scratchOpt mock mspec = do
   when submitted $
     error' "This NVR was already posted on the review bug: please bump"
   mockRpmLint mock pkg spec srpm
-  (mkojiurl,specSrpmUrls) <- buildAndUpload scratchOpt srpm pkg spec
+  (mkojiurl,specSrpmUrls) <- buildAndUpload mscratchOpt srpm pkg spec
   changelog <- changeLogPrompt False spec
   commentBug session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
   -- putStrLn "Review bug updated"

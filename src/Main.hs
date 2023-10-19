@@ -288,12 +288,12 @@ main = do
       <$> strArg "NAME"
     , Subcommand "create-review" "Create a Package Review request" $
       createReview
-      <$> scratchOpt
+      <$> optional scratchOpt
       <*> mockOpt False
       <*> manyPackages
     , Subcommand "update-review" "Update a Package Review" $
       updateReview
-      <$> scratchOpt
+      <$> optional scratchOpt
       <*> mockOpt False
       <*> optional (strArg "SPECFILE")
     , Subcommand "review-package" "Run fedora-review on a package Review Request bug" $
@@ -622,7 +622,8 @@ main = do
     scratchOpt :: Parser ScratchOption
     scratchOpt =
       ScratchTask <$> optionLongWith auto "scratch-task" "TASKID" "Existing scratch build taskid" <|>
-      flagWith SkipScratch ScratchBuild 's' "scratch" "Do koji scratch build"
+      flagWith' SkipScratch 'S' "no-scratch" "Skip koji scratch build" <|>
+      flagWith' ScratchBuild 's' "scratch" "Do koji scratch build without prompt"
 
     scratchSourceOpt :: Parser ScratchSource
     scratchSourceOpt =

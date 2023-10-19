@@ -3,7 +3,7 @@
 ## 1.3.3 (2023-10-19)
 - 'bump': add --dry-run
 - 'copr': track pkg name to output build results url on failure
-- 'create-review','update-review': default to no scratch build (#43)
+- 'create-review','update-review': prompt to offer scratch build (#43)
 - 'diff': allow origin as alias for origin/<branch>
 - 'import': encode url from bz comment if needed (#40)
 - 'import': prefix bug# with rhbz in commit (#38)
