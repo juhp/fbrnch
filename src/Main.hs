@@ -181,6 +181,7 @@ main = do
       prepCmd
       <$> optional prepPreOpts
       <*> switchWith 'v' "verbose" "show rpmbuild output"
+      <*> switchWith 'd' "deps" "require deps to be installed"
       <*> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
       localCmd

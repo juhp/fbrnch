@@ -15,8 +15,9 @@ import RpmBuild
 data PrepPre = PrepClone | PrepPull
   deriving Eq
 
-prepCmd :: Maybe PrepPre -> Bool -> (Maybe Branch,[String]) -> IO ()
-prepCmd mpre verbose (mbr,pkgs) = do
+-- FIXME prompt for cloning
+prepCmd :: Maybe PrepPre -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
+prepCmd mpre verbose deps (mbr,pkgs) = do
   when (mpre == Just PrepClone) $
     cloneCmd (ClonePkgs (mbr, pkgs))
   withPackagesMaybeBranchNoHeadergit prepPackage (mbr,pkgs)
@@ -36,6 +37,8 @@ prepCmd mpre verbose (mbr,pkgs) = do
         unlessM (doesFileExist spec) $
           error' $ spec +-+ "not found"
         getSourcesMacros spec
+        when deps $
+          installDeps False spec
         case br of
           RelBranch rbr -> do
             nvr <- pkgNameVerRel' rbr spec
@@ -43,5 +46,5 @@ prepCmd mpre verbose (mbr,pkgs) = do
             putStr $ "Prepping" +-+ nvr ++ ": "
           _ -> return ()
         timeIO $
-          (if verbose then cmdLog else cmdSilent') "rpmbuild" ["-bp", "--nodeps", spec]
+          (if verbose then cmdLog else cmdSilent') "rpmbuild" $ "-bp" : ["--nodeps" | not deps] ++ [spec]
         putStrLn "done"
