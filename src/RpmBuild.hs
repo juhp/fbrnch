@@ -307,19 +307,16 @@ buildRequires spec = do
       void $ getSources spec
       withTempDir $ \tmpdir -> do
         let srpmdiropt = ["--define", "_srcrpmdir" +-+ tmpdir]
-        (ok, out, err) <- cmdFull "rpmbuild" (["-br", "--nodeps", spec] ++ srpmdiropt) ""
-        if ok
-          then do
-          -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-          case words out of
-            [] -> error' $ spec +-+ "could not generate source rpm for dynamic buildrequires"
-            ws -> do
-              let srpm = last ws
-              exists <- doesFileExist srpm
-              if exists
-                then cmdLines "rpm" ["-qp", "--requires", last ws]
-                else error' err
-          else error' err
+        (_ok, out, err) <- cmdFull "rpmbuild" (["-br", "--nodeps", spec] ++ srpmdiropt) ""
+        -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
+        case words out of
+          [] -> error' $ spec +-+ "could not generate source rpm for dynamic buildrequires"
+          ws -> do
+            let srpm = last ws
+            exists <- doesFileExist srpm
+            if exists
+              then cmdLines "rpm" ["-qp", "--requires", last ws]
+              else error' err
     else
       -- FIXME should resolve meta
       rpmspec ["--buildrequires"] Nothing spec
