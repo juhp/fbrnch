@@ -243,7 +243,8 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
             Just ShortInstall -> ["-bi", "--short-circuit"]
             _ -> "-bb" : ["--noclean" | noclean]
         sourcediropt = ["--define", "_sourcedir" +-+ cwd]
-        args = sourcediropt ++ ["--define", "dist" +-+ rpmDistTag dist] ++
+        args = sourcediropt ++
+               ["--define", "dist" +-+ "%{?distprefix}" ++ rpmDistTag dist] ++
                buildopt ++ map show bconds ++ autoreleaseOpt ++ [spec]
     date <- cmd "date" ["+%T"]
     rbr <- anyBranchToRelease br
