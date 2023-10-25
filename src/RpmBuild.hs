@@ -229,6 +229,14 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
     void $ getSources spec
     dist <- getBranchDist br
     cwd <- getCurrentDirectory
+    autoreleaseOpt <- do
+      autorelease <- isAutoRelease spec
+      if autorelease
+        then do
+        -- FIXME upstream bug "--number-only" doesn't work
+        calculated <- cmd "rpmautospec" ["calculate-release", spec]
+        return ["--define", "_rpmautospec_release_number" +-+ dropPrefix "Calculated release number: " calculated]
+        else return []
     let buildopt =
           case mforceshort of
             Just ShortCompile -> ["-bc", "--short-circuit"]
@@ -236,7 +244,7 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
             _ -> "-bb" : ["--noclean" | noclean]
         sourcediropt = ["--define", "_sourcedir" +-+ cwd]
         args = sourcediropt ++ ["--define", "dist" +-+ rpmDistTag dist] ++
-               buildopt ++ map show bconds ++ [spec]
+               buildopt ++ map show bconds ++ autoreleaseOpt ++ [spec]
     date <- cmd "date" ["+%T"]
     rbr <- anyBranchToRelease br
     nvr <- pkgNameVerRel' rbr spec
