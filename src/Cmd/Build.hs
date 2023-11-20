@@ -103,7 +103,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           return False
   let spec = packageSpec pkg
   checkForSpecFile spec
-  checkSourcesMatch spec
+  checkSourcesMatch pkg (RelBranch br) spec
   unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
   nvr <- pkgNameVerRel' br spec
   putNewLn

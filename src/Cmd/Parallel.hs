@@ -230,6 +230,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
     startBuild mlayer n morelayers nopkgs target pkg br dir =
       withExistingDirectory dir $ do
       gitSwitchBranch (RelBranch br)
+      unlessM isGitDirClean $
+        error' "local uncommitted changes (dirty)"
       let spec = packageSpec pkg
       checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
@@ -242,7 +244,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
         putNewLn
         displayCommits True unpushed
       unless (null unpushed) $ do
-        checkSourcesMatch spec
+        checkSourcesMatch pkg (RelBranch br) spec
         unless dryrun $
           gitPush True Nothing
       changelog <- unlines <$> getChangelog spec

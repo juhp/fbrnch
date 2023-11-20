@@ -30,6 +30,7 @@ import System.IO.Extra (withTempDir)
 import System.Posix.Files
 
 import Branches
+import Cmd.Update (updatePkg)
 import Common
 import Common.System
 import Git
@@ -338,8 +339,8 @@ buildRequires spec = do
              then Nothing
              else Just d
 
-checkSourcesMatch :: FilePath -> IO ()
-checkSourcesMatch spec = do
+checkSourcesMatch :: Package -> AnyBranch -> FilePath -> IO ()
+checkSourcesMatch pkg br spec = do
   -- "^[Ss]ource[0-9]*:"
   sourcefiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
   sources <- lines <$> readFile "sources"
@@ -348,22 +349,22 @@ checkSourcesMatch spec = do
                                 src `notElem` gitfiles)
                 sourcefiles
   unless (null missing) $ do
-    promptEnter $ color Red $ unwords missing +-+ "not in sources, please fix"
+    promptEnter $ color Red $ unwords missing +-+ "not in sources, press Enter to fix"
+    updatePkg True False False True Nothing pkg br
     checkOnBranch
-    checkSourcesMatch spec
+    checkSourcesMatch pkg br spec
   mgr <- httpManager
-  let pkg = takeBaseName spec
-  mapM_ (checkLookasideCache mgr pkg) sources
+  mapM_ (checkLookasideCache mgr) sources
   where
-    checkLookasideCache :: Manager -> String -> String -> IO ()
-    checkLookasideCache mgr pkg source = do
+    checkLookasideCache :: Manager -> String -> IO ()
+    checkLookasideCache mgr source = do
       let (file,url) =
             case words source of
               ("SHA512":('(':fileparen):"=":[hash]) ->
                 let file' = dropSuffix ")" fileparen
-                in (file', "https://src.fedoraproject.org/lookaside/pkgs" +/+ pkg +/+ file +/+ "sha512" +/+ hash +/+ file)
+                in (file', "https://src.fedoraproject.org/lookaside/pkgs" +/+ unPackage pkg +/+ file +/+ "sha512" +/+ hash +/+ file)
               [hash,file'] ->
-                (file', "https://src.fedoraproject.org/lookaside/pkgs" +/+ pkg +/+ file +/+ "md5" +/+ hash +/+ file)
+                (file', "https://src.fedoraproject.org/lookaside/pkgs" +/+ unPackage pkg +/+ file +/+ "md5" +/+ hash +/+ file)
               _ -> error' $ "invalid/unknown source:\n" ++ source
       unlessM (httpExists mgr url) $ do
         putStrLn $ url +-+ "not found"
