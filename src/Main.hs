@@ -321,7 +321,8 @@ main = do
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranchesCmd
       <$> switchWith 'q' "quiet" "Quieter output"
-      <*> optional (optionWith branchM 'r' "recurse-from" "BRANCH" "Add neighboring dependencies from branch")
+      <*> switchWith 'r' "reviews" "Request branches for package reviews"
+      <*> optional (optionWith branchM 'R' "recurse-from" "BRANCH" "Add neighboring dependencies from branch")
       <*> mockOpt False
       <*> branchesPackages
     , Subcommand "find-review" "Find package review bug" $

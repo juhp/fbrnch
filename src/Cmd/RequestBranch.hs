@@ -21,19 +21,23 @@ import Package
 import Pagure
 
 -- FIXME option to do koji scratch build instead of mock
-requestBranchesCmd :: Bool -> Maybe Branch -> Bool -> (BranchesReq,[String]) -> IO ()
-requestBranchesCmd quiet mrecursebr mock (breq, ps) = do
+requestBranchesCmd :: Bool -> Bool -> Maybe Branch -> Bool
+                   -> (BranchesReq,[String]) -> IO ()
+requestBranchesCmd quiet reviews mrecursebr mock (breq, ps) = do
   if null ps
     then do
     when (isJust mrecursebr) $
       error' "please specify a package dir when using --recurse-deps"
     isPkgGit <- isPkgGitSshRepo
-    if isPkgGit
-      then
-      getDirectoryName >>= requestPkgBranches quiet False mock breq . Package
-      else do
+    if reviews
+      then do
       pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
       mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches quiet (length pkgs > 1) mock breq (Package p)) pkgs
+      else
+      if isPkgGit
+      then
+        getDirectoryName >>= requestPkgBranches quiet False mock breq . Package
+      else error' "not a dist-git dir: specify package(s)"
     else do
     pkgs <-
       case mrecursebr of
