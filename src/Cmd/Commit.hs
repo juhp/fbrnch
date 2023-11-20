@@ -56,6 +56,8 @@ commitPkgs mopt firstLine unstaged paths = do
                         [] -> putStrLn diff >> readCommitMsg
                         [msg] -> putStrLn msg >>
                                  return (removePrefix "- " msg)
+                        [m,m'] -> mapM_ putStrLn newlogs >>
+                                  return (unlines $ map (removePrefix "- ") [m,"",m'])
                         (m:ms) -> mapM_ putStrLn newlogs >>
                                   return (unlines (removePrefix "- " m:"":ms))
               return ["-m", changelog]
