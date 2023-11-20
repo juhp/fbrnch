@@ -230,7 +230,8 @@ main = do
       <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use")
       <*> optional archOpt
       <*> branchesPackages
-    , Subcommand "install-deps" "Install package build dependencies" $
+      -- was install-deps
+    , Subcommand "builddeps" "Install package build dependencies" $
       installDepsCmd
       <$> maybeBranchPackages False
     , Subcommand "install" "Build locally and install package(s)" $
