@@ -72,6 +72,19 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
            getPackageName p >>= parallelBranches branches
     _ ->
       forM_ branches $ \rbr -> do
+      mtargetSidetag <-
+        if msidetagTarget == Just SideTag
+        then do
+          tags <- map (head . words) <$> kojiUserSideTags (Just rbr)
+          case tags of
+            [] -> do
+              putStrLn "will use new sidetag"
+              return $ Just SideTag
+            [tag] -> do
+              putStrLn $ "will use" +-+ tag
+              return $ Just (Target tag)
+            _ -> error' $ "multiple existing sidetags:" +-+ show tags
+        else return msidetagTarget
       forM_ pkgs $ \p ->
         when (mmerge /= Just False) $
         withExistingDirectory p $ do
