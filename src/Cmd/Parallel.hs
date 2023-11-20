@@ -8,11 +8,8 @@ import Common
 import Common.System
 
 import Control.Concurrent.Async
-import Data.Aeson (Object,Value(String))
-import qualified Data.Text as T
 import Distribution.RPM.Build.Order (dependencyLayers)
 import Fedora.Bodhi hiding (bodhiUpdate)
-import qualified Fedora.Bodhi as FedoraBodhi (bodhiUpdate)
 import SimplePrompt (prompt, promptEnter, yesNo)
 import System.Console.Pretty
 import System.Time.Extra (sleep)
@@ -370,31 +367,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
                 promptEnter "Press Enter to resubmit to Bodhi"
                 bodhiSidetagUpdate rbr nvrs sidetag notes
               [update] ->
-                case lookupKey "updateid" update of
+                case lookupKey "updateid" update :: Maybe String of
                   Nothing -> error' "could not determine Update id"
-                  Just updateid -> do
-                    putStr "Waiting ~90s for sidetag update to transition to 'request testing'.."
-                    -- FIXME countdown timer
-                    sleep 90
-                    bodhiUpdateTestingRequesting 1 updateid update
+                  Just _updateid -> return ()
               _ -> error' $ "impossible happened: more than one update found for" +-+ last nvrs
-
-    bodhiUpdateTestingRequesting :: Double -> String -> Object -> IO ()
-    bodhiUpdateTestingRequesting retries updateid update =
-      if retries > 4
-      then error' "\nupdate still not in 'request testing' status"
-      else
-        case lookupKey "request" update of
-          Just (String request) ->
-            putStrLn $
-            if request == "testing"
-            then " done"
-            else "\nrequest:" +-+ T.unpack request
-          _ -> do
-            mupdate' <- FedoraBodhi.bodhiUpdate updateid
-            case mupdate' of
-              Just update' -> do
-                putChar '.'
-                sleep (retries * 10)
-                bodhiUpdateTestingRequesting (retries + 1) updateid update'
-              _ -> error' "\nfailed to get updated metadata"
