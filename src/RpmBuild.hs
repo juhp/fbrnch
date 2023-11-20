@@ -36,12 +36,16 @@ import Common.System
 import Git
 import Package
 
+distOpt :: Dist -> [String]
+distOpt dist =
+  ["--define", "dist" +-+ "%{?distprefix}" ++ rpmDistTag dist]
+
 builtRpms :: AnyBranch -> FilePath -> IO [FilePath]
 builtRpms br spec = do
   dist <- getBranchDist br
-  -- previously was "" for pkggit
   rpmdir <- fromMaybe "" <$> rpmEval "%{_rpmdir}"
-  rpms <- rpmspec ["--builtrpms", "--define", "dist" +-+ rpmDistTag dist] (Just (rpmdir </>  "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm")) spec
+  autoreleaseOpt <- getAutoReleaseOptions spec
+  rpms <- rpmspec (["--builtrpms", "--define", "dist" +-+ rpmDistTag dist] ++ autoreleaseOpt) (Just (rpmdir </>  "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm")) spec
   if null rpms
     then error' $ spec +-+ "does not seem to create any rpms"
     else return rpms
@@ -164,7 +168,7 @@ generateSrpm' force mbr spec = do
                Nothing -> return []
                Just br -> do
                  dist <- getBranchDist br
-                 return ["--define", "dist" +-+ rpmDistTag dist]
+                 return $ distOpt dist
   msrcrpmdir <- rpmEval "%{_srcrpmdir}"
   srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", fromMaybe "" msrcrpmdir </> "%{name}-%{version}-%{release}.src.rpm", spec]
   cwd <- getCurrentDirectory
@@ -208,6 +212,17 @@ instance Show BCond where
   show (BuildWith s) = "--with=" ++ s
   show (BuildWithout s) = "--without=" ++ s
 
+
+getAutoReleaseOptions :: FilePath -> IO [String]
+getAutoReleaseOptions spec = do
+      autorelease <- isAutoRelease spec
+      if autorelease
+        then do
+        -- FIXME upstream bug "--number-only" doesn't work
+        calculated <- cmd "rpmautospec" ["calculate-release", spec]
+        return ["--define", "_rpmautospec_release_number" +-+ dropPrefix "Calculated release number: " calculated]
+        else return []
+
 -- FIXME create build.log
 -- Note does not check if bcond changed
 -- FIXME check tarball timestamp
@@ -230,22 +245,14 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
     void $ getSources spec
     dist <- getBranchDist br
     cwd <- getCurrentDirectory
-    autoreleaseOpt <- do
-      autorelease <- isAutoRelease spec
-      if autorelease
-        then do
-        -- FIXME upstream bug "--number-only" doesn't work
-        calculated <- cmd "rpmautospec" ["calculate-release", spec]
-        return ["--define", "_rpmautospec_release_number" +-+ dropPrefix "Calculated release number: " calculated]
-        else return []
+    autoreleaseOpt <- getAutoReleaseOptions spec
     let buildopt =
           case mforceshort of
             Just ShortCompile -> ["-bc", "--short-circuit"]
             Just ShortInstall -> ["-bi", "--short-circuit"]
             _ -> "-bb" : ["--noclean" | noclean]
         sourcediropt = ["--define", "_sourcedir" +-+ cwd]
-        args = sourcediropt ++
-               ["--define", "dist" +-+ "%{?distprefix}" ++ rpmDistTag dist] ++
+        args = sourcediropt ++ distOpt dist ++
                buildopt ++ map show bconds ++ autoreleaseOpt ++ [spec]
     date <- cmd "date" ["+%T"]
     rbr <- anyBranchToRelease br
