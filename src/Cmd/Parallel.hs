@@ -330,7 +330,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
     renderChangelogs :: [JobDone] -> [String]
     renderChangelogs [] = []
     renderChangelogs ((Done pkg _ _ clog):jobs) =
-      unlines [unPackage pkg, "", clog] : renderChangelogs jobs
+      unlines [unPackage pkg ++ ":", "", clog] : renderChangelogs jobs
 
     -- FIXME how to catch authentication errors?
     bodhiSidetagUpdate :: Branch -> [String] -> String -> String -> IO ()
