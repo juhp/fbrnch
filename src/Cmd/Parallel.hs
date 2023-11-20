@@ -60,7 +60,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
       _ -> case breq of
              Branches [] -> error' "please specify a branch"
              Branches _ -> listOfBranches True True breq
-             _ -> listOfBranches False True breq
+             _ -> listOfBranches True True breq
   when (null branches) $
     error' "Please specify at least one branch"
   let mtarget = maybeTarget msidetagTarget
