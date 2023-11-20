@@ -85,9 +85,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
           error' "You must use --target/--sidetag to build package layers for this branch"
       when (length branches > 1) $
         putStrLn $ "#" +-+ show rbr
-      target <- targetMaybeSidetag dryrun rbr msidetagTarget
-      when (msidetagTarget == Just SideTag) $
-        putStrLn $ "Target:" +-+ target
+      target <- targetMaybeSidetag dryrun True rbr mtargetSidetag
       nvrclogs <- concatMapM (timeIO . parallelBuild target rbr)
                       (zip [firstlayer..length allLayers] $
                        init $ tails layers) -- tails ends in []
@@ -131,7 +129,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
         setupBranch :: Branch -> IO JobAsync
         setupBranch br = do
           putPkgBrnchHdr pkg br
-          target <- targetMaybeSidetag dryrun br msidetagTarget
+          target <- targetMaybeSidetag dryrun True br msidetagTarget
           when (mmerge /= Just False) $ mergeNewerBranch Nothing br
           job <- startBuild Nothing 0 False (length brs) target pkg br "." >>= async
           unless dryrun $ sleep delay

@@ -279,20 +279,24 @@ maybeTimeout secs act = do
       maybeTimeout (secs + 5) act
     Just res -> return res
 
-targetMaybeSidetag :: Bool -> Branch -> Maybe SideTagTarget -> IO String
-targetMaybeSidetag dryrun br msidetagTarget =
+-- FIXME check/warn for target/branch mismatch
+targetMaybeSidetag :: Bool -> Bool -> Branch -> Maybe SideTagTarget
+                   -> IO String
+targetMaybeSidetag dryrun create br msidetagTarget =
   case msidetagTarget of
     Nothing -> return $ branchTarget br
     Just (Target t) -> return t
     Just SideTag -> do
-      tags <- map (head . words) <$> kojiUserSideTags (Just br)
-      case tags of
+      sidetags <- map (head . words) <$> kojiUserSideTags (Just br)
+      case sidetags of
         [] -> do
           Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (show br)
           out <-
             if dryrun
             then return $ "Side tag '" ++ buildtag ++ "'"
-            else head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
+            else if create
+                 then head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
+                 else error' "incorrect side-tag create request"
           if "Side tag '" `isPrefixOf` out
             then do
             putStrLn out

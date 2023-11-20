@@ -32,6 +32,6 @@ waitrepoCmd dryrun knowntag fetch msidetagTarget = do
       gitSwitchBranch rbr
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
-      target <- targetMaybeSidetag dryrun br msidetagTarget
+      target <- targetMaybeSidetag dryrun False br msidetagTarget
       logMsg $ "Waiting for" +-+ nvr +-+ "to appear in" +-+ target
       timeIO $ kojiWaitRepo dryrun True knowntag target nvr

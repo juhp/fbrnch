@@ -48,7 +48,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
       targets <-
         if null sidetagTargets
         then return [anyTarget br]
-        else mapM (targetMaybeSidetag dryrun (onlyRelBranch br) . Just) sidetagTargets
+        else mapM (targetMaybeSidetag dryrun True (onlyRelBranch br) . Just) sidetagTargets
       forM_ targets $ \target -> do
         archs <-
           case marchopts of
