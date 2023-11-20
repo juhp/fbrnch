@@ -48,11 +48,13 @@ statusCmd nofetch reviews (breq, pkgs) = do
         else do
         gitSwitchBranch rbr
         let spec = packageSpec pkg
-        ifM (notM (doesFileExist spec))
-          (ifM initialPkgRepo
-            (putStrLn $ show br ++ ": initial repo")
-            (putStrLn $ "missing" +-+ spec)) $
-          do
+        exists <- doesFileExist spec
+        if not exists
+          then
+          ifM initialPkgRepo
+          (putStrLn $ show br ++ ": initial repo")
+          (putStrLn $ "missing" +-+ spec)
+          else do
           mnvr <- pkgNameVerRel br spec
           case mnvr of
             Nothing -> do

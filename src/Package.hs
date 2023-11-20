@@ -104,11 +104,12 @@ getSummaryURL spec = do
   putStrLn "```"
   putStrLn notes
   putStrLn "```"
-  ifM (not <$> isTty)
-    (return notes) $
-    do
-      usernote <- prompt "Press Enter to use above or input notes"
-      return $ if null usernote then notes else usernote
+  tty <- isTty
+  if tty
+    then do
+    usernote <- prompt "Press Enter to use above or input notes"
+    return $ if null usernote then notes else usernote
+    else return notes
 
 -- FIXME check spec filename/%name more carefully
 getPackageName :: FilePath -> IO Package
@@ -142,15 +143,16 @@ localBranchSpecFile pkg br = do
     then do
     gitSwitchBranch br
     let spec = packageSpec pkg
-    ifM (doesFileExist spec)
-      (return spec) $
-      do
-        mspec <- maybeFindSpecfile
-        case mspec of
-          Just spc -> do
-            putStrLn $ "Warning: directory name differs from" +-+ spc ++ "\n"
-            return spc
-          Nothing -> error' $ "No spec file for:" +-+ unPackage pkg
+    exists <- doesFileExist spec
+    if exists
+      then return spec
+      else do
+      mspec <- maybeFindSpecfile
+      case mspec of
+        Just spc -> do
+          putStrLn $ "Warning: directory name differs from" +-+ spc ++ "\n"
+          return spc
+        Nothing -> error' $ "No spec file for:" +-+ unPackage pkg
     else findSpecfile
 
 withExistingDirectory :: FilePath -> IO a -> IO a

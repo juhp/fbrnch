@@ -232,12 +232,14 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
   needBuild <-
     if isJust mforceshort
     then return True
-    else
-    ifM (not . and <$> mapM doesFileExist rpms)
-    (return True) $
-    do specTime <- getModificationTime spec
-       rpmTimes <- sort <$> mapM getModificationTime rpms
-       return $ specTime > head rpmTimes
+    else do
+      allexist <- and <$> mapM doesFileExist rpms
+      if not allexist
+        then return True
+        else do
+        specTime <- getModificationTime spec
+        rpmTimes <- sort <$> mapM getModificationTime rpms
+        return $ specTime > head rpmTimes
   if not needBuild then
     putStrLn "Existing rpms are newer than spec file (use --force to rebuild)"
     else do

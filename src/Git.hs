@@ -218,20 +218,24 @@ isPkgGitSshRepo = grepGitConfig' "@\\(pkgs\\|src\\)\\."
 
 -- adapted from SimpleCmd.Git
 grepGitConfig' :: String -> IO Bool
-grepGitConfig' key =
-  ifM (isGitDir ".")
-  (egrep_ key ".git/config") $
-  -- could be a worktree or absorbed submodule (#8)
-  ifM (not <$> doesFileExist ".git")
-  (return False) $ do
-  gitdir <- last . words <$> readFile ".git"
-  if "/worktrees/" `isInfixOf` gitdir
-    then egrep_ key (takeDirectory (takeDirectory gitdir) </> "config")
-    else
-    -- absorbed submodule: "gitdir: ../.git/modules/R-bit"
-    if "/modules/" `isInfixOf` gitdir then
-      egrep_ key $ gitdir </> "config"
-      else return False
+grepGitConfig' key = do
+  isgit <- isGitDir "."
+  if isgit
+    then egrep_ key ".git/config"
+    else do
+    -- could be a worktree or absorbed submodule (#8)
+    exists <- doesFileExist ".git"
+    if not exists
+      then return False
+      else do
+      gitdir <- last . words <$> readFile ".git"
+      if "/worktrees/" `isInfixOf` gitdir
+        then egrep_ key (takeDirectory (takeDirectory gitdir) </> "config")
+        else
+        -- absorbed submodule: "gitdir: ../.git/modules/R-bit"
+        if "/modules/" `isInfixOf` gitdir then
+          egrep_ key $ gitdir </> "config"
+          else return False
 
 gitSwitchBranch :: AnyBranch -> IO ()
 gitSwitchBranch (OtherBranch "HEAD") = do
