@@ -70,12 +70,13 @@ buildAndUpload :: Maybe ScratchOption -> String -> String -> FilePath
 buildAndUpload mscratchOpt srpm pkg spec = do
   scratch <-
     if isNothing mscratchOpt
-    then yesNoDefault False "Would you like to do a koji scratch build"
+    then yesNoDefault False "Would you like to do a koji scratch build before submitting"
     else do
-      return $ mscratchOpt == Just ScratchBuild
-  promptEnter $ "Press Enter to" +-+ if scratch
-                                     then "submit"
-                                     else "upload"
+      let doscratch = mscratchOpt == Just ScratchBuild
+      promptEnter $ "Press Enter to" +-+ if doscratch
+                                         then "submit"
+                                         else "upload"
+      return doscratch
   mkojiurl <- case mscratchOpt of
                 Just (ScratchTask tid) -> return $ Just ("https://koji.fedoraproject.org/koji/taskinfo?taskID=" ++ show tid)
                 _ ->
