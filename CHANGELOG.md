@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.3.4 (2023-11-20)
+- 'build','parallel': checkSourcesMatch now offers to 'update-sources'
+- 'build': only check tags if overriding
+- 'builddeps': renamed from 'install-deps'
+- 'commit': if 2 lines then add second without - prefix
+- 'copr': small refactor to get more precise build log url
+- 'create-review': assert spec file exists
+- 'import': add --existing to allow importing to an existing repo
+- 'mock': make it possible to run for non-distgit dir
+- 'parallel': print sidetag info early
+- 'parallel': append ':' after package in bodhi notes
+- 'parallel': branches should be dist-git
+- 'parallel': various layer output/prompt improvements
+- 'request-branches': add --reviews and change --recurse-from -r to -R
+- 'create/update-review': improve buildAndUpload messages to depend on scratch
+- Koji targetMaybeSidetag: newline before printing new sidetag
+- RpmBuild buildRPMs: define `_rpmautospec_release_number` for autorelease
+- RpmBuild buildRPMs: prepend %distprefix to disttag
+- RpmBuild: fix local handling of dyn BRs
+- RpmBuild: handle %autorelease locally with distOpt and autoreleaseOpt
+- targetMaybeSidetag now has a create switch
+
 ## 1.3.3 (2023-10-19)
 - 'bump': add --dry-run
 - 'copr': track pkg name to output build results url on failure

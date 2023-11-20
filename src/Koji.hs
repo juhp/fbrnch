@@ -211,6 +211,8 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
         if mbuilt == Just nvr
           then do
           sleep 40
+          -- FIXME need retry
+          -- SSL_connect: resource vanished (Connection reset by peer)
           kojiWaitRepo dryrun quiet knowntag target nvr
           else do
           putStrLn $ "current tags:" +-+ unwords tags

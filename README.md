@@ -263,7 +263,7 @@ Here is an "extreme" [example](https://github.com/fedora-haskell/haskell-languag
 ## Help
 `$ fbrnch --version`
 ```
-1.3.3
+1.3.4
 ```
 
 `$ fbrnch --help`
@@ -308,7 +308,7 @@ Available commands:
   compare                  Show commits between branches
   src-deps                 List source package dependencies
   mock                     Local mock build
-  install-deps             Install package build dependencies
+  builddeps                Install package build dependencies
   install                  Build locally and install package(s)
   not-installed            Packages not installed locally
   bugs                     List package bugs

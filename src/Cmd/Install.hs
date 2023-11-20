@@ -23,6 +23,7 @@ import RpmBuild
 -- FIXME --rpm to avoid dnf
 -- FIXME --force removal of existing incompatible dependent packages
 -- FIXME --subpackage to specify subpackage(s) to install/add
+-- FIXME --exclude to specify subpackage(s) not to install
 -- FIXME --ignore-uninstalled subpackages
 -- FIXME --skip-unavailable
 -- FIXME --check any/all of package installed

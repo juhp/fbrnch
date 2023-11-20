@@ -27,6 +27,7 @@ listReviews = listReviewsAll False
 listReviewsAll :: Bool -> ReviewStatus -> IO [Bug]
 listReviewsAll = listReviewsFull False Nothing Nothing
 
+-- FIXME: --unassigned
 listReviewsFull :: Bool -> Maybe String -> Maybe String -> Bool
                 -> ReviewStatus-> IO [Bug]
 listReviewsFull assignee muser mpat allopen status = do

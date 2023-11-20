@@ -1,3 +1,7 @@
+- EDITOR feature
+
+- warn about macros in %changelog
+
 - tag builds without disttag
 - scratch/build: show total build times
 - filter bz# out from bodhi notes
@@ -50,6 +54,8 @@
 # misc
 - unify checking for pagure and git remote branches
 - remove ifM's?
+- SPDX migration
+- koji cancel
 
 # auth
 - update pagure key in ~/.config/rpkg/fedpkg.conf

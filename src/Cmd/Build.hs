@@ -70,6 +70,7 @@ buildCmd opts (breq, pkgs) = do
     withPackagesByBranches HeaderMay True gitopts singleBrnch (buildBranch mlastOfPkgs opts) (breq, pkgs)
 
 -- FIXME what if untracked files
+-- FIXME --merge instead of --yes confusing
 buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()
 buildBranch _ _ _ (OtherBranch _) =
   error' "build only defined for release branches"

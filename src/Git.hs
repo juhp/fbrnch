@@ -150,6 +150,7 @@ mkCommit cs =
 
 gitPush :: Bool -> Maybe String -> IO ()
 gitPush quiet mref = do
+  -- FIXME also check ref on branch
   checkOnBranch
   when quiet $
     putStr "git pushing... "
@@ -165,6 +166,7 @@ gitPush quiet mref = do
     when quiet $ putStrLn ""
     putStrLn $ unwords ("git" : args) +-+ "failed with\n" ++ err
     yes <- yesNo "Retry git push"
+    -- FIXME going to fail if ref no longer on branch
     when yes $ gitPush quiet mref
 
 -- FIXME use this in more places

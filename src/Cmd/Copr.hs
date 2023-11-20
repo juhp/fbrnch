@@ -70,6 +70,7 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
           BranchOpt AllEPEL -> filter isEPELBranch <$> getFedoraBranched
           _ -> listOfBranches False False breq
       let buildroots =
+            -- FIXME sort archs appropriately
             reverseSort $
             case marchs of
               Nothing ->

@@ -88,6 +88,7 @@ mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
     unless (show from `elem` locals) $
       git_ "fetch" ["origin", show from ++ ":" ++ show from]
     unless dryrun $
+      -- FIXME merge from origin by default not local branch
       git_ "merge" ["--quiet", ref]
 mergeBranch dryrun build noprompt showall mpkg (False,unmerged) from br = do
   unless build $ whenJust mpkg $ flip putPkgBrnchHdr br

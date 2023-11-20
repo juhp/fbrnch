@@ -26,7 +26,6 @@ showScratchSource _ _ (Just (ScratchSRPM srpm)) = srpm
 
 -- FIXME --with --without ?
 -- FIXME allow parallel targets
--- FIXME tail build.log for failure
 -- FIXME append timestamp after %release (to help identify scratch builds)
 scratchCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Archs
            -> [SideTagTarget] -> Maybe ScratchSource -> (BranchesReq, [String])
