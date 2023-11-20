@@ -140,10 +140,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             else do
             mbug <- bzReviewAnon
             bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec nvr
-          tags <- maybeTimeout 30 $ kojiNVRTags nvr
-          unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-            whenJust moverride $ \days ->
-            bodhiCreateOverride dryrun (Just days) nvr
+          whenJust moverride $ \days -> do
+            tags <- maybeTimeout 30 $ kojiNVRTags nvr
+            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+              bodhiCreateOverride dryrun (Just days) nvr
         when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
           when ((isJust moverride && mwaitrepo /= Just False) ||
                 (autoupdate && mwaitrepo == Just True)) $
