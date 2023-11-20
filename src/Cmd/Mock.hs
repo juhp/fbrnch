@@ -29,9 +29,14 @@ mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
   branches <-
     case breq of
       Branches [] ->
+        pure <$>
         if null ps
-        then pure <$> getReleaseBranch
-        else pure <$> systemBranch
+        then do
+          pkggit <- isPkgGitRepo
+          if pkggit
+            then getReleaseBranch
+            else systemBranch
+        else systemBranch
       _ ->  listOfBranches False False breq
   when (null branches && length ps > 1 && isNothing mroot) $
     error' "Must specific branch or --root chroot"
@@ -42,6 +47,7 @@ mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
     mockBuildPkgs noswitch pkgs br = do
       srpms <- mapM (prepSrpm (RelBranch br)) pkgs
       putNewLn
+      -- FIXME can fail for not git
       rootBr <- maybe getReleaseBranch return mroot
       let resultdir =
             case srpms of
@@ -78,13 +84,8 @@ mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
           withExistingDirectory pkgdir $ do
             pkg <- getPackageName pkgdir
             putPkgHdr pkg
-            actualBr <-
-              ifM
-                (notM isPkgGitRepo)
-                (return rbr)
-                ( if noswitch
-                    then gitCurrentBranch
-                    else gitSwitchBranch rbr >> return rbr
-                )
+            whenM isPkgGitRepo $
+              unless noswitch $
+              gitSwitchBranch rbr
             spec <- findSpecfile
-            generateSrpm (Just actualBr) spec
+            generateSrpm Nothing spec
