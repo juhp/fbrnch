@@ -36,6 +36,8 @@ createReview mscratchOpt mock pkgs =
     createPkgReview package _br = do
       let spec = packageSpec package
           pkg = unPackage package
+      unlessM (doesFileExist spec) $
+        error' $ "This does not look like a pkg dir:" +-+ spec +-+ "not found"
       unless (all isAscii pkg) $
         putStrLn "Warning: package name is not ASCII!"
       putStrLn "checking for existing reviews..."
