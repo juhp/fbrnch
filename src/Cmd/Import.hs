@@ -20,8 +20,8 @@ import Package
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 -- FIXME add --dryrun
-importCmd :: Bool -> (BranchesReq,[String]) -> IO ()
-importCmd mock (breq, ps) = do
+importCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
+importCmd existingrepo mock (breq, ps) = do
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviews ReviewRepoCreated
     else return ps
@@ -33,14 +33,15 @@ importCmd mock (breq, ps) = do
       putPkgHdr (Package pkg)
       dir <- getCurrentDirectory
       when (pkg /= takeFileName dir) $ do
-        -- FIXME check git repo exists
-        clonePkg True UserClone Nothing pkg
-        putNewLn
+        exists <- doesDirectoryExist pkg
+        unless exists $ do
+          clonePkg True UserClone Nothing pkg
+          putNewLn
         setCurrentDirectory pkg
         -- FIXME: check branch is rawhide
       unlessM isGitRepo $ error' "Not a git repo"
       newrepo <- initialPkgRepo
-      if not newrepo
+      if not newrepo && not existingrepo
         then putStrLn "Skipping: already imported"
         else do
         checkWorkingDirClean

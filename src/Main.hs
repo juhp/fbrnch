@@ -315,7 +315,8 @@ main = do
       <*> branchesPackages
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importCmd
-      <$> mockOpt True
+      <$> switchLongWith "existing" "Use an existing repo"
+      <*> mockOpt True
       <*> branchesPackages
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranchesCmd
