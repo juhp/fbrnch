@@ -91,32 +91,32 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
               then generateSrpm Nothing spec -- FIXME: let distopt = ["--undefine", "dist"]
               else return spec
       case buildBy of
-        SingleBuild -> coprBuild dryrun project srpm pkg buildroots
+        SingleBuild -> coprBuild dryrun project srpm spec buildroots
         -- FIXME or default to secondary parallel to previous primary
         ValidateByRelease -> do
           let initialChroots =
                 let primaryArch = releaseArch $ head buildroots
                 in map pure $ filter (isArch primaryArch) buildroots
               remainingChroots = buildroots \\ concat initialChroots
-          staggerBuilds srpm pkg initialChroots remainingChroots
+          staggerBuilds srpm spec initialChroots remainingChroots
         ValidateByArch -> do
           let initialChroots =
                 let newestRelease = removeArch $ head buildroots
                 in map pure $ filter (newestRelease `isPrefixOf`) buildroots
               remainingChroots = buildroots \\ concat initialChroots
-          staggerBuilds srpm pkg initialChroots remainingChroots
+          staggerBuilds srpm spec initialChroots remainingChroots
         BuildByRelease -> do
           let releaseChroots = groupBy sameRelease buildroots
-          staggerBuilds srpm pkg releaseChroots []
+          staggerBuilds srpm spec releaseChroots []
       when morepkgs putNewLn
 
     removeArch relarch = init $ dropWhileEnd (/= '-') relarch
     takeArch = takeWhileEnd (/= '-')
 
-    staggerBuilds srpm pkg initialChroots remainingChroots = do
-      mapM_ (coprBuild dryrun project srpm pkg) initialChroots
+    staggerBuilds srpm spec initialChroots remainingChroots = do
+      mapM_ (coprBuild dryrun project srpm spec) initialChroots
       unless (null remainingChroots) $
-        coprBuild dryrun project srpm pkg remainingChroots
+        coprBuild dryrun project srpm spec remainingChroots
 
     releaseArch = takeWhileEnd (/= '-')
 
@@ -153,9 +153,9 @@ readIniConfig inifile iniparser record = do
     let config = parseIniFile ini iniparser
     return $ either error' record config
 
-coprBuild :: Bool -> String -> FilePath -> Package -> [String] -> IO ()
+coprBuild :: Bool -> String -> FilePath -> FilePath -> [String] -> IO ()
 coprBuild _ _ _ _ [] = error' "No chroots chosen"
-coprBuild dryrun project srpm pkg buildroots = do
+coprBuild dryrun project srpm spec buildroots = do
   let chrootargs = mconcat [["-r", bldrt] | bldrt <- buildroots]
       buildargs = ["build", "--nowait"] ++ chrootargs ++ [project, srpm]
   putNewLn
@@ -173,7 +173,8 @@ coprBuild dryrun project srpm pkg buildroots = do
       let zbid =
             let s = show bid
             in (if length s < 8 then ('0' :) else id) s
-      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ username +/+ project +/+ head buildroots +/+ zbid ++ "-" ++ unPackage pkg
+      actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ username +/+ project +/+ head buildroots +/+ zbid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
 
 -- FIXME idea: Maybe Seconds to increment sleep
 coprWatchBuild :: Int -> Maybe String -> IO Bool
