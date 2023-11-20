@@ -153,17 +153,13 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
       putStrLn $ "\n= Building" +-+
         (if singlelayer
          then "in parallel"
-         else "parallel layer #" ++ show layernum) ++
+         else (if null nextLayers && not singlelayer then "final" else "") +-+ "parallel layer #" ++ show layernum) ++
         if nopkgs > 1
         then " (" ++ show nopkgs +-+ "packages):"
         else ":"
       putStrLn $ unwords layer
       -- maybe print total pending packages
-      if null nextLayers
-        then
-        unless singlelayer $
-        putStrLn "no more layers"
-        else
+      unless (null nextLayers) $
         putStrLn $
         let layerspkgs = map length nextLayers
         in case layerspkgs of
@@ -181,14 +177,17 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
         putStrLn $ "\nBuild failures" +-+
           (if singlelayer then ":" else "in layer" +-+ show layernum ++ ":")
           +-+ unwords failures
-        okay <- yesNo "Do you want to continue nevertheless"
+        okay <-
+          if null nextLayers
+          then return False
+          else yesNo "Do you want to continue nevertheless"
         if okay
           then return nvrs
           else error' $
-          plural pending "pending package" ++
-          if pending > 0
-          then ":\n" ++ unwords (map unwords nextLayers)
-          else ""
+               plural pending "pending package" ++
+               if pending > 0
+               then ":\n" ++ unwords (map unwords nextLayers)
+               else ""
       where
         nopkgs = length layer
         layersleft = length nextLayers
@@ -214,7 +213,6 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
           unless singlejob $
             when (null jobs) $
             putStrLn $ "ending" +-+ maybe "" (\l -> "layer" +-+ show l) mlayer
-            -- else plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer
           watchJobs singlejob mlayer fails (done:dones) jobs
         Just (Left except) -> do
           print except
