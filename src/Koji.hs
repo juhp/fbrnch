@@ -299,6 +299,7 @@ targetMaybeSidetag dryrun create br msidetagTarget =
                  else error' "incorrect side-tag create request"
           if "Side tag '" `isPrefixOf` out
             then do
+            putNewLn
             putStrLn out
             let sidetag =
                   init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
