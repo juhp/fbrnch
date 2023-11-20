@@ -45,6 +45,7 @@ type JobAsync = (String, Async JobDone)
 -- FIXME time builds
 -- FIXME copy bodhi notes from another branch update
 -- FIXME support non-sidetag update for parallel packages
+-- FIXME print layers if few packages?
 -- FIXME push update
 parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget -> Double
                  -> (Maybe UpdateType, UpdateSeverity)

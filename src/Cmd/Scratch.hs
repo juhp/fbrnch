@@ -24,9 +24,11 @@ showScratchSource pushed nvr Nothing = nvr  ++ (if pushed then "" else ".src.rpm
 showScratchSource _ _ (Just (ScratchRef ref)) = ref
 showScratchSource _ _ (Just (ScratchSRPM srpm)) = srpm
 
+-- FIXME --no-tail
 -- FIXME --with --without ?
 -- FIXME allow parallel targets
 -- FIXME append timestamp after %release (to help identify scratch builds)
+-- FIXME allow building from detached HEAD
 scratchCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Archs
            -> [SideTagTarget] -> Maybe ScratchSource -> (BranchesReq, [String])
            -> IO ()

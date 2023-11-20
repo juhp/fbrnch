@@ -172,6 +172,7 @@ srpmSpecCmd diff srpms =
           else error' "failed to extract spec file"
         else error' $ "no such file:" +-+ srpm
 
+-- FIXME calculate baserelease
 autospecCmd :: Bool -> [String] -> IO ()
 autospecCmd force pkgs =
   withPackagesByBranches HeaderMay False cleanGitFetchActive ExactlyOne autospecPkg (Branches [Rawhide], pkgs)
