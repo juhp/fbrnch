@@ -319,7 +319,12 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
           if finish
             then putStrLn $ color Green $ nvr +-+ "build success"
             -- FIXME print koji task url
-            else error' $ color Red $ nvr +-+ "build failed"
+            else do
+            whenJustM (findExecutable "koji-tool") $ \kojitool ->
+              -- FIXME cmdLog deprecated
+              -- FIXME use --children (koji-tool-1.1.2)
+              cmdLog kojitool ["tasks", displayID task, "-s", "fail"]
+            error' $ color Red $ nvr +-+ "build failed"
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then
             when newpkg $ do
