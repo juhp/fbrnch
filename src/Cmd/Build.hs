@@ -192,6 +192,9 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                         putStrLn $ "Warning:" +-+ newest +-+ "still in testing?"
                         promptEnter "Press Enter to continue"
                       return False
+            unless (buildoptAllowDirty opts) $
+              unlessM isGitDirClean $
+              error' "local changes remain (dirty)"
             unless dryrun krbTicket
             whenJust mpush $ \ref ->
               unless dryrun $
@@ -200,9 +203,6 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               unless dryrun $ do
               ok <- yesNo "Unpushed changes remain, continue"
               unless ok $ error' "aborted"
-            unless (buildoptAllowDirty opts) $
-              unlessM isGitDirClean $
-              error' "local changes remain (dirty)"
             -- FIXME parse build output
             unless dryrun $
               kojiBuildBranch target pkg mbuildref ["--fail-fast" | not (buildoptNoFailFast opts)]
