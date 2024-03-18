@@ -51,7 +51,7 @@ commitPkgs mopt firstLine unstaged paths = do
                     else do
                       diff <- git "diff" ["-U0", if addall then "HEAD" else "--cached"]
                       let newlogs =
-                            filter (\c -> ('+' : c) `elem` lines diff) clog
+                            filter (\c -> ('+' : c) `elem` lines (unquoteMacros diff)) clog
                       case newlogs of
                         [] -> putStrLn diff >> readCommitMsg
                         [msg] -> putStrLn msg >>
@@ -69,3 +69,8 @@ readCommitMsg = do
   if tty
     then promptNonEmpty "\nPlease input the commit message"
     else error' "please input commit message in a terminal"
+
+unquoteMacros :: String -> String
+unquoteMacros [] = []
+unquoteMacros ('%':'%':cs) = '%':unquoteMacros cs
+unquoteMacros (c:cs) = c : unquoteMacros cs
