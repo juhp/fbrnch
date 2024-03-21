@@ -69,7 +69,7 @@ nvrCmd =
         OtherBranch _obr -> do
           sbr <- systemBranch
           pkgNameVerRel' sbr spec
-        >>= putStrLn
+        >>= putStrLn . showNVR
 
 -- FIXME option to require spec file?
 commandCmd :: Bool -> Bool -> Bool -> String -> (BranchesReq,[String])

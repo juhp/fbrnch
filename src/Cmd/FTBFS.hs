@@ -80,13 +80,13 @@ ftbfsCmd dryrun short mbugsopt (mbr,pkgs) = do
           mstatus <- kojiBuildStatus nvr
           case mstatus of
             Nothing -> do
-              putStrLn $ nvr ++ ": unknown status"
+              putStrLn $ showNVR nvr ++ ": unknown nvr"
               putBug bug
             Just status -> do
               print status
               case status of
                 BuildFailed -> do
-                  cmdLog "koji-tool" ["tasks", "-T", "-s", "fail", "-b", nvr]
+                  cmdLog "koji-tool" ["tasks", "-T", "-s", "fail", "-b", showNVR nvr]
                   putNewLn
                 BuildComplete -> do
                   if bugStatus bug `elem` ["NEW", "ASSIGNED", "POST"]

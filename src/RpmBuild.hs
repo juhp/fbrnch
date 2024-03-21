@@ -259,9 +259,9 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
     date <- cmd "date" ["+%T"]
     rbr <- anyBranchToRelease br
     nvr <- pkgNameVerRel' rbr spec
-    putStr $ date +-+ "Building" +-+ nvr +-+ "locally... "
+    putStr $ date +-+ "Building" +-+ showNVR nvr +-+ "locally... "
     ok <- do
-      let buildlog = ".build-" ++ (showVerRel . nvrVerRel . readNVR) nvr <.> "log"
+      let buildlog = ".build-" ++ (showVerRel . nvrVerRel) nvr <.> "log"
       whenM (doesFileExist buildlog) $
         copyFile buildlog (buildlog <.> "prev")
       timeIO $
@@ -281,7 +281,7 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
             else cmd_ "tail" ["-n 100", buildlog]
           return res
     unless ok $
-      error' $ nvr +-+ "failed to build"
+      error' $ showNVR nvr +-+ "failed to build"
   return needBuild
   where
     quoteArg :: String -> String

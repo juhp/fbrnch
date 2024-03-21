@@ -79,6 +79,7 @@ import Data.Aeson.Types (Array, Object)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.UTF8
 import Data.Ini.Config
+import Data.RPM.NVR (NVR)
 import Network.HTTP.Conduit
 import Network.HTTP.Query
 import Network.HTTP.Simple
@@ -134,12 +135,12 @@ encodeParams ((k,v):ps) =
   (B.pack k, fromString v) : encodeParams ps
 
 -- FIXME check original status?
-putBugBuild :: Bool -> BugzillaSession -> BugId -> String -> IO ()
+putBugBuild :: Bool -> BugzillaSession -> BugId -> NVR -> IO ()
 putBugBuild dryrun session bid nvr = do
   unless dryrun $
     void $ updateBug session bid
-    [("cf_fixed_in", nvr), ("status", "MODIFIED")]
-  putStrLn $ "bug" +-+ show bid ++ (if dryrun then " would be" else "") +-+ "moved to MODIFIED with" +-+ nvr
+    [("cf_fixed_in", showNVR nvr), ("status", "MODIFIED")]
+  putStrLn $ "bug" +-+ show bid ++ (if dryrun then " would be" else "") +-+ "moved to MODIFIED with" +-+ showNVR nvr
 
 brc :: T.Text
 brc = "bugzilla.redhat.com"

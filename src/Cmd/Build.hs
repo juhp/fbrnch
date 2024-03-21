@@ -113,7 +113,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
     then return Nothing
     else do
       when (not merged || br == Rawhide) $ do
-        putStrLn $ nvr ++ "\n"
+        putStrLn $ showNVR nvr ++ "\n"
         putStrLn "Local commits:"
         displayCommits True unpushed
         putNewLn
@@ -128,7 +128,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   target <- targetMaybeSidetag dryrun True br msidetagTarget
   case buildstatus of
     Just BuildComplete -> do
-      putStrLn $ nvr +-+ "is already built"
+      putStrLn $ showNVR nvr +-+ "is already built"
       when (isJust mpush) $
         error' "Please bump the spec file"
       when (br /= Rawhide && isNothing msidetagTarget) $ do
@@ -140,7 +140,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             then putStrLn "update exists"
             else do
             mbug <- bzReviewAnon
-            bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec nvr
+            bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec $ showNVR nvr
           whenJust moverride $ \days -> do
             tags <- maybeTimeout 30 $ kojiNVRTags nvr
             unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
@@ -150,10 +150,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 (autoupdate && mwaitrepo == Just True)) $
             kojiWaitRepo dryrun True True target nvr
     Just BuildBuilding -> do
-      putStrLn $ nvr +-+ "is already building"
+      putStrLn $ showNVR nvr +-+ "is already building"
       when (isJust mpush) $
         error' "Please bump the spec file"
-      whenJustM (kojiGetBuildTaskID fedoraHub nvr) kojiWatchTask
+      whenJustM (kojiGetBuildTaskID fedoraHub (showNVR nvr)) kojiWatchTask
       -- FIXME do override
     _ -> do
       mbuildref <-
@@ -163,7 +163,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       opentasks <- kojiOpenTasks pkg mbuildref target
       case opentasks of
         [task] -> do
-          putStrLn $ nvr +-+ "task" +-+ displayID task +-+ "is already open"
+          putStrLn $ showNVR nvr +-+ "task" +-+ displayID task +-+ "is already open"
           when (isJust mpush) $
             error' "Please bump the spec file"
           kojiWatchTask task
@@ -172,11 +172,11 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           let tag =
                 if target == branchTarget br then branchDestTag br else target
           mlatest <- kojiLatestNVR tag $ unPackage pkg
-          if equivNVR nvr (fromMaybe "" mlatest)
-            then putStrLn $ nvr +-+ "is already latest" +-+ if Just nvr /= mlatest then "(modulo disttag)" else ""
+          if equivNVR nvr mlatest
+            then putStrLn $ showNVR nvr +-+ "is already latest" +-+ if Just nvr /= mlatest then "(modulo disttag)" else ""
             else do
             when (null unpushed || merged && br /= Rawhide) $ do
-              putStrLn $ nvr ++ "\n"
+              putStrLn $ showNVR nvr ++ "\n"
             firstBuild <- do
               mtestingRepo <- bodhiTestingRepo br
               case mtestingRepo of
@@ -189,7 +189,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                       newestTags <- kojiNVRTags newest
                       unless (any (`elem` newestTags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $ do
                         -- FIXME print how many days left
-                        putStrLn $ "Warning:" +-+ newest +-+ "still in testing?"
+                        putStrLn $ "Warning:" +-+ showNVR newest +-+ "still in testing?"
                         promptEnter "Press Enter to continue"
                       return False
             unless (buildoptAllowDirty opts) $
@@ -219,7 +219,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 whenJust (fmap fst mBugSess) $
                   \bid -> putStr "review bug: " >> putBugId bid
                 -- FIXME diff previous changelog?
-                bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptUseChangelog opts) spec nvr
+                bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptUseChangelog opts) spec $ showNVR nvr
                 -- FIXME prompt for override note
                 whenJust moverride $ \days ->
                   bodhiCreateOverride dryrun (Just days) nvr

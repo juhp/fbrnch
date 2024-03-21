@@ -44,7 +44,7 @@ overrideCmd dryrun OverrideCreate mduration nowait breqpkgs = do
       let spec = packageSpec pkg
       checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
-      putStrLn nvr
+      putStrLn $ showNVR nvr
       tags <- kojiNVRTags nvr
       unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
         unlessM (checkAutoBodhiUpdate br) $

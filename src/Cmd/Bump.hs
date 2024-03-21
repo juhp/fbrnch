@@ -46,7 +46,7 @@ bumpPkgs dryrun local mopt mclog =
                   kojiLatestNVR tag $ unPackage pkg
               -- FIXME fallback to local?
               _ -> return Nothing
-        if equivNVR newnvr (fromMaybe "" moldnvr)
+        if equivNVR newnvr moldnvr
           then do
           git_ "log" ["origin..HEAD", "--pretty=oneline"]
           let clmsg =

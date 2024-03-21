@@ -12,13 +12,15 @@ module Common (
   plural,
   pluralException,
   putNewLn,
-  reverseSort
+  reverseSort,
+  showNVR
   ) where
 
 import Control.Monad.Extra -- hiding (loop)
 import Data.List.Extra hiding (list, merge)
 import Data.Maybe
 import Data.Ord (comparing, Down(Down))
+import Data.RPM.NVR (showNVR)
 
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup ((<>))

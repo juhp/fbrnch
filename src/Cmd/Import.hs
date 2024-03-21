@@ -74,7 +74,7 @@ importCmd existingrepo mock (breq, ps) = do
                 fedpkg_ "import" [srpmfile]
                 git_ "commit" ["--message", "import rhbz#" ++ show bid]
                 nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
-                promptEnter $ "Press Enter to push and build" +-+ nvr
+                promptEnter $ "Press Enter to push and build" +-+ showNVR nvr
                 gitPush True Nothing
                 -- FIXME build more branches
                 kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]

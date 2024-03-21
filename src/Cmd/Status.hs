@@ -73,14 +73,14 @@ statusCmd nofetch reviews (breq, pkgs) = do
               munpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
               case munpushed of
                 Nothing -> do
-                  mbuild <- kojiGetBuildID fedoraHub nvr
+                  mbuild <- kojiGetBuildID fedoraHub (showNVR nvr)
                   case mbuild of
                     Nothing -> do
                       mlatest <- kojiLatestNVR (branchDestTag br) (unPackage pkg)
                       case mlatest of
-                        Nothing -> putStrLn $ "new" +-+ nvr
+                        Nothing -> putStrLn $ "new" +-+ showNVR nvr
                         Just latest ->
-                          putStrLn $ if equivNVR nvr latest then latest +-+ "is latest modulo disttag" else (if null latest then "new " else (head . words) latest +-+ "->\n") ++ nvr
+                          putStrLn $ if equivNVR nvr mlatest then showNVR latest +-+ "is latest modulo disttag" else showNVR latest +-+ "->\n" ++ showNVR nvr
                     Just buildid -> do
                       tags <- kojiBuildTags fedoraHub (buildIDInfo buildid)
                       if null tags
@@ -89,14 +89,14 @@ statusCmd nofetch reviews (breq, pkgs) = do
                         -- FIXME show pending archs building
                         whenJust mstatus $ \ status ->
                           -- FIXME better Show BuildStatus
-                          putStr $ nvr +-+ "(" ++ show status ++ ")"
+                          putStr $ showNVR nvr +-+ "(" ++ show status ++ ")"
                         else do
                         -- FIXME hide testing if ga/stable
-                        putStr $ nvr +-+ "(" ++ unwords tags ++ ")"
+                        putStr $ showNVR nvr +-+ "(" ++ unwords tags ++ ")"
                         unless (isStable tags) $ do
                           updates <- bodhiUpdates
                                      [makeItem "display_user" "0",
-                                      makeItem "builds" nvr]
+                                      makeItem "builds" (showNVR nvr)]
                           case updates of
                             [] -> putStrLn "No update found"
                             [update] -> do

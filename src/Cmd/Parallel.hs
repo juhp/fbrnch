@@ -9,6 +9,7 @@ import Common.System
 
 import Control.Concurrent.Async
 import Distribution.RPM.Build.Order (dependencyLayers)
+import Data.RPM.NVR (NVR)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import SimplePrompt (prompt, promptEnter, yesNo)
 import System.Console.Pretty
@@ -26,7 +27,7 @@ import RpmBuild (checkSourcesMatch, getDynSourcesMacros)
 import Types
 
 data JobDone = Done {_jobPkg :: Package,
-                     jobNvr :: String, -- maybe NVR?
+                     jobNvr :: NVR,
                      jobBranch :: Branch,
                      _jobClog :: String}
 
@@ -133,7 +134,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
       when (isNothing msidetagTarget) $ do
         let spec = packageSpec pkg
         bodhiUpdate dryrun mupdate Nothing False spec $
-          intercalate "," . map jobNvr $
+          intercalate "," . map (showNVR . jobNvr) $
           filter ((/= Rawhide) . jobBranch) nvrclogs
       where
         -- FIXME time jobs
@@ -244,7 +245,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
       nvr <- pkgNameVerRel' br spec
       unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
       unless (null unpushed) $ do
-        putStrLn $ nvr +-+ "(" ++ target ++ ")" +-+
+        putStrLn $ showNVR nvr +-+ "(" ++ target ++ ")" +-+
           if nopkgs > 1
           then pluralException n "more" "more" +-+ maybe "" (\l -> "in layer" +-+ show l) mlayer
           else ""
@@ -263,7 +264,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
       case buildstatus of
         Just BuildComplete -> do
           -- FIXME detect old stable existing build
-          putStrLn $ color Green nvr +-+ "is already" +-+ color Green "built"
+          putStrLn $ color Green (showNVR nvr) +-+ "is already" +-+ color Green "built"
           when (br /= Rawhide && morelayers && target == branchTarget br) $ do
             tags <- kojiNVRTags nvr
             unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
@@ -274,17 +275,17 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
               kojiWaitRepo dryrun (nopkgs > 5) True target nvr
             return $ Done pkg nvr br changelog
         Just BuildBuilding -> do
-          putStrLn $ color Yellow nvr +-+ "is already" +-+ color Yellow "building"
-          mtask <- kojiGetBuildTaskID fedoraHub nvr
+          putStrLn $ color Yellow (showNVR nvr) +-+ "is already" +-+ color Yellow "building"
+          mtask <- kojiGetBuildTaskID fedoraHub $ showNVR nvr
           case mtask of
-            Nothing -> error' $ "Task for" +-+ nvr +-+ "not found"
+            Nothing -> error' $ "Task for" +-+ showNVR nvr +-+ "not found"
             Just task ->
               return $ do
               kojiWaitTaskAndRepo (isNothing mlatest) nvr task
               return $ Done pkg nvr br changelog
         _ -> do
           when (null unpushed) $ do
-            putStrLn $ nvr +-+ "(" ++ target ++ ")" +-+ show n +-+ "more" +-+
+            putStrLn $ showNVR nvr +-+ "(" ++ target ++ ")" +-+ show n +-+ "more" +-+
               maybe "" (\l -> "in layer" +-+ show l) mlayer
             putNewLn
             putStrLn changelog
@@ -292,17 +293,17 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
           opentasks <- kojiOpenTasks pkg (Just buildref) target
           case opentasks of
             [task] -> do
-              putStrLn $ nvr +-+ "task is already open"
+              putStrLn $ showNVR nvr +-+ "task is already open"
               return $ do
                 kojiWaitTaskAndRepo (isNothing mlatest) nvr task
                 return $ Done pkg nvr br changelog
             (_:_) -> error' $ show (length opentasks) +-+ "open" +-+ unPackage pkg +-+ "tasks already"
             [] -> do
-              if equivNVR nvr (fromMaybe "" mlatest)
+              if equivNVR nvr mlatest
                 then do
                 -- FIXME add a retry prompt
-                putStrLn $ color Red $ nvr +-+ "is already latest (modulo disttag)"
-                return $ error' $ nvr +-+ "failed"
+                putStrLn $ color Red $ showNVR nvr +-+ "is already latest (modulo disttag)"
+                return $ error' $ showNVR nvr +-+ "failed"
                 else do
                 -- FIXME parse build output
                 if dryrun
@@ -313,18 +314,18 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
                     kojiWaitTaskAndRepo (isNothing mlatest) nvr task
                     return $ Done pkg nvr br changelog
       where
-        kojiWaitTaskAndRepo :: Bool -> String -> TaskID -> IO ()
+        kojiWaitTaskAndRepo :: Bool -> NVR -> TaskID -> IO ()
         kojiWaitTaskAndRepo newpkg nvr task = do
           finish <- kojiWaitTask task
           if finish
-            then putStrLn $ color Green $ nvr +-+ "build success"
+            then putStrLn $ color Green $ showNVR nvr +-+ "build success"
             -- FIXME print koji task url
             else do
             whenJustM (findExecutable "koji-tool") $ \kojitool ->
               -- FIXME cmdLog deprecated
               -- FIXME use --children (koji-tool-1.1.2)
               cmdLog kojitool ["tasks", displayID task, "-s", "fail"]
-            error' $ color Red $ nvr +-+ "build failed"
+            error' $ color Red $ showNVR nvr +-+ "build failed"
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then
             when newpkg $ do
@@ -347,7 +348,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
       unlines [unPackage pkg ++ ":", "", clog] : renderChangelogs jobs
 
     -- FIXME how to catch authentication errors?
-    bodhiSidetagUpdate :: Branch -> [String] -> String -> String -> IO ()
+    bodhiSidetagUpdate :: Branch -> [NVR] -> String -> String -> IO ()
     bodhiSidetagUpdate rbr nvrs sidetag notes = do
       case mupdate of
         (Nothing, _) -> return ()
@@ -365,7 +366,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
             else
             unlessM (checkAutoBodhiUpdate rbr) $ do
             -- FIXME get updateid from above bodhi command output
-            res <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" (last nvrs)]
+            res <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" (showNVR (last nvrs))]
             case res of
               [] -> do
                 putStrLn "bodhi submission failed"
@@ -375,4 +376,4 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
                 case lookupKey "updateid" update :: Maybe String of
                   Nothing -> error' "could not determine Update id"
                   Just _updateid -> return ()
-              _ -> error' $ "impossible happened: more than one update found for" +-+ last nvrs
+              _ -> error' $ "impossible happened: more than one update found for" +-+ showNVR (last nvrs)

@@ -16,6 +16,7 @@ import Data.Aeson.Key (fromText)
 #endif
 import Data.Aeson.Types (Object, (.:), parseEither)
 import Data.Char (isDigit)
+import Data.RPM.NVR (NVR)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import SimplePrompt (promptEnter, promptNonEmpty)
 import Text.Read
@@ -52,15 +53,15 @@ checkAutoBodhiUpdate br =
 
 -- FIXME should determine 3 days for branched devel release
 -- FIXME handle expired override?
-bodhiCreateOverride :: Bool -> Maybe Int -> String -> IO ()
+bodhiCreateOverride :: Bool -> Maybe Int -> NVR -> IO ()
 bodhiCreateOverride dryrun mduration nvr = do
-  putStrLn $ "Creating Bodhi Override for" +-+ nvr ++ ":"
+  putStrLn $ "Creating Bodhi Override for" +-+ showNVR nvr ++ ":"
   unless dryrun $ do
-    ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", show (fromMaybe 4 mduration), "--no-wait", nvr]
+    ok <- cmdBool "bodhi" ["overrides", "save", "--notes", "chain building with fbrnch", "--duration", show (fromMaybe 4 mduration), "--no-wait", showNVR nvr]
     if ok
-      then putStrLn $ "https://bodhi.fedoraproject.org/overrides/" ++ nvr
+      then putStrLn $ "https://bodhi.fedoraproject.org/overrides/" ++ showNVR nvr
       else do
-      moverride <- bodhiOverride nvr
+      moverride <- bodhiOverride $ showNVR nvr
       case moverride of
         Nothing -> do
           putStrLn "bodhi override failed"
@@ -206,7 +207,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
         maybeTemplate TemplateUpdate
     maybeTemplate _ = return Nothing
 
-bodhiBuildExists :: String -> IO Bool
+bodhiBuildExists :: NVR -> IO Bool
 bodhiBuildExists nvr = do
-  obj <- bodhiBuild nvr
+  obj <- bodhiBuild $ showNVR nvr
   return $ isNothing (lookupKey "status" obj :: Maybe String)

@@ -8,6 +8,8 @@ module Cmd.Scratch (
   ScratchSource(..)
   ) where
 
+import Data.RPM.NVR (NVR)
+
 import Branches
 import Common
 import Common.System
@@ -19,8 +21,9 @@ import Types (Archs(..),SideTagTarget)
 
 data ScratchSource = ScratchRef String | ScratchSRPM String
 
-showScratchSource :: Bool -> String -> Maybe ScratchSource -> String
-showScratchSource pushed nvr Nothing = nvr  ++ (if pushed then "" else ".src.rpm")
+showScratchSource :: Bool -> NVR -> Maybe ScratchSource -> String
+showScratchSource pushed nvr Nothing =
+  showNVR nvr  ++ (if pushed then "" else ".src.rpm")
 showScratchSource _ _ (Just (ScratchRef ref)) = ref
 showScratchSource _ _ (Just (ScratchSRPM srpm)) = srpm
 

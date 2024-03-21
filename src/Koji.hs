@@ -30,6 +30,7 @@ import Data.Char (isDigit)
 import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Fixed (Micro)
+import Data.RPM.NVR (NVR, maybeNVR, nvrName)
 import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
 import SimplePrompt (promptEnter)
@@ -50,30 +51,30 @@ import Types
 fedoraHub :: String
 fedoraHub = fedoraKojiHub
 
-kojiNVRTags :: String -> IO [String]
+kojiNVRTags :: NVR -> IO [String]
 kojiNVRTags nvr = do
-  mbldid <- kojiGetBuildID fedoraHub nvr
+  mbldid <- kojiGetBuildID fedoraHub $ showNVR nvr
   case mbldid of
-    Nothing -> error' $ nvr +-+ "koji build not found"
+    Nothing -> error' $ showNVR nvr +-+ "koji build not found"
     Just bldid -> kojiBuildTags fedoraHub (buildIDInfo bldid)
 
-kojiBuildStatus :: String -> IO (Maybe BuildState)
+kojiBuildStatus :: NVR -> IO (Maybe BuildState)
 kojiBuildStatus nvr =
-  kojiGetBuildState fedoraHub (BuildInfoNVR nvr)
+  kojiGetBuildState fedoraHub (BuildInfoNVR (showNVR nvr))
 
-kojiLatestNVR :: String -> String -> IO (Maybe String)
+kojiLatestNVR :: String -> String -> IO (Maybe NVR)
 kojiLatestNVR tag pkg = do
   mbld <- kojiLatestBuild fedoraHub tag pkg
   return $ case mbld of
              Nothing -> Nothing
-             Just bld -> lookupStruct "nvr" bld
+             Just bld -> lookupStruct "nvr" bld >>= maybeNVR
 
-kojiLatestNVRRepo :: String -> Int -> String -> IO (Maybe String)
+kojiLatestNVRRepo :: String -> Int -> String -> IO (Maybe NVR)
 kojiLatestNVRRepo tag event pkg = do
   mbld <- kojiLatestBuildRepo fedoraHub tag event pkg
   return $ case mbld of
              Nothing -> Nothing
-             Just bld -> lookupStruct "nvr" bld
+             Just bld -> lookupStruct "nvr" bld >>= maybeNVR
 
 kojiOpenTasks :: Package -> Maybe String -> String -> IO [TaskID]
 kojiOpenTasks pkg mref target = do
@@ -193,21 +194,21 @@ kojiBuildBranchNoWait target pkg mref args = do
   Left task <- kojiBuildBranch' False target pkg mref args
   return task
 
-kojiWaitRepo :: Bool -> Bool -> Bool -> String -> String -> IO ()
+kojiWaitRepo :: Bool -> Bool -> Bool -> String -> NVR -> IO ()
 kojiWaitRepo dryrun quiet knowntag target nvr = do
   Just (buildtag,desttag) <- kojiBuildTarget fedoraHub target
   unless dryrun $ do
-    mlatest <- kojiLatestNVR buildtag (nameOfNVR nvr)
+    mlatest <- kojiLatestNVR buildtag (nvrName nvr)
     if Just nvr == mlatest
       then waitRepo buildtag Nothing
       else do
-      tags <- cmdLines "koji" ["list-tags", "--build=" ++ nvr]
+      tags <- cmdLines "koji" ["list-tags", "--build=" ++ showNVR nvr]
       if knowntag
         then do
         putStrLn $ "current tags:" +-+ unwords tags
         waitRepo buildtag Nothing
         else do
-        mbuilt <- kojiLatestNVR desttag (nameOfNVR nvr)
+        mbuilt <- kojiLatestNVR desttag (nvrName nvr)
         if mbuilt == Just nvr
           then do
           sleep 40
@@ -217,7 +218,7 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
           else do
           putStrLn $ "current tags:" +-+ unwords tags
           unless (buildtag `elem` tags) $ do
-            putStrLn $ "no" +-+ nvr +-+ "tagged" +-+ buildtag
+            putStrLn $ "no" +-+ showNVR nvr +-+ "tagged" +-+ buildtag
             promptEnter "Press Enter to continue anyway"
           waitRepo buildtag Nothing
   where
@@ -236,23 +237,16 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
             case mevent of
               Nothing -> error "create_event not found"
               Just event -> do
-                latest <- kojiLatestNVRRepo buildtag event (nameOfNVR nvr)
+                latest <- kojiLatestNVRRepo buildtag event (nvrName nvr)
                 if latest == Just nvr
-                  then logMsg $ nvr +-+
+                  then logMsg $ showNVR nvr +-+
                        if isNothing moldrepo
                        then "is in" +-+ buildtag
                        else "appeared"
                   else do
                   when (isNothing moldrepo && not quiet) $
-                    logMsg $ "Waiting for" +-+ buildtag +-+ "to have" +-+ nvr
+                    logMsg $ "Waiting for" +-+ buildtag +-+ "to have" +-+ showNVR nvr
                   waitRepo buildtag mrepo
-
-    -- FIXME: obsolete by using NVR
-    -- n-v-r -> n
-    nameOfNVR :: String -> String
-    nameOfNVR = removeSeg . removeSeg
-      where
-        removeSeg = init . dropWhileEnd (/= '-')
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do

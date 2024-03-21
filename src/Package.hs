@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Package (
   clonePkg,
   CloneUser(..),
@@ -42,6 +44,8 @@ module Package (
   isAutoRelease
   ) where
 
+import Data.RPM (NV(..), VerRel(..))
+import Data.RPM.NVR (maybeNVR, NVR(..))
 import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
 import SimpleCmd.Rpm
 import SimplePrompt (prompt)
@@ -354,7 +358,8 @@ isAutoRelease spec = do
   matches <- filter ("Release:" `isPrefixOf`) <$> grep "%autorelease" spec
   return $ not (null matches)
 
-pkgNameVerRel :: Branch -> FilePath -> IO (Maybe String)
+-- FIXME return NVR??
+pkgNameVerRel :: Branch -> FilePath -> IO (Maybe NVR)
 pkgNameVerRel br spec = do
   disttag <- rpmDistTag <$> branchDist br
   -- workaround dist with bootstrap
@@ -374,10 +379,10 @@ pkgNameVerRel br spec = do
     return $
     case nvrs of
       [] -> Nothing
-      [nvr] -> Just (replace hostdist disttag nvr)
+      [nvr] -> maybeNVR (replace hostdist disttag nvr)
       _ -> error' "could not determine unique nvr"
 
-pkgNameVerRel' :: Branch -> FilePath -> IO String
+pkgNameVerRel' :: Branch -> FilePath -> IO NVR
 pkgNameVerRel' br spec = do
   mnvr <- pkgNameVerRel br spec
   case mnvr of
@@ -389,21 +394,33 @@ getBranchDist (RelBranch br) = branchDist br
 getBranchDist (OtherBranch _) = systemBranch >>= branchDist
 
 -- FIXME should be more strict about dist tag (eg .fcNN only)
--- FIXME replace with NVR's?
-equivNVR :: String -> String -> Bool
-equivNVR nvr1 nvr2
-  | nvr1 == nvr2 = True
-  | length nvr1 /= length nvr2 = False
-  | otherwise =
-      -- (name-ver-rel,.dist)
-      let (nvr, r) = splitExtension nvr1
-          (nvr', r') = splitExtension nvr2
-      in nvr == nvr' &&
-           -- (dist,.more)
-           let (r1,r1') = splitExtension $ tail r
-               (r2,r2') = splitExtension $ tail r'
-           -- allow differing dist
-           in length r1 == length r2 && r1' == r2'
+equivNVR :: NVR -> Maybe NVR -> Bool
+equivNVR _ Nothing = False
+equivNVR nvr1 (Just nvr2) =
+  nvr1 == nvr2
+  ||
+  let (nv1,r1) = splitRelease nvr1
+      (nv2,r2) = splitRelease nvr2
+  in
+     nv1 == nv2
+     &&
+     compareReleases r1 r2
+  where
+    compareReleases :: String -> String -> Bool
+    compareReleases r1 r2 =
+      r1 == r2
+      ||
+      case ('.' `elem` r1, '.' `elem` r2) of
+        (True,True) ->
+          let (r1',drs1) = span (/= '.') r1
+              (r2',drs2) = span (/= '.') r2
+          in
+            case (take 2 r1', take 2 r2') of
+              ("fc","fc") -> True
+              _ -> r1' == r2' && length drs1 == length drs2
+            &&
+            compareReleases (tail drs1) (tail drs2)
+        _ -> False
 
 -- data BrPkg = IsBr AnyBranch | Unknown String | IsPkg String
 --   deriving Show
@@ -469,3 +486,8 @@ equivNVR nvr1 nvr2
 editSpecField :: String -> String -> FilePath -> IO ()
 editSpecField field new spec =
   cmd_ "sed" ["-i", "-e s/^\\(" ++ field ++ ":\\s\\+\\).*/\\1" ++ new ++ "/", spec]
+
+#if !MIN_VERSION_rpm_nvr(0,1,3)
+splitRelease :: NVR -> (NV,String)
+splitRelease (NVR n (VerRel v r)) = (NV n v, r)
+#endif

@@ -43,7 +43,7 @@ prepCmd mpre verbose deps (mbr,pkgs) = do
           RelBranch rbr -> do
             nvr <- pkgNameVerRel' rbr spec
             -- newline avoids error starting on same line
-            putStr $ "Prepping" +-+ nvr ++ ": "
+            putStr $ "Prepping" +-+ showNVR nvr ++ ": "
           _ -> return ()
         timeIO $
           (if verbose then cmdLog else cmdSilent') "rpmbuild" $ "-bp" : ["--nodeps" | not deps] ++ [spec]
