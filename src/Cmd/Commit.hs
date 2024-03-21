@@ -29,7 +29,7 @@ commitPkgs mopt firstLine unstaged paths = do
         unlessM isGitDirClean $ do
           getPackageName dir >>= putPkgHdr
           addall <-
-            if null paths
+            if null paths && not unstaged
             then null <$> git "diff" ["--cached"]
             else return unstaged
           opts <- case mopt of
