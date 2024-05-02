@@ -53,6 +53,8 @@ requestRepo mock retry breq pkg = do
         comments <- getComments session bid
         mapM_ showComment comments
         putNewLn
+        putBugId $ bugId bug
+        putNewLn
         promptEnter "Press Enter to continue"
         -- FIXME check api key is still valid or open pagure ticket directly
         fedpkg_ "request-repo" [pkg, show bid]
