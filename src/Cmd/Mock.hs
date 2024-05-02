@@ -26,29 +26,26 @@ data MockShell = ShellOnly | BuildShell
 mockCmd :: Bool -> Maybe NoClean -> Bool-> Maybe MockShell -> Maybe Branch
         -> Maybe String -> (BranchesReq, [String]) -> IO ()
 mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
+  pkggit <- isPkgGitRepo
   branches <-
     case breq of
       Branches [] ->
         pure <$>
-        if null ps
-        then do
-          pkggit <- isPkgGitRepo
-          if pkggit
-            then getReleaseBranch
-            else systemBranch
+        if null ps && pkggit
+        then getReleaseBranch
         else systemBranch
       _ ->  listOfBranches False False breq
   when (null branches && length ps > 1 && isNothing mroot) $
     error' "Must specific branch or --root chroot"
   let packages = if null ps then ["."] else ps
-  mapM_ (mockBuildPkgs (breq == Branches []) packages) branches
+  mapM_ (mockBuildPkgs pkggit (breq == Branches []) packages) branches
   where
-    mockBuildPkgs :: Bool -> [String] -> Branch -> IO ()
-    mockBuildPkgs noswitch pkgs br = do
+    mockBuildPkgs :: Bool -> Bool -> [String] -> Branch -> IO ()
+    mockBuildPkgs pkggit noswitch pkgs br = do
       srpms <- mapM (prepSrpm (RelBranch br)) pkgs
       putNewLn
-      -- FIXME can fail for not git
-      rootBr <- maybe getReleaseBranch return mroot
+      -- FIXME? is it better just to fail asking for target branch?
+      rootBr <- maybe (if pkggit then getReleaseBranch else systemBranch) return mroot
       let resultdir =
             case srpms of
               [] -> error' "cannot build zero packages"
