@@ -16,7 +16,7 @@ import Distribution.RPM.Build.Order (dependencySortRpmOpts,
 import Branches
 import Git
 import Package
-import RpmBuild (getDynSourcesMacros)
+import RpmBuild (distRpmOptions, getDynSourcesMacros)
 
 data RpmWith = RpmWith String | RpmWithout String
 
@@ -27,7 +27,8 @@ sortCmd :: SortDisplay -> Maybe RpmWith -> (Branch,[String]) -> IO ()
 sortCmd _ _ (_,[]) = return ()
 sortCmd displaymode mrpmwith (br, pkgs) = do
   withPackagesBranch HeaderNone False Nothing setupPkg (br, pkgs)
-  let rpmopts = maybe [] toRpmOption mrpmwith
+  distopts <- distRpmOptions br
+  let rpmopts = maybe [] toRpmOption mrpmwith ++ distopts
   case displaymode of
     -- reverse because rpmbuild-order reverses the order of independent pkgs?
     SortParallel ->

@@ -13,7 +13,8 @@ module RpmBuild (
   isShortCircuit,
   checkSourcesMatch,
   notInstalled,
-  rpmEval
+  rpmEval,
+  distRpmOptions
   )
 where
 
@@ -39,6 +40,21 @@ import Package
 distOpt :: Dist -> [String]
 distOpt dist =
   ["--define", "dist" +-+ "%{?distprefix}" ++ rpmDistTag dist]
+
+-- FIXME hardcoding
+distRpmOptions :: Branch -> IO [String]
+distRpmOptions br =
+  map ("--define=" ++) <$>
+  case br of
+    Rawhide -> do
+      dist <- Dist.getRawhideDist
+      let ver = case dist of
+                  Dist.Fedora n -> show n
+                  _ -> error' $ "impossible rawhide version:"  +-+ show dist
+      return ["fedora" +-+ ver, "fc" ++ ver +-+ "1"]
+    Fedora n -> return ["fedora" +-+ show n, "fc" ++ show n +-+ "1"]
+    EPEL n -> return ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
+    EPELNext n -> return ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
 
 builtRpms :: AnyBranch -> FilePath -> IO [FilePath]
 builtRpms br spec = do
