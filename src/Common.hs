@@ -31,10 +31,11 @@ import SimpleCmd ((+-+))
 
 plural :: Int -> String -> String
 plural i ns =
-  pluralException i ns (ns ++ "s")
+  pluralException i Nothing ns (ns ++ "s")
 
-pluralException :: Int -> String -> String -> String
-pluralException i ns ps =
+pluralException :: Int -> Maybe String -> String -> String -> String
+pluralException 0 (Just z) _ _ = z
+pluralException i _ ns ps =
   mconcat
   [
     if i == 0 then "no" else show i,

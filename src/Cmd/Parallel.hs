@@ -121,7 +121,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
     parallelBranches brs pkg = do
       krbTicket
       currentbranch <- gitCurrentBranch
-      putStrLn $ "= Building" +-+ pluralException (length brs) "branch" "branches" +-+ "in parallel:"
+      putStrLn $ "= Building" +-+ pluralException (length brs) Nothing "branch" "branches" +-+ "in parallel:"
       putStrLn $ unwords $ map show brs
       jobs <- mapM setupBranch brs
       (failures,nvrclogs) <- timeIO $ watchJobs (length jobs == 1) Nothing [] [] jobs
@@ -248,7 +248,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
       unless (null unpushed) $ do
         putStrLn $ showNVR nvr +-+ "(" ++ target ++ ")" +-+
           if nopkgs > 1
-          then pluralException n "more" "more" +-+ maybe "" (\l -> "in layer" +-+ show l) mlayer
+          then pluralException n (if morelayers then Nothing else Just "last") "more" "more" +-+ maybe "" (\l -> "in layer" +-+ show l) mlayer
           else ""
         putNewLn
         displayCommits True unpushed
