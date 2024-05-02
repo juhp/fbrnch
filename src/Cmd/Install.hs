@@ -30,7 +30,7 @@ import RpmBuild
 -- FIXME add --debug or respect --verbose for dnf commands
 installCmd :: Bool -> Bool -> Maybe Branch -> Maybe ForceShort -> [BCond]
            -> Bool -> Bool -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
-installCmd verbose recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps allsubpkgs (mbr, pkgs) = do
+installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps allsubpkgs (mbr, pkgs) = do
   when (recurse && isShortCircuit mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch (boolHeader (recurse || length pkgs > 1)) True Nothing installPkg (mbr, pkgs)
@@ -71,14 +71,14 @@ installCmd verbose recurse mfrom mforceshort bconds reinstall nobuild nobuilddep
                   mpkgdir <- lookForPkgDir rbr ".." dep
                   case mpkgdir of
                     Nothing -> putStrLn $ dep +-+ "not known"
-                    Just pkgdir -> installCmd verbose recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps allsubpkgs (mbr, [pkgdir]) >> putNewLn
+                    Just pkgdir -> installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps allsubpkgs (mbr, [pkgdir]) >> putNewLn
                 -- FIXME option to enable/disable installing missing deps
                 -- FIXME --skip-missing-deps or prompt
               else installDeps True spec
           wasbuilt <-
             if nobuild
             then return True
-            else buildRPMs (not verbose) False False mforceshort' bconds rpms br spec
+            else buildRPMs quiet False False mforceshort' bconds rpms br spec
           unless (isShortCircuit mforceshort') $ do
             toinstalls <-
               if allsubpkgs

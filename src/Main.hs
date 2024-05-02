@@ -185,7 +185,7 @@ main = do
       <*> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
       localCmd
-      <$> switchWith 'q' "quiet" "Hide the build.log until it errors"
+      <$> quietOpt "Hide the build.log until it errors"
       <*> switchWith 'd' "debug" "show the rpmbuild command"
       <*> optional forceshortOpt
       <*> many bcondOpt
@@ -237,7 +237,7 @@ main = do
     , Subcommand "install" "Build locally and install package(s)" $
       -- FIXME drop --shortcircuit from install?
       installCmd
-      <$> switchWith 'v' "verbose" "verbose rpmbuild output"
+      <$> quietOpt "Quiet rpmbuild output"
       <*> switchWith 'R' "recurse" "build and install missing deps packages"
       <*> optional (optionLongWith branchM "from" "BRANCH" "Merge branch first")
       <*> optional forceshortOpt
@@ -321,7 +321,7 @@ main = do
       <*> branchesPackages
     , Subcommand "request-branches" "Request branches for approved created packages" $
       requestBranchesCmd
-      <$> switchWith 'q' "quiet" "Quieter output"
+      <$> quietOpt "Quieter output"
       <*> switchWith 'r' "reviews" "Request branches for package reviews"
       <*> optional (optionWith branchM 'R' "recurse-from" "BRANCH" "Add neighboring dependencies from branch")
       <*> mockOpt False
@@ -656,3 +656,6 @@ main = do
     overrideModeOpt =
       flagWith' OverrideList 'l' "list" "List active override(s)" <|>
       flagWith OverrideCreate OverrideExpire 'X' "expire" "Expire override(s)"
+
+    quietOpt :: String -> Parser Bool
+    quietOpt = switchWith 'q' "quiet"
