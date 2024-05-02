@@ -69,6 +69,7 @@ mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
   isnewrepo <- initialPkgRepo
   putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") +-+ show from ++ ":"
   displayCommits showall unmerged
+  putNewLn
   unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"
