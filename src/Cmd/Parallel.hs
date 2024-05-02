@@ -8,8 +8,8 @@ import Common
 import Common.System
 
 import Control.Concurrent.Async
-import Distribution.RPM.Build.Order (dependencyLayers)
 import Data.RPM.NVR (NVR)
+import Distribution.RPM.Build.Order (dependencyLayersRpmOpts)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import SimplePrompt (prompt, promptEnter, yesNo)
 import System.Console.Pretty
@@ -23,7 +23,7 @@ import Git
 import Krb
 import Koji
 import Package
-import RpmBuild (checkSourcesMatch, getDynSourcesMacros)
+import RpmBuild (checkSourcesMatch, distRpmOptions, getDynSourcesMacros)
 import Types
 
 data JobDone = Done {_jobPkg :: Package,
@@ -90,7 +90,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
         pkg <- getPackageName p
         mergeNewerBranch (Just pkg) rbr
         getDynSourcesMacros $ packageSpec pkg
-      allLayers <- dependencyLayers pkgs
+      distopts <- distRpmOptions rbr
+      allLayers <- dependencyLayersRpmOpts distopts pkgs
       let layers = drop firstlayer allLayers
       when (isNothing msidetagTarget && length allLayers > 1) $
         unlessM (checkAutoBodhiUpdate rbr) $
