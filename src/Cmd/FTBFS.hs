@@ -47,8 +47,8 @@ ftbfsCmd dryrun short mbugsopt (mbr,pkgs) = do
     query =
       ftbfsFedoraBugs .&&.
       case mbr of
-        Nothing -> statusNewPost
-        Just br -> statusNewPost .&&. versionIs (branchVersion br)
+        Nothing -> statusNewModified
+        Just br -> statusNewModified .&&. versionIs (branchVersion br)
 
     ftbfsBugs :: BugzillaSession -> Bug -> IO ()
     ftbfsBugs session bug = do
