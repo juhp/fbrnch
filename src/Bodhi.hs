@@ -128,7 +128,7 @@ bodhiTestingRepo br = do
 -- push comma separated list of builds for a package to bodhi
 bodhiUpdate :: Bool -> (Maybe UpdateType, UpdateSeverity) -> Maybe BugId
             -> Bool -> FilePath -> String -> IO ()
-bodhiUpdate _ _ _ _ _ [] = error' "cannot make empty update"
+bodhiUpdate _ _ _ _ _ [] = putStrLn "no package to push"
 bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
   case mupdate of
     Nothing -> return ()
