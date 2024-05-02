@@ -203,6 +203,7 @@ moveArtifactsCmd remove pkgs =
       cwd <- getCurrentDirectory
       whenJustM (rpmEval "%_rpmdir") $ \rpmdir ->
         unless (rpmdir == cwd) $ do
+        -- FIXME hardcoding
         moveRPMS rpmdir "x86_64"
         moveRPMS rpmdir "noarch"
       ls <- listDirectory "."
@@ -237,20 +238,23 @@ moveArtifactsCmd remove pkgs =
             else renameDirectory tree $ builddir </> tree
 
     moveRPMS :: FilePath -> FilePath -> IO ()
-    moveRPMS rpmdir dir =
-      whenM (doesDirectoryExist dir) $
-      whenM (doesDirectoryExist (rpmdir </> dir)) $ do
-      rpms <- listDirectory dir
-      forM_ rpms $ \rpm -> do
-        let file = dir </> rpm
-        exists <- doesFileExist $ rpmdir </> file
-        if exists
-          then if remove
-               then removeFile file
-               else putStrLn $ "duplicate:" +-+ file
-          else do
-          createDirectoryIfMissing False rpmdir
-          renameFile file $ rpmdir </> file
-      left <- listDirectory dir
-      when (null left) $
-        removeDirectory dir
+    moveRPMS rpmdir archdir =
+      whenM (doesDirectoryExist archdir) $ do
+      haveRpmDir <- doesDirectoryExist (rpmdir </> archdir)
+      if haveRpmDir
+        then do
+        rpms <- listDirectory archdir
+        forM_ rpms $ \rpm -> do
+          let file = archdir </> rpm
+          exists <- doesFileExist $ rpmdir </> file
+          if exists
+            then if remove
+                 then removeFile file
+                 else putStrLn $ "duplicate:" +-+ file
+            else renameFile file $ rpmdir </> file
+        left <- listDirectory archdir
+        when (null left) $
+          removeDirectory archdir
+        else do
+        createDirectoryIfMissing False rpmdir
+        renameDirectory archdir $ rpmdir </> archdir
