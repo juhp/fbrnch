@@ -171,9 +171,8 @@ getSources spec = do
       act (dir </> file) file
 
     doesSourceDirFileExist :: Maybe FilePath -> FilePath -> IO Bool
-    doesSourceDirFileExist Nothing _ = return False
-    doesSourceDirFileExist (Just srcdir) file =
-      doesFileExist (srcdir </> file)
+    doesSourceDirFileExist msrcdir file =
+      doesFileExist (fromMaybe "" msrcdir </> file)
 
 generateSrpm :: Maybe AnyBranch -> FilePath -> IO FilePath
 generateSrpm = generateSrpm' False
