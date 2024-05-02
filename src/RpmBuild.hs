@@ -387,6 +387,11 @@ checkSourcesMatch pkg br spec = do
   unless (null missing) $ do
     promptEnter $ color Red $ unwords missing +-+ "not in sources, press Enter to fix"
     updatePkg True False False True Nothing pkg br
+    git_ "status" ["--short"]
+    promptEnter "Please Enter to amend commit and continue"
+    git_ "commit" ["--amend"]
+    unlessM isGitDirClean $
+      error' "local changes remain (dirty)"
     checkOnBranch
     checkSourcesMatch pkg br spec
   mgr <- httpManager
