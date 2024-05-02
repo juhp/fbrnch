@@ -207,11 +207,16 @@ generateSrpm' force mbr spec = do
         return srpmfile
   where
     buildSrpm opts = do
-      -- prevent Ctrl-c from truncating srpm to corrupted file:
+      -- 1. prevent Ctrl-c from truncating srpm to corrupted file:
       -- 'Error: Downloaded rpm http://kojipkgs-cache01.s390.fedoraproject.org/work/cli-build/1691493908.5614614.AzJmareV/ghc9.4-9.4.6-22.fc39.src.rpm is corrupted:'
-      srpm <- last . words <$> uninterruptibleMask_ (cmd "rpmbuild" (opts ++ ["-bs", spec]))
-      putStrLn $ "Created" +-+ takeFileName srpm
-      return srpm
+      -- 2. can end with stdout "RPM build warnings:" etc
+      -- https://github.com/rpm-software-management/rpm/issues/2494
+      outs <- words <$> uninterruptibleMask_ (cmd "rpmbuild" (opts ++ ["-bs", spec]))
+      case filter ("src.rpm" `isExtensionOf`) outs of
+        [srpm] -> do
+          putStrLn $ "Created" +-+ takeFileName srpm
+          return srpm
+        srpms -> error' $ "could not determined generated srpm filename" +-+ unwords srpms
 
 data ForceShort = ForceBuild | ShortCompile | ShortInstall
   deriving Eq
