@@ -196,7 +196,7 @@ autospecCmd force pkgs =
 
 moveArtifactsCmd :: Bool -> [String] -> IO ()
 moveArtifactsCmd remove pkgs =
-  withPackagesByBranches HeaderMay False dirtyGit Zero moveArtifactsPkg (Branches [], pkgs)
+  withPackagesByBranches HeaderMay False Nothing Zero moveArtifactsPkg (Branches [], pkgs)
   where
     moveArtifactsPkg :: Package -> AnyBranch -> IO ()
     moveArtifactsPkg pkg br = do
