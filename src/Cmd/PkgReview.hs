@@ -149,13 +149,16 @@ mockRpmLint mock pkg spec srpm = do
 -- 'fbrnch: No spec file found'
 -- FIXME: option to only download/prep files
 reviewPackage :: Maybe String -> IO ()
-reviewPackage mpkg = do
-  -- FIXME if spec file exists use it directly
-  pkg <- maybe getDirectoryName return mpkg
+reviewPackage Nothing = do
+  -- FIXME catch no spec file
+  spec <- findSpecfile
+  srpm <- generateSrpm Nothing spec
+  cmd_ "fedora-review" ["-rn", srpm]
+reviewPackage (Just pkgbug) = do
   bugs <- bugsAnon $
-          if all isDigit pkg
-          then packageReview .&&. statusNewAssigned .&&. bugIdIs (read pkg)
-          else pkgReviews pkg .&&. statusNewAssigned
+          if all isDigit pkgbug
+          then packageReview .&&. statusNewAssigned .&&. bugIdIs (read pkgbug)
+          else pkgReviews pkgbug .&&. statusNewAssigned
   case bugs of
     [bug] -> do
       putReviewBug False bug
@@ -163,8 +166,5 @@ reviewPackage mpkg = do
       -- FIXME support copr build
       -- FIXME if toolbox set REVIEW_NO_MOCKGROUP_CHECK
       cmd_ "fedora-review" ["-b", show (bugId bug)]
-    [] -> do
-      spec <- findSpecfile
-      srpm <- generateSrpm Nothing spec
-      cmd_ "fedora-review" ["-rn", srpm]
-    _ -> error' $ "More than one review bug found for" +-+ pkg
+    [] -> error' $ "No package review found for" +-+ pkgbug
+    _ -> error' $ "More than one review bug found for" +-+ pkgbug
