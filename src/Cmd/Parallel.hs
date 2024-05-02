@@ -254,6 +254,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
         displayCommits True unpushed
       unless (null unpushed) $ do
         checkSourcesMatch pkg (RelBranch br) spec
+        unlessM isGitDirClean $
+          error' "local changes remain (dirty)"
         unless dryrun $
           gitPush True Nothing
       changelog <- unlines <$> getChangelog spec
