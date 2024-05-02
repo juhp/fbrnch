@@ -218,15 +218,6 @@ generateSrpm' force mbr spec = do
           return srpm
         srpms -> error' $ "could not determined generated srpm filename" +-+ unwords srpms
 
-data ForceShort = ForceBuild | ShortCompile | ShortInstall
-  deriving Eq
-
-isShortCircuit :: Maybe ForceShort -> Bool
-isShortCircuit ms =
-  case ms of
-    Just s -> s /= ForceBuild
-    Nothing -> False
-
 data BCond = BuildWith String | BuildWithout String
 
 instance Show BCond where
@@ -243,6 +234,15 @@ getAutoReleaseOptions spec = do
         calculated <- cmd "rpmautospec" ["calculate-release", spec]
         return ["--define", "_rpmautospec_release_number" +-+ dropPrefix "Calculated release number: " calculated]
         else return []
+
+data ForceShort = ForceBuild | ShortCompile | ShortInstall
+  deriving Eq
+
+isShortCircuit :: Maybe ForceShort -> Bool
+isShortCircuit ms =
+  case ms of
+    Just s -> s /= ForceBuild
+    Nothing -> False
 
 -- FIXME create build.log
 -- Note does not check if bcond changed
