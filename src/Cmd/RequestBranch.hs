@@ -124,7 +124,8 @@ requestPkgBranches quiet multiple mock breq pkg = do
           when (br `elem` current) $
           putStrLn $ pkgPrefix ++ show br +-+ "remote branch already exists"
         let newbranches = brs' \\ current
-        if null newbranches then return []
+        if null newbranches
+          then return []
           else do
           fasid <- fasIdFromKrb
           -- FIXME retry on HttpExceptionRequest ... ConnectionTimeout
@@ -136,14 +137,19 @@ requestPkgBranches quiet multiple mock breq pkg = do
             Left err -> error' err
             Right recent -> filterM (notExistingRequest recent) newbranches
 
-    -- FIXME handle close_status Invalid
+    -- FIXME print invalid requests?
     notExistingRequest :: [IssueTitleStatus] -> Branch -> IO Bool
     notExistingRequest requests br = do
-      let pending = filter ((("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"") ==) . pagureIssueTitle) requests
-      unless (null pending) $ do
+      let processed = filter processedIssueFilter requests
+      unless (null processed) $ do
         putStrLn $ "Branch request already exists for" +-+ unPackage pkg ++ ":" ++ show br
-        mapM_ printScmIssue pending
-      return $ null pending
+        mapM_ printScmIssue processed
+      return $ null processed
+      where
+        processedIssueFilter issue =
+          pagureIssueTitle issue == ("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"")
+          &&
+          pagureIssueCloseStatus issue == Just "Processed"
 
 havePkgAccess :: Package -> IO Bool
 havePkgAccess pkg = do
