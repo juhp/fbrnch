@@ -58,11 +58,13 @@ createReview mscratchOpt mock pkgs =
         postReviewReq session spec specSrpmUrls mkojiurl pkg = do
           summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
           description <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
+          url <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{url}", spec]
           createBug session
             [ ("product", "Fedora")
             , ("component", "Package Review")
             , ("version", "rawhide")
             , ("summary", "Review Request: " <> pkg <> " - " <> summary)
+            , ("url", url)
             , ("description", specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl)]
 
 buildAndUpload :: Maybe ScratchOption -> String -> String -> FilePath
