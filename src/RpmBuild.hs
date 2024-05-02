@@ -22,7 +22,8 @@ import Control.Exception (uninterruptibleMask_)
 import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 import Data.RPM
-import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
+import qualified Distribution.Fedora as Dist
+import Distribution.Fedora (Dist)
 import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import SimpleCmd.Rpm
 import SimplePrompt (promptEnter)
@@ -39,7 +40,7 @@ import Package
 
 distOpt :: Dist -> [String]
 distOpt dist =
-  ["--define", "dist" +-+ "%{?distprefix}" ++ rpmDistTag dist]
+  ["--define", "dist" +-+ "%{?distprefix}" ++ Dist.rpmDistTag dist]
 
 -- FIXME hardcoding
 distRpmOptions :: Branch -> IO [String]
@@ -61,7 +62,7 @@ builtRpms br spec = do
   dist <- getBranchDist br
   rpmdir <- fromMaybe "" <$> rpmEval "%{_rpmdir}"
   autoreleaseOpt <- getAutoReleaseOptions spec
-  rpms <- rpmspec (["--builtrpms", "--define", "dist" +-+ rpmDistTag dist] ++ autoreleaseOpt) (Just (rpmdir </>  "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm")) spec
+  rpms <- rpmspec (["--builtrpms", "--define", "dist" +-+ Dist.rpmDistTag dist] ++ autoreleaseOpt) (Just (rpmdir </>  "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm")) spec
   if null rpms
     then error' $ spec +-+ "does not seem to create any rpms"
     else return rpms
