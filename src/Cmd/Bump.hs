@@ -42,8 +42,8 @@ bumpPkgs dryrun local mopt mclog =
           else
             case br of
               RelBranch rbr' ->
-                let tag = branchDestTag rbr' in
-                  kojiLatestNVR tag $ unPackage pkg
+                let tag = branchDestTag rbr'
+                in kojiLatestNVR tag $ unPackage pkg
               -- FIXME fallback to local?
               _ -> return Nothing
         if equivNVR newnvr moldnvr
