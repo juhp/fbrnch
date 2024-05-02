@@ -7,7 +7,7 @@ import Common.System
 import qualified Common.Text as T
 
 import Network.URI
-import SimplePrompt (promptEnter)
+import SimplePrompt (promptEnter, yesNoDefault)
 
 import Branches
 import Bugzilla
@@ -74,11 +74,12 @@ importCmd existingrepo mock (breq, ps) = do
                 fedpkg_ "import" [srpmfile]
                 git_ "commit" ["--message", "import rhbz#" ++ show bid]
                 nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
-                promptEnter $ "Press Enter to push and build" +-+ showNVR nvr
-                gitPush True Nothing
-                -- FIXME build more branches
-                kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
-                putBugBuild False session bid nvr
+                ok <- yesNoDefault True $ "Press Enter to push and build" +-+ showNVR nvr
+                when ok $ do
+                  gitPush True Nothing
+                  -- FIXME build more branches
+                  kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
+                  putBugBuild False session bid nvr
                 existing <- fedoraBranchesNoRawhide (localBranches False)
                 when (null existing) $ do
                   brs <- getRequestedBranches [] breq
