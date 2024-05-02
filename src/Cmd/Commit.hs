@@ -44,7 +44,7 @@ commitPkgs mopt firstLine unstaged paths = do
                 clog <- lines <$> cleanChangelog spec
                 case clog of
                   [] -> readCommitMsg
-                  [msg] -> putStrLn msg >> return msg
+                  [msg] -> return msg
                   msgs ->
                     if firstLine
                     then return $ removePrefix "- " $ head msgs
@@ -54,8 +54,7 @@ commitPkgs mopt firstLine unstaged paths = do
                             filter (\c -> ('+' : c) `elem` lines (unquoteMacros diff)) clog
                       case newlogs of
                         [] -> putStrLn diff >> readCommitMsg
-                        [msg] -> putStrLn msg >>
-                                 return (removePrefix "- " msg)
+                        [msg] -> return (removePrefix "- " msg)
                         [m,m'] -> mapM_ putStrLn newlogs >>
                                   return (unlines $ map (removePrefix "- ") [m,"",m'])
                         (m:ms) -> mapM_ putStrLn newlogs >>
