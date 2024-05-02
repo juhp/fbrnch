@@ -5,9 +5,9 @@ import Git
 import Package
 
 -- FIXME noop when on branch already or drop cleanGit
-switchCmd :: AnyBranch -> [String] -> IO ()
-switchCmd br pkgs =
+switchCmd :: Bool -> AnyBranch -> [String] -> IO ()
+switchCmd verbose br pkgs =
   -- FIXME use withBranchByPackages ?
   withPackagesByBranches HeaderNone False dirtyGit Zero dummy (Branches [],pkgs)
   where
-    dummy _ _ = gitSwitchBranch br
+    dummy _ _ = gitSwitchBranchVerbose verbose False br

@@ -20,6 +20,7 @@ module Git (
   gitShortLog1,
   gitSwitchBranch,
   gitSwitchBranch',
+  gitSwitchBranchVerbose,
 --  checkIsPkgGitDir,
   isGitRepo,
   isPkgGitRepo,
@@ -239,17 +240,18 @@ grepGitConfig' key = do
           egrep_ key $ gitdir </> "config"
           else return False
 
-gitSwitchBranch :: AnyBranch -> IO ()
-gitSwitchBranch (OtherBranch "HEAD") = do
+gitSwitchBranchVerbose :: Bool -> Bool -> AnyBranch -> IO ()
+gitSwitchBranchVerbose _ allowHEAD (OtherBranch "HEAD") = do
   dir <- getDirectoryName
-  error' $ dir ++ ": HEAD is not a branch"
-gitSwitchBranch br = do
+  (if allowHEAD then putStrLn else error') $ dir ++ ": HEAD is not a branch"
+gitSwitchBranchVerbose verbose _ br = do
   localbranches <- gitLines "branch" ["--format=%(refname:short)"]
+  let verb = ["-q" | not verbose]
   if show br `elem` localbranches
     then do
     current <- gitCurrentBranch
     when (current /= br) $
-      git_ "switch" ["-q", show br]
+      git_ "switch" $ verb ++ [show br]
     else do
     -- check remote branch exists
     remotebranch <- do
@@ -262,7 +264,10 @@ gitSwitchBranch br = do
       name <- getDirectoryName
       error' $ name +-+ show br +-+ "branch does not exist!"
       else
-      git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]
+      git_ "checkout" $ verb ++ ["-b", show br, "--track", "origin/" ++ show br]
+
+gitSwitchBranch :: AnyBranch -> IO ()
+gitSwitchBranch = gitSwitchBranchVerbose False False
 
 -- similar to gitSwitchBranch but does not error
 gitSwitchBranch' :: Bool -> Branch -> IO Bool

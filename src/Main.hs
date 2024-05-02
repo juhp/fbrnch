@@ -65,7 +65,8 @@ main = do
       <$> cloneRequest
     , Subcommand "switch" "Switch branch" $
       switchCmd
-      <$> anyBranchArg
+      <$> verboseOpt "verbose output"
+      <*> anyBranchArg
       <*> manyPackages
     , Subcommand "nvr" "Print name-version-release" $
       nvrCmd
@@ -141,6 +142,7 @@ main = do
       <*> switchLongWith "stagger" "Stagger archs"
       <*> rebuildSrpmOpt
       <*> noFailFastOpt
+      <*> switchLongWith "allow-head" "allow detached HEAD"
       <*> optional archesOpt
       <*> many (sidetagTargetOpt Nothing)
       <*> optional scratchSourceOpt
@@ -149,6 +151,7 @@ main = do
       scratchCmdAarch64
       <$> dryrunOpt "Dry run: do not build"
       <*> rebuildSrpmOpt
+      <*> switchLongWith "allow-head" "allow detached HEAD"
       <*> switchWith 'X' "exclude-arch" "Exclude aarch64"
       <*> many (sidetagTargetOpt Nothing)
       <*> optional scratchSourceOpt
@@ -157,6 +160,7 @@ main = do
       scratchCmdX86_64
       <$> dryrunOpt "Dry run: do not build"
       <*> rebuildSrpmOpt
+      <*> switchLongWith "allow-head" "allow detached HEAD"
       <*> switchWith 'X' "exclude-arch" "Exclude x86_64"
       <*> many (sidetagTargetOpt Nothing)
       <*> optional scratchSourceOpt
@@ -180,7 +184,7 @@ main = do
     , Subcommand "prep" "Prep sources" $
       prepCmd
       <$> optional prepPreOpts
-      <*> switchWith 'v' "verbose" "show rpmbuild output"
+      <*> verboseOpt "show rpmbuild output"
       <*> switchWith 'd' "deps" "require deps to be installed"
       <*> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
@@ -656,6 +660,9 @@ main = do
     overrideModeOpt =
       flagWith' OverrideList 'l' "list" "List active override(s)" <|>
       flagWith OverrideCreate OverrideExpire 'X' "expire" "Expire override(s)"
+
+    verboseOpt :: String -> Parser Bool
+    verboseOpt = switchWith 'v' "verbose"
 
     quietOpt :: String -> Parser Bool
     quietOpt = switchWith 'q' "quiet"

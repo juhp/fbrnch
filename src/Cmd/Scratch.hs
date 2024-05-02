@@ -31,11 +31,11 @@ showScratchSource _ _ (Just (ScratchSRPM srpm)) = srpm
 -- FIXME --with --without ?
 -- FIXME allow parallel targets
 -- FIXME append timestamp after %release (to help identify scratch builds)
--- FIXME allow building from detached HEAD
-scratchCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Archs
+-- FIXME FIXME use option type:
+scratchCmd :: Bool -> Bool -> Bool -> Bool -> Bool -> Maybe Archs
            -> [SideTagTarget] -> Maybe ScratchSource -> (BranchesReq, [String])
            -> IO ()
-scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msource (breq,pkgs) =
+scratchCmd dryrun stagger rebuildSrpm nofailfast allowHEAD marchopts sidetagTargets msource (breq,pkgs) =
   withPackagesByBranches HeaderMust False Nothing AnyNumber scratchBuild (breq,pkgs)
   where
     anyTarget (RelBranch b) = branchTarget b
@@ -91,7 +91,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
           let kojiargs = ["--arch-override=" ++ intercalate "," archs | notNull archs] ++ ["--fail-fast" | not nofailfast && length archs /= 1] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
           if pkggit
             then do
-            gitSwitchBranch br
+            gitSwitchBranchVerbose False allowHEAD br
             pushed <- do
               case msource of
                 Just (ScratchRef ref) ->
@@ -127,15 +127,15 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast marchopts sidetagTargets msourc
               void $ generateSrpm (Just br) spec >>= kojiScratchBuild target kojiargs
 
 -- FIXME default -X to --no-fastfail?
-scratchCmdX86_64 :: Bool -> Bool -> Bool -> [SideTagTarget]
+scratchCmdX86_64 :: Bool -> Bool -> Bool -> Bool -> [SideTagTarget]
                  -> Maybe ScratchSource -> (BranchesReq, [String]) -> IO ()
-scratchCmdX86_64 dryrun rebuildSrpm excludeArch =
-  scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["x86_64"]))
+scratchCmdX86_64 dryrun rebuildSrpm allowHEAD excludeArch =
+  scratchCmd dryrun False rebuildSrpm False allowHEAD (Just (excludeArchs excludeArch ["x86_64"]))
 
-scratchCmdAarch64 :: Bool -> Bool -> Bool -> [SideTagTarget]
+scratchCmdAarch64 :: Bool -> Bool -> Bool -> Bool -> [SideTagTarget]
                   -> Maybe ScratchSource -> (BranchesReq, [String]) -> IO ()
-scratchCmdAarch64 dryrun rebuildSrpm excludeArch =
-  scratchCmd dryrun False rebuildSrpm False (Just (excludeArchs excludeArch ["aarch64"]))
+scratchCmdAarch64 dryrun rebuildSrpm allowHEAD excludeArch =
+  scratchCmd dryrun False rebuildSrpm False allowHEAD (Just (excludeArchs excludeArch ["aarch64"]))
 
 excludeArchs :: Bool -> [String] -> Archs
 excludeArchs excl = if excl then ExcludedArchs else Archs
