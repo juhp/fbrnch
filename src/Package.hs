@@ -366,8 +366,9 @@ pkgNameVerRel br spec = do
   hostdist <- cmd "rpm" ["--eval", "%{dist}"]
   -- FIXME more precise regexp with "Release:"
   autorelease <- isAutoRelease spec
-  nvrs <-
-    if autorelease
+  nvrs <- do
+    pkggit <- isPkgGitRepo
+    if autorelease && pkggit
     then do
       --putStrLn "%autorelease detected"
       mfedpkg <- findExecutable "fedpkg"
