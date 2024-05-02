@@ -283,7 +283,13 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
     putStr $ date +-+ "Building" +-+ showNVR nvr +-+ "locally... "
     ok <- do
       let buildlog = ".build-" ++ (showVerRel . nvrVerRel) nvr <.> "log"
-      whenM (doesFileExist buildlog) $
+      whenM (doesFileExist buildlog) $ do
+        let backup = buildlog <.> "prev"
+        whenM (doesFileExist backup) $ do
+          prevsize <- getFileSize backup
+          currsize <- getFileSize buildlog
+          when (prevsize > currsize) $
+            copyFile backup (backup <.> "prev")
         copyFile buildlog (buildlog <.> "prev")
       timeIO $
         if not quiet || isShortCircuit mforceshort
