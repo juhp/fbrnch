@@ -44,7 +44,7 @@ importCmd existingrepo mock (breq, ps) = do
       if not newrepo && not existingrepo
         then putStrLn "Skipping: already imported"
         else do
-        checkWorkingDirClean
+        checkWorkingDirClean False
         -- FIXME get session from importPkgs
         (bid,session) <- approvedReviewBugIdSession pkg
         putBugId bid

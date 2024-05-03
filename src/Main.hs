@@ -274,7 +274,7 @@ main = do
       <*> manyPackages
     , Subcommand "pull" "Git pull packages" $
       pullPkgs
-      <$> pullOpts
+      <$> optional pullOpts
       <*> branchesPackages
     , Subcommand "fetch" "Git fetch packages" $
       fetchPkgs
@@ -595,9 +595,9 @@ main = do
 
     pullOpts :: Parser PullOpts
     pullOpts =
-      PullOpts <$>
-      switchWith 'l' "lenient" "Ignore non-git dirs and files" <*>
-      switchWith 'f' "no-fetch" "Skip git fetch"
+      flagWith' PullLenient 'l' "lenient" "Ignore non-git dirs and files" <|>
+      flagWith' PullNoFetch 'f' "no-fetch" "Skip git fetch" <|>
+      flagWith' PullStash 's' "stash" "Stash local changes"
 
     buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
 

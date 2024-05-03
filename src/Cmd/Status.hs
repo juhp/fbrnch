@@ -188,7 +188,7 @@ unpushedCmd latest bump (breq, pkgs) =
     putCommit prefix = putStrLn . (prefix +-+) . showCommit
 
     doBump spec = do
-      checkWorkingDirClean
+      checkWorkingDirClean False
       dead <- doesFileExist "dead.package"
       if dead
         then putStrLn "dead package"

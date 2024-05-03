@@ -12,26 +12,26 @@ import Git
 import Package
 
 data PullOpts =
-  PullOpts { pullLenient :: Bool
-           , pullNoFetch :: Bool}
+  PullLenient | PullNoFetch | PullStash
+  deriving Eq
 
 -- FIXME pulling more than one branch
 -- FIXME print nvr after pulling or old -> new
-pullPkgs :: PullOpts -> (BranchesReq, [String]) -> IO ()
+pullPkgs :: Maybe PullOpts -> (BranchesReq, [String]) -> IO ()
 pullPkgs pullopts (breq,args) =
   withPackagesByBranches
   (if length args > 1 then HeaderMust else HeaderMay)
   False
-  (if pullLenient pullopts
-   then Nothing
-   else if pullNoFetch pullopts
-        then cleanGit
-        else cleanGitFetch)
+  (case pullopts of
+     Just PullLenient -> Nothing
+     Just PullNoFetch -> cleanGit
+     Just PullStash -> stashGitFetch
+     Nothing -> cleanGitFetch)
   AnyNumber pullPkg (breq,args)
   where
     pullPkg :: Package -> AnyBranch -> IO ()
     pullPkg pkg br =
-      if pullLenient pullopts
+      if pullopts == Just PullLenient
       then do
         haveGit <- isPkgGitRepo
         if haveGit
@@ -45,6 +45,12 @@ pullPkgs pullopts (breq,args) =
           unless (breq == Branches [] || RelBranch current == br) $
             gitSwitchBranch br
           gitMergeOrigin current
+          when (pullopts == Just PullStash) $ do
+            stashes <- git "stash" ["list"]
+            case line1 stashes of
+              (s0,_) | stashedWithFbrnch `isSuffixOf` s0 ->
+                       git_ "stash" ["pop", "--quiet"]
+              _ -> return ()
 
 fetchPkgs :: [String] -> IO ()
 fetchPkgs args =

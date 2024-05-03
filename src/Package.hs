@@ -35,6 +35,7 @@ module Package (
   dirtyGitActive,
   dirtyGitFetch,
   dirtyGitHEAD,
+  stashGitFetch,
   Package(..),
   packageSpec,
   pkgNameVerRel,
@@ -196,18 +197,20 @@ data GitOpts =
   , gitOptFetch :: Bool
   , gitOptActive :: Bool
   , gitOptHEAD :: Bool -- allow detached head/rebase state
+  , gitOptStash :: Bool
   }
 
-cleanGit, cleanGitActive, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitActive, dirtyGitFetch, dirtyGitHEAD :: Maybe GitOpts
---                                   clean fetch active HEAD
-cleanGit =            Just $ GitOpts True  False False  False
-cleanGitActive =      Just $ GitOpts True  False True   False
-cleanGitFetch =       Just $ GitOpts True  True  False  False
-cleanGitFetchActive = Just $ GitOpts True  True  True   False
-dirtyGit =            Just $ GitOpts False False False  False
-dirtyGitActive =      Just $ GitOpts False False True   False
-dirtyGitFetch =       Just $ GitOpts False True  False  False
-dirtyGitHEAD =        Just $ GitOpts False False False  True
+cleanGit, cleanGitActive, cleanGitFetch, cleanGitFetchActive, dirtyGit, dirtyGitActive, dirtyGitFetch, dirtyGitHEAD, stashGitFetch :: Maybe GitOpts
+--                                   clean fetch active HEAD  stash
+cleanGit =            Just $ GitOpts True  False False  False False
+cleanGitActive =      Just $ GitOpts True  False True   False False
+cleanGitFetch =       Just $ GitOpts True  True  False  False False
+cleanGitFetchActive = Just $ GitOpts True  True  True   False False
+dirtyGit =            Just $ GitOpts False False False  False False
+dirtyGitActive =      Just $ GitOpts False False True   False False
+dirtyGitFetch =       Just $ GitOpts False True  False  False False
+dirtyGitHEAD =        Just $ GitOpts False False False  True  False
+stashGitFetch =       Just $ GitOpts True  True  False  False True
 
 data LimitBranches = AnyNumber | Zero | ZeroOrOne | ExactlyOne
   deriving Eq
@@ -290,7 +293,7 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
             [br] -> when (fetch || header == HeaderMust) $ putPkgAnyBrnchHdr pkg br
             _ -> when (fetch || header /= HeaderNone) $ putPkgHdr pkg
         when haveGit $
-          when (have gitOptClean) checkWorkingDirClean
+          when (have gitOptClean) $ checkWorkingDirClean (have gitOptStash)
         when fetch $ gitFetchSilent False
         -- FIXME!! no branch restriction
         when (breq `elem` map BranchOpt [AllBranches,AllFedora,AllEPEL]) $

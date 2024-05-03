@@ -26,6 +26,7 @@ module Git (
   isPkgGitRepo,
   isPkgGitSshRepo,
   checkWorkingDirClean,
+  stashedWithFbrnch,
   isGitDirClean,
   checkIfRemoteBranchExists,
   CommitOpt (..),
@@ -191,12 +192,18 @@ gitFetchSilent quiet = do
     then unless quiet $ putStrLn "done"
     else putStrLn $ '\r' : intercalate "\n" filtered
 
-checkWorkingDirClean :: IO ()
-checkWorkingDirClean = do
+stashedWithFbrnch :: String
+stashedWithFbrnch = "saved by fbrnch"
+
+checkWorkingDirClean :: Bool -> IO ()
+checkWorkingDirClean stash = do
   clean <- isGitDirClean
-  unless clean $ do
-    dir <- getCurrentDirectory
-    error' $ "Working dir is not clean:" +-+ dir
+  unless clean $
+    if stash
+    then git_ "stash" ["-m", stashedWithFbrnch]
+    else do
+      dir <- getCurrentDirectory
+      error' $ "Working dir is not clean:" +-+ dir
 
 isGitDirClean :: IO Bool
 isGitDirClean =
