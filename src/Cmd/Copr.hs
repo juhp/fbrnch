@@ -71,7 +71,6 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
           _ -> listOfBranches False False breq
       let buildroots =
             -- FIXME sort archs appropriately
-            reverseSort $
             case marchs of
               Nothing ->
                 [chroot | chroot <- chroots, removeArch chroot `elem` map branchRelease branches]
