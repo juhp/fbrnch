@@ -535,7 +535,7 @@ main = do
     noFailFastOpt = switchWith 'f' "no-fail-fast" "Do not --fail-fast"
 
     excludeArch :: Parser String
-    excludeArch = strOptionWith 'X' "exclude-arch" "ARCH[,ARCH].." "build without arch(s)"
+    excludeArch = strOptionWith 'X' "exclude-arch" "ARCH" "build without arch"
 
     archesOpt :: Parser Archs
     archesOpt = Archs <$> some archOpt <|> ExcludedArchs <$> some excludeArch
