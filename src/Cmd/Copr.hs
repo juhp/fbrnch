@@ -83,9 +83,9 @@ coprCmd dryrun listchroots buildBy marchs project (breq, pkgs) = do
         then error' "No valid chroots"
         else return buildroots
 
-    coprBuildPkg buildroots morepkgs pkg = do
+    coprBuildPkg buildroots morepkgs _pkg = do
       -- FIXME check is pkg.spec
-      spec <- localBranchSpecFile pkg (RelBranch Rawhide)
+      spec <- findSpecfile
       -- pkg <- takeFileName <$> getCurrentDirectory
       -- hack to avoid generating srpm for dryrun
       srpm <- if not dryrun
