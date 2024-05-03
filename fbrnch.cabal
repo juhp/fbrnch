@@ -1,10 +1,11 @@
 cabal-version:       2.0
 name:                fbrnch
-version:             1.3.4
+version:             1.4
 synopsis:            Fedora packager tool to build package branches
 description:
-            fbrnch (fedora branch) is a convenient packaging tool for
-            Fedora Packagers, with integration for Bugzilla, Koji, and Bodhi.
+            fbrnch (fedora branch or "f-branch" for short) is
+            a convenient packaging tool for Fedora Packagers,
+            with integration for Bugzilla, Koji, and Bodhi.
             .
             Features include:
             .
@@ -27,14 +28,14 @@ license:             GPL-2
 license-file:        LICENSE
 author:              Jens Petersen <petersen@redhat.com>
 maintainer:          Jens Petersen <petersen@fedoraproject.org>
-copyright:           2019-2023 Jens Petersen
+copyright:           2019-2024 Jens Petersen
 category:            Distribution
 build-type:          Simple
 extra-doc-files:     CHANGELOG.md
                      README.md
 tested-with:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5,
                      GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8,
-                     GHC == 9.4.7, GHC == 9.6.3
+                     GHC == 9.4.8, GHC == 9.6.5, GHC == 9.8.2
 
 source-repository head
   type:                git

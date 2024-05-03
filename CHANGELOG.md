@@ -1,6 +1,44 @@
 # Changelog
 
-## 1.3.4 (2023-11-20)
+## 1.4 (2024-05-03)
+- buildSrpm: filter .src.rpm filename
+- checkSourcesMatch: prompt before amending and abort if still dirty
+- getSources: handle no srcdir correctly when checking for sources
+- pkgNameVerRel: only fedpkg verrel for autorelease if dist-git
+- use rpm-nvr NVR type everywhere
+- 'build': fail earlier if dirty
+- 'build': replace --allow-dirty with --stash
+- 'commit': don't look for unstaged local changes if --unstaged
+- 'commit': don't print singleline commit msg unnecessarily
+- 'commit': unquote macros from changelog diff for commit msg
+- 'copr': don't use localBranchSpecFile rawhide
+- 'copr','scratch': doc --exclude-arch only takes a single arch
+- 'create-review': set bug url field with spec url
+- 'ftbfs': include Modified bugs
+- 'import': use Yes/no prompt to push
+- 'install': now defaults to verbose build output with a --quiet option
+- 'local','install': -c short option for --short-compile
+- 'local','install': re-backup previous buildlog if bigger than current
+- 'merge': add newline after unmerged commits
+- 'mock': can now build from non-dist-git
+- 'move-artifacts': allow dirty
+- 'move-artifacts': improve arch/rpms dir logic
+- 'parallel': assert git is clean before pushing
+- 'parallel': don't error if no builds to push to Bodhi
+- 'parallel': no longer wait for bodhi to transition to request-testing
+- 'parallel': use dependencyLayersRpmOpts from rpmbuild-order-0.4.11
+- 'parallel': use koji-tool tasks to get failed build.log url
+- 'parallel': use pluralException to special case zero
+- 'pull': --stash does git stash and pop around git pull
+- 'request-branches': filter for processed pending branches
+- 'request-repos': print bz url before proceeding
+- 'review-package': do not assume cwd matches pkg name
+- 'scratch' --allow-head detached with gitSwitchBranchVerbose
+- 'sort': distRpmOptions defines %fedora/%rhel %fcN/%elN
+- 'switch' --verbose
+
+earlier changes from November:
+
 - 'build','parallel': checkSourcesMatch now offers to 'update-sources'
 - 'build': only check tags if overriding
 - 'builddeps': renamed from 'install-deps'

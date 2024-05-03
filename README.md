@@ -39,7 +39,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f39 [package] ...
+$ fbrnch switch f40 [package] ...
 ```
 
 You can also git pull over packages:
@@ -97,13 +97,13 @@ or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f38 package
+$ fbrnch merge f39 package
 ```
 which will offer to merge f39 (or up to a git hash you choose) into f38.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build f38 package
+$ fbrnch build f39 package
 ```
 will ask if you want to merge newer commits from a newer branch,
 then push and build it.
@@ -258,15 +258,15 @@ Optionally a mock build per branch can be done first.
 ### Other commands
 There are a lot more commands, like eg `copr` and `graph`:
 
-Here is an "extreme" [example](https://github.com/fedora-haskell/haskell-language-server/blob/main/build.sh) of a script using `fbrnch copr` to do multiple staggered builds.
-
 ## Help
 `$ fbrnch --version`
+
 ```
-1.3.4
+1.4
 ```
 
 `$ fbrnch --help`
+
 ```
 Fedora branch building tool
 
@@ -439,7 +439,7 @@ and gradually more features, including some generic commands across packages
 inspired by the older fedora-haskell-tools project.
 
 I have given a couple of short talks about fbrnch:
-- Nest with Fedora: [youtube](https://www.youtube.com/watch?v=40kTBsA674U) and [slides](https://github.com/juhp/presentations/blob/master/fedora-nest-2020-fbrnch/fbrnch-nest.md)
+- Nest with Fedora 2020: [youtube](https://www.youtube.com/watch?v=40kTBsA674U) and [slides](https://github.com/juhp/presentations/blob/master/fedora-nest-2020-fbrnch/fbrnch-nest.md)
 - Lightning talk for devconf.cz 2021: [youtube](https://www.youtube.com/watch?v=O2-6rDuPMRA&t=2s)
 
 ## Contribute
