@@ -32,7 +32,7 @@ data BuildOpts = BuildOpts
   , buildoptUpdate :: (Maybe UpdateType, UpdateSeverity)
   , buildoptUseChangelog :: Bool
   , buildoptByPackage :: Bool
-  , buildoptAllowDirty :: Bool
+  , buildoptStash :: Bool
   }
 
 -- FIXME --yes
@@ -58,7 +58,7 @@ buildCmd opts (breq, pkgs) = do
                     then Just (Package (last pkgs))
                     else Nothing
       gitopts
-        | buildoptAllowDirty opts = dirtyGitActive
+        | buildoptStash opts = stashGitFetch
         | buildoptSkipFetch opts = cleanGitActive
         | otherwise = cleanGitFetchActive
   if not (buildoptByPackage opts) && breq /= Branches [] && length pkgs > 1
@@ -192,7 +192,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                         putStrLn $ "Warning:" +-+ showNVR newest +-+ "still in testing?"
                         promptEnter "Press Enter to continue"
                       return False
-            unless (buildoptAllowDirty opts) $
+            unless (buildoptStash opts) $
               unlessM isGitDirClean $
               error' "local changes remain (dirty)"
             unless dryrun krbTicket

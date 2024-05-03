@@ -517,7 +517,7 @@ main = do
       <*> updateOpt
       <*> useChangelogOpt
       <*> switchWith 'p' "by-package" "Build by each package across brs"
-      <*> switchWith 'k' "allow-dirty" "Allow building from unclean git dir"
+      <*> switchLongWith "stash" "git stash before fetching and building"
       where
         overrideOpt =
           optional (optionWith auto 'o' "override" "DAYS" "Create buildroot override for specified days: implies --wait-repo")
