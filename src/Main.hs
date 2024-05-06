@@ -62,7 +62,8 @@ main = do
     subcommands
     [ Subcommand "clone" "Clone packages" $
       cloneCmd
-      <$> cloneRequest
+      <$> optional (optionWith branchM 'b' "branch" "BRANCH" "branch")
+      <*> cloneRequest
     , Subcommand "switch" "Switch branch" $
       switchCmd
       <$> verboseOpt "verbose output"
@@ -387,7 +388,8 @@ main = do
     cloneRequest =
       flagWith' (CloneUser Nothing) 'M' "mine" "Your packages" <|>
       CloneUser . Just <$> strOptionWith 'u' "user" "USER" "Packages of FAS user" <|>
-      ClonePkgs <$> maybeBranchPackages True
+      CloneGroup <$> strOptionWith 'g' "group" "GROUP" "Packages of package group" <|>
+      ClonePkgs <$> somePackages
 
     reviewShortOpt :: Parser Bool
     reviewShortOpt = switchWith 's' "short" "Only output the package name"
@@ -426,8 +428,8 @@ main = do
     manyPackages :: Parser [String]
     manyPackages =  many (pkgArg "PKGPATH...")
 
-    -- somePackages :: Parser [String]
-    -- somePackages = some (pkgArg "PKGPATH...")
+    somePackages :: Parser [String]
+    somePackages = some (pkgArg "PKG...")
 
     branchesOpt :: Parser (Maybe BranchOpts)
     branchesOpt =

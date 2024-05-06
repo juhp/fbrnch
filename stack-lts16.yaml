@@ -6,7 +6,7 @@ extra-deps:
   - rpm-nvr-0.1.2
   - pdc-0.1.1
   - bodhi-0.1.0
-  - pagure-0.1.0
+  - pagure-0.2.1
   - copr-api-0.1.0
   - cached-json-file-0.1.1
   - fedora-dists-2.1.1
@@ -14,3 +14,4 @@ extra-deps:
   - HsOpenSSL-0.11.7.2
   - simple-cmd-args-0.1.8
   - simple-prompt-0.2.0.1
+  - http-query-0.1.2

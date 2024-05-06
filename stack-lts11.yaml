@@ -11,13 +11,13 @@ extra-deps:
   - koji-0.0.1
   - rpmbuild-order-0.4.11
   - pretty-terminal-0.1.0.0
-  - http-query-0.1.0
+  - http-query-0.1.2
   - fgl-5.5.4.0
   - graphviz-2999.19.0.0
   - rpm-nvr-0.1.2
   - pdc-0.1.1
   - bodhi-0.1.0
-  - pagure-0.1.0
+  - pagure-0.2.1
   - copr-api-0.1.0
   - cached-json-file-0.1.0
   - fedora-dists-2.1.1

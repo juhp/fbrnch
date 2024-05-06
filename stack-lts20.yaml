@@ -2,3 +2,4 @@ resolver: lts-20.26
 extra-deps:
   - simple-prompt-0.2.0.1
   - rpmbuild-order-0.4.11
+  - pagure-0.2.1

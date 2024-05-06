@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.1 (2024-05-XX)
+- clone: --group allows cloning all group packages (#46)
+
 ## 1.4 (2024-05-03)
 - buildSrpm: filter .src.rpm filename
 - checkSourcesMatch: prompt before amending and abort if still dirty

@@ -8,20 +8,22 @@ import Krb
 import Package
 import Pagure
 
-data CloneRequest = CloneUser (Maybe String)
-                  | ClonePkgs (Maybe Branch, [String])
+data CloneRequest = CloneGroup String
+                  | CloneUser (Maybe String)
+                  | ClonePkgs [String]
 
 -- FIXME allow pagure repo wildcard
 -- FIXME (detect commit rights or a ssh key?)
-cloneCmd :: CloneRequest -> IO ()
-cloneCmd request = do
-  (mbr,pkgs) <- case request of
+cloneCmd :: Maybe Branch -> CloneRequest -> IO ()
+cloneCmd mbr request = do
+  pkgs <- case request of
             CloneUser mid -> do
               userid <- maybe fasIdFromKrb return mid
-              ps <- map (takeFileName . T.unpack) <$> pagureUserRepos srcfpo userid
-              return (Nothing, ps)
+              map (takeFileName . T.unpack) <$> pagureUserRepos srcfpo userid
             -- FIXME detect/prevent "path/dir"
-            ClonePkgs mbps -> return mbps
+            ClonePkgs ps -> return ps
+            CloneGroup grp -> do
+              map (takeFileName . T.unpack) <$> pagureGroupRepos srcfpo False grp
   mfas <- maybeFasIdFromKrb
   let auth = maybe AnonClone (const UserClone) mfas
   mapM_ (clonePkg False auth mbr) pkgs

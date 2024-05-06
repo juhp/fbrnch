@@ -1,6 +1,6 @@
 cabal-version:       2.0
 name:                fbrnch
-version:             1.4
+version:             1.4.1
 synopsis:            Fedora packager tool to build package branches
 description:
             fbrnch (fedora branch or "f-branch" for short) is
@@ -119,7 +119,7 @@ executable fbrnch
                        http-query,
                        koji,
                        network-uri,
-                       pagure >= 0.1,
+                       pagure >= 0.2.1,
                        pretty-terminal,
                        process,
                        -- regex-tdfa,
