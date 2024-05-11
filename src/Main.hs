@@ -304,7 +304,8 @@ main = do
       <*> optional (strArg "SPECFILE")
     , Subcommand "review-package" "Run fedora-review on a package Review Request bug" $
       reviewPackage
-      <$> optional (pkgArg "PACKAGE/BZID")
+      <$> switchWith 'd' "download" "Only download source links from bugzilla review"
+      <*> optional (pkgArg "PACKAGE/BZID")
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd
       <$> reviewShortOpt

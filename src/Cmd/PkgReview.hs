@@ -17,6 +17,8 @@ import SimplePrompt (promptEnter, yesNoDefault)
 
 import Branches
 import Bugzilla
+import Cmd.Import (downloadReviewSRPM)
+import Cmd.Prep (prepCmd)
 import Koji
 import Krb
 import Package
@@ -147,24 +149,48 @@ mockRpmLint mock pkg spec srpm = do
 
 -- FIXME does not work with pkg dir/spec:
 -- 'fbrnch: No spec file found'
--- FIXME: option to only download/prep files
-reviewPackage :: Maybe String -> IO ()
-reviewPackage Nothing = do
+reviewPackage :: Bool -> Maybe String -> IO ()
+reviewPackage _ Nothing = do
   -- FIXME catch no spec file
   spec <- findSpecfile
   srpm <- generateSrpm Nothing spec
   cmd_ "fedora-review" ["-rn", srpm]
-reviewPackage (Just pkgbug) = do
-  bugs <- bugsAnon $
-          if all isDigit pkgbug
-          then packageReview .&&. statusNewAssigned .&&. bugIdIs (read pkgbug)
-          else pkgReviews pkgbug .&&. statusNewAssigned
+reviewPackage download (Just pkgbug) = do
+  let epkgbid =
+        if all isDigit pkgbug
+        then Right $ read pkgbug
+        else Left pkgbug
+  (bugs,session) <- bugsSession $
+          case epkgbid of
+            Right bid -> packageReview .&&. statusNewAssigned .&&. bugIdIs bid
+            Left pkg -> pkgReviews pkg .&&. statusNewAssigned
   case bugs of
     [bug] -> do
       putReviewBug False bug
-      promptEnter "Press Enter to run fedora-review"
-      -- FIXME support copr build
-      -- FIXME if toolbox set REVIEW_NO_MOCKGROUP_CHECK
-      cmd_ "fedora-review" ["-b", show (bugId bug)]
+      let bid = bugId bug
+          pkg = reviewBugToPackage bug
+      if download
+        then do
+        let dir = show bid ++ '-' : pkg
+        -- FIXME check if current directory
+        exists <- doesDirectoryExist dir
+        unless exists $
+          createDirectory dir
+        setCurrentDirectory dir
+        srpm <- downloadReviewSRPM False bid session
+        when exists $ do
+          cmd_ "ls" []
+          promptEnter $ "Press Enter to install and prep" +-+ srpm
+        cmd_ "rpm" ["-ivh", srpm]
+        prepCmd Nothing False False (Nothing,[])
+        -- FIXME check tarball matches upstream
+        -- FIXME build or download rpms
+        void $ cmdBool "rpmlint" ["."] -- $ spec:srpm:rpms
+        putStrLn dir
+        else do
+        promptEnter "Press Enter to run fedora-review"
+        -- FIXME support copr build
+        -- FIXME if toolbox set REVIEW_NO_MOCKGROUP_CHECK
+        cmd_ "fedora-review" ["-b", show bid]
     [] -> error' $ "No package review found for" +-+ pkgbug
     _ -> error' $ "More than one review bug found for" +-+ pkgbug
