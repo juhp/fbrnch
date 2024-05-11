@@ -1,1 +1,4 @@
 resolver: nightly-2023-10-02
+
+ghc-options:
+  HsOpenSSL: -optc=-Wno-incompatible-pointer-types
