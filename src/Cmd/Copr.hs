@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Cmd.Copr (
   BuildBy(..),
@@ -8,7 +9,7 @@ module Cmd.Copr (
   )
 where
 
-import Data.Aeson.Types (Value(Object), Object)
+import Data.Aeson.Types (Object)
 #if MIN_VERSION_aeson(2,0,0)
 import Data.Aeson.Key
 import qualified Data.Aeson.KeyMap as M
@@ -17,6 +18,8 @@ import qualified Data.HashMap.Strict as M
 #endif
 import Data.Char (isDigit)
 import Data.Ini.Config
+import Data.RPM.NVR (nvrVerRel)
+import Data.RPM.VerRel (showVerRel)
 import Data.Tuple.Extra (first)
 import Network.HTTP.Query (lookupKey, lookupKey')
 import System.Environment.XDG.BaseDir (getUserConfigDir)
@@ -122,9 +125,9 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
           if exists
             then return dirpkg
             else Package . takeBaseName <$> findSpecfile
-        coprBuildPkg chroots False pkg
+        coprBuildPkg user chroots False pkg
         else
-        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg chroots (n>0) (Package p)) $ zip (reverse [0,length pkgs - 1]) pkgs
+        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user chroots (n>0) (Package p)) $ zip (reverse [0,length pkgs - 1]) pkgs
   where
     coprGetChroots :: String -> IO [Chroot]
     coprGetChroots username = do
@@ -155,8 +158,8 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
         then error' "No valid chroots"
         else return buildroots
 
-    coprBuildPkg :: [Chroot] -> Bool -> Package -> IO ()
-    coprBuildPkg buildroots morepkgs _pkg = do
+    coprBuildPkg :: String -> [Chroot] -> Bool -> Package -> IO ()
+    coprBuildPkg user buildroots morepkgs pkg = do
       -- FIXME check is pkg.spec
       -- was: localBranchSpecFile pkg (RelBranch Rawhide)
       spec <- findSpecfile
@@ -164,23 +167,32 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
       srpm <- if not dryrun
               then generateSrpmNoDist True False Nothing spec
               else return spec -- hack to avoid generating srpm for dryrun
+      verrel <- showVerRel . nvrVerRel <$> pkgNameVerRelNodist spec
+      monitorPkgs <- coprMonitorPackages user project
+      let monitor = lookup pkg monitorPkgs
+          builtChroots =
+            case monitor of
+              Nothing -> []
+              Just tasks ->
+                filter (\CoprTask{..} -> taskVerRel == verrel && taskStatus /= "failed") tasks
+          finalChroots = buildroots \\ map taskChroot builtChroots
       case buildBy of
-        SingleBuild -> coprBuild dryrun project srpm spec buildroots
+        SingleBuild -> coprBuild dryrun project srpm spec finalChroots
         -- FIXME or default to secondary parallel to previous primary
         ValidateByRelease -> do
           let initialChroots =
-                let primaryArch = chrootArch $ head buildroots
-                in map pure $ filter (isArch primaryArch) buildroots
-              remainingChroots = buildroots \\ concat initialChroots
+                let primaryArch = chrootArch $ head finalChroots
+                in map pure $ filter (isArch primaryArch) finalChroots
+              remainingChroots = finalChroots \\ concat initialChroots
           staggerBuilds srpm spec initialChroots remainingChroots
         ValidateByArch -> do
           let initialChroots =
-                let newestRelease = chrootBranch $ head buildroots
-                in map pure $ filter ((== newestRelease) . chrootBranch) buildroots
-              remainingChroots = buildroots \\ concat initialChroots
+                let newestRelease = chrootBranch $ head finalChroots
+                in map pure $ filter ((== newestRelease) . chrootBranch) finalChroots
+              remainingChroots = finalChroots \\ concat initialChroots
           staggerBuilds srpm spec initialChroots remainingChroots
         BuildByRelease -> do
-          let releaseChroots = groupBy sameRelease buildroots
+          let releaseChroots = groupBy sameRelease finalChroots
           staggerBuilds srpm spec releaseChroots []
       when morepkgs putNewLn
 
@@ -277,37 +289,44 @@ sortArchs = sortBy priority
           (Nothing, Just _) -> GT
           (Nothing,Nothing) -> EQ
 
--- code from copr-tool
-coprMonitor :: String -> String -> IO ()
-coprMonitor user proj = do
+type CoprPackage = (Package,[CoprTask])
+
+data CoprTask = CoprTask {taskChroot :: Chroot,
+                          taskStatus :: String,
+                          taskVerRel :: String
+                         }
+
+coprMonitorPackages :: String -> String -> IO [CoprPackage]
+coprMonitorPackages user proj = do
   res <- coprMonitorProject fedoraCopr user proj []
-  let pkgs = lookupKey' "packages" res :: [Object]
-  (mapM_ printPkgRes . mapMaybe pkgResults) pkgs
+  return $ mapMaybe pkgResults $ lookupKey' "packages" res
   where
-    pkgResults :: Object -> Maybe (T.Text,Object)
+    pkgResults :: Object -> Maybe CoprPackage
     pkgResults obj = do
       name <- lookupKey "name" obj
-      chroots <- lookupKey "chroots" obj
-      return (name,chroots)
-
-    printPkgRes :: (T.Text,Object) -> IO ()
-    printPkgRes (name,chroots) = do
-      T.putStrLn $ "# " <> name
-      mapM_ (printChRes . first toText) $ M.toList chroots
-      T.putStrLn ""
+      chroots <- map (first toText) . M.toList <$> lookupKey "chroots" obj
+      return (Package name, mapMaybe chrootResults chroots)
 #if !MIN_VERSION_aeson(2,0,0)
       where toText = id
 #endif
 
-    printChRes :: (T.Text,Value) -> IO ()
-    printChRes (chr, val) =
-      T.putStrLn $ chr <> ": " <>
-      case val of
-        Object obj -> fromMaybe "" $ chrResults obj
-        _ -> error' $ "bad chroot result for " <> T.unpack chr
-      where
-        chrResults :: Object -> Maybe T.Text
-        chrResults obj = do
-          state <- lookupKey "state" obj
-          version <- lookupKey "pkg_version" obj
-          return $ state <> " " <> version
+    chrootResults :: (T.Text,Object) -> Maybe CoprTask
+    chrootResults (chroot, obj) = do
+      state <- lookupKey "state" obj
+      version <- lookupKey "pkg_version" obj
+      return $ CoprTask (readChroot (T.unpack chroot)) state version
+
+-- code from copr-tool
+coprMonitor :: String -> String -> IO ()
+coprMonitor user proj =
+  coprMonitorPackages user proj >>=
+  mapM_ printPkgRes
+  where
+    printPkgRes (pkg,chroots) = do
+      putStrLn $ "# " <> unPackage pkg
+      mapM_ printChootResult chroots
+      putStrLn ""
+
+    printChootResult :: CoprTask -> IO ()
+    printChootResult (CoprTask chr status version) =
+      putStrLn $ showChroot chr ++ ":" +-+ status +-+ version

@@ -40,6 +40,7 @@ module Package (
   packageSpec,
   pkgNameVerRel,
   pkgNameVerRel',
+  pkgNameVerRelNodist,
   equivNVR,
   editSpecField,
   isAutoRelease
@@ -361,9 +362,19 @@ isAutoRelease spec = do
   matches <- filter ("Release:" `isPrefixOf`) <$> grep "%autorelease" spec
   return $ not (null matches)
 
--- FIXME return NVR??
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe NVR)
-pkgNameVerRel br spec = do
+pkgNameVerRel = pkgNameVerRelDist . Just
+
+pkgNameVerRelDist :: Maybe Branch -> FilePath -> IO (Maybe NVR)
+pkgNameVerRelDist Nothing spec = do
+  nvrs <- rpmspec ["--srpm", "--undefine=dist"] (Just "%{name}-%{version}-%{release}") spec
+  return $
+    case nvrs of
+      [] -> Nothing
+      [nvr] -> maybeNVR nvr
+      _ -> error' "could not determine unique nvr"
+
+pkgNameVerRelDist (Just br) spec = do
   disttag <- rpmDistTag <$> branchDist br
   -- workaround dist with bootstrap
   hostdist <- cmd "rpm" ["--eval", "%{dist}"]
@@ -389,6 +400,13 @@ pkgNameVerRel br spec = do
 pkgNameVerRel' :: Branch -> FilePath -> IO NVR
 pkgNameVerRel' br spec = do
   mnvr <- pkgNameVerRel br spec
+  case mnvr of
+    Nothing -> error' $ "rpmspec failed to parse" +-+ spec
+    Just nvr -> return nvr
+
+pkgNameVerRelNodist :: FilePath -> IO NVR
+pkgNameVerRelNodist spec = do
+  mnvr <- pkgNameVerRelDist Nothing spec
   case mnvr of
     Nothing -> error' $ "rpmspec failed to parse" +-+ spec
     Just nvr -> return nvr
