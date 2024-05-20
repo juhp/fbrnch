@@ -108,7 +108,7 @@ executable fbrnch
                        bugzilla-redhat >= 1.0.1,
                        bytestring,
                        config-ini,
-                       copr-api,
+                       copr-api >= 0.2,
                        directory >= 1.2.3,
                        email-validate,
                        extra,
@@ -139,6 +139,8 @@ executable fbrnch
        build-depends: semigroups
   if impl(ghc<8.4)
        build-depends: http-common < 0.8.3.4
+  if impl(ghc<9)
+       build-depends: unordered-containers
 
   ghc-options:         -threaded
                        -Wall

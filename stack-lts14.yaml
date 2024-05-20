@@ -10,7 +10,7 @@ extra-deps:
   - pdc-0.1.1
   - bodhi-0.1.0
   - pagure-0.2.1
-  - copr-api-0.1.0
+  - copr-api-0.2.0
   - cached-json-file-0.1.0
   - fedora-dists-2.1.1
   - bugzilla-redhat-1.0.1

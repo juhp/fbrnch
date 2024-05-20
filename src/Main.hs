@@ -347,7 +347,8 @@ main = do
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
       coprCmd
       <$> dryrunOpt "Dry run: do not build"
-      <*> switchWith 'l' "list-chroots" "Show project chroots"
+      <*> (flagWith' ListChroots 'l' "list-chroots" "Show project chroots" <|>
+           flagWith CoprBuild CoprMonitor 'm' "monitor" "Show project chroots")
       <*> buildByOpt
       <*> optional archesOpt
       <*> pkgArg "PROJECT"

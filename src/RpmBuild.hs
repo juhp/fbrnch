@@ -8,6 +8,7 @@ module RpmBuild (
   getDynSourcesMacros,
   generateSrpm,
   generateSrpm',
+  generateSrpmNoDist,
   BCond(..),
   ForceShort(..),
   isShortCircuit,
@@ -178,13 +179,15 @@ generateSrpm :: Maybe AnyBranch -> FilePath -> IO FilePath
 generateSrpm = generateSrpm' False
 
 generateSrpm' :: Bool -> Maybe AnyBranch -> FilePath -> IO FilePath
-generateSrpm' force mbr spec = do
+generateSrpm' = generateSrpmNoDist False
+
+generateSrpmNoDist :: Bool -> Bool -> Maybe AnyBranch -> FilePath -> IO FilePath
+generateSrpmNoDist nodist force mbr spec = do
   srcs <- getSources spec
-  distopt <- case mbr of
-               Nothing -> return []
-               Just br -> do
-                 dist <- getBranchDist br
-                 return $ distOpt dist
+  distopt <-
+    if nodist
+    then return ["--undefine", "dist"]
+    else maybe (return []) (fmap distOpt . getBranchDist) mbr
   msrcrpmdir <- rpmEval "%{_srcrpmdir}"
   srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", fromMaybe "" msrcrpmdir </> "%{name}-%{version}-%{release}.src.rpm", spec]
   cwd <- getCurrentDirectory
