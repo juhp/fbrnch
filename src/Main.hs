@@ -143,7 +143,7 @@ main = do
       <*> switchLongWith "stagger" "Stagger archs"
       <*> rebuildSrpmOpt
       <*> noFailFastOpt
-      <*> switchLongWith "allow-head" "allow detached HEAD"
+      <*> allowHeadOpt
       <*> optional archesOpt
       <*> many (sidetagTargetOpt Nothing)
       <*> optional scratchSourceOpt
@@ -152,7 +152,7 @@ main = do
       scratchCmdAarch64
       <$> dryrunOpt "Dry run: do not build"
       <*> rebuildSrpmOpt
-      <*> switchLongWith "allow-head" "allow detached HEAD"
+      <*> allowHeadOpt
       <*> switchWith 'X' "exclude-arch" "Exclude aarch64"
       <*> many (sidetagTargetOpt Nothing)
       <*> optional scratchSourceOpt
@@ -161,7 +161,7 @@ main = do
       scratchCmdX86_64
       <$> dryrunOpt "Dry run: do not build"
       <*> rebuildSrpmOpt
-      <*> switchLongWith "allow-head" "allow detached HEAD"
+      <*> allowHeadOpt
       <*> switchWith 'X' "exclude-arch" "Exclude x86_64"
       <*> many (sidetagTargetOpt Nothing)
       <*> optional scratchSourceOpt
@@ -187,6 +187,7 @@ main = do
       <$> optional prepPreOpts
       <*> verboseOpt "show rpmbuild output"
       <*> switchWith 'd' "deps" "require deps to be installed"
+      <*> allowHeadOpt
       <*> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
       localCmd
@@ -670,3 +671,5 @@ main = do
 
     quietOpt :: String -> Parser Bool
     quietOpt = switchWith 'q' "quiet"
+
+    allowHeadOpt = switchLongWith "allow-head" "allow detached HEAD"

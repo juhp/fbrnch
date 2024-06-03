@@ -16,11 +16,12 @@ data PrepPre = PrepClone | PrepPull
   deriving Eq
 
 -- FIXME prompt for cloning
-prepCmd :: Maybe PrepPre -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
-prepCmd mpre verbose deps (mbr,pkgs) = do
+prepCmd :: Maybe PrepPre -> Bool -> Bool -> Bool -> (Maybe Branch,[String])
+        -> IO ()
+prepCmd mpre verbose deps allowhead (mbr,pkgs) = do
   when (mpre == Just PrepClone) $
     cloneCmd mbr (ClonePkgs pkgs)
-  withPackagesMaybeBranchNoHeadergit prepPackage (mbr,pkgs)
+  withPackagesMaybeBranch HeaderNone False (if allowhead then dirtyGitHEAD else Nothing) prepPackage (mbr,pkgs)
   where
     prepPackage :: Package -> AnyBranch -> IO ()
     prepPackage pkg br = do
@@ -33,7 +34,7 @@ prepCmd mpre verbose deps (mbr,pkgs) = do
           putStr $ unPackage pkg ++ ": "
         putStrLn "dead.package"
         else do
-        spec <- localBranchSpecFile pkg br
+        spec <- if allowhead then findSpecfile else localBranchSpecFile pkg br
         unlessM (doesFileExist spec) $
           error' $ spec +-+ "not found"
         getSourcesMacros spec

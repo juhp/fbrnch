@@ -182,7 +182,7 @@ reviewPackage download (Just pkgbug) = do
           cmd_ "ls" []
           promptEnter $ "Press Enter to install and prep" +-+ srpm
         cmd_ "rpm" ["-ivh", srpm]
-        prepCmd Nothing False False (Nothing,[])
+        prepCmd Nothing False False False (Nothing,[])
         -- FIXME check tarball matches upstream
         -- FIXME build or download rpms
         void $ cmdBool "rpmlint" ["."] -- $ spec:srpm:rpms
