@@ -17,7 +17,9 @@ import SimplePrompt (promptEnter, yesNoDefault)
 
 import Branches
 import Bugzilla
-import Cmd.Import (downloadReviewSRPM)
+import Cmd.Import (downloadReviewSRPM, pkgreviewSpecDir)
+import Cmd.Install (installCmd)
+import Cmd.Local (localCmd)
 import Cmd.Prep (prepCmd)
 import Koji
 import Krb
@@ -177,16 +179,47 @@ reviewPackage download (Just pkgbug) = do
         unless exists $
           createDirectory dir
         setCurrentDirectory dir
-        srpm <- downloadReviewSRPM False bid session
-        when exists $ do
-          cmd_ "ls" []
-          promptEnter $ "Press Enter to install and prep" +-+ srpm
-        cmd_ "rpm" ["-ivh", srpm]
-        prepCmd Nothing False False False (Nothing,[])
-        -- FIXME check tarball matches upstream
-        -- FIXME build or download rpms
-        void $ cmdBool "rpmlint" ["."] -- $ spec:srpm:rpms
-        putStrLn dir
+        srpm <- downloadReviewSRPM True False pkg bid session
+        importsrpm <-
+          if exists
+          then do
+          putStrLn $ "in" +-+ dir </> ":\n"
+          cmd_ "ls" ["-F"]
+          putNewLn
+          yesNoDefault False $ "Press Enter to install and prep" +-+ srpm
+          else return True
+        let spec = pkg <.> "spec"
+        when importsrpm $ do
+          -- FIXME override %_SOURCEDIR so it doesn't put elsewhere
+          cmd_ "rpm" ["-ivh", srpm]
+          putStrLn "diff with SPEC/"
+          cmd_ "diff" ["-u", spec, pkgreviewSpecDir </> spec]
+          prepCmd Nothing False False False (Nothing,[])
+          withCurrentDirectory pkgreviewSpecDir $
+            void $ getSources spec
+          diff <- lines <$> cmdIgnoreErr "diff" ["--brief", ".", pkgreviewSpecDir] ""
+          let filterdiff = filter (\d -> not (any (`isSuffixOf` d) ["SPEC","SRPMS","RPMS","BUILD","BUILDROOT","src.rpm",".log"])) diff
+          if null filterdiff
+            then putStrLn $ "no difference with" +-+ pkgreviewSpecDir ++ "/"
+            else mapM_ putStrLn filterdiff
+        -- FIXME or download rpms
+        build <- yesNoDefault importsrpm "Build package locally"
+        when build $
+          localCmd False False Nothing [] (Branches [],[])
+        void $ cmdBool "rpmlint" ["."] -- FIXME $ spec:srpm:rpms
+        whenM (yesNoDefault importsrpm "Install packages locally") $ do
+          installCmd False False Nothing Nothing [] False True True False (Nothing,[])
+          rpms <- cmdLines "rpmspec" ["-q", "--rpms", "--qf", "%{name}\n", spec]
+          whenM (yesNoDefault importsrpm "Rpmlint installed packages") $
+            void $ cmdBool "rpmlint" $ "-i" : rpms
+        -- FIXME filter out unknown
+        cmdLines "licensecheck" ["-r", "BUILD"] >>=
+          -- handle "FILEPATH: *No copyright* UNKNOWN [generated file]"
+          mapM_ putStrLn . filter (not . (" UNKNOWN" `isInfixOf`))
+        cmd_ "rpmspec" ["-q", "--srpm", "--qf", "Spec license: %{license}\n", spec]
+        putNewLn
+        putReviewBug False bug
+        putStrLn $ "package is in" +-+ dir
         else do
         promptEnter "Press Enter to run fedora-review"
         -- FIXME support copr build
