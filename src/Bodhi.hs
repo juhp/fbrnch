@@ -29,6 +29,7 @@ import Common
 import Common.System
 import qualified Common.Text as T
 import Package
+import Types (ChangeType(ChangeBodhi))
 
 checkAutoBodhiUpdate :: Branch -> IO Bool
 checkAutoBodhiUpdate Rawhide = return True
@@ -147,10 +148,10 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
                            then getSummaryURL spec
                            else
                              if usechangelog
-                             then cleanChangelog spec
+                             then cleanChangelog True spec
                              else
                                -- FIXME list open bugs
-                               changeLogPrompt True spec
+                               changeLogPrompt ChangeBodhi spec
               if trim (lower changelog) `elem` ["no","n"]
                 then return False
                 else do

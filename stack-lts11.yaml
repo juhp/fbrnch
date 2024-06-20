@@ -23,4 +23,4 @@ extra-deps:
   - fedora-dists-2.1.1
   - bugzilla-redhat-1.0.1
   - HsOpenSSL-0.11.7.2
-  - simple-prompt-0.2.0.1
+  - simple-prompt-0.2.3

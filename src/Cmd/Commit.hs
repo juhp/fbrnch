@@ -41,7 +41,7 @@ commitPkgs mopt firstLine unstaged paths = do
             Nothing -> do
               changelog <- do
                 spec <- findSpecfile
-                clog <- lines <$> cleanChangelog spec
+                clog <- lines <$> cleanChangelog True spec
                 case clog of
                   [] -> readCommitMsg
                   [msg] -> return msg

@@ -1,7 +1,8 @@
 module Types (
   Archs(..),
   SideTagTarget(..),
-  maybeTarget
+  maybeTarget,
+  ChangeType(..)
   )
 where
 
@@ -13,3 +14,6 @@ data SideTagTarget = SideTag | Target String
 maybeTarget :: Maybe SideTagTarget -> Maybe String
 maybeTarget (Just (Target t)) = Just t
 maybeTarget _ = Nothing
+
+data ChangeType = ChangeBodhi | ChangeCommit | ChangeReview
+  deriving Eq

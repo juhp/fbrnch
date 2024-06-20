@@ -25,6 +25,7 @@ import Koji
 import Krb
 import Package
 import RpmBuild
+import Types (ChangeType(ChangeReview))
 
 data ScratchOption = ScratchBuild | ScratchTask Int | SkipScratch
   deriving Eq
@@ -104,7 +105,7 @@ updateReview mscratchOpt mock mspec = do
     error' "This NVR was already posted on the review bug: please bump"
   mockRpmLint mock pkg spec srpm
   (mkojiurl,specSrpmUrls) <- buildAndUpload mscratchOpt srpm pkg spec
-  changelog <- changeLogPrompt False spec
+  changelog <- changeLogPrompt ChangeReview spec
   commentBug session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
   -- putStrLn "Review bug updated"
   where

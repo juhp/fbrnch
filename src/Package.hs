@@ -50,13 +50,14 @@ import Data.RPM (NV(..), VerRel(..))
 import Data.RPM.NVR (maybeNVR, NVR(..))
 import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
 import SimpleCmd.Rpm
-import SimplePrompt (prompt)
+import SimplePrompt (prompt, promptInitial)
 
 import Branches
 import Common
 import Common.System
 import Git
 import Krb
+import Types (ChangeType(..))
 
 fedpkg :: String -> [String] -> IO String
 fedpkg c args =
@@ -72,19 +73,29 @@ checkForSpecFile spec = do
   unless have $ error' $ spec +-+ "not found"
 
 -- FIXME allow editor to be used
-changeLogPrompt :: Bool -> FilePath -> IO String
-changeLogPrompt isupdate spec = do
-  clog <- cleanChangelog spec
+changeLogPrompt :: ChangeType -> FilePath -> IO String
+changeLogPrompt change spec = do
+  clog <- cleanChangelog (change /= ChangeReview) spec
   putNewLn
   putStrLn "```"
-  putStr clog
+  putStrLn clog
   putStrLn "```"
   -- FIXME is this actually useful?
   tty <- isTty
   if not tty
     then return clog
     else do
-    userlog <- prompt $ "Press Enter to use above or input" +-+ (if isupdate then "update" else "change") +-+ "summary now" ++ if isupdate then "; or 'no' to skip update" else ""
+    -- FIXME ask what to do: edit/skip/append?
+    userlog <- promptInitial
+               ("Describe" +-+
+                 case change of
+                   ChangeBodhi -> "update"
+                   ChangeCommit -> "commit"
+                   ChangeReview -> "change"
+                 +-+ "summary now"
+                 ++ (if change == ChangeBodhi then "; or 'no' to skip update" else "")
+                 ++ ":\n")
+               clog
     return $ if null userlog then clog else userlog
 
 getChangelog :: FilePath -> IO [String]
@@ -95,13 +106,13 @@ getChangelog spec = do
          cmdLines "rpmautospec" ["generate-changelog", spec]
     else cmdLines "rpmspec" ["-q", "--srpm", "--qf", "%{changelogtext}", spec]
 
-cleanChangelog :: FilePath -> IO String
-cleanChangelog spec = do
+cleanChangelog :: Bool -> FilePath -> IO String
+cleanChangelog nobullet spec = do
   ls <- getChangelog spec
   return $
     case filter ("- " `isPrefixOf`) ls of
-      [l] -> removePrefix "- " l ++ "\n"
-      _ -> unlines ls
+      [l] | nobullet -> removePrefix "- " l
+      _ -> intercalate "\n" ls
 
 getSummaryURL :: FilePath -> IO String
 getSummaryURL spec = do
