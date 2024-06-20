@@ -428,10 +428,10 @@ putBug bug = do
 
 putBugVer :: Bug -> IO ()
 putBugVer bug = do
-  T.putStr $ "[" <> prodVersion <> "] "
+  T.putStr $ "[" <> pref <> "] "
   putBug bug
   where
-    prodVersion = T.unwords (bugVersion bug)
+    pref = T.unwords (bugProduct bug : bugVersion bug)
 
 putBugId :: BugId -> IO ()
 putBugId bid =
