@@ -112,7 +112,10 @@ updatePkg onlysources force allowHEAD distgit mver pkg br = do
       cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
       git_ "commit" ["-a", "-m", "update to" +-+ newver]
   putStr "Prepping... "
-  cmdSilent' "rpmbuild" ["-bp", "--nodeps", spec]
+  sourcediropt <- do
+    cwd <- getCurrentDirectory
+    return ["--define", "_sourcedir" +-+ cwd]
+  cmdSilent' "rpmbuild" $ "-bp" : sourcediropt ++ ["--nodeps", spec]
   putStrLn "done"
   -- FIXME git amend (if previous commit was update)
   where

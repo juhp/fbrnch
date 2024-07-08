@@ -46,6 +46,13 @@ prepCmd mpre verbose deps allowhead (mbr,pkgs) = do
             -- newline avoids error starting on same line
             putStr $ "Prepping" +-+ showNVR nvr ++ ": "
           _ -> return ()
+        sourcediropt <- do
+          distgit <- isGitRepo
+          if distgit
+            then do
+            cwd <- getCurrentDirectory
+            return ["--define", "_sourcedir" +-+ cwd]
+            else return []
         timeIO $
-          (if verbose then cmdLog else cmdSilent') "rpmbuild" $ "-bp" : ["--nodeps" | not deps] ++ [spec]
+          (if verbose then cmdLog else cmdSilent') "rpmbuild" $ "-bp" : ["--nodeps" | not deps] ++ sourcediropt ++ [spec]
         putStrLn "done"
