@@ -311,8 +311,12 @@ main = do
       reviewsCmd
       <$> reviewShortOpt
       <*> reviewAllStatusOpt
-      <*> switchWith 'T' "assigned-to" "List reviews assigned to user"
-      <*> optional (strOptionWith 'U' "user" "USER" "Bugzilla user email")
+      <*> optional
+      (flagLongWith' Nothing "assigned" "Package reviewer" <|>
+       Just <$> strOptionLongWith "assignee" "BZUSER" "Package review submitter")
+      <*> optional
+      (flagLongWith' Nothing "submitted" "Submitted reviews [default if no assignee specified]" <|>
+       Just <$> strOptionWith 's' "submitter" "BZUSER" "Package review submitter")
       <*> optional (strOptionWith 'p' "pattern" "PKGPREFIX" "Package pattern prefix")
       <*> reviewStatusOpt
     , Subcommand "request-repos" "Request dist git repo for new approved packages" $
@@ -395,7 +399,7 @@ main = do
       ClonePkgs <$> somePackages
 
     reviewShortOpt :: Parser Bool
-    reviewShortOpt = switchWith 's' "short" "Only output the package name"
+    reviewShortOpt = switchLongWith "short" "Only output the package name"
 
     reviewAllStatusOpt :: Parser Bool
     reviewAllStatusOpt = switchWith 'A' "all-status" "include all open states"

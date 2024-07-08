@@ -9,10 +9,12 @@ import ListReviews
 
 -- FIXME add --state or --new, --modified, etc
 -- FIXME display time of last update
-reviewsCmd :: Bool -> Bool -> Bool -> Maybe String -> Maybe String
-           -> ReviewStatus -> IO ()
-reviewsCmd short allstates assignee muser mpat status = do
-  listReviewsFull assignee muser mpat allstates status >>=
+reviewsCmd :: Bool -> Bool -> Maybe (Maybe String) -> Maybe (Maybe String)
+           -> Maybe String -> ReviewStatus -> IO ()
+reviewsCmd short allstates Nothing Nothing Nothing status =
+  reviewsCmd short allstates Nothing (Just Nothing) Nothing status
+reviewsCmd short allstates mmassignee mmreporter mpat status = do
+  listReviewsFull mmassignee mmreporter mpat allstates status >>=
     mapM_ (putReviewBug short) . sortBugsByStatus . sortBugsByID
   when short putNewLn
 

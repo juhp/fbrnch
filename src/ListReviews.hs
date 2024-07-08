@@ -7,6 +7,8 @@ module ListReviews (
   listReviewsFull
   ) where
 
+import SimpleCmd (error')
+
 import Common
 
 import Branches
@@ -25,15 +27,28 @@ listReviews :: ReviewStatus -> IO [Bug]
 listReviews = listReviewsAll False
 
 listReviewsAll :: Bool -> ReviewStatus -> IO [Bug]
-listReviewsAll = listReviewsFull False Nothing Nothing
+listReviewsAll = listReviewsFull Nothing (Just Nothing) Nothing
 
 -- FIXME: --unassigned
-listReviewsFull :: Bool -> Maybe String -> Maybe String -> Bool
-                -> ReviewStatus-> IO [Bug]
-listReviewsFull assignee muser mpat allopen status = do
+listReviewsFull :: Maybe (Maybe String) -> Maybe (Maybe String)
+                -> Maybe String -> Bool -> ReviewStatus -> IO [Bug]
+listReviewsFull Nothing Nothing Nothing _ _ =
+  error' "please specify either report, assignee, or package name pattern"
+listReviewsFull mmassignee mmreporter mpat allopen status = do
   session <- bzApiKeySession
-  accountid <- getBzAccountId session muser
-  let reviews = (if assignee then assigneeIs else reporterIs) accountid .&&. maybe packageReview pkgReviewsPrefix mpat
+  massignedto <-
+    case mmassignee of
+      Nothing -> return Nothing
+      Just massignee ->
+        Just <$> getBzAccountId session massignee
+  mreporter <-
+    case mmreporter of
+      Nothing -> return Nothing
+      Just mreporter ->
+        Just <$> getBzAccountId session mreporter
+  let reviews = maybe id (\a -> (assigneeIs a .&&.)) massignedto $
+                maybe id (\r -> (reporterIs r .&&.)) mreporter $
+                maybe packageReview pkgReviewsPrefix mpat
       open = if allopen
         then statusOpen else
         case status of
