@@ -549,8 +549,8 @@ main = do
     archesOpt :: Parser Archs
     archesOpt = Archs <$> some archOpt <|> ExcludedArchs <$> some excludeArch
 
-    -- FIXME allow "dryrun"
-    dryrunOpt = switchWith 'n' "dry-run"
+    dryrunOpt desc = switchWith 'n' "dry-run" desc <|>
+                     switchLongWith "dryrun" desc
 
     skipFetchOpt = switchWith 'S' "skip-fetch" "Do not git fetch"
 
