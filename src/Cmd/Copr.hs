@@ -17,6 +17,7 @@ import qualified Data.Aeson.KeyMap as M
 import qualified Data.HashMap.Strict as M
 #endif
 import Data.Char (isDigit)
+import  Data.Either.Combinators (whenLeft)
 import Data.Ini.Config
 import Data.RPM.NVR (nvrVerRel)
 import Data.RPM.VerRel (showVerRel)
@@ -25,7 +26,7 @@ import Network.HTTP.Query (lookupKey, lookupKey')
 import System.Environment.XDG.BaseDir (getUserConfigDir)
 import System.Time.Extra (sleep)
 import Web.Fedora.Copr (coprChroots, fedoraCopr)
-import Web.Fedora.Copr.API (coprGetBuild, coprMonitorProject)
+import Web.Fedora.Copr.API (coprGetBuild, coprGetBuildList, coprMonitorProject)
 
 import Branches
 import Common
@@ -100,6 +101,8 @@ showArch S390X = "s390x"
 
 data CoprMode = ListChroots | CoprMonitor | CoprBuild
 
+-- FIXME take ExclusiveArch/ExcludeArch into account
+-- FIXME -1 for only first unbuilt chroot
 -- FIXME check branch
 -- FIXME handle fedora-eln
 -- FIXME make project optional (if same as pkg??) or configurable ?
@@ -114,7 +117,7 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
   user <- getUsername
   case mode of
     ListChroots -> coprGetChroots user >>= mapM_ (putStrLn . showChroot)
-    CoprMonitor -> coprMonitor user project
+    CoprMonitor -> coprMonitorPackages user project >>= mapM_ printPkgRes
     CoprBuild -> do
       chroots <- coprGetChroots user
       if null pkgs
@@ -130,10 +133,10 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
         mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user chroots (n>0) (Package p)) $ zip (reverse [0,length pkgs - 1]) pkgs
   where
     coprGetChroots :: String -> IO [Chroot]
-    coprGetChroots username = do
-      chroots <- map (readChroot . T.unpack) <$> coprChroots coprServer username project
+    coprGetChroots user = do
+      chroots <- map (readChroot . T.unpack) <$> coprChroots coprServer user project
       when (null chroots) $
-        error' $ "No chroots found for" +-+ username ++ "/" ++ project
+        error' $ "No chroots found for" +-+ user ++ "/" ++ project
       branches <-
         case breq of
           Branches brs ->
@@ -168,38 +171,36 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
               then generateSrpmNoDist True False Nothing spec
               else return spec -- hack to avoid generating srpm for dryrun
       verrel <- showVerRel . nvrVerRel <$> pkgNameVerRelNodist spec
-      monitorPkgs <- coprMonitorPackages user project
-      let monitor = lookup pkg monitorPkgs
-          builtChroots =
-            case monitor of
-              Nothing -> []
-              Just tasks ->
-                filter (\CoprTask{..} -> taskVerRel == verrel && taskStatus /= "failed") tasks
-          finalChroots = buildroots \\ map taskChroot builtChroots
-      case buildBy of
-        SingleBuild -> coprBuild dryrun project srpm spec finalChroots
-        -- FIXME or default to secondary parallel to previous primary
-        ValidateByRelease -> do
-          let initialChroots =
-                let primaryArch = chrootArch $ head finalChroots
-                in map pure $ filter (isArch primaryArch) finalChroots
-              remainingChroots = finalChroots \\ concat initialChroots
-          staggerBuilds srpm spec initialChroots remainingChroots
-        ValidateByArch -> do
-          let initialChroots =
-                let newestRelease = chrootBranch $ head finalChroots
-                in map pure $ filter ((== newestRelease) . chrootBranch) finalChroots
-              remainingChroots = finalChroots \\ concat initialChroots
-          staggerBuilds srpm spec initialChroots remainingChroots
-        BuildByRelease -> do
-          let releaseChroots = groupBy sameRelease finalChroots
-          staggerBuilds srpm spec releaseChroots []
+      builtChroots <- existingChrootBuilds user project pkg verrel buildroots
+      let finalChroots = buildroots \\ map taskChroot builtChroots
+      if null finalChroots
+        then putStrLn $ unPackage pkg ++ '-' : verrel +-+ "built"
+        else
+        case buildBy of
+          SingleBuild -> coprBuild dryrun user project srpm spec finalChroots
+          -- FIXME or default to secondary parallel to previous primary
+          ValidateByRelease -> do
+            let initialChroots =
+                  let primaryArch = chrootArch $ head finalChroots
+                  in map pure $ filter (isArch primaryArch) finalChroots
+                remainingChroots = finalChroots \\ concat initialChroots
+            staggerBuilds srpm spec initialChroots remainingChroots
+          ValidateByArch -> do
+            let initialChroots =
+                  let newestRelease = chrootBranch $ head finalChroots
+                  in map pure $ filter ((== newestRelease) . chrootBranch) finalChroots
+                remainingChroots = finalChroots \\ concat initialChroots
+            staggerBuilds srpm spec initialChroots remainingChroots
+          BuildByRelease -> do
+            let releaseChroots = groupBy sameRelease finalChroots
+            staggerBuilds srpm spec releaseChroots []
       when morepkgs putNewLn
-
-    staggerBuilds srpm spec initialChroots remainingChroots = do
-      mapM_ (coprBuild dryrun project srpm spec) initialChroots
-      unless (null remainingChroots) $
-        coprBuild dryrun project srpm spec remainingChroots
+      where
+        staggerBuilds :: FilePath -> FilePath -> [[Chroot]] -> [Chroot] -> IO ()
+        staggerBuilds srpm spec initialChroots remainingChroots = do
+          mapM_ (coprBuild dryrun user project srpm spec) initialChroots
+          unless (null remainingChroots) $
+            coprBuild dryrun user project srpm spec remainingChroots
 
     isArch arch release = chrootArch release == arch
 
@@ -226,9 +227,43 @@ readIniConfig inifile iniparser record = do
     let config = parseIniFile ini iniparser
     return $ either error' record config
 
-coprBuild :: Bool -> String -> FilePath -> FilePath -> [Chroot] -> IO ()
-coprBuild _ _ _ _ [] = error' "No chroots chosen"
-coprBuild dryrun project srpm spec buildroots = do
+-- from copr/frontend/coprs_frontend/coprs/logic/builds_logic.py
+-- FIXME after adding to copr-api
+coprProcessingStates :: [String]
+coprProcessingStates =
+  ["running", "pending", "starting", "importing", "waiting"]
+
+coprEndedStates :: [String]
+coprEndedStates =
+  ["canceled", "failed", "skipped", "succeeded"]
+
+-- FIXME restrict to requested chroots?
+existingChrootBuilds :: String -> String -> Package -> String -> [Chroot]
+                     -> IO [CoprTask]
+existingChrootBuilds user project pkg verrel chroots = do
+  monitorPkgs <- coprMonitorPackages user project
+  let pkgmonitor = fromMaybe [] $ lookup pkg monitorPkgs
+  putNewLn
+  let buildingChroots =
+        filterTasks verrel (`elem` coprProcessingStates) pkgmonitor
+  if (null buildingChroots)
+    then return $ filterTasks verrel (`notElem` ["failed","skipped"]) pkgmonitor
+    else do
+    mapM_ printCoprTask buildingChroots
+    putNewLn
+    forM_ buildingChroots $ \building ->
+      when (taskChroot building `elem` chroots) $
+      -- FIXME check failure
+      void $ coprWatchBuild Nothing $ Left building
+    return buildingChroots
+
+filterTasks :: String -> (String -> Bool) -> [CoprTask] -> [CoprTask]
+filterTasks verrel statustest tasks =
+  filter (\CoprTask{..} -> taskVerRel == verrel && statustest taskStatus) tasks
+
+coprBuild :: Bool -> String -> String -> FilePath -> FilePath -> [Chroot] -> IO ()
+coprBuild _ _ _ _ _ [] = error' "No chroots chosen"
+coprBuild dryrun user project srpm spec buildroots = do
   let chrootargs = mconcat [["-r", showChroot bldrt] | bldrt <- buildroots]
       buildargs = ["build", "--nowait"] ++ chrootargs ++ [project, srpm]
   putNewLn
@@ -237,11 +272,10 @@ coprBuild dryrun project srpm spec buildroots = do
     output <- cmd "copr" buildargs
     putStrLn output
     let bid = read $ last $ words $ last $ lines output
-    ok <- timeIO $ coprWatchBuild bid Nothing
+    ok <- timeIO $ coprWatchBuild Nothing $ Right bid
     unless ok $ do
       putStrLn $ "Failed: copr" +-+ unwords buildargs
       -- FIXME determine which chroot(s) failed
-      username <- getUsername
       -- eg 06482247
       let zbid =
             let s = show bid
@@ -249,24 +283,27 @@ coprBuild dryrun project srpm spec buildroots = do
       actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
       -- FIXME which chroot?
       -- FIXME print buildlog size
-      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ username +/+ project +/+ showChroot (head buildroots) +/+ zbid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
+      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot (head buildroots) +/+ zbid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
 
--- FIXME idea: Maybe Seconds to increment sleep
-coprWatchBuild :: Int -> Maybe String -> IO Bool
-coprWatchBuild bid mstate = do
+-- FIXME idea: Maybe Seconds to increment FIXME
+-- sleep should have all chroots in pending CoprTask build
+coprWatchBuild :: Maybe String -> Either CoprTask Int -> IO Bool
+coprWatchBuild mstate ebuild = do
+  let bid = either taskBuild id ebuild
   res <- coprGetBuild fedoraCopr bid
   case lookupKey "state" res of
     Just state ->
       if mstate == Just state
-      then sleep 20 >> coprWatchBuild bid mstate
+      then sleep 20 >> coprWatchBuild mstate (Right bid)
       else do
-        logMsg $ "Build" +-+ show bid +-+ state
+        whenLeft ebuild $ \t -> putStrLn $ "#" +-+ showChroot (taskChroot t)
+        logMsg $ "Build" +-+ show bid +-+ state +-+ either taskVerRel (const "") ebuild
         case state of
           "succeeded" -> return True
           "skipped" -> return True
           "canceled" -> return False
           "failed" -> return False
-          _ -> sleep 1 >> coprWatchBuild bid (Just state)
+          _ -> sleep 1 >> coprWatchBuild (Just state) (Right bid)
     Nothing -> do
       let err = lookupKey' "error" res
       logMsg $ "Error:" +-+ err
@@ -292,41 +329,59 @@ sortArchs = sortBy priority
 type CoprPackage = (Package,[CoprTask])
 
 data CoprTask = CoprTask {taskChroot :: Chroot,
+                          taskBuild :: Int,
                           taskStatus :: String,
                           taskVerRel :: String
                          }
 
+-- FIXME wait for None package to appear
 coprMonitorPackages :: String -> String -> IO [CoprPackage]
 coprMonitorPackages user proj = do
-  res <- coprMonitorProject fedoraCopr user proj []
-  return $ mapMaybe pkgResults $ lookupKey' "packages" res
+  builds <- coprGetBuildList fedoraCopr user proj []
+  mapM_ coprWaitPackage (lookupKey' "items" builds :: [Object])
+  coprMonitorProject fedoraCopr user proj [] >>=
+    return . mapMaybe pkgResults . lookupKey' "packages"
   where
     pkgResults :: Object -> Maybe CoprPackage
     pkgResults obj = do
       name <- lookupKey "name" obj
       chroots <- map (first toText) . M.toList <$> lookupKey "chroots" obj
-      return (Package name, mapMaybe chrootResults chroots)
+      return (Package name, mapMaybe chrootResult chroots)
 #if !MIN_VERSION_aeson(2,0,0)
       where toText = id
 #endif
 
-    chrootResults :: (T.Text,Object) -> Maybe CoprTask
-    chrootResults (chroot, obj) = do
+    chrootResult :: (T.Text,Object) -> Maybe CoprTask
+    chrootResult (chroot, obj) = do
       state <- lookupKey "state" obj
       version <- lookupKey "pkg_version" obj
-      return $ CoprTask (readChroot (T.unpack chroot)) state version
+      build <- lookupKey "build_id" obj
+      return $ CoprTask (readChroot (T.unpack chroot)) build state version
 
--- code from copr-tool
-coprMonitor :: String -> String -> IO ()
-coprMonitor user proj =
-  coprMonitorPackages user proj >>=
-  mapM_ printPkgRes
+printPkgRes :: (Package, [CoprTask]) -> IO ()
+printPkgRes (pkg,chroots) = do
+  putStrLn $ "# " <> unPackage pkg
+  mapM_ printCoprTask chroots
+  putStrLn ""
+
+printCoprTask :: CoprTask -> IO ()
+printCoprTask (CoprTask chr build status version) =
+  putStrLn $ showChroot chr +-+ show build ++ ":" +-+ status +-+ version
+
+coprWaitPackage :: Object -> IO ()
+coprWaitPackage build = do
+  case buildResult of
+    Nothing -> error' "unknown source_package"
+    Just (_, "failed", _) -> return ()
+    Just (_, _, Just _pkg) -> return ()
+    Just (bid, _, Nothing) -> do
+      sleep 5
+      print bid
+      coprGetBuild fedoraCopr bid >>= coprWaitPackage
   where
-    printPkgRes (pkg,chroots) = do
-      putStrLn $ "# " <> unPackage pkg
-      mapM_ printChootResult chroots
-      putStrLn ""
-
-    printChootResult :: CoprTask -> IO ()
-    printChootResult (CoprTask chr status version) =
-      putStrLn $ showChroot chr ++ ":" +-+ status +-+ version
+    buildResult = do
+      bid <- lookupKey "id" build
+      source <- lookupKey "source_package" build
+      state <- lookupKey "state" build
+      let mname = lookupKey "name" source
+      return (bid :: Int, state :: String, mname :: Maybe String)

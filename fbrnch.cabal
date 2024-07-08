@@ -110,6 +110,7 @@ executable fbrnch
                        config-ini,
                        copr-api >= 0.2,
                        directory >= 1.2.3,
+                       either,
                        email-validate,
                        extra,
                        fedora-dists >= 2.1.1,
