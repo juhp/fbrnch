@@ -269,7 +269,7 @@ main = do
                     "Override changelog entry [default: rebuild]")
       <*> branchesPackages
     , Subcommand "commit" "Git commit packages" $
-      commitPkgs
+      commitCmd
       <$> dryrunOpt "Dry run: do not commit"
       <*> optional commitOpts
       <*> switchWith '1' "first-line" "use first line of changelog"

@@ -1,5 +1,5 @@
 module Cmd.Commit
-  ( commitPkgs,
+  ( commitCmd,
   )
 where
 
@@ -15,8 +15,8 @@ import Package
 -- FIXME handle multiline changelog entries with "-m description"
 -- FIXME --undo last change: eg undo accidential --amend
 -- FIXME for single package assume --all if no stage
-commitPkgs :: Bool -> Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
-commitPkgs dryrun mopt firstLine unstaged paths = do
+commitCmd :: Bool -> Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
+commitCmd dryrun mopt firstLine unstaged paths = do
   when (isJust mopt && firstLine) $
     error' "--first-line cannot be used with other commit msg options"
   if null paths
