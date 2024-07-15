@@ -192,7 +192,7 @@ main = do
     , Subcommand "local" "Build locally" $
       localCmd
       <$> quietOpt "Hide the build.log until it errors"
-      <*> switchWith 'd' "debug" "show the rpmbuild command"
+      <*> debugOpt "show the rpmbuild command"
       <*> optional forceshortOpt
       <*> many bcondOpt
       <*> branchesPackages
@@ -206,7 +206,7 @@ main = do
       <*> some (strArg "SRPM")
     , Subcommand "diff" "Diff local changes" $
       diffCmd
-      <$> switchWith 'd' "debug" "use package headers"
+      <$> debugOpt "use package headers"
       <*> switchWith 'o' "spec-only" "Only diff spec file"
       <*> diffWorkOpt
       <*> diffFormatOpt
@@ -552,6 +552,8 @@ main = do
 
     dryrunOpt desc = switchWith 'n' "dry-run" desc <|>
                      switchLongWith "dryrun" "alias for --dry-run"
+
+    debugOpt desc = switchWith 'd' "debug" desc
 
     skipFetchOpt = switchWith 'S' "skip-fetch" "Do not git fetch"
 
