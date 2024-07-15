@@ -550,7 +550,7 @@ main = do
     archesOpt = Archs <$> some archOpt <|> ExcludedArchs <$> some excludeArch
 
     dryrunOpt desc = switchWith 'n' "dry-run" desc <|>
-                     switchLongWith "dryrun" desc
+                     switchLongWith "dryrun" "alias for --dry-run"
 
     skipFetchOpt = switchWith 'S' "skip-fetch" "Do not git fetch"
 
