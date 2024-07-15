@@ -14,7 +14,7 @@ import Package
 -- FIXME use branches after all?
 -- FIXME handle multiline changelog entries with "-m description"
 -- FIXME --undo last change: eg undo accidential --amend
--- FIXME for single package assume --all if no stage
+-- FIXME --empty
 commitCmd :: Bool -> Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
 commitCmd dryrun mopt firstLine unstaged paths = do
   when (isJust mopt && firstLine) $
@@ -41,26 +41,33 @@ commitCmd dryrun mopt firstLine unstaged paths = do
             Nothing -> do
               changelog <- do
                 spec <- findSpecfile
-                clog <- lines <$> cleanChangelog True spec
-                case clog of
-                  [] -> readCommitMsg
-                  [msg] -> return msg
-                  msgs ->
-                    if firstLine
-                    then return $ removePrefix "- " $ head msgs
-                    else do
-                      diff <- git "diff" ["-U0", if addall then "HEAD" else "--cached"]
-                      let newlogs =
-                            filter (\c -> ('+' : c) `elem` lines (unquoteMacros diff)) clog
-                      case newlogs of
-                        [] -> putStrLn diff >> readCommitMsg
-                        [msg] -> return (removePrefix "- " msg)
-                        [m,m'] -> mapM_ putStrLn newlogs >>
-                                  return (unlines $ map (removePrefix "- ") [m,"",m'])
-                        (m:ms) -> mapM_ putStrLn newlogs >>
-                                  return (unlines (removePrefix "- " m:"":ms))
+                autochangelog <- grep_ "^%autochangelog" spec
+                if autochangelog
+                  -- rpmautospec generates "Uncommitted changes"
+                  then error' "set commit msg with --message"
+                  else do
+                  clog <- lines <$> cleanChangelog True spec
+                  case clog of
+                    [] -> readCommitMsg
+                    [msg] -> return msg
+                    msgs ->
+                      if firstLine
+                      then return $ removePrefix "- " $ head msgs
+                      else do
+                        diff <- git "diff" ["-U0", if addall then "HEAD" else "--cached"]
+                        let newlogs =
+                              filter (\c -> ('+' : c) `elem` lines (unquoteMacros diff)) clog
+                        case newlogs of
+                          [] -> putStrLn diff >> readCommitMsg
+                          [msg] -> return (removePrefix "- " msg)
+                          [m,m'] -> mapM_ putStrLn newlogs >>
+                                    return (unlines $ map (removePrefix "- ") [m,"",m'])
+                          (m:ms) -> mapM_ putStrLn newlogs >>
+                                    return (unlines (removePrefix "- " m:"":ms))
               return ["-m", changelog]
-          git_ "commit" $ ["--dry-run" | dryrun] ++ ["-a" | addall] ++ opts
+          if dryrun
+            then cmdN "git" $ ["-a" | addall] ++ opts
+            else git_ "commit" $ ["--dry-run" | dryrun] ++ ["-a" | addall] ++ opts
 
 readCommitMsg :: IO String
 readCommitMsg = do
