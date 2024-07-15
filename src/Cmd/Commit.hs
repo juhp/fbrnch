@@ -15,8 +15,8 @@ import Package
 -- FIXME handle multiline changelog entries with "-m description"
 -- FIXME --undo last change: eg undo accidential --amend
 -- FIXME for single package assume --all if no stage
-commitPkgs :: Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
-commitPkgs mopt firstLine unstaged paths = do
+commitPkgs :: Bool -> Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
+commitPkgs dryrun mopt firstLine unstaged paths = do
   when (isJust mopt && firstLine) $
     error' "--first-line cannot be used with other commit msg options"
   if null paths
@@ -60,7 +60,7 @@ commitPkgs mopt firstLine unstaged paths = do
                         (m:ms) -> mapM_ putStrLn newlogs >>
                                   return (unlines (removePrefix "- " m:"":ms))
               return ["-m", changelog]
-          git_ "commit" $ ["-a" | addall] ++ opts
+          git_ "commit" $ ["--dry-run" | dryrun] ++ ["-a" | addall] ++ opts
 
 readCommitMsg :: IO String
 readCommitMsg = do

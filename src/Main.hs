@@ -270,7 +270,8 @@ main = do
       <*> branchesPackages
     , Subcommand "commit" "Git commit packages" $
       commitPkgs
-      <$> optional commitOpts
+      <$> dryrunOpt "Dry run: do not commit"
+      <*> optional commitOpts
       <*> switchWith '1' "first-line" "use first line of changelog"
       <*> switchWith 'a' "unstaged" "include unstaged changes"
       <*> manyPackages
