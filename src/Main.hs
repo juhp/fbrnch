@@ -211,7 +211,7 @@ main = do
       <*> diffWorkOpt
       <*> diffFormatOpt
       <*> switchWith 'i' "ignore-bumps" "Ignore pure release bumps"
-      <*> optional diffFilterOpt
+      <*> many diffFilterOpt
       <*> optional (optionWith anyBranchM 'w' "with-branch" "BRANCH" "branch")
       <*> maybeBranchPackages False
     , Subcommand "compare" "Show commits between branches" $

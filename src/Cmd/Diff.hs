@@ -28,9 +28,9 @@ data DiffFilter =
 
 -- FIXME diff other branches without switching
 -- FIXME --older/--newer branch
-diffCmd :: Bool -> Bool -> DiffWork -> DiffFormat -> Bool -> Maybe DiffFilter
+diffCmd :: Bool -> Bool -> DiffWork -> DiffFormat -> Bool -> [DiffFilter]
         -> Maybe AnyBranch -> (Maybe Branch,[String]) -> IO ()
-diffCmd debug speconly work fmt ignorebumps mpatt mwbr =
+diffCmd debug speconly work fmt ignorebumps patts mwbr =
   withPackagesMaybeBranch (if debug then HeaderMust else HeaderNone) False dirtyGit diffPkg
   where
     diffPkg :: Package -> AnyBranch -> IO ()
@@ -91,7 +91,7 @@ diffCmd debug speconly work fmt ignorebumps mpatt mwbr =
                       (RelBranch rwbr, RelBranch rbr) -> ["-R" | rwbr > rbr]
                       _ -> []
             diff <- gitLines "diff" $ contxt ++ workOpts ++ revdiff ++ withBranch ++ workArgs ++ file
-            let diffout = (maybe id filterPattern mpatt . simplifyDiff fmt) diff
+            let diffout = (mapMaybe (filterPatterns patts) . simplifyDiff fmt) diff
             -- FIXME: sometimes we may want to list even if diff but no diffout
             unless (null diffout) $
               unless (ignorebumps && isTrivialRebuildCommit diffout) $
@@ -107,7 +107,11 @@ diffCmd debug speconly work fmt ignorebumps mpatt mwbr =
           simplifyDiff DiffStats ds = if null ds then ds else init ds
           simplifyDiff _ ds = ds
 
-          filterPattern :: DiffFilter -> [String] -> [String]
-          filterPattern (DiffMatch patt) = filter (patt `isInfixOf`)
-          filterPattern (DiffNotMatch patt) = filter (not . (patt `isInfixOf`))
-            --  void $ runProcess $ setStderr nullStream $ proc "grep" [pat, file]
+          filterPatterns :: [DiffFilter] -> String -> Maybe String
+          filterPatterns [] str = Just str
+          filterPatterns (df:dfs) str =
+            if filterPattern df str then filterPatterns dfs str else Nothing
+
+          filterPattern :: DiffFilter -> String -> Bool
+          filterPattern (DiffMatch patt) = (patt `isInfixOf`)
+          filterPattern (DiffNotMatch patt) = (not . (patt `isInfixOf`))
