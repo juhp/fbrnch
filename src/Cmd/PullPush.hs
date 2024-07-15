@@ -72,8 +72,8 @@ pushPkgs dryrun nofetch mref (breq, pkgs) = do
   withPackagesByBranches HeaderMust False (if nofetch then cleanGit else cleanGitFetch) AnyNumber pushPkg (breq, pkgs)
   where
     pushPkg :: Package -> AnyBranch -> IO ()
-    pushPkg _pkg _br = do
-      whenJustM (gitShortLog1 Nothing) $ putStrLn . showCommit
+    pushPkg _pkg br = do
+      whenJustM (gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD") $ putStrLn . showCommit
       if dryrun
         then checkOnBranch
         else gitPush False mref
