@@ -79,6 +79,7 @@ executable fbrnch
                        Cmd.SrcDeps
                        Cmd.Status
                        Cmd.Switch
+                       Cmd.Unpushed
                        Cmd.Update
                        Cmd.WaitRepo
                        Common

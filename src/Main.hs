@@ -42,6 +42,7 @@ import Cmd.Sort
 import Cmd.SrcDeps
 import Cmd.Status
 import Cmd.Switch
+import Cmd.Unpushed
 import Cmd.Update
 import Cmd.WaitRepo
 
