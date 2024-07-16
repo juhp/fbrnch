@@ -13,8 +13,8 @@ import Branches
 import Git
 import Package
 
-unpushedCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
-unpushedCmd latest bump (breq, pkgs) =
+unpushedCmd :: Bool -> Bool -> Bool -> (BranchesReq,[String]) -> IO ()
+unpushedCmd checknvr latest bump (breq, pkgs) =
   -- FIXME dirty not okay for multiple branches?
   withPackagesByBranches (if latest then HeaderMay else HeaderMust) False dirtyGit AnyNumber unpushedBranch (breq, pkgs)
   where
@@ -44,11 +44,11 @@ unpushedCmd latest bump (breq, pkgs) =
           then
           ifM initialPkgRepo
           (putStrLn $ prefix +-+ "initial repo") $
-          ifM (doesFileExist "dead.package")
-          (putStrLn $ prefix +-+ "dead package") $
+          unlessM (doesFileExist "dead.package") $
           putStrLn $ prefix +-+ "missing" +-+ spec
           else do
-          whenM (isNothing <$> pkgNameVerRel br spec) $ do
+          when (checknvr || length pkgs < 10) $
+            whenM (isNothing <$> pkgNameVerRel br spec) $ do
             putStrLn "undefined NVR!\n"
             putStr "HEAD "
           unpushed <- gitShortLogN (if latest then Just 1 else Nothing) $

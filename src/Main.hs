@@ -89,7 +89,8 @@ main = do
       <*> branchesPackages
     , Subcommand "unpushed" "Show unpushed commits" $
       unpushedCmd
-      <$> switchWith 'l' "latest" "Only show latest unpushed commit"
+      <$> switchWith 'c' "check-nvr" "Check NVR defined [default for < 10 pkgs]"
+      <*> switchWith 'l' "latest" "Only show latest unpushed commit"
       <*> switchWith 'b' "bump" "Bump release (and commit) if no local commits"
       <*> branchesPackages
     , Subcommand "build" "Build package(s) in Koji" $
