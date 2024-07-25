@@ -8,6 +8,7 @@ import Common.System
 import Git
 import Package
 
+-- FIXME warn if older branch ahead
 compareCmd :: Bool -> Maybe String -> AnyBranch -> AnyBranch -> [String] -> IO ()
 compareCmd long mignore br1 br2 pkgs = do
   if null pkgs
@@ -24,21 +25,28 @@ compareCmd long mignore br1 br2 pkgs = do
     comparePkg pkgdir =
       withExistingDirectory pkgdir $
       unlessM (doesFileExist "dead.package") $ do
-      let (br1',br2') =
-            case (br1, br2) of
-              (RelBranch b1, RelBranch b2) | b2 < b1 -> (br2,br1)
-              _ -> (br1,br2)
-      localbranches <- gitLines "branch" ["--format=%(refname:short)"]
-      forM_ [br1',br2'] $ \br ->
-        unless (show br `elem` localbranches) $ gitSwitchBranch br
-      output <- ignoredLines <$> gitLines "log" (["--format=reference" | not long] ++ [show br1' ++ ".." ++ show br2'])
-      unless (null output) $ do
-        unless (null pkgs) $
-          getPackageName pkgdir >>= putPkgHdr
-        mapM_ putStrLn output
+      localbranches <- localBranches True
+      oldcurrent <- gitCurrentBranch
+      have1 <- haveBranch localbranches br1
+      have2 <- haveBranch localbranches br2
+      newcurrent <- gitCurrentBranch
+      when (newcurrent /= oldcurrent) $
+        gitSwitchBranch oldcurrent
+      when (have1 && have2) $ do
+        output <- ignoredLines <$> gitLines "log" (["--format=reference" | not long] ++ [show br1 ++ ".." ++ show br2])
+        unless (null output) $ do
+          unless (null pkgs) $
+            getPackageName pkgdir >>= putPkgHdr
+          mapM_ putStrLn output
 
     ignoredLines :: [String] -> [String]
     ignoredLines =
       case mignore of
         Nothing -> id
         Just ignore -> filter (not . (ignore `isInfixOf`))
+
+    haveBranch :: [String] -> AnyBranch -> IO Bool
+    haveBranch locals br =
+      if show br `elem` locals
+      then return True
+      else gitSwitchBranch' True $ onlyRelBranch br
