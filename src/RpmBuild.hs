@@ -196,22 +196,22 @@ generateSrpmNoDist nodist force mbr spec = do
       srcrpmdiropt = maybe [] (\dir -> ["--define", "_srcrpmdir" +-+ dir]) msrcrpmdir
       opts = distopt ++ sourcediropt ++ srcrpmdiropt
   if force then
-    buildSrpm opts
+    buildSrpm srpmfile opts
     else do
     exists <- doesFileExist srpmfile
     if not exists
-      then buildSrpm opts
+      then buildSrpm srpmfile opts
       else do
       srpmTime <- getModificationTime srpmfile
       fileTimes <- mapM getModificationTime (spec:srcs)
       if any (srpmTime <) fileTimes
-        then buildSrpm opts
+        then buildSrpm srpmfile opts
         else do
         -- pretty print with ~/
         putStrLn $ srpmfile +-+ "is up to date"
         return srpmfile
   where
-    buildSrpm opts = do
+    buildSrpm predicted opts = do
       autospec <- isRpmAutospec spec
       outs <-
         -- prevent Ctrl-c from truncating srpm to corrupted file
@@ -222,6 +222,8 @@ generateSrpmNoDist nodist force mbr spec = do
       case filter ("src.rpm" `isExtensionOf`) outs of
         [srpm] -> do
           putStrLn $ "Created" +-+ takeFileName srpm
+          unless (predicted == srpm) $
+            warning $ "different to predicted NVR:" +-+ predicted
           return srpm
         srpms -> error' $ "could not determined generated srpm filename" +-+ unwords srpms
 
