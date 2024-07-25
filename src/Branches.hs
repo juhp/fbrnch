@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Branches (
   activeBranches,
   fedoraBranches,
@@ -12,7 +14,9 @@ module Branches (
   anyBranch,
   isRelBranch,
   onlyRelBranch,
+#if !MIN_VERSION_fedora_dists(2,1,2)
   partitionBranches,
+#endif
   BranchOpts(..),
   listOfBranches,
   listOfAnyBranches,
@@ -32,8 +36,10 @@ module Branches (
 import Common
 import Common.System
 
+#if !MIN_VERSION_fedora_dists(2,1,2)
 import Data.Either
 import Data.Tuple
+#endif
 import Distribution.Fedora.Branch
 import SimpleCmd.Git
 import SimplePrompt (promptEnter, promptInitial)
@@ -58,9 +64,11 @@ instance Show AnyBranch where
   show (RelBranch br) = show br
   show (OtherBranch obr) = obr
 
+#if !MIN_VERSION_fedora_dists(2,1,2)
 partitionBranches :: [String] -> ([Branch],[String])
 partitionBranches args =
   swap . partitionEithers $ map eitherBranch args
+#endif
 
 activeBranches :: [Branch] -> [String] -> [Branch]
 activeBranches active =
@@ -208,7 +216,6 @@ gitCurrentBranchWarn = do
     promptEnter $ dir ++ ":" +-+ show br +-+ "is not a valid branch, please use 'rename-rawhide'"
     gitCurrentBranchWarn
     else return br
-
 
 checkOnBranch :: IO ()
 checkOnBranch = void gitCurrentBranch
