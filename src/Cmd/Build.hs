@@ -121,109 +121,113 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
       if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
         then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
         else return $ Just $ commitRef $ head unpushed
-  let dryrun = buildoptDryrun opts
-  buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
   let msidetagTarget = buildoptSidetagTarget opts
-      mwaitrepo = buildoptWaitrepo opts
   target <- targetMaybeSidetag dryrun True br msidetagTarget
-  case buildstatus of
-    Just BuildComplete -> do
-      putStrLn $ showNVR nvr +-+ "is already built"
-      when (isJust mpush) $
-        error' "Please bump the spec file"
-      when (br /= Rawhide && isNothing msidetagTarget) $ do
-        updateExists <- maybeTimeout 30 $ bodhiBuildExists nvr
-        autoupdate <- checkAutoBodhiUpdate br
-        -- FIXME update referenced bugs for autoupdate branch
-        unless autoupdate $ do
-          if updateExists
-            then putStrLn "update exists"
-            else do
-            mbug <- bzReviewAnon
-            bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec $ showNVR nvr
-          whenJust moverride $ \days -> do
-            tags <- maybeTimeout 30 $ kojiNVRTags nvr
-            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
-              bodhiCreateOverride dryrun (Just days) nvr
-        when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
-          when ((isJust moverride && mwaitrepo /= Just False) ||
-                (autoupdate && mwaitrepo == Just True)) $
-            kojiWaitRepo dryrun True True target nvr
-    Just BuildBuilding -> do
-      putStrLn $ showNVR nvr +-+ "is already building"
-      when (isJust mpush) $
-        error' "Please bump the spec file"
-      whenJustM (kojiGetBuildTaskID fedoraHub (showNVR nvr)) kojiWatchTask
-      -- FIXME do override
-    _ -> do
-      mbuildref <-
-        case mpush of
-          Nothing -> Just <$> git "show-ref" ["--hash", "origin/" ++ show br]
-          _ -> return mpush
-      opentasks <- kojiOpenTasks pkg mbuildref target
-      case opentasks of
-        [task] -> do
-          putStrLn $ showNVR nvr +-+ "task" +-+ displayID task +-+ "is already open"
+  buildRun spec nvr merged mpush unpushed target msidetagTarget moverride
+  where
+    dryrun = buildoptDryrun opts
+
+    buildRun spec nvr merged mpush unpushed target msidetagTarget moverride = do
+      let mwaitrepo = buildoptWaitrepo opts
+      buildstatus <- maybeTimeout 30 $ kojiBuildStatus nvr
+      case buildstatus of
+        Just BuildComplete -> do
+          putStrLn $ showNVR nvr +-+ "is built"
           when (isJust mpush) $
             error' "Please bump the spec file"
-          kojiWatchTask task
-        (_:_) -> error' $ show (length opentasks) +-+ "open" +-+ unPackage pkg +-+ "tasks already!"
-        [] -> do
-          let tag =
-                if target == branchTarget br then branchDestTag br else target
-          mlatest <- kojiLatestNVR tag $ unPackage pkg
-          if equivNVR nvr mlatest
-            then putStrLn $ showNVR nvr +-+ "is already latest" +-+ if Just nvr /= mlatest then "(modulo disttag)" else ""
-            else do
-            when (null unpushed || merged && br /= Rawhide) $ do
-              putStrLn $ showNVR nvr ++ "\n"
-            firstBuild <- do
-              mtestingRepo <- bodhiTestingRepo br
-              case mtestingRepo of
-                Nothing -> return $ isNothing mlatest
-                Just testing -> do
-                  mnewest <- kojiLatestNVR testing $ unPackage pkg
-                  case mnewest of
-                    Nothing -> return $ isNothing mlatest
-                    Just newest -> do
-                      newestTags <- kojiNVRTags newest
-                      unless (any (`elem` newestTags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $ do
-                        -- FIXME print how many days left
-                        putStrLn $ "Warning:" +-+ showNVR newest +-+ "still in testing?"
-                        promptEnter "Press Enter to continue"
-                      return False
-            unless (buildoptStash opts) $
-              unlessM isGitDirClean $
-              error' "local changes remain (dirty)"
-            unless dryrun krbTicket
-            whenJust mpush $ \ref ->
-              unless dryrun $
-              gitPush False $ Just $ ref ++ ":" ++ show br
-            unlessM (null <$> gitOneLineLog ("origin/" ++ show br ++ "..HEAD")) $
-              unless dryrun $ do
-              ok <- yesNo "Unpushed changes remain, continue"
-              unless ok $ error' "aborted"
-            -- FIXME parse build output
-            unless dryrun $
-              kojiBuildBranch target pkg mbuildref ["--fail-fast" | not (buildoptNoFailFast opts)]
-            mBugSess <-
-              if firstBuild && isJust (fst (buildoptUpdate opts))
-              then bzReviewSession
-              else return Nothing
+          when (br /= Rawhide && isNothing msidetagTarget) $ do
+            updateExists <- maybeTimeout 30 $ bodhiBuildExists nvr
             autoupdate <- checkAutoBodhiUpdate br
-            if autoupdate
-              then whenJust mBugSess $
-                   \ (bid,session) -> putBugBuild dryrun session bid nvr
-              else do
-              when (isNothing msidetagTarget) $ do
-                whenJust (fmap fst mBugSess) $
-                  \bid -> putStr "review bug: " >> putBugId bid
-                -- FIXME diff previous changelog?
-                bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptUseChangelog opts) spec $ showNVR nvr
-                -- FIXME prompt for override note
-                whenJust moverride $ \days ->
+            -- FIXME update referenced bugs for autoupdate branch
+            unless autoupdate $ do
+              if updateExists
+                then putStrLn "update exists"
+                else do
+                mbug <- bzReviewAnon
+                bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec $ showNVR nvr
+              whenJust moverride $ \days -> do
+                tags <- maybeTimeout 30 $ kojiNVRTags nvr
+                unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
                   bodhiCreateOverride dryrun (Just days) nvr
             when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
               when ((isJust moverride && mwaitrepo /= Just False) ||
                     (autoupdate && mwaitrepo == Just True)) $
-              kojiWaitRepo dryrun True True target nvr
+                kojiWaitRepo dryrun True True target nvr
+        Just BuildBuilding -> do
+          putStrLn $ showNVR nvr +-+ "is already building"
+          when (isJust mpush) $
+            error' "Please bump the spec file"
+          whenJustM (kojiGetBuildTaskID fedoraHub (showNVR nvr)) kojiWatchTask
+          buildRun spec nvr merged mpush unpushed target msidetagTarget moverride
+        _ -> do
+          mbuildref <-
+            case mpush of
+              Nothing -> Just <$> git "show-ref" ["--hash", "origin/" ++ show br]
+              _ -> return mpush
+          opentasks <- kojiOpenTasks pkg mbuildref target
+          case opentasks of
+            [task] -> do
+              putStrLn $ showNVR nvr +-+ "task" +-+ displayID task +-+ "is already open"
+              when (isJust mpush) $
+                error' "Please bump the spec file"
+              kojiWatchTask task
+            (_:_) -> error' $ show (length opentasks) +-+ "open" +-+ unPackage pkg +-+ "tasks already!"
+            [] -> do
+              let tag =
+                    if target == branchTarget br then branchDestTag br else target
+              mlatest <- kojiLatestNVR tag $ unPackage pkg
+              if equivNVR nvr mlatest
+                then putStrLn $ showNVR nvr +-+ "is already latest" +-+ if Just nvr /= mlatest then "(modulo disttag)" else ""
+                else do
+                when (null unpushed || merged && br /= Rawhide) $ do
+                  putStrLn $ showNVR nvr ++ "\n"
+                firstBuild <- do
+                  mtestingRepo <- bodhiTestingRepo br
+                  case mtestingRepo of
+                    Nothing -> return $ isNothing mlatest
+                    Just testing -> do
+                      mnewest <- kojiLatestNVR testing $ unPackage pkg
+                      case mnewest of
+                        Nothing -> return $ isNothing mlatest
+                        Just newest -> do
+                          newestTags <- kojiNVRTags newest
+                          unless (any (`elem` newestTags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $ do
+                            -- FIXME print how many days left
+                            putStrLn $ "Warning:" +-+ showNVR newest +-+ "still in testing?"
+                            promptEnter "Press Enter to continue"
+                          return False
+                unless (buildoptStash opts) $
+                  unlessM isGitDirClean $
+                  error' "local changes remain (dirty)"
+                unless dryrun krbTicket
+                whenJust mpush $ \ref ->
+                  unless dryrun $
+                  gitPush False $ Just $ ref ++ ":" ++ show br
+                unlessM (null <$> gitOneLineLog ("origin/" ++ show br ++ "..HEAD")) $
+                  unless dryrun $ do
+                  ok <- yesNo "Unpushed changes remain, continue"
+                  unless ok $ error' "aborted"
+                -- FIXME parse build output
+                unless dryrun $
+                  kojiBuildBranch target pkg mbuildref ["--fail-fast" | not (buildoptNoFailFast opts)]
+                mBugSess <-
+                  if firstBuild && isJust (fst (buildoptUpdate opts))
+                  then bzReviewSession
+                  else return Nothing
+                autoupdate <- checkAutoBodhiUpdate br
+                if autoupdate
+                  then whenJust mBugSess $
+                       \ (bid,session) -> putBugBuild dryrun session bid nvr
+                  else do
+                  when (isNothing msidetagTarget) $ do
+                    whenJust (fmap fst mBugSess) $
+                      \bid -> putStr "review bug: " >> putBugId bid
+                    -- FIXME diff previous changelog?
+                    bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptUseChangelog opts) spec $ showNVR nvr
+                    -- FIXME prompt for override note
+                    whenJust moverride $ \days ->
+                      bodhiCreateOverride dryrun (Just days) nvr
+                when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
+                  when ((isJust moverride && mwaitrepo /= Just False) ||
+                        (autoupdate && mwaitrepo == Just True)) $
+                  kojiWaitRepo dryrun True True target nvr
