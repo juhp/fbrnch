@@ -121,16 +121,9 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
     CoprBuild -> do
       chroots <- coprGetChroots user
       if null pkgs
-        then do
-        pkg <- do
-          dirpkg <- getPackageName "."
-          exists <- doesFileExist $ packageSpec dirpkg
-          if exists
-            then return dirpkg
-            else Package . takeBaseName <$> findSpecfile
-        coprBuildPkg user chroots False pkg
+        then coprBuildPkg user chroots False
         else
-        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user chroots (n>0) (Package p)) $ zip (reverse [0,length pkgs - 1]) pkgs
+        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user chroots (n>0)) $ zip (reverse [0,length pkgs - 1]) pkgs
   where
     coprGetChroots :: String -> IO [Chroot]
     coprGetChroots user = do
@@ -161,8 +154,8 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
         then error' "No valid chroots"
         else return buildroots
 
-    coprBuildPkg :: String -> [Chroot] -> Bool -> Package -> IO ()
-    coprBuildPkg user buildroots morepkgs pkg = do
+    coprBuildPkg :: String -> [Chroot] -> Bool -> IO ()
+    coprBuildPkg user buildroots morepkgs = do
       -- FIXME check is pkg.spec
       -- was: localBranchSpecFile pkg (RelBranch Rawhide)
       spec <- findSpecfile
@@ -171,10 +164,11 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
               then generateSrpmNoDist True False Nothing spec
               else return spec -- hack to avoid generating srpm for dryrun
       verrel <- showVerRel . nvrVerRel <$> pkgNameVerRelNodist spec
-      builtChroots <- existingChrootBuilds user project pkg verrel buildroots
+      actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
+      builtChroots <- existingChrootBuilds user project (Package actualpkg) verrel buildroots
       let finalChroots = buildroots \\ map taskChroot builtChroots
       if null finalChroots
-        then putStrLn $ unPackage pkg ++ '-' : verrel +-+ "built"
+        then putStrLn $ actualpkg ++ '-' : verrel +-+ "built"
         else
         case buildBy of
           SingleBuild -> coprBuild dryrun user project srpm spec finalChroots
@@ -240,10 +234,9 @@ coprEndedStates =
 -- FIXME restrict to requested chroots?
 existingChrootBuilds :: String -> String -> Package -> String -> [Chroot]
                      -> IO [CoprTask]
-existingChrootBuilds user project pkg verrel chroots = do
+existingChrootBuilds user project actualpkg verrel chroots = do
   monitorPkgs <- coprMonitorPackages user project
-  let pkgmonitor = fromMaybe [] $ lookup pkg monitorPkgs
-  putNewLn
+  let pkgmonitor = fromMaybe [] $ lookup actualpkg monitorPkgs
   let buildingChroots =
         filterTasks verrel (`elem` coprProcessingStates) pkgmonitor
   if (null buildingChroots)
