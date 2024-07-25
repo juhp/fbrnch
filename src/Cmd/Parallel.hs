@@ -67,8 +67,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
     error' "You can only specify target with one branch"
   case pkgs of
     [] -> getPackageName "." >>= parallelBranches branches
-    [p] -> withExistingDirectory p $
-           getPackageName p >>= parallelBranches branches
+    [p] | length branches > 1 ->
+            withExistingDirectory p $
+            getPackageName p >>= parallelBranches branches
     _ ->
       forM_ branches $ \rbr -> do
       mtargetSidetag <-
