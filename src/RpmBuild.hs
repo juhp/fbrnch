@@ -186,13 +186,15 @@ generateSrpmNoDist nodist force mbr spec = do
   srcs <- getSources spec
   distopt <-
     if nodist
-    then return ["--undefine", "dist"]
+    then return ["--define", "dist %{nil}"]
     else maybe (return []) (fmap distOpt . getBranchDist) mbr
   msrcrpmdir <- rpmEval "%{_srcrpmdir}"
-  srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ ["--qf", fromMaybe "" msrcrpmdir </> "%{name}-%{version}-%{release}.src.rpm", spec]
+  autoreleaseOpt <- getAutoReleaseOptions spec
+  srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ autoreleaseOpt ++ ["--qf", fromMaybe "" msrcrpmdir </> "%{name}-%{version}-%{release}.src.rpm", spec]
   cwd <- getCurrentDirectory
   let sourcediropt = ["--define", "_sourcedir" +-+ cwd]
-      opts = distopt ++ sourcediropt
+      srcrpmdiropt = maybe [] (\dir -> ["--define", "_srcrpmdir" +-+ dir]) msrcrpmdir
+      opts = distopt ++ sourcediropt ++ srcrpmdiropt
   if force then
     buildSrpm opts
     else do
@@ -210,16 +212,22 @@ generateSrpmNoDist nodist force mbr spec = do
         return srpmfile
   where
     buildSrpm opts = do
-      -- 1. prevent Ctrl-c from truncating srpm to corrupted file:
-      -- 'Error: Downloaded rpm http://kojipkgs-cache01.s390.fedoraproject.org/work/cli-build/1691493908.5614614.AzJmareV/ghc9.4-9.4.6-22.fc39.src.rpm is corrupted:'
-      -- 2. can end with stdout "RPM build warnings:" etc
-      -- https://github.com/rpm-software-management/rpm/issues/2494
-      outs <- words <$> uninterruptibleMask_ (cmd "rpmbuild" (opts ++ ["-bs", spec]))
+      autospec <- isRpmAutospec spec
+      outs <-
+        -- prevent Ctrl-c from truncating srpm to corrupted file
+        fmap words . uninterruptibleMask_ $
+        if autospec
+        then cmd "fedpkg" $ "srpm" : opts
+        else cmd "rpmbuild" (opts ++ ["-bs", spec])
       case filter ("src.rpm" `isExtensionOf`) outs of
         [srpm] -> do
           putStrLn $ "Created" +-+ takeFileName srpm
           return srpm
         srpms -> error' $ "could not determined generated srpm filename" +-+ unwords srpms
+
+isRpmAutospec :: FilePath -> IO Bool
+isRpmAutospec spec = do
+  grep_ "^%autochangelog" spec ||^ isAutoRelease spec
 
 data BCond = BuildWith String | BuildWithout String
 
@@ -227,13 +235,12 @@ instance Show BCond where
   show (BuildWith s) = "--with=" ++ s
   show (BuildWithout s) = "--without=" ++ s
 
-
 getAutoReleaseOptions :: FilePath -> IO [String]
 getAutoReleaseOptions spec = do
       autorelease <- isAutoRelease spec
       if autorelease
         then do
-        -- FIXME upstream bug "--number-only" doesn't work
+        -- upstream bug "--number-only" doesn't work
         calculated <- cmd "rpmautospec" ["calculate-release", spec]
         return ["--define", "_rpmautospec_release_number" +-+ dropPrefix "Calculated release number: " calculated]
         else return []
