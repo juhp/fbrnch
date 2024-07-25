@@ -40,6 +40,7 @@ import Common.System
 import Data.Either
 import Data.Tuple
 #endif
+import Distribution.Fedora (distBranch, getLatestFedoraDist)
 import Distribution.Fedora.Branch
 import SimpleCmd.Git
 import SimplePrompt (promptEnter, promptInitial)
@@ -134,8 +135,9 @@ onlyRelBranch (RelBranch br) = br
 onlyRelBranch (OtherBranch br) = error' $ "Non-release branch not allowed:" +-+ br
 
 systemBranch :: IO Branch
-systemBranch =
-  readBranch' . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
+systemBranch = do
+  branched <- getLatestFedoraDist
+  readBranch' . distBranch branched . read  . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
 
 listOfBranches :: Bool -> Bool -> BranchesReq -> IO [Branch]
 listOfBranches distgit _active (BranchOpt AllBranches) =
