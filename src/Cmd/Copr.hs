@@ -99,7 +99,7 @@ showArch AARCH64 = "aarch64"
 showArch PPC64LE = "ppc64le"
 showArch S390X = "s390x"
 
-data CoprMode = ListChroots | CoprMonitor | CoprBuild
+data CoprMode = ListChroots | CoprMonitor | CoprBuild | CoprNew
 
 -- FIXME take ExclusiveArch/ExcludeArch into account
 -- FIXME -1 for only first unbuilt chroot
@@ -118,6 +118,7 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
   case mode of
     ListChroots -> coprGetChroots user >>= mapM_ (putStrLn . showChroot)
     CoprMonitor -> coprMonitorPackages user project >>= mapM_ printPkgRes
+    CoprNew -> coprNewProject dryrun project marchs breq pkgs
     CoprBuild -> do
       chroots <- coprGetChroots user
       if null pkgs
@@ -378,3 +379,17 @@ coprWaitPackage build = do
       state <- lookupKey "state" build
       let mname = lookupKey "name" source
       return (bid :: Int, state :: String, mname :: Maybe String)
+
+coprNewProject :: Bool -> String -> Maybe Archs -> BranchesReq -> [String]
+               -> IO ()
+coprNewProject dryrun project marchs breq pkgs = do
+  branches <- listOfBranches False False breq
+  let archs =
+        case marchs of
+          Nothing -> [X86_64]
+          Just (Archs as) -> map readArch as
+          Just (ExcludedArchs eas) -> allCoprArchs \\ map readArch eas
+  let chroots = [ Chroot b a | b <- branches, a <- archs]
+  (if dryrun then cmdN else cmd_) "copr" $ "create" : concatMap (\ch -> ["--chroot", showChroot ch]) chroots ++ [project]
+  unless (null pkgs) $
+    coprCmd False CoprBuild ValidateByRelease Nothing project (breq, pkgs)

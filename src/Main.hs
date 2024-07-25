@@ -357,6 +357,7 @@ main = do
       coprCmd
       <$> dryrunOpt "Dry run: do not build"
       <*> (flagWith' ListChroots 'l' "list-chroots" "Show project chroots" <|>
+           flagLongWith' CoprNew "new" "Create new copr repo" <|>
            flagWith CoprBuild CoprMonitor 'm' "monitor" "Show project chroots")
       <*> buildByOpt
       <*> optional archesOpt
