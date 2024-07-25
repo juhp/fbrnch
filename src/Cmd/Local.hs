@@ -86,11 +86,11 @@ commandCmd ifoutput compact continue cs =
           (ret,out) <- TP.readProcessInterleaved $
                        TP.setEnv (("p",unPackage pkg):curEnv) $
                        TP.shell cs
-          unless (B.null out) $ do
+          whenJust (B.unsnoc out) $ \(bs,l) -> do
             if compact
               then putStr $ unPackage pkg ++ ": "
               else putPkgAnyBrnchHdr pkg br
-            B.putStr out
+            B.putStrLn $ if l == '\n' then bs else out
           return ret
           else do
           let p = (P.shell cs) { P.env = Just (("p",unPackage pkg):curEnv) }
