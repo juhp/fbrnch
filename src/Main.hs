@@ -18,6 +18,7 @@ import Cmd.Commit
 import Cmd.Compare
 import Cmd.Copr
 import Cmd.Diff
+import Cmd.Fetch
 import Cmd.FTBFS
 import Cmd.Import
 import Cmd.Install
@@ -31,7 +32,8 @@ import Cmd.Owner
 import Cmd.Parallel
 import Cmd.PkgReview
 import Cmd.Prep
-import Cmd.PullPush
+import Cmd.Pull
+import Cmd.Push
 --import Cmd.Repoquery
 import Cmd.RequestBranch
 import Cmd.RequestRepo
@@ -607,11 +609,12 @@ main = do
       strOptionWith 'm' "message" "COMMITMSG" "commit message" <|>
       flagWith' CommitAmend 'A' "amend" "Amend commit"
 
-    pullOpts :: Parser PullOpts
+    pullOpts :: Parser PullOpt
     pullOpts =
       flagWith' PullLenient 'l' "lenient" "Ignore non-git dirs and files" <|>
       flagWith' PullNoFetch 'f' "no-fetch" "Skip git fetch" <|>
-      flagWith' PullStash 's' "stash" "Stash local changes"
+      flagWith' PullStash 's' "stash" "Stash local changes" <|>
+      flagWith' PullRebase 'r' "rebase" "Git pull instead of fetch"
 
     buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
 

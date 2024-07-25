@@ -55,6 +55,7 @@ executable fbrnch
                        Cmd.Compare
                        Cmd.Copr
                        Cmd.Diff
+                       Cmd.Fetch
                        Cmd.FTBFS
                        Cmd.Import
                        Cmd.Install
@@ -68,7 +69,8 @@ executable fbrnch
                        Cmd.Parallel
                        Cmd.PkgReview
                        Cmd.Prep
-                       Cmd.PullPush
+                       Cmd.Pull
+                       Cmd.Push
                        --Cmd.Repoquery
                        Cmd.RequestBranch
                        Cmd.RequestRepo
