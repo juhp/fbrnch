@@ -289,6 +289,9 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
                 else return $ Just cur
             else Just <$> gitCurrentBranch
           else return Nothing
+        let fetch = have gitOptFetch
+        -- quiet to avoid output before header
+        when fetch $ gitFetchSilent True
         brs <- listOfAnyBranches (haveGit && not (have gitOptHEAD)) (have gitOptActive) breq
         case limitBranches of
           ZeroOrOne | length brs > 1 ->
@@ -299,14 +302,12 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
           ExactlyOne | length brs > 1 ->
             error' "please only specify one branch"
           _ -> return ()
-        let fetch = have gitOptFetch
         when ((header /= HeaderNone || fetch) && dir /= ".") $
           case brs of
             [br] -> when (fetch || header == HeaderMust) $ putPkgAnyBrnchHdr pkg br
             _ -> when (fetch || header /= HeaderNone) $ putPkgHdr pkg
         when haveGit $
           when (have gitOptClean) $ checkWorkingDirClean (have gitOptStash)
-        when fetch $ gitFetchSilent False
         -- FIXME!! no branch restriction
         when (breq `elem` map BranchOpt [AllBranches,AllFedora,AllEPEL]) $
           putStrLn $ "Branches:" +-+ unwords (map show brs) ++ "\n"
