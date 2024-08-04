@@ -267,7 +267,8 @@ main = do
       bumpPkgs
       <$> dryrunOpt "Dry run: do not bump"
       <*> switchWith 'l' "local" "Use local origin rather than checking latest koji"
-      <*> optional commitOpts
+      <*> optional (strOptionWith 'm' "message" "COMMITMSG"
+                    "Specify commit message")
       <*> optional (strOptionWith 'c' "changelog" "CLOGENTRY"
                     "Override changelog entry [default: rebuild]")
       <*> branchesPackages
