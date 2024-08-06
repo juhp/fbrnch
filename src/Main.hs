@@ -78,6 +78,7 @@ main = do
       statusCmd
       <$> switchWith 'n' "no-fetch" "Do not git fetch to save time"
       <*> switchWith 'r' "reviews" "Status of reviewed packages"
+      <*> switchWith 'l' "latest-commit" "Show the last commit"
       <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd
