@@ -124,7 +124,7 @@ main = do
       <*> switchLongWith "must-push" "Error if no unpushed commits"
       <*> optionalWith auto 'd' "delay" "SECONDS" "Sleep delay between starting builds [default 4.0]" 4
       <*> updateOpt
-      <*> branchesPackages
+      <*> branchesPackagesDesc "BRANCH... PKG1... [:] PKG2..."
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd
       <$> switchLongWith "remove" "Remove one or more sidetags"
@@ -489,10 +489,13 @@ main = do
             [br] -> (Just br,pkgs)
             _ -> error' $ "cannot have more than one branch:" +-+ unwords (map show brs)
 
-    -- FIXME split later to prevent branches after packages
     branchesPackages :: Parser (BranchesReq, [String])
-    branchesPackages =
-      branchesReqPkgs <$> branchesOpt <*> many (pkgArg "BRANCH... PKGPATH...")
+    branchesPackages = branchesPackagesDesc "BRANCH... PKGPATH..."
+
+    -- FIXME split later to prevent branches after packages
+    branchesPackagesDesc :: String -> Parser (BranchesReq, [String])
+    branchesPackagesDesc desc =
+      branchesReqPkgs <$> branchesOpt <*> many (pkgArg desc)
       where
         branchesReqPkgs :: Maybe BranchOpts -> [String] -> (BranchesReq, [String])
         branchesReqPkgs mbrnchopts args =

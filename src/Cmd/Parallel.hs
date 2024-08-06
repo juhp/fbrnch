@@ -85,14 +85,14 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
               return $ Just (Target tag)
             _ -> error' $ "multiple existing sidetags:" +-+ show tags
         else return msidetagTarget
-      forM_ pkgs $ \p ->
+      forM_ (filter (/= ":") pkgs) $ \p ->
         when (mmerge /= Just False) $
         withExistingDirectory p $ do
         pkg <- getPackageName p
         mergeNewerBranch (Just pkg) rbr
         getDynSourcesMacros $ packageSpec pkg
       distopts <- distRpmOptions rbr
-      allLayers <- dependencyLayersRpmOpts distopts pkgs
+      allLayers <- getLayers distopts pkgs
       let layers = drop firstlayer allLayers
       when (isNothing msidetagTarget && length allLayers > 1) $
         unlessM (checkAutoBodhiUpdate rbr) $
@@ -387,3 +387,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
                   Nothing -> error' "could not determine Update id"
                   Just _updateid -> return ()
               _ -> error' $ "impossible happened: more than one update found for" +-+ showNVR (last nvrs)
+
+getLayers :: [String] -> [String] -> IO [[String]]
+getLayers distopts pkgs =
+  if ":" `elem` pkgs
+  -- FIXME check no interdeps
+  then return $ splitOn [":"] pkgs
+  else dependencyLayersRpmOpts distopts pkgs
