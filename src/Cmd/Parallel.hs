@@ -8,6 +8,7 @@ import Common
 import Common.System
 
 import Control.Concurrent.Async
+import Control.Exception.Extra (retry)
 import Data.RPM.NVR (NVR)
 import Distribution.RPM.Build.Order (dependencyLayersRpmOpts)
 import Fedora.Bodhi hiding (bodhiUpdate)
@@ -324,9 +325,10 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
                     kojiWaitTaskAndRepo (isNothing mlatest) nvr task
                     return $ Done pkg nvr br changelog
       where
+        -- throws error on build failure
         kojiWaitTaskAndRepo :: Bool -> NVR -> TaskID -> IO ()
         kojiWaitTaskAndRepo newpkg nvr task = do
-          finish <- kojiWaitTask task
+          finish <- retry 3 $ kojiWaitTask task
           if finish
             then putStrLn $ color Green $ showNVR nvr +-+ "build success"
             -- FIXME print koji task url
