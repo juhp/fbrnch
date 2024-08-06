@@ -45,10 +45,10 @@ type JobAsync = (String, Async JobDone)
 -- FIXME support non-sidetag update for parallel packages
 -- FIXME print layers if few packages?
 -- FIXME push update
-parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget -> Double
-                 -> (Maybe UpdateType, UpdateSeverity)
+parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget -> Bool
+                 -> Double -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()
-parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pkgs) =
+parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate (breq, pkgs) =
   do
   branches <-
     case pkgs of
@@ -246,7 +246,13 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget delay mupdate (breq, pk
       checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
       unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
-      unless (null unpushed) $ do
+      if null unpushed
+        then
+        when mustpush $ do
+        ok <- yesNo "Nothing to push, okay to continue"
+        unless ok $
+          error' "no commits with --must-push"
+        else do
         putStrLn $ showNVR nvr +-+ "(" ++ target ++ ")" +-+
           if nopkgs > 1
           then pluralException n (if morelayers then Nothing else Just "last") "more" "more" +-+ maybe "" (\l -> "in layer" +-+ show l) mlayer
