@@ -47,6 +47,7 @@ executable fbrnch
   other-modules:       Bodhi
                        Branches
                        Bugzilla
+                       Cmd.Autospec
                        Cmd.Bugs
                        Cmd.Build
                        Cmd.Bump

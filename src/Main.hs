@@ -9,6 +9,7 @@ import Options.Applicative (maybeReader, ReadM)
 import SimpleCmdArgs
 
 -- commands
+import Cmd.Autospec
 import Cmd.Bugs
 import Cmd.Build
 import Cmd.Bump
