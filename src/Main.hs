@@ -37,6 +37,7 @@ import Cmd.Push
 --import Cmd.Repoquery
 import Cmd.RequestBranch
 import Cmd.RequestRepo
+import Cmd.ReviewPackage
 import Cmd.Reviews
 import Cmd.Scratch
 import Cmd.SideTags

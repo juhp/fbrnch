@@ -75,6 +75,7 @@ executable fbrnch
                        --Cmd.Repoquery
                        Cmd.RequestBranch
                        Cmd.RequestRepo
+                       Cmd.ReviewPackage
                        Cmd.Reviews
                        Cmd.Scratch
                        Cmd.SideTags
