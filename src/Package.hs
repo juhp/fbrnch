@@ -45,6 +45,8 @@ module Package (
   editSpecField,
   isAutoChangelog,
   isAutoRelease,
+  sourceFieldFile,
+  isArchiveFile,
   sourceDirCwdOpt
   ) where
 
@@ -530,6 +532,20 @@ editSpecField field new spec =
 splitRelease :: NVR -> (NV,String)
 splitRelease (NVR n (VerRel v r)) = (NV n v, r)
 #endif
+
+sourceFieldFile :: String -> FilePath
+sourceFieldFile field =
+  if null field then
+    -- should be impossible
+    error "empty source field!"
+  else (takeFileName . last . words) field
+
+isArchiveFile :: FilePath -> Bool
+isArchiveFile f =
+  any ($ f) [(".tar." `isInfixOf`),
+             (".zip" `isSuffixOf`),
+             (".gpg" `isSuffixOf`),
+             (".tgz" `isSuffixOf`)]
 
 sourceDirCwdOpt :: IO [String]
 sourceDirCwdOpt = do

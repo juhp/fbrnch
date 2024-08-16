@@ -116,21 +116,6 @@ updatePkg onlysources force allowHEAD distgit mver pkg br = do
   cmdSilent' "rpmbuild" $ "-bp" : sourcediropt ++ ["--nodeps", spec]
   putStrLn "done"
   -- FIXME git amend (if previous commit was update)
-  where
-    sourceFieldFile :: String -> FilePath
-    sourceFieldFile field =
-      if null field then
-        -- should be impossible
-        error "empty source field!"
-      else (takeFileName . last . words) field
-
-    -- FIXME handle .tgz?
-    isArchiveFile :: FilePath -> Bool
-    isArchiveFile f =
-      any ($ f) [(".tar." `isInfixOf`),
-                 (".zip" `isSuffixOf`),
-                 (".gpg" `isSuffixOf`),
-                 (".tgz" `isSuffixOf`)]
 
 pkgVerRel :: FilePath -> IO (String,String)
 pkgVerRel spec = do
