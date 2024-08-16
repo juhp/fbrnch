@@ -44,6 +44,7 @@ module Package (
   equivNVR,
   editSpecField,
   isAutoRelease
+  sourceDirCwdOpt
   ) where
 
 import Data.RPM (NV(..), VerRel(..))
@@ -524,3 +525,8 @@ editSpecField field new spec =
 splitRelease :: NVR -> (NV,String)
 splitRelease (NVR n (VerRel v r)) = (NV n v, r)
 #endif
+
+sourceDirCwdOpt :: IO [String]
+sourceDirCwdOpt = do
+  cwd <- getCurrentDirectory
+  return ["--define", "_sourcedir" +-+ cwd]

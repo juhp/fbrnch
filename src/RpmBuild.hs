@@ -201,9 +201,9 @@ generateSrpmNoDist nodist force mbr spec = do
   msrcrpmdir <- rpmEval "%{_srcrpmdir}"
   autoreleaseOpt <- getAutoReleaseOptions spec
   srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ autoreleaseOpt ++ ["--qf", fromMaybe "" msrcrpmdir </> "%{name}-%{version}-%{release}.src.rpm", spec]
-  cwd <- getCurrentDirectory
-  let sourcediropt = ["--define", "_sourcedir" +-+ cwd]
-      srcrpmdiropt = maybe [] (\dir -> ["--define", "_srcrpmdir" +-+ dir]) msrcrpmdir
+  sourcediropt <- sourceDirCwdOpt
+  let srcrpmdiropt = maybe [] (\dir -> ["--define", "_srcrpmdir" +-+ dir])
+                     msrcrpmdir
       opts = distopt ++ sourcediropt ++ srcrpmdiropt
   if force then
     buildSrpm srpmfile opts
@@ -290,13 +290,13 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
     void $ getSources spec
     distopt <- distOptAny br
     autoreleaseOpt <- getAutoReleaseOptions spec
+    sourcediropt <- sourceDirCwdOpt
     let buildopt =
           case mforceshort of
             Just ShortCompile -> ["-bc", "--short-circuit"]
             Just ShortInstall -> ["-bi", "--short-circuit"]
             _ -> "-bb" : ["--noclean" | noclean]
-        sourcediropt = ["--define", "_sourcedir" +-+ cwd]
-        args = sourcediropt ++ distOpt dist ++
+        args = sourcediropt ++ distopt ++
                buildopt ++ map show bconds ++ autoreleaseOpt ++ [spec]
     date <- cmd "date" ["+%T"]
     rbr <- anyBranchToRelease br

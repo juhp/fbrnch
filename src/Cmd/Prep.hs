@@ -49,9 +49,7 @@ prepCmd mpre verbose deps allowhead (mbr,pkgs) = do
         sourcediropt <- do
           distgit <- isGitRepo
           if distgit
-            then do
-            cwd <- getCurrentDirectory
-            return ["--define", "_sourcedir" +-+ cwd]
+            then sourceDirCwdOpt
             else return []
         timeIO $
           (if verbose then cmdLog else cmdSilent') "rpmbuild" $ "-bp" : ["--nodeps" | not deps] ++ sourcediropt ++ [spec]
