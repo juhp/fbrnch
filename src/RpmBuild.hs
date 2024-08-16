@@ -101,7 +101,7 @@ getSources spec = do
             then return msourcedir
             else return Nothing
   isPkgGit <- isPkgGitRepo
-  (patches,srcs) <- partitionEithers . map sourceFieldFile
+  (patches,srcs) <- partitionEithers . map sourcePatchFile
                     <$> cmdLines "spectool" ["-a", spec]
   forM_ srcs $ \ src -> do
     exists <- doesFileExist src &&^ checkCompression src
@@ -138,8 +138,8 @@ getSources spec = do
         error' $ "missing patch:" +-+ patch
   return $ srcs ++ patches
   where
-    sourceFieldFile :: String -> Either FilePath FilePath
-    sourceFieldFile field =
+    sourcePatchFile :: String -> Either FilePath FilePath
+    sourcePatchFile field =
       case word1 field of
         (f,v) ->
           -- rpmdevtools 9.3 (spectool always lists --all)
