@@ -33,6 +33,7 @@ import Data.Fixed (Micro)
 import Data.RPM.NVR (NVR, maybeNVR, nvrName)
 import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
+import Say (sayString)
 import SimplePrompt (promptEnter)
 import System.Exit
 import System.Process.Typed
@@ -238,14 +239,15 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
               Nothing -> error "create_event not found"
               Just event -> do
                 latest <- kojiLatestNVRRepo buildtag event (nvrName nvr)
+                tz <- getCurrentTimeZone
                 if latest == Just nvr
-                  then logMsg $ showNVR nvr +-+
+                  then logSay tz $ showNVR nvr +-+
                        if isNothing moldrepo
                        then "is in" +-+ buildtag
                        else "appeared"
                   else do
                   when (isNothing moldrepo && not quiet) $
-                    logMsg $ "Waiting for" +-+ buildtag +-+ "to have" +-+ showNVR nvr
+                    logSay tz $ "Waiting for" +-+ buildtag +-+ "to have" +-+ showNVR nvr
                   waitRepo buildtag mrepo
 
 kojiTagArchs :: String -> IO [String]
@@ -306,3 +308,8 @@ targetMaybeSidetag dryrun create br msidetagTarget =
             else error' "'fedpkg request-side-tag' failed"
         [tag] -> return tag
         _ -> error' $ "More than one user side-tag found for" +-+ show br
+
+logSay :: TimeZone -> String -> IO ()
+logSay tz str = do
+  now <- utcToLocalTime tz <$> getCurrentTime
+  sayString $ formatTime defaultTimeLocale "%T" now +-+ str

@@ -12,6 +12,7 @@ import Control.Exception.Extra (retry)
 import Data.RPM.NVR (NVR)
 import Distribution.RPM.Build.Order (dependencyLayersRpmOpts)
 import Fedora.Bodhi hiding (bodhiUpdate)
+import Say
 import SimplePrompt (prompt, promptEnter, yesNo)
 import System.Console.Pretty
 import System.Time.Extra (sleep)
@@ -46,6 +47,7 @@ type JobAsync = (String, Async JobDone)
 -- FIXME support non-sidetag update for parallel packages
 -- FIXME print layers if few packages?
 -- FIXME push update
+-- FIXME use more say
 parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget -> Bool
                  -> Double -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()
@@ -232,7 +234,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         Just (Left except) -> do
           print except
           let pkg = fst job
-          putStrLn $ "**" +-+ color Magenta pkg +-+ "job" +-+ color Magenta "failed" +-+ "**" +-+ if singlejob then "" else "(" ++ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer ++ ")"
+          sayString $ "**" +-+ color Magenta pkg +-+ "job" +-+ color Magenta "failed" +-+ "**" +-+ if singlejob then "" else "(" ++ plural (length jobs) "job" +-+ "left" +-+ maybe "" (\l ->  "in layer" +-+ show l) mlayer ++ ")"
           watchJobs singlejob mlayer (pkg : fails) dones jobs
 
     -- FIXME prefix output with package name
@@ -275,7 +277,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       case buildstatus of
         Just BuildComplete -> do
           -- FIXME detect old stable existing build
-          putStrLn $ color Green (showNVR nvr) +-+ "is already" +-+ color Green "built"
+          sayString $ color Green (showNVR nvr) +-+ "is already" +-+ color Green "built"
           when (br /= Rawhide && morelayers && target == branchTarget br) $ do
             tags <- kojiNVRTags nvr
             unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
@@ -286,7 +288,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
               kojiWaitRepo dryrun (nopkgs > 5) True target nvr
             return $ Done pkg nvr br changelog
         Just BuildBuilding -> do
-          putStrLn $ color Yellow (showNVR nvr) +-+ "is already" +-+ color Yellow "building"
+          sayString $ color Yellow (showNVR nvr) +-+ "is already" +-+ color Yellow "building"
           mtask <- kojiGetBuildTaskID fedoraHub $ showNVR nvr
           case mtask of
             Nothing -> error' $ "Task for" +-+ showNVR nvr +-+ "not found"
@@ -330,7 +332,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         kojiWaitTaskAndRepo newpkg nvr task = do
           finish <- retry 3 $ kojiWaitTask task
           if finish
-            then putStrLn $ color Green $ showNVR nvr +-+ "build success"
+            then sayString $ color Green $ showNVR nvr +-+ "build success"
             -- FIXME print koji task url
             else do
             whenJustM (findExecutable "koji-tool") $ \kojitool ->
