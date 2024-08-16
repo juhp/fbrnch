@@ -3,7 +3,7 @@ extra-deps:
   - fedora-dists-2.1.1
   - bugzilla-redhat-1.0.1
   - rpm-nvr-0.1.2
-  - rpmbuild-order-0.4.11
+  - rpmbuild-order-0.4.12
   - simple-cmd-args-0.1.8
   - simple-prompt-0.2.3
   - pagure-0.2.1

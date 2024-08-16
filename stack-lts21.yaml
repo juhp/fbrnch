@@ -1,6 +1,6 @@
 resolver: lts-21.25
 extra-deps:
-  - rpmbuild-order-0.4.11
+  - rpmbuild-order-0.4.12
   - pagure-0.2.1
   - copr-api-0.2.0
   - simple-prompt-0.2.3

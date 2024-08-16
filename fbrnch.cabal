@@ -129,7 +129,7 @@ executable fbrnch
                        pretty-terminal,
                        process,
                        -- regex-tdfa,
-                       rpmbuild-order >= 0.4.11,
+                       rpmbuild-order >= 0.4.12,
                        rpm-nvr >= 0.1.2,
                        simple-cmd >= 0.2.3,
                        simple-cmd-args >= 0.1.8,
