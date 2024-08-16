@@ -239,7 +239,7 @@ generateSrpmNoDist nodist force mbr spec = do
 
 isRpmAutospec :: FilePath -> IO Bool
 isRpmAutospec spec = do
-  grep_ "^%autochangelog" spec ||^ isAutoRelease spec
+  isAutoChangelog spec ||^ isAutoRelease spec
 
 data BCond = BuildWith String | BuildWithout String
 

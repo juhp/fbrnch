@@ -43,7 +43,8 @@ module Package (
   pkgNameVerRelNodist,
   equivNVR,
   editSpecField,
-  isAutoRelease
+  isAutoChangelog,
+  isAutoRelease,
   sourceDirCwdOpt
   ) where
 
@@ -101,7 +102,7 @@ changeLogPrompt change spec = do
 
 getChangelog :: FilePath -> IO [String]
 getChangelog spec = do
-  autochangelog <- grep_ "^%autochangelog" spec
+  autochangelog <- isAutoChangelog spec
   if autochangelog
     then takeWhile (not . null) . drop 1 <$>
          cmdLines "rpmautospec" ["generate-changelog", spec]
@@ -374,6 +375,10 @@ isAutoRelease :: FilePath -> IO Bool
 isAutoRelease spec = do
   matches <- filter ("Release:" `isPrefixOf`) <$> grep "%autorelease" spec
   return $ not (null matches)
+
+isAutoChangelog :: FilePath -> IO Bool
+isAutoChangelog spec =
+  grep_ "^%autochangelog" spec
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe NVR)
 pkgNameVerRel = pkgNameVerRelDist . Just
