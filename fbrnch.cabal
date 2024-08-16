@@ -132,6 +132,7 @@ executable fbrnch
                        rpmbuild-order >= 0.4.12,
                        rpm-nvr >= 0.1.2,
                        say,
+                       select-rpms,
                        simple-cmd >= 0.2.3,
                        simple-cmd-args >= 0.1.8,
                        simple-prompt >= 0.2.3,

@@ -6,6 +6,7 @@ import Data.Maybe (fromMaybe)
 #if !MIN_VERSION_simple_cmd_args(0,1,7)
 import Options.Applicative (maybeReader, ReadM)
 #endif
+import SelectRPMs (selectRpmsOption)
 import SimpleCmdArgs
 
 -- commands
@@ -258,7 +259,7 @@ main = do
       <*> switchWith 'r' "reinstall" "reinstall rpms"
       <*> switchLongWith "no-build" "do not (re-)build (install built rpms)"
       <*> switchLongWith "ignore-builddeps" "do not install builddeps"
-      <*> switchWith 'a' "all-subpackages" "install all subpackages (default if none currently installed)"
+      <*> selectRpmsOption
       <*> maybeBranchPackages False
     , Subcommand "not-installed" "Packages not installed locally" $
       notInstalledCmd

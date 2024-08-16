@@ -2,14 +2,12 @@
 
 module Cmd.Install (
   installCmd,
-  notInstalledCmd
+  notInstalledCmd,
+  Select(..)
   ) where
 
 import Data.RPM
-#if !MIN_VERSION_simple_cmd(0,2,7)
-import System.Posix.User (getEffectiveUserID)
-#endif
-import SimplePrompt (promptEnter)
+import SelectRPMs
 
 import Branches
 import Cmd.Merge
@@ -29,8 +27,9 @@ import RpmBuild
 -- FIXME --check any/all of package installed
 -- FIXME add --debug or respect --verbose for dnf commands
 installCmd :: Bool -> Bool -> Maybe Branch -> Maybe ForceShort -> [BCond]
-           -> Bool -> Bool -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
-installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps allsubpkgs (mbr, pkgs) = do
+           -> Bool -> Bool -> Bool -> Select -> (Maybe Branch,[String])
+           -> IO ()
+installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps select (mbr, pkgs) = do
   when (recurse && isShortCircuit mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch (boolHeader (recurse || length pkgs > 1)) True Nothing installPkg (mbr, pkgs)
@@ -49,15 +48,16 @@ installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps 
             mergeCmd False False True Nothing False mfrom (Branches [onlyRelBranch br], ["."])
             localBranchSpecFile pkg br
         rpms <- builtRpms br spec
-        -- removing arch
         let nvras = map readNVRA rpms
+        -- FIXME can this be removed now?
         already <- filterM nvraInstalled nvras
         if isJust mforceshort || null already || reinstall
-          then doInstallPkg mforceshort spec rpms already
+          then doInstallPkg mforceshort spec rpms
           else putStrLn $ unlines (map showNVRA already) ++
                "\nalready installed!\n"
       where
-        doInstallPkg mforceshort' spec rpms already = do
+        doInstallPkg mforceshort' spec rpms = do
+          -- FIXME show source NVR (eg not pandoc-common)
           putStrLn $ (showNVR . dropArch . readNVRA) (head rpms)
           unless (nobuilddeps || nobuild) $ do
             missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
@@ -71,40 +71,22 @@ installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps 
                   mpkgdir <- lookForPkgDir rbr ".." dep
                   case mpkgdir of
                     Nothing -> putStrLn $ dep +-+ "not known"
-                    Just pkgdir -> installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps allsubpkgs (mbr, [pkgdir]) >> putNewLn
+                    Just pkgdir -> installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps select (mbr, [pkgdir]) >> putNewLn
                 -- FIXME option to enable/disable installing missing deps
                 -- FIXME --skip-missing-deps or prompt
               else installDeps True spec
-          wasbuilt <-
+          -- FIXME unused
+          _wasbuilt <-
             if nobuild
             then return True
             else buildRPMs quiet False False mforceshort' bconds rpms br spec
           unless (isShortCircuit mforceshort') $ do
-            toinstalls <-
-              if allsubpkgs
-              then return rpms
-              else do
-                ps <- filterM (pkgInstalled . rpmName . readNVRA) rpms
-                return $ if null ps then rpms else ps
-            if reinstall || mforceshort' == Just ForceBuild
-              then do
-              let reinstalls =
-                    filter (\ f -> readNVRA f `elem` already) toinstalls
-              unless (null reinstalls) $
-                sudoLog "/usr/bin/dnf" $ "reinstall" : "-q" : "-y" : reinstalls
-              let remaining = filterDebug $ toinstalls \\ reinstalls
-              unless (null remaining) $
-                sudoLog "/usr/bin/dnf" $ "install" : "-q" : "-y" : remaining
-              else do
-              let command = "/usr/bin/dnf" : "install" : "-q" : "-y" : filterDebug toinstalls
-              cmdN "sudo" command
-              ok <- cmdBool "sudo" command
-              unless ok $
-                if wasbuilt
-                then error' $ "error from:" +-+ unwords command
-                else do
-                  promptEnter "Press Enter to rebuild package"
-                  doInstallPkg (Just ForceBuild) spec rpms already
+            let nvras = rpmsToNVRAs rpms
+                -- FIXME: prefix = fromMaybe (nvrName nvr) mprefix
+            decided <- decideRPMs No False Nothing select (unPackage pkg) nvras
+            -- FIXME dryrun and debug
+            -- FIXME return Bool?
+            installRPMs False False Nothing No $ groupOnArch "RPMS" decided
 
         lookForPkgDir :: Branch -> FilePath -> String -> IO (Maybe FilePath)
         lookForPkgDir rbr topdir p = do
@@ -133,8 +115,6 @@ installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps 
               sysbr <- systemBranch
               repoquery sysbr rbr ["--qf=%{source_name}", "--whatprovides", p]
 
-        filterDebug = filter (\p -> not (any (`isInfixOf` p) ["-debuginfo-", "-debugsource-"]))
-
 notInstalledCmd :: (Maybe Branch,[String]) -> IO ()
 notInstalledCmd =
   withPackagesMaybeBranchNoHeadergit notInstalledPkg
@@ -161,21 +141,3 @@ nvraInstalled rpm =
 pkgInstalled :: String -> IO Bool
 pkgInstalled pkg =
   cmdBool "rpm" ["--quiet", "-q", pkg]
-
-#if !MIN_VERSION_simple_cmd(0,2,7)
-sudoLog :: String -- ^ command
-     -> [String] -- ^ arguments
-     -> IO ()
-sudoLog = sudoInternal cmdLog
-  where
-    sudoInternal :: (String -> [String] -> IO a) -> String -> [String] -> IO a
-    sudoInternal exc c args = do
-      uid <- getEffectiveUserID
-      sd <- if uid == 0
-        then return Nothing
-        else findExecutable "sudo"
-      let noSudo = isNothing sd
-      when (uid /= 0 && noSudo) $
-        warning "'sudo' not found"
-      exc (fromMaybe c sd) (if noSudo then args else c:args)
-#endif
