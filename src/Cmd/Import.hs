@@ -3,7 +3,7 @@
 module Cmd.Import (
   importCmd,
   downloadReviewSRPM,
-  pkgreviewSpecDir
+  upstreamDir
   )
 where
 
@@ -73,7 +73,6 @@ importCmd existingrepo mock (breq, ps) = do
       when (pkg /= takeFileName dir) $
         setCurrentDirectory dir
 
--- FIXME download spec too
 downloadReviewSRPM :: Bool -> Bool -> String -> Int -> BugzillaSession
                    -> IO FilePath
 downloadReviewSRPM getspec prompt pkg bid session = do
@@ -136,7 +135,7 @@ downloadReviewSRPM getspec prompt pkg bid session = do
           case filter (isURI . maybeEncodeURI) specfiles of
             [] -> error "no valid spec urls found"
             [specurl] -> do
-              let specfile = pkgreviewSpecDir </> takeFileName specurl
+              let specfile = upstreamDir </> takeFileName specurl
               havespec <- doesFileExist specfile
               if havespec
                 then putStrLn $ specfile +-+ "already exists"
@@ -144,5 +143,5 @@ downloadReviewSRPM getspec prompt pkg bid session = do
                 cmd_ "curl" ["--silent", "--show-error", "--create-dirs", "--output", specfile, specurl]
             specurls -> error' $ "multiple spec urls:" +-+ unwords specurls
 
-pkgreviewSpecDir :: FilePath
-pkgreviewSpecDir = "SPEC"
+upstreamDir :: FilePath
+upstreamDir = "UPSTREAM"
