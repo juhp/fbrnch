@@ -12,6 +12,7 @@ import Common.System
 import Data.Fixed
 import Data.Time.Clock
 import Data.Time.LocalTime
+import Distribution.Fedora.Branch (branchDestTag)
 import Fedora.Bodhi
 
 import Bugzilla

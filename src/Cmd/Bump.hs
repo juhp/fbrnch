@@ -3,14 +3,15 @@ module Cmd.Bump
   )
 where
 
+import Distribution.Fedora.Branch (branchDestTag)
+import System.IO.Extra
+
 import Branches
 import Common
 import Common.System
 import Git
 import Koji
 import Package
-
-import System.IO.Extra
 
 -- FIXME --force
 -- FIXME --target

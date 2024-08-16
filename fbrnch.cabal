@@ -118,7 +118,7 @@ executable fbrnch
                        either,
                        email-validate,
                        extra,
-                       fedora-dists >= 2.1.1,
+                       fedora-releases,
                        filepath,
                        http-conduit,
                        http-directory >= 0.1.5,

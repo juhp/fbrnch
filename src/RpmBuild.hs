@@ -23,8 +23,8 @@ import Control.Exception (uninterruptibleMask_)
 import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 import Data.RPM
-import qualified Distribution.Fedora as Dist
-import Distribution.Fedora (Dist)
+import Distribution.Fedora.Branch (branchDistTag, branchRelease)
+import Distribution.Fedora.Release (Release(releaseVersion))
 import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import SimpleCmd.Rpm
 import SimplePrompt (promptEnter)
@@ -39,31 +39,36 @@ import Common.System
 import Git
 import Package
 
-distOpt :: Dist -> [String]
-distOpt dist =
-  ["--define", "dist" +-+ "%{?distprefix}" ++ Dist.rpmDistTag dist]
+distOpt :: Branch -> IO [String]
+distOpt br = do
+  disttag <- branchDistTag br
+  return ["--define", "dist" +-+ "%{?distprefix}" ++ disttag]
+
+distOptAny :: AnyBranch -> IO [String]
+distOptAny b =
+  releaseSystemBranch b >>= distOpt
 
 -- FIXME hardcoding
 distRpmOptions :: Branch -> IO [String]
 distRpmOptions br =
-  map ("--define=" ++) <$>
-  case br of
-    Rawhide -> do
-      dist <- Dist.getRawhideDist
-      let ver = case dist of
-                  Dist.Fedora n -> show n
-                  _ -> error' $ "impossible rawhide version:"  +-+ show dist
-      return ["fedora" +-+ ver, "fc" ++ ver +-+ "1"]
-    Fedora n -> return ["fedora" +-+ show n, "fc" ++ show n +-+ "1"]
-    EPEL n -> return ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
-    EPELNext n -> return ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
+  map ("--define=" ++) <$> do
+  release <- branchRelease br
+  return $
+    case br of
+      Rawhide ->
+        let ver = releaseVersion release
+        in ["fedora" +-+ ver, "fc" ++ ver +-+ "1"]
+      Fedora n ->
+        ["fedora" +-+ show n, "fc" ++ show n +-+ "1"]
+      EPEL n -> ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
+      EPELNext n -> ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
 
 builtRpms :: AnyBranch -> FilePath -> IO [FilePath]
 builtRpms br spec = do
-  dist <- getBranchDist br
+  distopt <- distOptAny br
   rpmdir <- fromMaybe "" <$> rpmEval "%{_rpmdir}"
   autoreleaseOpt <- getAutoReleaseOptions spec
-  rpms <- rpmspec (["--builtrpms", "--define", "dist" +-+ Dist.rpmDistTag dist] ++ autoreleaseOpt) (Just (rpmdir </>  "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm")) spec
+  rpms <- rpmspec ("--builtrpms" : distopt ++ autoreleaseOpt) (Just (rpmdir </>  "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm")) spec
   if null rpms
     then error' $ spec +-+ "does not seem to create any rpms"
     else return rpms
@@ -187,7 +192,12 @@ generateSrpmNoDist nodist force mbr spec = do
   distopt <-
     if nodist
     then return ["--define", "dist %{nil}"]
-    else maybe (return []) (fmap distOpt . getBranchDist) mbr
+    else
+      case mbr of
+        Nothing -> return []
+        Just br -> do
+          rbr <- releaseSystemBranch br
+          distOpt rbr
   msrcrpmdir <- rpmEval "%{_srcrpmdir}"
   autoreleaseOpt <- getAutoReleaseOptions spec
   srpmfile <- cmd "rpmspec" $ ["-q", "--srpm"] ++ distopt ++ autoreleaseOpt ++ ["--qf", fromMaybe "" msrcrpmdir </> "%{name}-%{version}-%{release}.src.rpm", spec]
@@ -278,8 +288,7 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
     else do
     installDeps True spec
     void $ getSources spec
-    dist <- getBranchDist br
-    cwd <- getCurrentDirectory
+    distopt <- distOptAny br
     autoreleaseOpt <- getAutoReleaseOptions spec
     let buildopt =
           case mforceshort of

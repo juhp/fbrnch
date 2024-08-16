@@ -36,6 +36,7 @@ module Git (
   ) where
 
 import Data.Char (isSpace)
+import Distribution.Fedora.Branch (newerBranch)
 import SimpleCmd.Git
 import SimplePrompt
 

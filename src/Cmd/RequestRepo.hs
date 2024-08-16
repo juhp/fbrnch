@@ -2,15 +2,14 @@
 
 module Cmd.RequestRepo (requestRepos) where
 
-import Common
-import qualified Common.Text as T
-
 import Network.HTTP.Directory (httpExists, httpManager)
 import SimpleCmd
 import SimplePrompt (promptEnter, promptInitial)
 
 import Branches
 import Bugzilla
+import Common
+import qualified Common.Text as T
 import Krb
 import ListReviews
 import Package

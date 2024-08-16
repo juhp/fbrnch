@@ -3,6 +3,7 @@
 module Main (main) where
 
 import Data.Maybe (fromMaybe)
+import Distribution.Fedora.Branch (partitionBranches, readBranch)
 #if !MIN_VERSION_simple_cmd_args(0,1,7)
 import Options.Applicative (maybeReader, ReadM)
 #endif
@@ -630,11 +631,7 @@ main = do
     commandOpt = strOptionWith 'c' "cmd" "SHELLCOMMAND" "Shell command to run in $p"
 
     targetOpt :: Parser String
-    targetOpt =
-      checkNotRawhide <$> strOptionWith 't' "target" "TARGET" "Koji target"
-      where
-        checkNotRawhide "rawhide" = error' "'rawhide' is not a valid target!"
-        checkNotRawhide t = t
+    targetOpt = strOptionWith 't' "target" "TARGET" "Koji target"
 
     sidetagTargetOpt :: Maybe String -> Parser SideTagTarget
     sidetagTargetOpt mdesc =

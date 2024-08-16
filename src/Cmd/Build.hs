@@ -5,14 +5,14 @@ module Cmd.Build (
   BuildOpts(..)
   ) where
 
+import Distribution.Fedora.Branch (branchDestTag, branchTarget)
 import SimplePrompt (promptEnter, yesNo)
-
-import Common
-import Common.System
 
 import Bodhi
 import Bugzilla
 import Branches
+import Common
+import Common.System
 import Cmd.Merge
 import Git
 import Krb

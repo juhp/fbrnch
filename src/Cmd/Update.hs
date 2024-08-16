@@ -4,6 +4,9 @@ module Cmd.Update
   )
 where
 
+import Data.RPM.VerCmp
+import SimplePrompt (promptEnter)
+
 import Branches
 import Common
 import Common.System
@@ -11,9 +14,6 @@ import Git
 import InterleaveOutput (cmdSilent')
 import Krb
 import Package
-
-import Data.RPM.VerCmp
-import SimplePrompt (promptEnter)
 
 -- FIXME if autorelease, drop -b baserelease
 -- FIXME --no-prep to avoid overwriting ongoing build

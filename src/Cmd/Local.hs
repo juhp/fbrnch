@@ -12,7 +12,7 @@ module Cmd.Local (
 
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (isDigit)
-import System.Environment
+import System.Environment (getEnvironment)
 import qualified System.Process as P
 import qualified System.Process.Typed as TP
 import System.Exit

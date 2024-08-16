@@ -9,14 +9,11 @@ module Branches (
   localBranches,
   pagurePkgBranches,
   mockRoot,
-  module Distribution.Fedora.Branch,
+  Branch(..),
   AnyBranch(..),
   anyBranch,
   isRelBranch,
   onlyRelBranch,
-#if !MIN_VERSION_fedora_dists(2,1,2)
-  partitionBranches,
-#endif
   BranchOpts(..),
   listOfBranches,
   listOfAnyBranches,
@@ -33,19 +30,17 @@ module Branches (
   gitLines
 ) where
 
-import Common
-import Common.System
-
-#if !MIN_VERSION_fedora_dists(2,1,2)
-import Data.Either
-import Data.Tuple
-#endif
-import Distribution.Fedora (distBranch, getLatestFedoraDist)
-import Distribution.Fedora.Branch
+import Data.Either (partitionEithers)
+import Distribution.Fedora.Branch (Branch(..), eitherBranch, getFedoraBranched,
+                                   getFedoraBranches, getLatestFedoraBranch,
+                                   readActiveBranch, eitherActiveBranch,
+                                   readBranch)
 import SimpleCmd.Git
 import SimplePrompt (promptEnter, promptInitial)
 import qualified System.Info (arch)
 
+import Common
+import Common.System
 import Pagure
 
 data AnyBranch = RelBranch Branch | OtherBranch String
@@ -64,12 +59,6 @@ isRelBranch _ = False
 instance Show AnyBranch where
   show (RelBranch br) = show br
   show (OtherBranch obr) = obr
-
-#if !MIN_VERSION_fedora_dists(2,1,2)
-partitionBranches :: [String] -> ([Branch],[String])
-partitionBranches args =
-  swap . partitionEithers $ map eitherBranch args
-#endif
 
 activeBranches :: [Branch] -> [String] -> [Branch]
 activeBranches active =
@@ -136,8 +125,18 @@ onlyRelBranch (OtherBranch br) = error' $ "Non-release branch not allowed:" +-+ 
 
 systemBranch :: IO Branch
 systemBranch = do
-  branched <- getLatestFedoraDist
-  readBranch' . distBranch branched . read  . init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
+  platform <- init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
+  if platform == "eln"
+    then return Rawhide
+    else
+    case readBranch platform of
+      Just br -> do
+        branched <- getLatestFedoraBranch
+        return $
+          if br > branched
+          then Rawhide
+          else br
+      Nothing -> error' $ "could not determine system branch from platform" +-+ platform
 
 listOfBranches :: Bool -> Bool -> BranchesReq -> IO [Branch]
 listOfBranches distgit _active (BranchOpt AllBranches) =
@@ -246,8 +245,7 @@ getRequestedBranches existing breq = do
                         AllFedora -> filter isFedoraBranch activenew
                         AllEPEL -> filter isEPELBranch activenew
                         ExcludeBranches xbrs -> activenew \\ xbrs
-      inp <- promptInitial "Confirm branches to request" $ unwords (map show requested)
-      return $ map (readActiveBranch' activenew) $ words inp
+      confirmBranches activenew requested
   where
     branchingPrompt :: [Branch] -> IO [Branch]
     branchingPrompt active = do
@@ -257,6 +255,17 @@ getRequestedBranches existing breq = do
         in if all isRelBranch abrs
            then return $ map onlyRelBranch abrs
            else branchingPrompt active
+
+    confirmBranches :: [Branch] -> [Branch] -> IO [Branch]
+    confirmBranches activenew requested = do
+      inp <- promptInitial "Confirm branches to request" $ unwords (map show requested)
+      let (errs,oks) = partitionEithers $
+                       map (eitherActiveBranch activenew) $ words inp
+      if null errs
+        then return oks
+        else do
+        putStrLn $ "unknown branches:" +-+ unwords errs
+        confirmBranches activenew requested
 
 data BranchesReq =
   BranchOpt BranchOpts | Branches [Branch]

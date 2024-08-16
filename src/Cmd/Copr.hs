@@ -22,6 +22,7 @@ import Data.Ini.Config
 import Data.RPM.NVR (nvrVerRel)
 import Data.RPM.VerRel (showVerRel)
 import Data.Tuple.Extra (first)
+import Distribution.Fedora.Branch (getFedoraBranches, getFedoraBranched)
 import Network.HTTP.Query (lookupKey, lookupKey')
 import System.Environment.XDG.BaseDir (getUserConfigDir)
 import System.Time.Extra (sleep)

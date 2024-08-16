@@ -10,6 +10,7 @@ import Common.System
 import Control.Concurrent.Async
 import Control.Exception.Extra (retry)
 import Data.RPM.NVR (NVR)
+import Distribution.Fedora.Branch (branchDestTag, branchTarget)
 import Distribution.RPM.Build.Order (dependencyLayersRpmOpts)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import Say

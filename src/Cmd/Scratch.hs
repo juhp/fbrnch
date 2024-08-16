@@ -9,6 +9,7 @@ module Cmd.Scratch (
   ) where
 
 import Data.RPM.NVR (NVR)
+import Distribution.Fedora.Branch (branchTarget)
 
 import Branches
 import Common

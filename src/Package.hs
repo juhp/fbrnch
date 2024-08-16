@@ -9,7 +9,7 @@ module Package (
   getChangelog,
   cleanChangelog,
   changeLogPrompt,
-  getBranchDist,
+  releaseSystemBranch,
   getPackageName,
   getSummaryURL,
   findSpecfile,
@@ -48,7 +48,7 @@ module Package (
 
 import Data.RPM (NV(..), VerRel(..))
 import Data.RPM.NVR (maybeNVR, NVR(..))
-import Distribution.Fedora hiding (Fedora,EPEL,EPELNext)
+import Distribution.Fedora.Branch
 import SimpleCmd.Rpm
 import SimplePrompt (prompt, promptInitial)
 
@@ -385,9 +385,8 @@ pkgNameVerRelDist Nothing spec = do
       [] -> Nothing
       [nvr] -> maybeNVR nvr
       _ -> error' "could not determine unique nvr"
-
 pkgNameVerRelDist (Just br) spec = do
-  disttag <- rpmDistTag <$> branchDist br
+  disttag <- branchDistTag br
   -- workaround dist with bootstrap
   hostdist <- cmd "rpm" ["--eval", "%{dist}"]
   -- FIXME more precise regexp with "Release:"
@@ -423,9 +422,9 @@ pkgNameVerRelNodist spec = do
     Nothing -> error' $ "rpmspec failed to parse" +-+ spec
     Just nvr -> return nvr
 
-getBranchDist :: AnyBranch -> IO Dist
-getBranchDist (RelBranch br) = branchDist br
-getBranchDist (OtherBranch _) = systemBranch >>= branchDist
+releaseSystemBranch :: AnyBranch -> IO Branch
+releaseSystemBranch (RelBranch br) = return br
+releaseSystemBranch (OtherBranch _) = systemBranch
 
 -- FIXME should be more strict about dist tag (eg .fcNN only)
 equivNVR :: NVR -> Maybe NVR -> Bool
