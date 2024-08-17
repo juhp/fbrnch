@@ -42,8 +42,9 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
            else if null pkgs then Nothing else dirty
   withPackagesMaybeBranch HeaderMay False mgitops (updatePkg onlysources force allowHEAD pkgGit mver) (mbr, pkgs)
 
-updatePkg :: Bool -> Bool -> Bool -> Bool -> Maybe String -> Package -> AnyBranch
-          -> IO ()
+-- FIXME use tempdir or don't prep to prevent overwriting an ongoing build
+updatePkg :: Bool -> Bool -> Bool -> Bool -> Maybe String -> Package
+          -> AnyBranch -> IO ()
 updatePkg onlysources force allowHEAD distgit mver pkg br = do
   when (distgit && br /= RelBranch Rawhide && isRelBranch br) $
     promptEnter $ "Are you sure you want to update" +-+ show br +-+ "branch?! Press Enter to continue"
@@ -96,9 +97,10 @@ updatePkg onlysources force allowHEAD distgit mver pkg br = do
         -- FIXME only if not all exist
         cmd_ "spectool" ["-g", "-S", spec]
     patches <- map sourceFieldFile <$> cmdLines "spectool" ["-P", spec]
-    forM_ patches $ \patch ->
+    forM_ patches $ \patch -> do
       unlessM (doesFileExist patch) $
-      cmd_ "spectool" ["-g", "-P", spec]
+        cmd_ "spectool" ["-g", "-P", spec]
+      git_ "add" [patch]
     when force $ do
       let archives = filter isArchiveFile existing
       forM_ archives removeFile
