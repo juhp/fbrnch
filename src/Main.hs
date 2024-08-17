@@ -177,13 +177,13 @@ main = do
       <*> branchesPackages
     , Subcommand "update-sources" "Download and update newer sources" $
       updateCmd True
-      <$> switchWith 'f' "force" "Download upstream sources even if they exist locally"
+      <$> forceOpt "Download upstream sources even if they exist locally"
       <*> switchWith 'H' "allow-head" "For updating inside rebase"
       <*> maybeBranchPackages False
     , Subcommand "update-version" "Update package in dist-git to newer version" $
       updateCmd
       <$> switchWith 's' "sources-only" "Only update sources"
-      <*> switchWith 'f' "force" "Download upstream sources even if they exist locally"
+      <*> forceOpt "Download upstream sources even if they exist locally"
       <*> switchWith 'H' "allow-head" "For updating inside rebase"
       <*> maybeBranchPackages False
     , Subcommand "sort" "Sort packages in build dependency order (default format: chain-build)" $
@@ -207,7 +207,7 @@ main = do
       <*> branchesPackages
     , Subcommand "srpm" "Build srpm" $
       srpmCmd
-      <$> switchWith 'f' "force" "regenerate even if spec older than existing srpm"
+      <$> forceOpt "regenerate even if spec older than existing srpm"
       <*> maybeBranchPackages False
     , Subcommand "srpm-spec" "Show the spec file in an srpm" $
       srpmSpecCmd
@@ -366,7 +366,7 @@ main = do
       <*> (flagWith' ListChroots 'l' "list-chroots" "Show project chroots" <|>
            flagLongWith' CoprNew "new" "Create new copr repo" <|>
            flagWith CoprBuild CoprMonitor 'm' "monitor" "Show project chroots")
-      <*> switchWith 'f' "force" "build even if existing n-v-r"
+      <*> forceOpt "build even if existing n-v-r"
       <*> buildByOpt
       <*> optional archesOpt
       <*> pkgArg "PROJECT"
@@ -396,7 +396,7 @@ main = do
       <*> maybeBranchPackages False
     , Subcommand "autospec" "Convert package to use rpmautospec" $
       autospecCmd
-      <$> switchWith 'f' "force" "Refresh changelog file to current"
+      <$> forceOpt "Refresh changelog file to current"
       <*> manyPackages
     , Subcommand "move-artifacts" "Move old rpm artifacts into rpmbuild dirs" $
       moveArtifactsCmd
@@ -692,3 +692,5 @@ main = do
     quietOpt = switchWith 'q' "quiet"
 
     allowHeadOpt = switchLongWith "allow-head" "allow detached HEAD"
+
+    forceOpt = switchWith 'f' "force"
