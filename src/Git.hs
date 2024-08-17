@@ -166,7 +166,7 @@ gitPush quiet mref = do
   if ok
     then putStrLn $ if quiet then "done" else last (lines err)
     else do
-    when quiet $ putStrLn ""
+    when quiet $ putNewLn
     putStrLn $ unwords ("git" : args) +-+ "failed with\n" ++ err
     yes <- yesNo "Retry git push"
     -- FIXME going to fail if ref no longer on branch

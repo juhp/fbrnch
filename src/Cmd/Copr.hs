@@ -356,7 +356,7 @@ printPkgRes :: (Package, [CoprTask]) -> IO ()
 printPkgRes (pkg,chroots) = do
   putStrLn $ "# " <> unPackage pkg
   mapM_ printCoprTask chroots
-  putStrLn ""
+  putNewLn
 
 printCoprTask :: CoprTask -> IO ()
 printCoprTask (CoprTask chr build status version) =
