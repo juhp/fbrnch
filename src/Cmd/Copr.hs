@@ -240,7 +240,7 @@ existingChrootBuilds user project actualpkg verrel chroots = do
   let pkgmonitor = fromMaybe [] $ lookup actualpkg monitorPkgs
   let buildingChroots =
         filterTasks verrel (`elem` coprProcessingStates) pkgmonitor
-  if (null buildingChroots)
+  if null buildingChroots
     then return $ filterTasks verrel (`notElem` ["failed","skipped"]) pkgmonitor
     else do
     mapM_ printCoprTask buildingChroots
@@ -252,8 +252,8 @@ existingChrootBuilds user project actualpkg verrel chroots = do
     return buildingChroots
 
 filterTasks :: String -> (String -> Bool) -> [CoprTask] -> [CoprTask]
-filterTasks verrel statustest tasks =
-  filter (\CoprTask{..} -> taskVerRel == verrel && statustest taskStatus) tasks
+filterTasks verrel statustest =
+  filter (\CoprTask{..} -> taskVerRel == verrel && statustest taskStatus)
 
 coprBuild :: Bool -> String -> String -> FilePath -> FilePath -> [Chroot] -> IO ()
 coprBuild _ _ _ _ _ [] = error' "No chroots chosen"
@@ -333,8 +333,8 @@ coprMonitorPackages :: String -> String -> IO [CoprPackage]
 coprMonitorPackages user proj = do
   builds <- coprGetBuildList fedoraCopr user proj []
   mapM_ coprWaitPackage (lookupKey' "items" builds :: [Object])
-  coprMonitorProject fedoraCopr user proj [] >>=
-    return . mapMaybe pkgResults . lookupKey' "packages"
+  mapMaybe pkgResults . lookupKey' "packages" <$>
+    coprMonitorProject fedoraCopr user proj []
   where
     pkgResults :: Object -> Maybe CoprPackage
     pkgResults obj = do

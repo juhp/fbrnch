@@ -114,4 +114,4 @@ diffCmd debug speconly work fmt ignorebumps patts mwbr =
 
           filterPattern :: DiffFilter -> String -> Bool
           filterPattern (DiffMatch patt) = (patt `isInfixOf`)
-          filterPattern (DiffNotMatch patt) = (not . (patt `isInfixOf`))
+          filterPattern (DiffNotMatch patt) = not . (patt `isInfixOf`)

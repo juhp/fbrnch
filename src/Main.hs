@@ -570,7 +570,7 @@ main = do
     dryrunOpt desc = switchWith 'n' "dry-run" desc <|>
                      switchLongWith "dryrun" "alias for --dry-run"
 
-    debugOpt desc = switchWith 'd' "debug" desc
+    debugOpt = switchWith 'd' "debug"
 
     skipFetchOpt = switchWith 'S' "skip-fetch" "Do not git fetch"
 

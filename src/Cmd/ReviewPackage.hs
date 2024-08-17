@@ -68,7 +68,7 @@ reviewPackageInteractive bid pkg session bug = do
     cmd_ "ls" ["-F"]
     putNewLn
     -- FIXME default to no if nvr unchanged?
-    yesNoDefault True $ "Press Enter to install/prep srpm"
+    yesNoDefault True "Press Enter to install/prep srpm"
     else return True
   let spec = pkg <.> "spec"
   when importsrpm $ do

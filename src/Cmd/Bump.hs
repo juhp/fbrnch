@@ -36,7 +36,7 @@ bumpPkg dryrun local mcmsg mclog pkg br = do
     autorelease <- isAutoRelease spec
     if autorelease
       then
-      if length unpushed > 0
+      if not (null unpushed)
       then putStrLn $ "autorelease: unpushed" +-+
            case length unpushed of
              1 -> "commit"

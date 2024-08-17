@@ -380,8 +380,7 @@ isAutoRelease spec = do
   return $ not (null matches)
 
 isAutoChangelog :: FilePath -> IO Bool
-isAutoChangelog spec =
-  grep_ "^%autochangelog" spec
+isAutoChangelog = grep_ "^%autochangelog"
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe NVR)
 pkgNameVerRel = pkgNameVerRelDist . Just
