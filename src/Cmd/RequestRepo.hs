@@ -16,18 +16,19 @@ import Package
 import Pagure
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
-requestRepos :: Bool -> Bool -> Bool -> (BranchesReq, [String]) -> IO ()
-requestRepos mock allstates retry (breq, ps) = do
-  when (retry && length ps /= 1) $
-    error' "--retry only for a single package"
+requestRepos :: Bool -> Bool -> Bool -> Bool -> (BranchesReq, [String])
+             -> IO ()
+requestRepos mock allstates skipcheck resubmit (breq, ps) = do
+  when (resubmit && length ps /= 1) $
+    error' "can only --resubmit for a single package"
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviewsAll allstates ReviewWithoutRepoReq
     else return ps
-  mapM_ (requestRepo mock retry breq) pkgs
+  mapM_ (requestRepo mock skipcheck resubmit breq) pkgs
 
 -- FIXME also accept bugid instead
-requestRepo :: Bool -> Bool -> BranchesReq -> String -> IO ()
-requestRepo mock retry breq pkg = do
+requestRepo :: Bool -> Bool -> Bool -> BranchesReq -> String -> IO ()
+requestRepo mock skipcheck resubmit breq pkg = do
   putStrLn pkg
   (bug,session) <- approvedReviewBugSession pkg
   putBug bug
@@ -39,14 +40,16 @@ requestRepo mock retry breq pkg = do
     if created
       then putStrLn "scm repo was already created"
       else do
-      requests <- existingRepoRequests
+      requests <-
+        if skipcheck then return [] else existingRepoRequests
       unless (null requests) $ do
         putStrLn "Request exists:"
         mapM_ printScmIssue requests
-        -- don't retry if succeeded
-        when (retry && pagureIssueCloseStatus (head requests) == Just "Processed") $
+        -- don't resubmit if succeeded
+        -- FIXME head
+        when (resubmit && pagureIssueCloseStatus (head requests) == Just "Processed") $
           error' "The last repo request was already successfully Processed"
-      when (null requests || retry) $ do
+      when (null requests || resubmit) $ do
         checkNoPagureRepo
         putNewLn
         comments <- getComments session bid

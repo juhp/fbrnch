@@ -335,7 +335,8 @@ main = do
       requestRepos
       <$> mockOpt True
       <*> reviewAllStatusOpt
-      <*> switchWith 'r' "retry" "Re-request repo"
+      <*> switchWith 's' "skip-request-check" "Skip check for existing fedora-scm-requests issue"
+      <*> switchWith 'r' "resubmit" "Re-request repo"
       <*> branchesPackages
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
       importCmd
