@@ -1,9 +1,10 @@
 module Cmd.Clone (cloneCmd, CloneRequest(..)) where
 
-import Common.System
-import qualified Common.Text as T
+import Control.Monad (when)
 
 import Branches
+import Common.System
+import qualified Common.Text as T
 import Krb
 import Package
 import Pagure
@@ -25,5 +26,8 @@ cloneCmd mbr request = do
             CloneGroup grp -> do
               map (takeFileName . T.unpack) <$> pagureGroupRepos srcfpo False grp
   mfas <- maybeFasIdFromKrb
+  let no = length pkgs
+  when (no > 1) $
+    putStrLn $ "cloning" +-+ show no +-+ "pkg repos"
   let auth = maybe AnonClone (const UserClone) mfas
   mapM_ (clonePkg False auth mbr) pkgs
