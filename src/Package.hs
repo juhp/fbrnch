@@ -401,14 +401,17 @@ pkgNameVerRelDist (Just br) spec = do
   -- FIXME more precise regexp with "Release:"
   autorelease <- isAutoRelease spec
   nvrs <- do
-    pkggit <- isPkgGitRepo
-    if autorelease && pkggit
-    then do
-      --putStrLn "%autorelease detected"
-      mfedpkg <- findExecutable "fedpkg"
-      when (isNothing mfedpkg) $
-        error' "requires fedpkg.."
-      cmdLines "fedpkg" ["verrel"]
+    if autorelease
+      then do
+      pkggit <- isPkgGitRepo
+      if pkggit
+        then do
+        mfedpkg <- findExecutable "fedpkg"
+        when (isNothing mfedpkg) $
+          error' "requires fedpkg.."
+        cmdLines "fedpkg" ["verrel"]
+        else
+        error' "cannot determine NVR accurately for autorelease outside dist-git"
     else rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
   seq disttag $
     return $
