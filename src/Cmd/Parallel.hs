@@ -38,7 +38,6 @@ type JobAsync = (String, Async JobDone)
 
 -- FIXME offer to untag overrides afterwards
 -- FIXME merge --from
--- FIXME print koji url of failed process or use koji-tool
 -- FIXME option to build multiple packages over branches in parallel
 -- FIXME use --wait-build=NVR
 -- FIXME check sources as early as possible
@@ -338,8 +337,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
             else do
             whenJustM (findExecutable "koji-tool") $ \kojitool ->
               -- FIXME cmdLog deprecated
-              -- FIXME use --children (koji-tool-1.1.2)
-              cmdLog kojitool ["tasks", displayID task, "-s", "fail"]
+              cmdLog kojitool ["tasks", "--children", displayID task, "-s", "fail"]
             error' $ color Red $ showNVR nvr +-+ "build failed"
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then
