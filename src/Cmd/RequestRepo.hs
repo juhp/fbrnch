@@ -2,6 +2,7 @@
 
 module Cmd.RequestRepo (requestRepos) where
 
+import Control.Exception.Extra (retry)
 import Network.HTTP.Directory (httpExists, httpManager)
 import SimpleCmd
 import SimplePrompt (promptEnter, promptInitial)
@@ -79,6 +80,7 @@ requestRepo mock skipcheck resubmit breq pkg = do
     existingRepoRequests = do
       fasid <- fasIdFromKrb
       erecent <-
+        retry 2 $
         pagureListProjectIssueTitlesStatus pagureio
         "releng/fedora-scm-requests"
         [makeItem "author" fasid, makeItem "status" "all",
