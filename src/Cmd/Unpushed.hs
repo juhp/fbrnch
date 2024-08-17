@@ -6,10 +6,11 @@ module Cmd.Unpushed (
   )
 where
 
-import Common
-import Common.System
 
 import Branches
+import Cmd.Bump (bumpPkg)
+import Common
+import Common.System
 import Git
 import Package
 
@@ -55,22 +56,10 @@ unpushedCmd checknvr latest bump (breq, pkgs) =
                       Just $ "origin/" ++ show br ++ "..HEAD"
           if null unpushed
             then
-            when bump $ doBump spec
+            when bump $ bumpPkg False False Nothing Nothing pkg rbr
             else
             if latest
             then whenJust (listToMaybe unpushed) $ putCommit prefix
             else mapM_ (putCommit prefix) unpushed
 
     putCommit prefix = putStrLn . (prefix +-+) . showCommit
-
-    doBump spec = do
-      checkWorkingDirClean False
-      dead <- doesFileExist "dead.package"
-      if dead
-        then putStrLn "dead package"
-        else do
-        putStrLn "bumping"
-        autorelease <- isAutoRelease spec
-        unless autorelease $
-          cmd_ "rpmdev-bumpspec" ["-c", "rebuild", spec]
-        git_ "commit" $ "-a" : (if autorelease then ("--allow-empty" :) else id) ["-m", "bump release"]
