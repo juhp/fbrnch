@@ -1,5 +1,4 @@
 resolver: lts-16.31
-
 extra-deps:
   - koji-0.0.1
   - rpmbuild-order-0.4.12
@@ -9,9 +8,12 @@ extra-deps:
   - pagure-0.2.1
   - copr-api-0.2.0
   - cached-json-file-0.1.1
-  - fedora-dists-2.1.1
   - bugzilla-redhat-1.0.1
   - HsOpenSSL-0.11.7.2
   - simple-cmd-args-0.1.8
   - simple-prompt-0.2.3
+  - haskeline-0.8.0.0
   - http-query-0.1.2
+  - fedora-releases-0.1.0
+  - select-rpms-0.1.0
+  - extra-1.7.11

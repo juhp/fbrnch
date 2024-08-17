@@ -1,7 +1,60 @@
 # Changelog
 
-## 1.4.1 (2024-05-XX)
-- clone: --group allows cloning all group packages (#46)
+## 1.5 (2024-08-17)
+* fedora-releases (using bodhi) replaces fedora-dists (pdc): explicit imports
+- 'bugs': also include product in prefix
+- 'bump': fix handling of autorelease
+- 'clone': --group allows cloning all of group's packages (#46)
+- 'clone': print no of repos
+- 'command' --if-output: drop trailing newline
+- 'commit': add --dryrun
+- 'commit': require --message for %autochangelog
+- 'compare': no longer reorders branches, checks their existence
+- 'copr --new': create a new copr project
+* 'copr': no longer rebuilds nvr's unless --force
+* 'copr': does not resubmit existing successful or in-progress nvr's
+- 'copr': add --monitor
+- 'copr': fix bug where only first two source packages got built
+- 'copr': sort chroots by arch; distless srpm
+- 'diff' can now take multiple filters
+- 'ftbfs': use --details with koji-tool
+- 'import': if no branches requested, skip requestPkgBranches
+* 'install': use select-rpms library refactored from koji-tool
+- 'list': check number of results and prompt if >1000 unless --force
+* 'parallel': support chain-build args with colon interspersed layers
+- 'parallel': retry kojiWaitTask
+- 'parallel': --must-push to enforce commit bumps
+- 'parallel': koji-tool use --children to get failed buildArch
+- 'parallel': only do parallelBranches build if more than 1 branch
+* 'parallel': better concurrent output with say library
+* 'prep','update': use cwd for %_sourcedir
+- 'prep': --allow-head
+- 'pull': add --rebase
+- 'push': print log relative to origin
+- 'repoquery': add testing repos (not yet using fedora-repoquery)
+- 'request-repo': retry listing existing scm requests
+- 'request-repos': add --skip-request-check and rename --retry to --resubmit
+* 'review-package --interactive': new lighter review mode without mock
+* 'reviews': new --assignee, --submitted and --submitter options
+* 'sort': default to chain-build output
+- 'sort': skip getDynSourcesMacros for dead.package
+- 'status': add --latest-commit
+- 'unpush --bump': now uses 'bump' code
+- 'unpushed': add --check-nvr and do not print every "dead package"
+* 'update': git add patches
+- 'update-review': end with bug url
+- '--dryrun' is now an alias for '--dry-run'
+- Package pkgNameVerRelDist: use fedpkg verrel if autorelease
+- RpmBuild: checkSourcesMatch yesNo prompt for git amend
+- fix stack build of HsOpenSSL with gcc14 -Wno-incompatible-pointer-types
+- fix systemBranch to determine rawhide correctly via distBranch
+- generateSrpmNoDist: also warn if generated srpm is different to prediction
+- generateSrpmNoDist: fallback to fedpkg for autospec
+- kojiWatchTask: use koji-tool tasks --children to get failed task
+- module refactorings from Local, PkgReview, PullPush, Status
+- more consistent prompt handling of 'commit'/'update'/'review' messages
+- require rpmbuild-order 0.4.12 to order rust crates and rubygems
+- withPackagesByBranches: git fetch earlier to get new branches
 
 ## 1.4 (2024-05-03)
 - buildSrpm: filter .src.rpm filename

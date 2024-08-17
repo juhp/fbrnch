@@ -9,7 +9,7 @@ A tool to help Fedora Packagers build package branches.
 Fedora developers use a lot of time building packages across releases
 and workflow for adding new packages, etc.
 fbrnch was made to help (semi-)automate common workflows to save time
-and effort, and avoid common some mistakes.
+and effort, and avoid some common mistakes.
 
 fbrnch is distributed under the GPL license version 2 or later.
 
@@ -39,7 +39,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f40 [package] ...
+$ fbrnch switch f41 [package] ...
 ```
 
 You can also git pull over packages:
@@ -97,13 +97,13 @@ or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f39 package
+$ fbrnch merge f40 package
 ```
-which will offer to merge f39 (or up to a git hash you choose) into f38.
+which will offer to merge f41 (or up to a git hash you choose) into f40.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build f39 package
+$ fbrnch build f41 package
 ```
 will ask if you want to merge newer commits from a newer branch,
 then push and build it.
@@ -181,6 +181,10 @@ $ fbrnch parallel --sidetag rawhide pkg-x pkg-y pkg-z pkg-xy pkg-xy-z
 builds a list of packages in a sidetag (generating it if no sidetags exist)
 in parallel ordered by build dependencies.
 
+For a long list of packages, it is generally better to
+`fbrnch sort` them first and then use the generated chain-build style
+output as arguments to `fbrnch parallel`.
+
 When building for a branch, merging from the next newer branch will be offered
 unless using `--no-merge`
 (then you may prefer to run `fbrnch merge <branch> ...` first instead).
@@ -190,7 +194,8 @@ If you have more than one active sidetag for a branch,
 you can select one using `--target`.
 They can be listed with `fbrnch sidetags`.
 
-After parallel building you can create a Bodhi update from the sidetag.
+After parallel building completes,
+you can create a Bodhi update from the sidetag.
 
 It is also possible to build a package in parallel across branches
 and push them to Bodhi.
@@ -220,12 +225,15 @@ To list one's open package reviews:
 $ fbrnch reviews
 ```
 They can be filtered by status with various options like
-`--approved` or `--created` (or another bugzilla `--user`).
+`--approved` or `--created` (or another bugzilla `--submitter`), etc.
 
 One can also search for the review(s) of a specific package with:
 ```
 $ fbrnch find-review package-name
 ```
+
+Package reviews can be performed with `fbrnch review-package`.
+It also has a lightweight `--interactive` mode for streamlined reviews.
 
 #### Request repos
 Once a review has been approved
@@ -262,7 +270,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 `$ fbrnch --version`
 
 ```
-1.4
+1.5
 ```
 
 `$ fbrnch --help`
@@ -299,7 +307,8 @@ Available commands:
   scratch-x86_64           Koji x86_64 scratch build of package
   update-sources           Download and update newer sources
   update-version           Update package in dist-git to newer version
-  sort                     Sort packages in build dependency order
+  sort                     Sort packages in build dependency order (default
+                           format: chain-build)
   prep                     Prep sources
   local                    Build locally
   srpm                     Build srpm
@@ -443,7 +452,7 @@ I have given a couple of short talks about fbrnch:
 - Lightning talk for devconf.cz 2021: [youtube](https://www.youtube.com/watch?v=O2-6rDuPMRA&t=2s)
 
 ## Contribute
-Bug reports, feedback, and pull requests are all highly appreciated.
+Bug reports, feedback, and pull requests are all much appreciated.
 
 Do report any unsupported or inconsistent workflow steps.
 

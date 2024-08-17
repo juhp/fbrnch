@@ -1,6 +1,10 @@
 resolver: lts-20.26
+ghc-options:
+  HsOpenSSL: -optc=-Wno-incompatible-pointer-types
 extra-deps:
   - simple-prompt-0.2.3
   - rpmbuild-order-0.4.12
   - pagure-0.2.1
   - copr-api-0.2.0
+  - fedora-releases-0.1.0
+  - select-rpms-0.1.0
