@@ -186,7 +186,7 @@ main = do
       <*> switchWith 'f' "force" "Download upstream sources even if they exist locally"
       <*> switchWith 'H' "allow-head" "For updating inside rebase"
       <*> maybeBranchPackages False
-    , Subcommand "sort" "Sort packages in build dependency order" $
+    , Subcommand "sort" "Sort packages in build dependency order (default format: chain-build)" $
       sortCmd
       <$> sortDisplayOpt
       <*> optional rpmWithOpt
@@ -671,8 +671,8 @@ main = do
     sortDisplayOpt :: Parser SortDisplay
     sortDisplayOpt =
       flagWith' SortParallel 'p' "parallel" "Group dependent packages on separate lines"
-      <|> flagWith' SortChain 'c' "chain" "chain-build output"
-      <|> flagWith SortPlain SortLayers 'l' "layers" "output parallel layers"
+      <|> flagWith' SortLayers 'l' "layers" "output parallel layers"
+      <|> flagWith SortChain SortPlain 's' "separated" "Dependent grouping separated by empty lines"
 
     -- for waitrepo
     waitfetchOpt :: Parser WaitFetch
