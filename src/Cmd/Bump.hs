@@ -1,5 +1,5 @@
 module Cmd.Bump
-  ( bumpPkgs,
+  ( bumpCmd,
   )
 where
 
@@ -15,9 +15,9 @@ import Package
 
 -- FIXME --force
 -- FIXME --target
-bumpPkgs :: Bool -> Bool -> Maybe String -> Maybe String
+bumpCmd :: Bool -> Bool -> Maybe String -> Maybe String
          -> (BranchesReq,[String]) -> IO ()
-bumpPkgs dryrun local mcmsg mclog =
+bumpCmd dryrun local mcmsg mclog =
   withPackagesByBranches (boolHeader local) False
   (if local then cleanGit else cleanGitFetchActive)
   AnyNumber bumpPkg

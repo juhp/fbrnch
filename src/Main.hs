@@ -271,7 +271,7 @@ main = do
       <$> optional (strOptionWith 's' "summary" "KEY" "Search for bugs containing keyword")
       <*> manyPackages
     , Subcommand "bump" "Bump release for package" $
-      bumpPkgs
+      bumpCmd
       <$> dryrunOpt "Dry run: do not bump"
       <*> switchWith 'l' "local" "Use local origin rather than checking latest koji"
       <*> optional (strOptionWith 'm' "message" "COMMITMSG"
