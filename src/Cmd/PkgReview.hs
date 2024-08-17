@@ -102,7 +102,7 @@ updateReview mscratchOpt mock mspec = do
   (mkojiurl,specSrpmUrls) <- buildAndUpload mscratchOpt srpm pkg spec
   changelog <- changeLogPrompt ChangeReview spec
   commentBug session bid (specSrpmUrls <> (if null changelog then "" else "\n\n" <> changelog) <> maybe "" ("\n\nKoji scratch build: " <>) mkojiurl)
-  -- putStrLn "Review bug updated"
+  putBugId bid
   where
     checkLocalFile :: FilePath -> IO FilePath
     checkLocalFile f =
