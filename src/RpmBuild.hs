@@ -27,7 +27,7 @@ import Distribution.Fedora.Branch (branchDistTag, branchRelease)
 import Distribution.Fedora.Release (Release(releaseVersion))
 import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import SimpleCmd.Rpm
-import SimplePrompt (promptEnter)
+import SimplePrompt (promptEnter, yesNo)
 import System.Console.Pretty
 import System.IO.Extra (withTempDir)
 import System.Posix.Files
@@ -406,11 +406,13 @@ checkSourcesMatch pkg br spec = do
                                 src `notElem` gitfiles)
                 sourcefiles
   unless (null missing) $ do
+    -- FIXME maybe change to yesNo
     promptEnter $ color Red $ unwords missing +-+ "not in sources, press Enter to fix"
+    -- FIXME check if already fixed before proceeding
     updatePkg True False False True Nothing pkg br
     git_ "status" ["--short"]
-    promptEnter "Please Enter to amend commit and continue"
-    git_ "commit" ["--amend"]
+    ok <- yesNo "Amend commit"
+    when ok $ git_ "commit" ["--amend"]
     unlessM isGitDirClean $
       error' "local changes remain (dirty)"
     checkOnBranch
