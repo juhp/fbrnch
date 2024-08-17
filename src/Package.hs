@@ -275,7 +275,8 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
                  -- For now assume spec filename = package name
                  Just spec -> return $ takeBaseName spec
                  Nothing -> getDirectoryName
-        when (count && length pkgs >= 2) $
+        when (count && length pkgs >= 2) $ do
+          newline
           putStrLn $ plural n "package" +-+ "left"
         unless (isNothing mspec || mspec == Just (unPackage pkg <.> "spec")) $
           putStrLn $ "Warning: package name (" ++ unPackage pkg ++ ") differs from spec filename!"
