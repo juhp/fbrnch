@@ -124,7 +124,7 @@ coprCmd dryrun mode force buildBy marchs project (breq, pkgs) = do
       if null pkgs
         then coprBuildPkg user chroots False
         else
-        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user chroots (n>0)) $ zip (reverse [0,length pkgs - 1]) pkgs
+        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user chroots (n>0)) $ zip (reverse [0..length pkgs - 1]) pkgs
   where
     coprGetChroots :: String -> IO [Chroot]
     coprGetChroots user = do
