@@ -12,6 +12,7 @@ import Distribution.RPM.Build.Graph
 import Distribution.RPM.Build.Order (dependencySortRpmOpts,
                                      dependencySortParallel,
                                      dependencyLayers)
+import System.Directory (doesFileExist)
 
 import Branches
 import Git
@@ -45,7 +46,8 @@ sortCmd displaymode mrpmwith (br, pkgs) = do
 setupPkg :: Package -> AnyBranch -> IO ()
 setupPkg pkg br = do
   whenM isPkgGitRepo $ gitSwitchBranch br
-  getDynSourcesMacros $ packageSpec pkg
+  unlessM (doesFileExist "dead.package") $
+    getDynSourcesMacros $ packageSpec pkg
 
 toRpmOption :: RpmWith -> [String]
 toRpmOption (RpmWith opt) = ["--with=" ++ opt]
