@@ -296,9 +296,10 @@ targetMaybeSidetag dryrun create br msidetagTarget =
           out <-
             if dryrun
             then return $ "Side tag '" ++ buildtag ++ "'"
-            else if create
-                 then head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
-                 else error' "incorrect side-tag create request"
+            else
+              if create
+              then head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
+              else error' "incorrect side-tag create request"
           if "Side tag '" `isPrefixOf` out
             then do
             putNewLn
