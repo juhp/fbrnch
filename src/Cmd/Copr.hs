@@ -110,11 +110,10 @@ data CoprMode = ListChroots | CoprMonitor | CoprBuild | CoprNew
 -- FIXME repo config with a setup command?
 -- FIXME interact with copr dist-git
 -- FIXME parallel copr builds
--- FIXME skip existing builds **
 -- FIXME time builds?
-coprCmd :: Bool -> CoprMode -> BuildBy -> Maybe Archs -> String
+coprCmd :: Bool -> CoprMode -> Bool -> BuildBy -> Maybe Archs -> String
         -> (BranchesReq,[String]) -> IO ()
-coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
+coprCmd dryrun mode force buildBy marchs project (breq, pkgs) = do
   user <- getUsername
   case mode of
     ListChroots -> coprGetChroots user >>= mapM_ (putStrLn . showChroot)
@@ -168,7 +167,7 @@ coprCmd dryrun mode buildBy marchs project (breq, pkgs) = do
       verrel <- showVerRel . nvrVerRel <$> pkgNameVerRelNodist spec
       actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
       builtChroots <- existingChrootBuilds user project (Package actualpkg) verrel buildroots
-      let finalChroots = buildroots \\ map taskChroot builtChroots
+      let finalChroots = buildroots \\ if force then [] else map taskChroot builtChroots
       if null finalChroots
         then putStrLn $ actualpkg ++ '-' : verrel +-+ "built"
         else
@@ -393,4 +392,4 @@ coprNewProject dryrun project marchs breq pkgs = do
   let chroots = [ Chroot b a | b <- branches, a <- archs]
   (if dryrun then cmdN else cmd_) "copr" $ "create" : concatMap (\ch -> ["--chroot", showChroot ch]) chroots ++ [project]
   unless (null pkgs) $
-    coprCmd False CoprBuild ValidateByRelease Nothing project (breq, pkgs)
+    coprCmd False CoprBuild False ValidateByRelease Nothing project (breq, pkgs)

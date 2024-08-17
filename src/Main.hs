@@ -366,6 +366,7 @@ main = do
       <*> (flagWith' ListChroots 'l' "list-chroots" "Show project chroots" <|>
            flagLongWith' CoprNew "new" "Create new copr repo" <|>
            flagWith CoprBuild CoprMonitor 'm' "monitor" "Show project chroots")
+      <*> switchWith 'f' "force" "build even if existing n-v-r"
       <*> buildByOpt
       <*> optional archesOpt
       <*> pkgArg "PROJECT"
