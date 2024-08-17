@@ -228,9 +228,9 @@ coprProcessingStates :: [String]
 coprProcessingStates =
   ["running", "pending", "starting", "importing", "waiting"]
 
-coprEndedStates :: [String]
-coprEndedStates =
-  ["canceled", "failed", "skipped", "succeeded"]
+-- coprEndedStates :: [String]
+-- coprEndedStates =
+--   ["canceled", "failed", "skipped", "succeeded"]
 
 -- FIXME restrict to requested chroots?
 existingChrootBuilds :: String -> String -> Package -> String -> [Chroot]
