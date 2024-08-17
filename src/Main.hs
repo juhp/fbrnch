@@ -105,7 +105,8 @@ main = do
       <*> branchesPackages
     , Subcommand "list" "List packages in pagure" $
       listCmd
-      <$> switchWith 'c' "count" "Print number of packages"
+      <$> forceOpt "Do not prompt if large number of results"
+      <*> switchWith 'c' "count" "Print number of packages"
       <*> optional packagerOpt
       <*> many (pkgArg "PKGPAT...")
     , Subcommand "list-local" "List packages in branch" $
