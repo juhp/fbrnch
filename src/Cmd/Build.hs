@@ -82,20 +82,20 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   gitMergeOrigin br
   newrepo <- initialPkgRepo
   tty <- isTty
-  (ancestor,unmerged,mnewer) <- newerMergeable br
+  (ancestor,unmerged,mnewer) <- newerMergeable (unPackage pkg) br
   -- FIXME if already built or failed, also offer merge
   merged <-
     case buildoptMerge opts of
       Just False -> return False
       Just True -> do
         whenJust mnewer $ \newer ->
-          mergeBranch (buildoptDryrun opts) True True False Nothing (ancestor,unmerged) newer br
+          mergeBranch (buildoptDryrun opts) True True False pkg (ancestor,unmerged) newer br
         return True
       Nothing ->
         if ancestor && (newrepo || tty)
         then do
           whenJust mnewer $ \newer ->
-            mergeBranch (buildoptDryrun opts) True False True Nothing (ancestor,unmerged) newer br
+            mergeBranch (buildoptDryrun opts) True False True pkg (ancestor,unmerged) newer br
           return $ isJust mnewer
         else do
           unless (br == Rawhide) $

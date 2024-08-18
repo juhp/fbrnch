@@ -14,7 +14,6 @@ import Git
 import Package
 import Patch
 
--- FIXME should rawhide default to no-op
 mergeCmd :: Bool -> Bool -> Bool -> Maybe Natural -> Bool -> Maybe Branch
          -> (BranchesReq,[String]) -> IO ()
 mergeCmd dryrun nofetch noprompt mnotrivial showall mfrom =
@@ -23,12 +22,13 @@ mergeCmd dryrun nofetch noprompt mnotrivial showall mfrom =
     runMergeBranch :: Package -> AnyBranch -> IO ()
     runMergeBranch _ (OtherBranch _) =
       error' "merge only defined for release branches"
+    -- FIXME should rawhide default to no-op
     runMergeBranch pkg (RelBranch br) = do
       exists <- gitSwitchBranch' False br
       when exists $ do
         mfrom' <- if isJust mfrom
                   then return mfrom
-                  else getNewerBranch br
+                  else getNewerBranch (unPackage pkg) br
         whenJust mfrom' $ \from -> do
           when (from == br) $
             error' "cannot merge branch to itself"
@@ -36,7 +36,7 @@ mergeCmd dryrun nofetch noprompt mnotrivial showall mfrom =
             gitMergeOrigin br
           (ancestor,unmerged) <- mergeable from br
           unmerged' <- filterOutTrivial mnotrivial unmerged
-          mergeBranch dryrun False noprompt showall (if nofetch then Just pkg else Nothing) (ancestor,unmerged') from br
+          mergeBranch dryrun False noprompt showall pkg (ancestor,unmerged') from br
       where
         filterOutTrivial :: Maybe Natural -> [Commit] -> IO [Commit]
         filterOutTrivial Nothing cs = return cs
@@ -59,13 +59,13 @@ mergeable from _ = do
   gitMergeable (show from `notElem` locals) from
 
 -- FIXME return merged ref
-mergeBranch :: Bool -> Bool -> Bool -> Bool -> Maybe Package
+mergeBranch :: Bool -> Bool -> Bool -> Bool -> Package
             -> (Bool,[Commit]) -- (ancestor,unmerged)
             -> Branch -> Branch -> IO ()
 mergeBranch _ _ _ _ _ _ _ Rawhide = return ()
 mergeBranch _ _ _ _ _ (_,[]) _ _ = return ()
-mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
-  whenJust mpkg $ flip putPkgBrnchHdr br
+mergeBranch dryrun build noprompt showall pkg (True, unmerged) from br = do
+  putPkgBrnchHdr pkg br
   isnewrepo <- initialPkgRepo
   putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") +-+ show from ++ ":"
   displayCommits showall unmerged
@@ -91,8 +91,8 @@ mergeBranch dryrun build noprompt showall mpkg (True, unmerged) from br = do
     unless dryrun $
       -- FIXME merge from origin by default not local branch
       git_ "merge" ["--quiet", ref]
-mergeBranch dryrun build noprompt showall mpkg (False,unmerged) from br = do
-  unless build $ whenJust mpkg $ flip putPkgBrnchHdr br
+mergeBranch dryrun build noprompt showall pkg (False,unmerged) from br = do
+  unless build $ putPkgBrnchHdr pkg br
   putStrLn $ show from +-+ "branch is not directly mergeable:"
   displayCommits False unmerged
   putNewLn

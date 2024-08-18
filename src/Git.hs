@@ -36,7 +36,7 @@ module Git (
   ) where
 
 import Data.Char (isSpace)
-import Distribution.Fedora.Branch (newerBranch)
+import Distribution.Fedora.Branch (getFedoraBranches, newerBranch)
 import SimpleCmd.Git
 import SimplePrompt
 
@@ -70,18 +70,24 @@ gitMergeable origin br = do
       else putStrLn $ "current branch" +-+ "is diverged from" +-+ show br
   return (ancestor, commits)
 
-getNewerBranch :: Branch -> IO (Maybe Branch)
-getNewerBranch Rawhide = return Nothing
-getNewerBranch br = do
-  branches <- fedoraBranches (localBranches False)
-  let newer = newerBranch br branches
-  return $
-    if newer > br
-    then Just newer
-    else
-      case elemIndex br branches of
-        Just i -> Just $ branches !! (i - 1)
-        Nothing -> Nothing
+-- FIXME use Package
+getNewerBranch :: String -> Branch -> IO (Maybe Branch)
+getNewerBranch _ Rawhide = return Nothing
+getNewerBranch pkg br = do
+  localbrs <- fedoraBranches (localBranches False)
+  active <- getFedoraBranches
+  case newerBranch br active of
+    Just newer ->
+      if newer `elem` localbrs
+      then return $ Just newer
+      else do
+        remotebrs <- fedoraBranches (pagurePkgBranches pkg)
+        if newer `elem` remotebrs
+          then do
+          gitFetchSilent False
+          return $ Just newer
+          else return $ newerBranch br remotebrs
+    Nothing -> return Nothing
 
 gitMergeOrigin :: Branch -> IO ()
 gitMergeOrigin br = do
@@ -93,12 +99,12 @@ gitMergeOrigin br = do
       putStr pull
 
 -- FIXME maybe require local branch already here
-newerMergeable :: Branch -> IO (Bool,[Commit],Maybe Branch)
-newerMergeable br =
+newerMergeable :: String -> Branch -> IO (Bool,[Commit],Maybe Branch)
+newerMergeable pkg br =
   if br == Rawhide
   then return (False,[],Nothing)
   else do
-    mnewer <- getNewerBranch br
+    mnewer <- getNewerBranch pkg br
     locals <- localBranches True
     case mnewer of
       Just newer -> do

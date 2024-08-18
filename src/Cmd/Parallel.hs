@@ -92,7 +92,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         when (mmerge /= Just False) $
         withExistingDirectory p $ do
         pkg <- getPackageName p
-        mergeNewerBranch (Just pkg) rbr
+        mergeNewerBranch pkg rbr
         getDynSourcesMacros $ packageSpec pkg
       distopts <- distRpmOptions rbr
       allLayers <- getLayers distopts pkgs
@@ -147,18 +147,18 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         setupBranch br = do
           putPkgBrnchHdr pkg br
           target <- targetMaybeSidetag dryrun True br msidetagTarget
-          when (mmerge /= Just False) $ mergeNewerBranch Nothing br
+          when (mmerge /= Just False) $ mergeNewerBranch pkg br
           job <- startBuild Nothing 0 False (length brs) target pkg br "." >>= async
           unless dryrun $ sleep delay
           return (show br,job)
 
-    mergeNewerBranch :: Maybe Package -> Branch -> IO ()
-    mergeNewerBranch mpkg br = do
+    mergeNewerBranch :: Package -> Branch -> IO ()
+    mergeNewerBranch pkg br = do
       gitSwitchBranch (RelBranch br)
-      (ancestor,unmerged,mnewer) <- newerMergeable br
+      (ancestor,unmerged,mnewer) <- newerMergeable (unPackage pkg) br
       unless dryrun $
         whenJust mnewer $ \newer ->
-        mergeBranch dryrun False (mmerge == Just True) False mpkg (ancestor,unmerged) newer br
+        mergeBranch dryrun False (mmerge == Just True) False pkg (ancestor,unmerged) newer br
 
     -- FIXME time builds or layers
     parallelBuild :: String -> Branch -> (Int,[[String]])
