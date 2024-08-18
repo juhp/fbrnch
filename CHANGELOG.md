@@ -39,9 +39,9 @@
 * 'sort': default to chain-build output
 - 'sort': skip getDynSourcesMacros for dead.package
 - 'status': add --latest-commit
-- 'unpush --bump': now uses 'bump' code
+- 'unpushed --bump': now uses 'bump' code
 - 'unpushed': add --check-nvr and do not print every "dead package"
-* 'update': git add patches
+* 'update-sources': git add patches
 - 'update-review': end with bug url
 - '--dryrun' is now an alias for '--dry-run'
 - Package pkgNameVerRelDist: use fedpkg verrel if autorelease
