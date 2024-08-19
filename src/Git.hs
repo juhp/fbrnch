@@ -202,7 +202,7 @@ gitFetchSilent quiet = do
     else putStrLn $ '\r' : intercalate "\n" filtered
 
 stashedWithFbrnch :: String
-stashedWithFbrnch = "saved by fbrnch"
+stashedWithFbrnch = "Saved by fbrnch"
 
 checkWorkingDirClean :: Bool -> IO ()
 checkWorkingDirClean stash = do

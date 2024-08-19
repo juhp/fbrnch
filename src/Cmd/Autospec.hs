@@ -29,6 +29,6 @@ autospecCmd force pkgs =
           writeFile changelogfile
         unlessM (null <$> git "status" ["--porcelain", "--untracked=no"]) $ do
           git_ "add" [changelogfile]
-          git_ "commit" ["-m", "refresh changelog"]
+          git_ "commit" ["-m", "Refresh changelog"]
       else putStrLn "'changelog' file already exists"
       else cmd_ "rpmautospec" ["convert"]

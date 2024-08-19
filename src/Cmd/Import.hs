@@ -57,7 +57,7 @@ importCmd existingrepo mock (breq, ps) = do
         promptEnter $ "Press Enter to import" +-+ srpmfile
         krbTicket
         fedpkg_ "import" [srpmfile]
-        git_ "commit" ["--message", "import rhbz#" ++ show bid]
+        git_ "commit" ["--message", "Import rhbz#" ++ show bid]
         nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
         ok <- yesNoDefault True $ "Push and build" +-+ showNVR nvr
         when ok $ do

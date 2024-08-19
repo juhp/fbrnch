@@ -111,8 +111,8 @@ updatePkg onlysources force allowHEAD distgit mver pkg br = do
     versions <- changelogVersions spec
     let missing = null versions || not ((newver ++ "-") `isPrefixOf` head versions)
     when missing $ do
-      cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
-      git_ "commit" ["-a", "-m", "update to" +-+ newver]
+      cmd_ "rpmdev-bumpspec" ["-c", "Update to" +-+ newver, spec]
+      git_ "commit" ["-a", "-m", "Update to" +-+ newver]
   putStr "Prepping... "
   sourcediropt <- sourceDirCwdOpt
   cmdSilent' "rpmbuild" $ "-bp" : sourcediropt ++ ["--nodeps", spec]

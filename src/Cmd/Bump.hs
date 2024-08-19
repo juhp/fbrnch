@@ -52,7 +52,7 @@ bumpPkg dryrun local mcmsg mclog pkg br = do
                   Nothing ->
                     case mclog of
                       Just cl -> [cl]
-                      Nothing -> ["bump release"]
+                      Nothing -> ["Bump release"]
           git_ "commit" $ "-a" : "--allow-empty" : copts
       else do
       rbr <-
@@ -93,12 +93,12 @@ bumpPkg dryrun local mcmsg mclog pkg br = do
                 Nothing ->
                   case mcmsg of
                     Just msg -> msg
-                    _ -> "rebuild"
+                    _ -> "Rebuild"
         unless (autorelease || dryrun) $
           cmd_ "rpmdev-bumpspec" ["-c", clog, spec]
         let copts =
               case mcmsg of
-                Nothing -> ["-m", "bump release"]
+                Nothing -> ["-m", "Bump release"]
                 Just msg -> ["-m", msg]
         -- FIXME quiet commit?
         if dryrun
