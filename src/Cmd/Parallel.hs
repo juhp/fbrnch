@@ -203,10 +203,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         if okay
           then return nvrs
           else error' $
-               plural pending "pending package" ++
                if pending > 0
-               then ":\n" ++ unwords (map unwords nextLayers)
-               else ""
+               then
+               plural pending "pending package" ++
+               ":\n" ++ unwords (map unwords nextLayers)
+               else "failed"
       where
         nopkgs = length layer
         layersleft = length nextLayers
