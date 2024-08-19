@@ -11,6 +11,7 @@ import System.Directory (doesFileExist)
 
 import Branches
 import Bugzilla
+import Krb
 import Package
 import PkgReview
 import RpmBuild
@@ -49,10 +50,30 @@ createReviewCmd mscratchOpt mock pkgs =
           summary <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{summary}", spec]
           description <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{description}", spec]
           url <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{url}", spec]
+          mfas <- maybeFasIdFromKrb
           createBug session
             [ ("product", "Fedora")
             , ("component", "Package Review")
             , ("version", "rawhide")
             , ("summary", "Review Request: " <> pkg <> " - " <> summary)
             , ("url", url)
-            , ("description", specSrpmUrls <> "\n\nDescription:\n" <> description <>  maybe "" ("\n\n\nKoji scratch build: " <>) mkojiurl)]
+            , ("description",
+               unlines $
+                [specSrpmUrls,
+                 "",
+                 "Description:",
+                 description]
+                ++
+                case mfas of
+                  Just fasid ->
+                    ["",
+                     "Fedora Account System Username:" +-+ fasid]
+                  Nothing -> []
+                ++
+                case mkojiurl of
+                  Just kojiurl ->
+                    ["",
+                     "",
+                     "Koji scratch build:" +-+ kojiurl]
+                  Nothing -> []
+              )]
