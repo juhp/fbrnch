@@ -207,6 +207,7 @@ putPkgAnyBrnchHdr pkg br =
 packageSpec :: Package -> FilePath
 packageSpec pkg = unPackage pkg <.> "spec"
 
+-- FIXME rebase
 data GitOpts =
   GitOpts
   { gitOptClean :: Bool

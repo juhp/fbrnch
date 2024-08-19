@@ -269,6 +269,7 @@ isShortCircuit ms =
 -- FIXME create build.log
 -- Note does not check if bcond changed
 -- FIXME check tarball timestamp
+-- FIXME handle prep (-bp) too?
 buildRPMs :: Bool -> Bool -> Bool -> Maybe ForceShort -> [BCond] -> [FilePath]
           -> AnyBranch -> FilePath -> IO Bool
 buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do

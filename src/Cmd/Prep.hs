@@ -16,6 +16,7 @@ data PrepPre = PrepClone | PrepPull
   deriving Eq
 
 -- FIXME prompt for cloning
+-- FIXME to skip prep or deps (eg in broken toolbox when deps can't install;)
 prepCmd :: Maybe PrepPre -> Bool -> Bool -> Bool -> (Maybe Branch,[String])
         -> IO ()
 prepCmd mpre verbose deps allowhead (mbr,pkgs) = do

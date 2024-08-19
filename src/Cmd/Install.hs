@@ -26,6 +26,9 @@ import RpmBuild
 -- FIXME --skip-unavailable
 -- FIXME --check any/all of package installed
 -- FIXME add --debug or respect --verbose for dnf commands
+-- FIXME handle subpackage renames (eg ghc-rpm-macros-no-prof to ghc-rpm-macros-quick)
+-- FIXME allow building an srpm
+-- FIXME ExistingStrategy option
 installCmd :: Bool -> Bool -> Maybe Branch -> Maybe ForceShort -> [BCond]
            -> Bool -> Bool -> Bool -> Select -> (Maybe Branch,[String])
            -> IO ()

@@ -15,6 +15,7 @@ import Package
 -- FIXME handle multiline changelog entries with "-m description"
 -- FIXME --undo last change: eg undo accidential --amend
 -- FIXME --empty
+-- FIXME include only (used) changelog if not staged
 commitCmd :: Bool -> Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
 commitCmd dryrun mopt firstLine unstaged paths = do
   when (isJust mopt && firstLine) $

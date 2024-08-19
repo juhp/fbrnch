@@ -36,7 +36,9 @@ localCmd quiet debug mforceshort bconds =
       rpms <- if isJust mforceshort
               then return []
               else builtRpms br spec
+      -- FIXME backup BUILD tree to .prev
       void $ buildRPMs quiet debug True mforceshort bconds rpms br spec
+      -- FIXME mark BUILD dir complete
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd =

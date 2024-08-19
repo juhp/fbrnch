@@ -49,6 +49,7 @@ data BuildOpts = BuildOpts
 -- FIXME -B fails to find new branches (fixed?)
 -- FIXME disallow override for autoupdate?
 -- FIXME --scratch build first
+-- FIXME --skip-bumps NUM
 buildCmd :: BuildOpts -> (BranchesReq, [String]) -> IO ()
 buildCmd opts (breq, pkgs) = do
   let singleBrnch = if isJust (buildoptSidetagTarget opts)
@@ -113,6 +114,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
     then return Nothing
     else do
       when (not merged || br == Rawhide) $ do
+        -- FIXME should be printed for new package branch
         putStrLn $ showNVR nvr ++ "\n"
         putStrLn "Local commits:"
         displayCommits True unpushed

@@ -45,9 +45,10 @@ type JobAsync = (String, Async JobDone)
 -- FIXME time builds
 -- FIXME copy bodhi notes from another branch update
 -- FIXME support non-sidetag update for parallel packages
--- FIXME print layers if few packages?
+-- FIXME print all layers if few packages?
 -- FIXME push update
 -- FIXME use more say
+-- FIXME --skip-bumps NUM
 parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget -> Bool
                  -> Double -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()
@@ -161,6 +162,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         mergeBranch dryrun False (mmerge == Just True) False pkg (ancestor,unmerged) newer br
 
     -- FIXME time builds or layers
+    -- FIXME return Either
     parallelBuild :: String -> Branch -> (Int,[[String]])
                   -> IO [JobDone]
     parallelBuild _ _ (_,[]) = return [] -- should not reach here

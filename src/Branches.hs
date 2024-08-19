@@ -96,6 +96,7 @@ localBranches local =
       gitLines "branch" ["--remote", "--list", "--format=%(refname:lstrip=-2)"]
     return $ map (removePrefix "origin/") origins \\ ["HEAD", "master"]
 
+-- FIXME use Package?
 pagurePkgBranches :: String -> IO [String]
 pagurePkgBranches pkg = do
   let project = "rpms/" ++ pkg
