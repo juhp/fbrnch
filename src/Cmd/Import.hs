@@ -59,7 +59,7 @@ importCmd existingrepo mock (breq, ps) = do
         fedpkg_ "import" [srpmfile]
         git_ "commit" ["--message", "import rhbz#" ++ show bid]
         nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
-        ok <- yesNoDefault True $ "Press Enter to push and build" +-+ showNVR nvr
+        ok <- yesNoDefault True $ "Push and build" +-+ showNVR nvr
         when ok $ do
           gitPush True Nothing
           -- FIXME build more branches
