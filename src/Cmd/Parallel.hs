@@ -340,7 +340,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
             else do
             whenJustM (findExecutable "koji-tool") $ \kojitool ->
               -- FIXME cmdLog deprecated
-              cmdLog kojitool ["tasks", "--children", displayID task, "-s", "fail"]
+              cmdLog kojitool $ ["tasks", "--children", displayID task, "-s", "fail"] ++ ["--tail" | nopkgs < 3]
             error' $ color Red $ showNVR nvr +-+ "build failed"
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then
