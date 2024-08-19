@@ -18,6 +18,7 @@ import Cmd.Bump
 import Cmd.Clone
 import Cmd.Commit
 import Cmd.Compare
+import Cmd.CreateReview
 import Cmd.Copr
 import Cmd.Diff
 import Cmd.Fetch
@@ -32,7 +33,6 @@ import Cmd.Mock
 import Cmd.Override
 import Cmd.Owner
 import Cmd.Parallel
-import Cmd.PkgReview
 import Cmd.Prep
 import Cmd.Pull
 import Cmd.Push
@@ -49,6 +49,7 @@ import Cmd.Status
 import Cmd.Switch
 import Cmd.Unpushed
 import Cmd.Update
+import Cmd.UpdateReview
 import Cmd.WaitRepo
 
 import Bodhi (UpdateType(..),UpdateSeverity(..))
@@ -56,6 +57,7 @@ import Branches
 import Common.System
 import Git (CommitOpt(..))
 import ListReviews
+import PkgReview
 import RpmBuild (ForceShort(..), BCond(..))
 import Paths_fbrnch (version)
 import Types (SideTagTarget(..))
@@ -306,12 +308,12 @@ main = do
       bzusersCmd
       <$> strArg "NAME"
     , Subcommand "create-review" "Create a Package Review request" $
-      createReview
+      createReviewCmd
       <$> optional scratchOpt
       <*> mockOpt False
       <*> manyPackages
     , Subcommand "update-review" "Update a Package Review" $
-      updateReview
+      updateReviewCmd
       <$> optional scratchOpt
       <*> mockOpt False
       <*> optional (strArg "SPECFILE")

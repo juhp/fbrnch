@@ -55,6 +55,7 @@ executable fbrnch
                        Cmd.Commit
                        Cmd.Compare
                        Cmd.Copr
+                       Cmd.CreateReview
                        Cmd.Diff
                        Cmd.Fetch
                        Cmd.FTBFS
@@ -68,7 +69,6 @@ executable fbrnch
                        Cmd.Override
                        Cmd.Owner
                        Cmd.Parallel
-                       Cmd.PkgReview
                        Cmd.Prep
                        Cmd.Pull
                        Cmd.Push
@@ -85,6 +85,7 @@ executable fbrnch
                        Cmd.Switch
                        Cmd.Unpushed
                        Cmd.Update
+                       Cmd.UpdateReview
                        Cmd.WaitRepo
                        Common
                        Common.System
@@ -98,6 +99,7 @@ executable fbrnch
                        Pagure
                        Patch
                        Paths_fbrnch
+                       PkgReview
                        Repoquery
                        RpmBuild
                        Types
