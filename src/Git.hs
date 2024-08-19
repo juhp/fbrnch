@@ -37,6 +37,7 @@ module Git (
 
 import Data.Char (isSpace)
 import Distribution.Fedora.Branch (getFedoraBranches, newerBranch)
+import Say (sayString)
 import SimpleCmd.Git
 import SimplePrompt
 
@@ -162,7 +163,7 @@ gitPush quiet mref = do
   -- FIXME also check ref on branch
   checkOnBranch
   when quiet $
-    putStr "git pushing... "
+    sayString "git pushing"
   -- Can error like this:
   -- kex_exchange_identification: Connection closed by remote host
   -- Connection closed by 38.145.60.17 port 22
@@ -170,7 +171,8 @@ gitPush quiet mref = do
   let args = ["push"] ++ ["--quiet" | quiet] ++ ["origin"] ++ maybeToList mref
   (ok, _out, err) <- cmdFull "git" args ""
   if ok
-    then putStrLn $ if quiet then "done" else last (lines err)
+    then unless quiet $
+         putStrLn $ last (lines err)
     else do
     when quiet putNewLn
     putStrLn $ unwords ("git" : args) +-+ "failed with\n" ++ err
