@@ -11,6 +11,7 @@ module Common (
   (+-+),
   plural,
   pluralException,
+  singularVerb,
   putNewLn,
   reverseSort,
   showNVR
@@ -42,6 +43,9 @@ pluralException i _ ns ps =
     " ",
     if i == 1 then ns else ps
   ]
+
+singularVerb :: Bool -> String -> String
+singularVerb singular v = v ++ if singular then "s" else ""
 
 putNewLn :: IO ()
 putNewLn = putChar '\n'

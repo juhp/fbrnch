@@ -3,14 +3,14 @@ module Cmd.CreateReview (
   )
 where
 
-import Control.Monad.Extra (unless, unlessM)
 import Data.Char (isAscii)
-import SimpleCmd (cmd, error', (+-+))
+import SimpleCmd (cmd, error')
 import SimplePrompt (promptEnter)
 import System.Directory (doesFileExist)
 
 import Branches
 import Bugzilla
+import Common
 import Krb
 import Package
 import PkgReview
@@ -19,8 +19,8 @@ import RpmBuild
 -- FIXME add --dependent pkgreview
 -- FIXME verify tarball is same as upstream
 -- FIXME post URL field too
-createReviewCmd :: Maybe ScratchOption -> Bool -> [FilePath] -> IO ()
-createReviewCmd mscratchOpt mock pkgs =
+createReviewCmd :: Bool -> Maybe ScratchOption -> Bool -> [FilePath] -> IO ()
+createReviewCmd force mscratchOpt mock pkgs =
   withPackagesByBranches HeaderMust False Nothing Zero createPkgReview (Branches [], pkgs)
   where
     createPkgReview :: Package -> AnyBranch -> IO ()
@@ -34,10 +34,13 @@ createReviewCmd mscratchOpt mock pkgs =
       putStrLn "checking for existing reviews..."
       (bugs,session) <- bugsSession $ pkgReviews pkg
       unless (null bugs) $ do
-        putStrLn "Existing review(s):"
+        let nobugs = length bugs
+        putStrLn $ plural nobugs "Existing review" ++ ":"
         mapM_ putBug bugs
-        -- FIXME abort if open review (unless --force?)
-        promptEnter "Press Enter to continue"
+        putNewLn
+        unless force $
+          error' $ plural nobugs "package review" +-+ "already" +-+ singularVerb (nobugs == 1) "exist"
+        promptEnter "Press Enter to create a new review"
       srpm <- generateSrpm Nothing spec
       mockRpmLint mock pkg spec srpm
       (mkojiurl,specSrpmUrls) <- buildAndUpload mscratchOpt srpm pkg spec

@@ -309,7 +309,8 @@ main = do
       <$> strArg "NAME"
     , Subcommand "create-review" "Create a Package Review request" $
       createReviewCmd
-      <$> optional scratchOpt
+      <$> forceOpt "create a review even if one exists already"
+      <*> optional scratchOpt
       <*> mockOpt False
       <*> manyPackages
     , Subcommand "update-review" "Update a Package Review" $
