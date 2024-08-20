@@ -133,7 +133,9 @@ main = do
       <*> branchesPackagesDesc "BRANCH... PKG1... [:] PKG2..."
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd
-      <$> switchLongWith "remove" "Remove one or more sidetags"
+      <$> dryrunOpt "Dry-run: no sidetag actions"
+      <*> optional (flagLongWith' SidetagAdd "create" "Create one or more sidetags" <|>
+                    flagLongWith' SidetagRemove "remove" "Remove one or more sidetags")
       <*> many branchArg
     , Subcommand "override" "Tag builds into buildroot override in Koji" $
       overrideCmd

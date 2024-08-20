@@ -22,6 +22,7 @@ module Koji (
   displayID,
   fedoraHub,
   maybeTimeout,
+  createKojiSidetag,
   targetMaybeSidetag
   ) where
 
@@ -279,6 +280,27 @@ maybeTimeout secs act = do
       maybeTimeout (secs + 5) act
     Just res -> return res
 
+createKojiSidetag :: Bool -> Branch -> IO String
+createKojiSidetag dryrun br = do
+  Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (show br)
+  out <-
+    if dryrun
+    then return $ "Side tag '" ++ buildtag ++ "'"
+    else
+      -- FIXME head
+      head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
+  if "Side tag '" `isPrefixOf` out
+    then do
+    putNewLn
+    let sidetag =
+          init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
+    putStrLn $ "Sidetag" +-+ sidetag +-+ "created"
+    logMsg $ "Waiting for" +-+ sidetag +-+ "repo"
+    unless dryrun $
+      cmd_ "koji" ["wait-repo", sidetag]
+    return sidetag
+    else error' "'fedpkg request-side-tag' failed"
+
 -- FIXME check/warn for target/branch mismatch
 targetMaybeSidetag :: Bool -> Bool -> Branch -> Maybe SideTagTarget
                    -> IO String
@@ -289,26 +311,10 @@ targetMaybeSidetag dryrun create br msidetagTarget =
     Just SideTag -> do
       sidetags <- map (head . words) <$> kojiUserSideTags (Just br)
       case sidetags of
-        [] -> do
-          Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (show br)
-          out <-
-            if dryrun
-            then return $ "Side tag '" ++ buildtag ++ "'"
-            else
-              if create
-              then head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
-              else error' "incorrect side-tag create request"
-          if "Side tag '" `isPrefixOf` out
-            then do
-            putNewLn
-            putStrLn out
-            let sidetag =
-                  init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
-            logMsg $ "Waiting for" +-+ sidetag +-+ "repo"
-            unless dryrun $
-              cmd_ "koji" ["wait-repo", sidetag]
-            return sidetag
-            else error' "'fedpkg request-side-tag' failed"
+        [] ->
+          if create
+          then createKojiSidetag dryrun br
+          else error' "incorrect side-tag create request"
         [tag] -> return tag
         _ -> error' $ "More than one user side-tag found for" +-+ show br
 

@@ -9,6 +9,7 @@ module Common (
 #endif
   (+/+),
   (+-+),
+  indefinite,
   plural,
   pluralException,
   singularVerb,
@@ -46,6 +47,11 @@ pluralException i _ ns ps =
 
 singularVerb :: Bool -> String -> String
 singularVerb singular v = v ++ if singular then "s" else ""
+
+indefinite :: String -> String
+indefinite "" = ""
+indefinite w@(c:_) =
+  (if c `elem` "aeiou" then "an" else "a") +-+ w
 
 putNewLn :: IO ()
 putNewLn = putChar '\n'
