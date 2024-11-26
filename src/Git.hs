@@ -54,22 +54,38 @@ gitBool c args =
   cmdBool "git" (c:args)
 #endif
 
-gitMergeable :: Bool -> Branch -> IO (Bool,[Commit])
+-- Just True => ancestor
+-- Nothing => neither ancestor
+-- Just False => reverse ancestor
+gitMergeable :: Bool -> Branch -> IO (Maybe Bool,[Commit])
 gitMergeable origin br = do
   let ref = (if origin then "origin/" else "") ++ show br
-  ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
+  mancestor <- do
+    ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
+    if ancestor
+      then return $ Just True
+      else do
+      revancestor <- gitBool "merge-base" ["--is-ancestor", ref, "HEAD"]
+      if revancestor
+        then return $ Just False
+        else
+        if not origin
+        then do
+          origancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", "origin/" ++ show br]
+          if origancestor
+            then error $ "origin/" ++ show br +-+ "is ancestor but not" +-+ show br
+            else return Nothing
+        else return Nothing
   commits <- gitOneLineLog ("HEAD.." ++ ref)
-  when (not origin && null commits && not ancestor) $
-    whenM (gitBool "merge-base" ["--is-ancestor", "HEAD", "origin/" ++ show br]) $ do
-    rancestor <- gitBool "merge-base" ["--is-ancestor", ref, "HEAD"]
-    if rancestor
+  when (not origin && null commits && mancestor /= Just True) $
+    if mancestor == Just False
       then do
       diff <- git "diff" [ref]
       unless (null diff) $ do
         putStrLn $ "current branch is ahead of newer" +-+ show br +-+ "!!"
         promptEnter "Press Enter if you want to continue"
       else putStrLn $ "current branch" +-+ "is diverged from" +-+ show br
-  return (ancestor, commits)
+  return (mancestor, commits)
 
 -- FIXME use Package
 getNewerBranch :: String -> Branch -> IO (Maybe Branch)
@@ -92,8 +108,8 @@ getNewerBranch pkg br = do
 
 gitMergeOrigin :: Branch -> IO ()
 gitMergeOrigin br = do
-  (ancestor,commits) <- gitMergeable True br
-  when ancestor $
+  (mancestor,commits) <- gitMergeable True br
+  when (mancestor == Just True) $
     unless (null commits) $ do
     pull <- git "pull" []
     unless ("Already up to date." `isPrefixOf` pull) $
@@ -109,8 +125,8 @@ newerMergeable pkg br =
     locals <- localBranches True
     case mnewer of
       Just newer -> do
-        (ancestor,commits) <- gitMergeable (show newer `notElem` locals) newer
-        return (ancestor, commits, Just newer)
+        (mancestor,commits) <- gitMergeable (show newer `notElem` locals) newer
+        return (mancestor == Just True, commits, Just newer)
       Nothing -> return (False,[],Nothing)
 
 data Commit = Commit

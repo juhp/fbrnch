@@ -56,7 +56,8 @@ mergeable :: Branch -> Branch -> IO (Bool,[Commit])
 mergeable _ Rawhide = return (False,[])
 mergeable from _ = do
   locals <- localBranches True
-  gitMergeable (show from `notElem` locals) from
+  (mancestor, unmerged) <- gitMergeable (show from `notElem` locals) from
+  return (mancestor == Just True, unmerged)
 
 -- FIXME return merged ref
 mergeBranch :: Bool -> Bool -> Bool -> Bool -> Package
