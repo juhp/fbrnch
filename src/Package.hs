@@ -41,6 +41,7 @@ module Package (
   pkgNameVerRel,
   pkgNameVerRel',
   pkgNameVerRelNodist,
+  pkgNameVerRelDist,
   equivNVR,
   editSpecField,
   isAutoChangelog,
@@ -53,7 +54,7 @@ module Package (
 
 import Data.RPM (NV(..), VerRel(..))
 import Data.RPM.NVR (maybeNVR, NVR(..))
-import Distribution.Fedora.Branch
+import Distribution.Fedora.Branch (branchDistTag)
 import Safe (tailSafe)
 import SimpleCmd.Rpm
 import SimplePrompt (prompt, promptInitial)
@@ -398,17 +399,17 @@ isAutoChangelog :: FilePath -> IO Bool
 isAutoChangelog = grep_ "^%autochangelog"
 
 pkgNameVerRel :: Branch -> FilePath -> IO (Maybe NVR)
-pkgNameVerRel = pkgNameVerRelDist . Just
+pkgNameVerRel = pkgNameVerRelDist True . Just
 
-pkgNameVerRelDist :: Maybe Branch -> FilePath -> IO (Maybe NVR)
-pkgNameVerRelDist Nothing spec = do
+pkgNameVerRelDist :: Bool -> Maybe Branch -> FilePath -> IO (Maybe NVR)
+pkgNameVerRelDist _strict Nothing spec = do
   nvrs <- rpmspec ["--srpm", "--undefine=dist"] (Just "%{name}-%{version}-%{release}") spec
   return $
     case nvrs of
       [] -> Nothing
       [nvr] -> maybeNVR nvr
       _ -> error' "could not determine unique nvr"
-pkgNameVerRelDist (Just br) spec = do
+pkgNameVerRelDist strict (Just br) spec = do
   disttag <- branchDistTag br
   -- workaround dist with bootstrap
   hostdist <- cmd "rpm" ["--eval", "%{dist}"]
@@ -425,7 +426,9 @@ pkgNameVerRelDist (Just br) spec = do
           error' "requires fedpkg.."
         cmdLines "fedpkg" ["verrel"]
         else
-        error' "cannot determine NVR accurately for autorelease outside dist-git"
+        if strict
+        then error' "cannot determine NVR accurately for autorelease outside dist-git"
+        else return []
     else rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
   seq disttag $
     return $
@@ -443,7 +446,7 @@ pkgNameVerRel' br spec = do
 
 pkgNameVerRelNodist :: FilePath -> IO NVR
 pkgNameVerRelNodist spec = do
-  mnvr <- pkgNameVerRelDist Nothing spec
+  mnvr <- pkgNameVerRelDist True Nothing spec
   case mnvr of
     Nothing -> error' $ "rpmspec failed to parse" +-+ spec
     Just nvr -> return nvr

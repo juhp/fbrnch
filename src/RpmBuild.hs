@@ -306,7 +306,11 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
                buildopt ++ map show bconds ++ autoreleaseOpt ++ [spec]
     date <- cmd "date" ["+%T"]
     rbr <- anyBranchToRelease br
-    nvr <- pkgNameVerRel' rbr spec
+    nvr <- do
+      mnvr <- pkgNameVerRelDist False (Just rbr) spec
+      case mnvr of
+        Just nvr' -> return nvr'
+        Nothing -> pkgNameVerRelNodist spec
     putStr $ date +-+ "Building" +-+ showNVR nvr +-+ "locally... "
     ok <- do
       let buildlog = ".build-" ++ (showVerRel . nvrVerRel) nvr <.> "log"
