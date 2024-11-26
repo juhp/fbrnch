@@ -20,17 +20,20 @@ module RpmBuild (
 where
 
 import Control.Exception (uninterruptibleMask_)
+import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 import Data.RPM
 import Distribution.Fedora.Branch (branchDistTag, branchRelease)
 import Distribution.Fedora.Release (Release(releaseVersion))
 import Network.HTTP.Directory (Manager, httpExists, httpManager)
+import Safe (lastMay)
 import SimpleCmd.Rpm
 import SimplePrompt (promptEnter, yesNo)
 import System.Console.Pretty
 import System.IO.Extra (withTempDir)
 import System.Posix.Files
+import System.Process.Typed (proc, readProcessInterleaved)
 
 import Branches
 import Cmd.Update (updatePkg)
@@ -374,17 +377,22 @@ buildRequires spec = do
       installMissingMacros spec
       void $ getSources spec
       withTempDir $ \tmpdir -> do
-        let srpmdiropt = ["--define", "_srcrpmdir" +-+ tmpdir]
-        (_ok, out, err) <- cmdFull "rpmbuild" (["-br", "--nodeps", spec] ++ srpmdiropt) ""
+        let rpmbuildArgs = ["-br", "--nodeps", spec] ++
+                           ["--define", "_srcrpmdir" +-+ tmpdir]
+        -- errors for missing deps
+        (_ret, out) <- readProcessInterleaved $ proc "rpmbuild" rpmbuildArgs
         -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-        case words out of
-          [] -> error' $ spec +-+ "could not generate source rpm for dynamic buildrequires"
-          ws -> do
-            let srpm = last ws
+        case lastMay (B.words out) of
+          Nothing -> error' $ spec +-+ "could not generate source rpm for dynamic buildrequires"
+          Just srpmbs -> do
+            let srpm = B.unpack srpmbs
+            unless ("buildreqs.nosrc.rpm" `isSuffixOf` srpm) $ do
+              B.putStrLn out
+              error' $ "failed to generated buildreqs.nosrc.rpm for" +-+ spec
             exists <- doesFileExist srpm
             if exists
-              then cmdLines "rpm" ["-qp", "--requires", last ws]
-              else error' err
+              then cmdLines "rpm" ["-qp", "--requires", srpm]
+              else error' $ srpm +-+ "does not exist!"
     else
       -- FIXME should resolve meta
       rpmspec ["--buildrequires"] Nothing spec
