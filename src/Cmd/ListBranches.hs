@@ -74,7 +74,8 @@ branchesCmd skipdead allbrs missing mode (breq, pkgs) = do
             if allbrs then do
               putStrLn $ unPackage pkg ++ ":" +-+ unwords brs
               else do
-              if breq == Branches [] then do
+              if breq == Branches []
+                then do
                 -- FIXME better to filter inactive instead
                 active <- getFedoraBranches
                 let result =
