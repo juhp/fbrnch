@@ -61,13 +61,11 @@ requestRepo mock skipcheck resubmit breq pkg = do
         promptEnter "Press Enter to continue"
         -- FIXME check api key is still valid or open pagure ticket directly
         fedpkg_ "request-repo" [pkg, show bid]
+        putNewLn
         let draft = "Thank you for the review" ++ maybe "" ("," +-+) (assigneeFirstname $ bugAssignedToDetail bug)
-        putStrLn "```"
-        putStrLn draft
-        putStrLn "```"
         input <- promptInitial "Enter comment" draft
-        let comment = (if null input then draft else input)
-        commentBug session bid comment
+        unless (null input) $
+          commentBug session bid input
         putNewLn
         branches <- getRequestedBranches [] breq
         forM_ branches $ \ br -> do
