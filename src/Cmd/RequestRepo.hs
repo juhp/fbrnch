@@ -4,10 +4,12 @@ module Cmd.RequestRepo (requestRepos) where
 
 import Control.Exception.Extra (retry)
 import Network.HTTP.Directory (httpExists, httpManager)
-import SimplePrompt (promptEnter, promptInitial)
+import SimplePrompt (promptEnter, promptInitial, yesNo)
+import System.Time.Extra (sleep)
 
 import Branches
 import Bugzilla
+import Cmd.Import (importCmd)
 import Common
 import Common.System (error')
 import qualified Common.Text as T
@@ -73,6 +75,10 @@ requestRepo mock skipcheck resubmit breq pkg = do
           putStr $ show br ++ " "
           fedpkg_ "request-branch" ["--repo", pkg, show br]
         putNewLn
+        ok <- yesNo $ "Import" +-+ pkg
+        when ok $ do
+          waitForPagureRepo
+          importCmd False False (Branches [],[pkg])
   where
     existingRepoRequests :: IO [IssueTitleStatus]
     existingRepoRequests = do
@@ -105,3 +111,15 @@ requestRepo mock skipcheck resubmit breq pkg = do
             if "@" `T.isInfixOf` first
             then Nothing
             else Just (T.unpack first)
+
+    waitForPagureRepo :: IO ()
+    waitForPagureRepo = do
+      sleep 10
+      ebrs <- pagureListGitBranches srcfpo $ "rpms/" ++ pkg
+      case ebrs of
+        Left _err -> do
+          putChar '.'
+          waitForPagureRepo
+        Right brs ->
+          when (null brs) $
+          error' $ "no branches in dist-git for" +-+ pkg
