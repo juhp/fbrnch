@@ -23,11 +23,14 @@ import RpmBuild
 -- FIXME does not work with pkg dir/spec: 'fbrnch: No spec file found'
 -- FIXME --user to download all user's review requests
 reviewPackage :: Bool -> Maybe String -> IO ()
-reviewPackage _ Nothing = do
+reviewPackage interactive Nothing = do
   -- FIXME catch no spec file
   spec <- findSpecfile
   srpm <- generateSrpm Nothing spec
-  cmd_ "fedora-review" ["-rn", srpm]
+  if interactive
+    then doInteractiveReview False (Just spec) srpm
+    else do
+    cmd_ "fedora-review" ["-rn", srpm]
 reviewPackage interactive (Just pkgbug) = do
   let epkgbid =
         if all isDigit pkgbug
@@ -70,13 +73,23 @@ reviewPackageInteractive bid pkg session bug = do
     -- FIXME default to no if nvr unchanged?
     yesNoDefault True "Press Enter to install/prep srpm"
     else return True
-  let spec = pkg <.> "spec"
+  -- review and package name may be different (eg ramalama)
+  doInteractiveReview importsrpm Nothing srpm
+  putNewLn
+  putReviewBug False bug
+  putNewLn
+  putStrLn $ "Review dir is" +-+ dir
+
+doInteractiveReview :: Bool -> Maybe FilePath -> FilePath -> IO ()
+doInteractiveReview importsrpm mspec srpm = do
   when importsrpm $ do
     isgit <- isGitRepo
     unless isgit $ git_ "init" []
     -- FIXME override %_sourcedir so it doesn't put elsewhere?
     sourcediropt <- sourceDirCwdOpt
-    cmd_ "rpm" $ ["-ivh", srpm] ++ sourcediropt
+    putStrLn "installing srpm:"
+    cmd_ "rpm" $ ["-i", srpm] ++ sourcediropt
+    spec <- maybe findSpecfile return mspec
     git_ "add" [spec]
     allsrcs <- map sourceFieldFile <$> cmdLines "spectool" [spec]
     forM_ allsrcs $ \src ->
@@ -93,13 +106,16 @@ reviewPackageInteractive bid pkg session bug = do
       else mapM_ putStrLn filterdiff
     unlessM (gitBool "diff" ["--quiet", "--cached"]) $
       git_ "commit" ["-m", srpm]
+  putNewLn
   putStrLn "# Build"
   -- FIXME or download rpms
   build <- yesNoDefault importsrpm "Build package locally"
   when build $
     localCmd False False Nothing [] (Branches [],[])
+  putNewLn
   putStrLn "# RpmLint"
   void $ cmdBool "rpmlint" ["."] -- FIXME $ spec:srpm:rpms
+  spec <- maybe findSpecfile return mspec
   whenM (yesNoDefault importsrpm "Install packages locally") $ do
     installCmd False False Nothing Nothing [] False True True selectDefault (Nothing,[])
     rpms <- cmdLines "rpmspec" ["-q", "--rpms", "--qf", "%{name}\n", spec]
