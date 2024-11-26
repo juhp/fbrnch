@@ -38,6 +38,7 @@ module Bugzilla (
   statusNewPost,
   statusNewModified,
   statusOpen,
+  statusRelPrep,
   summaryContains,
   versionIs,
   ftbfsFedoraBugs,
@@ -277,6 +278,10 @@ statusNewPost =
 statusNewModified :: SearchExpression
 statusNewModified =
   StatusField `equalsAny` ["NEW", "ASSIGNED", "POST", "MODIFIED"]
+
+statusRelPrep :: SearchExpression
+statusRelPrep =
+  StatusField .==. "RELEASE_PENDING"
 
 reviewApproved :: SearchExpression
 reviewApproved =

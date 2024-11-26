@@ -55,7 +55,7 @@ listReviewsFull mmassignee mmreporter mpat allopen status = do
           ReviewAllOpen -> statusOpen
           ReviewUnApproved -> statusOpen
           ReviewApproved -> statusNewPost
-          ReviewRepoCreated -> statusNewPost
+          ReviewRepoCreated -> statusRelPrep
           ReviewUnbranched -> statusNewModified
           ReviewBranched -> statusNewModified
           _ -> statusNewPost
