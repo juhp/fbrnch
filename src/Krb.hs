@@ -25,7 +25,7 @@ krbTicket = do
 
 maybeFasIdFromKrb :: IO (Maybe String)
 maybeFasIdFromKrb =
-  fmap (removeSuffix "@FEDORAPROJECT.ORG") . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) <$> klistEntryFedora
+  fmap (dropSuffix "@FEDORAPROJECT.ORG") . find ("@FEDORAPROJECT.ORG" `isSuffixOf`) <$> klistEntryFedora
 
 fasIdFromKrb :: IO String
 fasIdFromKrb = do

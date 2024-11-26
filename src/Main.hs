@@ -2,6 +2,7 @@
 
 module Main (main) where
 
+import Data.List.Extra (dropSuffix)
 import Data.Maybe (fromMaybe)
 import Distribution.Fedora.Branch (partitionBranches, readBranch)
 #if !MIN_VERSION_simple_cmd_args(0,1,7)
@@ -450,7 +451,7 @@ main = do
     anyBranchM = anyBranch <$> str
 
     pkgArg :: String -> Parser String
-    pkgArg lbl = removeSuffix "/" <$> strArg lbl
+    pkgArg lbl = dropSuffix "/" <$> strArg lbl
 
     manyPackages :: Parser [String]
     manyPackages =  many (pkgArg "PKGPATH...")
