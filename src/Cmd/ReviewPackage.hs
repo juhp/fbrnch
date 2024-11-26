@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 
 module Cmd.ReviewPackage (
   reviewPackage
@@ -8,6 +8,8 @@ import Common
 import Common.System
 
 import Data.Char
+import Data.Tuple.Extra (second)
+import Safe (headMay, tailSafe)
 import SelectRPMs (selectDefault)
 import SimplePrompt (promptEnter, yesNoDefault)
 
@@ -123,10 +125,14 @@ doInteractiveReview importsrpm mspec srpm = do
        (_ok, out, err) <- cmdFull "rpmlint" ("-i" : rpms) ""
        let rpmlintout = "rpmlint.output"
        writeFile rpmlintout out
-       let nolines = length $ lines out
+       let ls = lines out
+           nolines = length ls
        if nolines > 20
          then do
-         cmd_ "tail" [rpmlintout]
+         mapM_ putStrLn $ takeEnd 10 ls
+         putNewLn
+         putStrLn "RpmLint summary:"
+         mapM_ (putStrLn . renderLintSummary) $ summarizeErrors ls
          putStrLn $ show nolines +-+ "lines saved to" +-+ rpmlintout
          else putStrLn out
        unless (null err) $ warning $ "rpmlint stderr:\n" ++ err
@@ -138,6 +144,19 @@ doInteractiveReview importsrpm mspec srpm = do
     -- handle "FILEPATH: *No copyright* UNKNOWN [generated file]"
     mapM_ putStrLn . filter (not . (" UNKNOWN" `isInfixOf`))
   cmd_ "rpmspec" ["-q", "--srpm", "--qf", "Spec license: %{license}\n", spec]
-  putNewLn
-  putReviewBug False bug
-  putStrLn $ "Review dir is" +-+ dir
+
+summarizeErrors :: [String] -> [(String,Int)]
+summarizeErrors =
+  sortOn fst . map (second length) . groupOnKey head . map tail . filter ((Just "E:" ==) . headMay) . map (tailSafe . words)
+
+renderLintSummary :: (String,Int) -> String
+renderLintSummary (err,n) = err ++ ":" +-+ show n
+
+#if !MIN_VERSION_extra(1,7,11)
+groupOnKey :: Eq k => (a -> k) -> [a] -> [(k, [a])]
+groupOnKey _ []     = []
+groupOnKey f (x:xs) = (fx, x:yes) : groupOnKey f no
+    where
+        fx = f x
+        (yes, no) = span (\y -> fx == f y) xs
+#endif

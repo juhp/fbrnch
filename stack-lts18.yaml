@@ -9,4 +9,3 @@ extra-deps:
   - copr-api-0.2.0
   - fedora-releases-0.1.0
   - select-rpms-0.1.0
-  - extra-1.7.11
