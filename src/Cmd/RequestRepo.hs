@@ -54,7 +54,6 @@ requestRepo mock skipcheck resubmit breq pkg = do
           error' "The last repo request was already successfully Processed"
       when (null requests || resubmit) $ do
         checkNoPagureRepo
-        putNewLn
         comments <- getComments session bid
         mapM_ showComment comments
         putNewLn
