@@ -12,6 +12,7 @@ module Cmd.Local (
 
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (isDigit)
+import Safe (headMay)
 import System.Environment (getEnvironment)
 import qualified System.Process as P
 import qualified System.Process.Typed as TP
@@ -168,8 +169,10 @@ srpmSpecCmd diff srpms =
         ok <- pipeBool ("rpm2cpio", [srpm]) ("cpio", ["--extract", "--quiet", "--make-directories", "-D", dir , "--preserve-modification-time", "*.spec"])
         if ok
           then do
-          spec <- head <$> listDirectory dir
-          return $ subdir </> spec
+          mspec <- headMay <$> listDirectory dir
+          case mspec of
+            Nothing -> error' $ "no spec in" +-+ dir
+            Just spec -> return $ subdir </> spec
           else error' "failed to extract spec file"
         else error' $ "no such file:" +-+ srpm
 
@@ -204,9 +207,9 @@ moveArtifactsCmd remove pkgs =
         spec <- localBranchSpecFile pkg br
         srcs <- map (takeWhile (not . isDigit) . takeBaseName) <$> cmdLines "spectool" ["-S", spec]
         let srctrees =
-              if null srcs
-              then []
-              else filter (head srcs `isPrefixOf`) dirs
+              case srcs of
+                [] -> []
+                (src:_) -> filter (src `isPrefixOf`) dirs
         createDirectoryIfMissing False builddir
         forM_ srctrees $ \tree -> do
           exists <- doesDirectoryExist $ builddir </> tree

@@ -9,7 +9,7 @@ import Common.System
 
 import Data.Char
 import Data.Tuple.Extra (second)
-import Safe (headMay, tailSafe)
+import Safe (headDef, headMay, tailSafe)
 import SelectRPMs (selectDefault)
 import SimplePrompt (promptEnter, yesNoDefault)
 
@@ -147,7 +147,7 @@ doInteractiveReview importsrpm mspec srpm = do
 
 summarizeErrors :: [String] -> [(String,Int)]
 summarizeErrors =
-  sortOn fst . map (second length) . groupOnKey head . map tail . filter ((Just "E:" ==) . headMay) . map (tailSafe . words)
+  sortOn fst . map (second length) . groupOnKey (headDef "''") . map tailSafe . filter ((Just "E:" ==) . headMay) . map (tailSafe . words)
 
 renderLintSummary :: (String,Int) -> String
 renderLintSummary (err,n) = err ++ ":" +-+ show n

@@ -7,6 +7,7 @@ module Cmd.Install (
   ) where
 
 import Data.RPM
+import Safe (headMay)
 import SelectRPMs
 
 import Branches
@@ -61,7 +62,8 @@ installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps 
       where
         doInstallPkg mforceshort' spec rpms = do
           -- FIXME show source NVR (eg not pandoc-common)
-          putStrLn $ (showNVR . dropArch . readNVRA) (head rpms)
+          whenJust (headMay rpms) $
+            putStrLn . showNVR . dropArch . readNVRA
           unless (nobuilddeps || nobuild) $ do
             missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
             unless (null missingdeps) $

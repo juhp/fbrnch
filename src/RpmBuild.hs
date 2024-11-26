@@ -286,7 +286,9 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
         else do
         specTime <- getModificationTime spec
         rpmTimes <- sort <$> mapM getModificationTime rpms
-        return $ specTime > head rpmTimes
+        case rpmTimes of
+          [] -> return True -- corner case
+          (rpmtime:_) -> return $ specTime > rpmtime
   if not needBuild then
     putStrLn "Existing rpms are newer than spec file (use --force to rebuild)"
     else do
@@ -399,9 +401,10 @@ buildRequires spec = do
   return $ brs ++ ["rpmautospec" | autorelease]
   where
     primary dep =
-      case (head . words) dep of
-        '(':rest -> Just rest
-        d -> if "rpmlib(" `isPrefixOf` d
+      case words dep of
+        [] -> error' "empty dep" -- corner case
+        (('(':h):_) -> Just h
+        (d:_) -> if "rpmlib(" `isPrefixOf` d
              then Nothing
              else Just d
 

@@ -54,6 +54,7 @@ module Package (
 import Data.RPM (NV(..), VerRel(..))
 import Data.RPM.NVR (maybeNVR, NVR(..))
 import Distribution.Fedora.Branch
+import Safe (tailSafe)
 import SimpleCmd.Rpm
 import SimplePrompt (prompt, promptInitial)
 
@@ -477,7 +478,7 @@ equivNVR nvr1 (Just nvr2) =
               ("fc","fc") -> True
               _ -> r1' == r2' && length drs1 == length drs2
             &&
-            compareReleases (tail drs1) (tail drs2)
+            compareReleases (tailSafe drs1) (tailSafe drs2)
         _ -> False
 
 -- data BrPkg = IsBr AnyBranch | Unknown String | IsPkg String

@@ -19,7 +19,11 @@ module Common (
   ) where
 
 import Control.Monad.Extra -- hiding (loop)
-import Data.List.Extra hiding (list, merge)
+import Data.List.Extra hiding (list, merge,
+#if MIN_VERSION_extra(1,6,19)
+                               headDef
+#endif
+                              )
 import Data.Maybe
 import Data.Ord (comparing, Down(Down))
 import Data.RPM.NVR (showNVR)

@@ -113,7 +113,10 @@ updatePkg onlysources force allowHEAD distgit mver pkg br = do
     cmd_ "fedpkg" $ "new-sources" : filter isArchiveFile sources
   whenJust moldnewver $ \(_old,newver) -> do
     versions <- changelogVersions spec
-    let missing = null versions || not ((newver ++ "-") `isPrefixOf` head versions)
+    let missing =
+          case versions of
+            [] -> True
+            (h:_) -> not $ (newver ++ "-") `isPrefixOf` h
     when missing $ do
       cmd_ "rpmdev-bumpspec" ["-c", "Update to" +-+ newver, spec]
       git_ "commit" ["-a", "-m", "Update to" +-+ newver]
