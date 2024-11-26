@@ -45,6 +45,7 @@ module Package (
   editSpecField,
   isAutoChangelog,
   isAutoRelease,
+  autoReleaseBump,
   sourceFieldFile,
   isArchiveFile,
   sourceDirCwdOpt
@@ -379,6 +380,18 @@ isAutoRelease :: FilePath -> IO Bool
 isAutoRelease spec = do
   matches <- filter ("Release:" `isPrefixOf`) <$> grep "%autorelease" spec
   return $ not (null matches)
+
+autoReleaseBump :: FilePath -> IO Bool
+autoReleaseBump spec = do
+  matches <- filter ("Release:" `isPrefixOf`) <$> grep "%autorelease" spec
+  return $
+    case matches of
+      [] -> False
+      [release] ->
+        case words release of
+          ("Release:":"%autorelease":"-b":_) -> True
+          _ -> False
+      _ -> error' $ "multiple autorelease fields in" +-+ spec
 
 isAutoChangelog :: FilePath -> IO Bool
 isAutoChangelog = grep_ "^%autochangelog"

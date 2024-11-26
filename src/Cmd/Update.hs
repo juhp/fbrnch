@@ -15,7 +15,6 @@ import InterleaveOutput (cmdSilent')
 import Krb
 import Package
 
--- FIXME if autorelease, drop -b baserelease
 -- FIXME --no-prep to avoid overwriting ongoing build
 -- FIXME don't bump release if already bumped
 -- FIXME check EVR increased
@@ -82,8 +81,13 @@ updatePkg onlysources force allowHEAD distgit mver pkg br = do
     putStrLn $ oldver +-+ "->\n" ++ newver
     when (curver /= newver) $ do
       editSpecField "Version" newver spec
-      -- FIXME do not touch %autorelease
-      editSpecField "Release" "0%{?dist}" spec
+      autorelease <- isAutoRelease spec
+      if autorelease
+        then do
+        autobump <- autoReleaseBump spec
+        when autobump $
+          editSpecField "Release" "%autorelease" spec
+        else editSpecField "Release" "0%{?dist}" spec
       -- FIXME should be sure sources exists for distgit
       whenM (doesFileExist "sources") $
         cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
