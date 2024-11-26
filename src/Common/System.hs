@@ -10,7 +10,7 @@ module Common.System (
 #if !MIN_VERSION_filepath(1,4,2)
   isExtensionOf,
 #endif
-#if !MIN_VERSION_simple_cmd(0,2,3)
+#if !MIN_VERSION_simple_cmd(0,2,8)
   cmdFull,
 #endif
 #if !MIN_VERSION_simple_cmd(0,2,5)
@@ -21,11 +21,16 @@ module Common.System (
 #if !MIN_VERSION_filepath(1,4,2)
 import Data.List
 #endif
-import SimpleCmd
-#if MIN_VERSION_simple_cmd(0,2,1)
-  hiding (ifM,whenM)
+import Safe
+import SimpleCmd hiding (
+#if !MIN_VERSION_simple_cmd(0,2,8)
+  cmdFull,
 #endif
-#if !MIN_VERSION_simple_cmd(0,2,3)
+#if MIN_VERSION_simple_cmd(0,2,1)
+  ifM,whenM
+#endif
+  )
+#if !MIN_VERSION_simple_cmd(0,2,8)
 import System.Exit
 import System.Process
 #endif
@@ -52,23 +57,24 @@ isTty :: IO Bool
 isTty = hIsTerminalDevice stdin
 
 setNoBuffering :: IO ()
-setNoBuffering =
+setNoBuffering = do
   hSetBuffering stdout NoBuffering
+  hSetBuffering stderr NoBuffering
 
 getDirectoryName :: IO String
 getDirectoryName =
   takeFileName <$> getCurrentDirectory
 
-#if !MIN_VERSION_simple_cmd(0,2,3)
+-- bugfix for lazy stderr
+#if !MIN_VERSION_simple_cmd(0,2,8)
 cmdFull :: String -> [String] -> String -> IO (Bool, String, String)
 cmdFull c args input = do
   (ret, out, err) <- readProcessWithExitCode c args input
   return (ret == ExitSuccess, removeTrailingNewline out, removeTrailingNewline err)
   where
     removeTrailingNewline :: String -> String
-    removeTrailingNewline "" = ""
     removeTrailingNewline str =
-      if last str == '\n'
+      if lastMay str == Just '\n'
       then init str
       else str
 #endif

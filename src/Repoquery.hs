@@ -4,7 +4,7 @@ module Repoquery (
 where
 
 import Data.Maybe (isJust)
-import SimpleCmd
+import SimpleCmd (cmd)
 
 import Bodhi (bodhiTestingRepo)
 import Branches

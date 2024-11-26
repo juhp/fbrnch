@@ -6,7 +6,7 @@ module Krb (
 
 import Common
 
-import SimpleCmd
+import SimpleCmd (error', cmdBool, cmdMaybe)
 
 krbTicket :: IO ()
 krbTicket = do

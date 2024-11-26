@@ -133,6 +133,7 @@ executable fbrnch
                        -- regex-tdfa,
                        rpmbuild-order >= 0.4.12,
                        rpm-nvr >= 0.1.2,
+                       safe,
                        say,
                        select-rpms,
                        simple-cmd >= 0.2.3,

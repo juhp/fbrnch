@@ -4,12 +4,12 @@ module Cmd.RequestRepo (requestRepos) where
 
 import Control.Exception.Extra (retry)
 import Network.HTTP.Directory (httpExists, httpManager)
-import SimpleCmd
 import SimplePrompt (promptEnter, promptInitial)
 
 import Branches
 import Bugzilla
 import Common
+import Common.System (error')
 import qualified Common.Text as T
 import Krb
 import ListReviews
