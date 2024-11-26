@@ -111,10 +111,11 @@ data CoprMode = ListChroots | CoprMonitor | CoprBuild | CoprNew
 -- FIXME interact with copr dist-git
 -- FIXME parallel copr builds
 -- FIXME time builds?
-coprCmd :: Bool -> CoprMode -> Bool -> BuildBy -> Maybe Archs -> String
+coprCmd :: Bool -> CoprMode -> Bool -> Maybe BuildBy -> Maybe Archs -> String
         -> (BranchesReq,[String]) -> IO ()
-coprCmd dryrun mode force buildBy marchs project (breq, pkgs) = do
+coprCmd dryrun mode force mbuildBy marchs project (breq, pkgs) = do
   user <- getUsername
+  let buildBy = fromMaybe ValidateByRelease mbuildBy
   case mode of
     ListChroots -> coprGetChroots user >>= mapM_ (putStrLn . showChroot)
     CoprMonitor -> coprMonitorPackages user project >>= mapM_ printPkgRes
@@ -122,9 +123,9 @@ coprCmd dryrun mode force buildBy marchs project (breq, pkgs) = do
     CoprBuild -> do
       chroots <- coprGetChroots user
       if null pkgs
-        then coprBuildPkg user chroots False
+        then coprBuildPkg user buildBy chroots False
         else
-        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user chroots (n>0)) $ zip (reverse [0..length pkgs - 1]) pkgs
+        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user buildBy chroots (n>0)) $ zip (reverse [0..length pkgs - 1]) pkgs
   where
     coprGetChroots :: String -> IO [Chroot]
     coprGetChroots user = do
@@ -155,8 +156,8 @@ coprCmd dryrun mode force buildBy marchs project (breq, pkgs) = do
         then error' "No valid chroots"
         else return buildroots
 
-    coprBuildPkg :: String -> [Chroot] -> Bool -> IO ()
-    coprBuildPkg user buildroots morepkgs = do
+    coprBuildPkg :: String -> BuildBy -> [Chroot] -> Bool -> IO ()
+    coprBuildPkg user buildBy chroots morepkgs = do
       -- FIXME check is pkg.spec
       -- was: localBranchSpecFile pkg (RelBranch Rawhide)
       spec <- findSpecfile
@@ -166,8 +167,8 @@ coprCmd dryrun mode force buildBy marchs project (breq, pkgs) = do
               else return spec -- hack to avoid generating srpm for dryrun
       verrel <- showVerRel . nvrVerRel <$> pkgNameVerRelNodist spec
       actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
-      builtChroots <- existingChrootBuilds user project (Package actualpkg) verrel buildroots
-      let finalChroots = buildroots \\ if force then [] else map taskChroot builtChroots
+      builtChroots <- existingChrootBuilds dryrun user project (Package actualpkg) verrel chroots
+      let finalChroots = chroots \\ if force then [] else map taskChroot builtChroots
       if null finalChroots
         then putStrLn $ actualpkg ++ '-' : verrel +-+ "built"
         else
@@ -233,23 +234,25 @@ coprProcessingStates =
 --   ["canceled", "failed", "skipped", "succeeded"]
 
 -- FIXME restrict to requested chroots?
-existingChrootBuilds :: String -> String -> Package -> String -> [Chroot]
-                     -> IO [CoprTask]
-existingChrootBuilds user project actualpkg verrel chroots = do
+existingChrootBuilds :: Bool -> String -> String -> Package -> String
+                     -> [Chroot] -> IO [CoprTask]
+existingChrootBuilds dryrun user project actualpkg verrel chroots = do
   monitorPkgs <- coprMonitorPackages user project
   let pkgmonitor = fromMaybe [] $ lookup actualpkg monitorPkgs
   let buildingChroots =
         filterTasks verrel (`elem` coprProcessingStates) pkgmonitor
+      builds = filterTasks verrel (`notElem` ["failed","skipped"]) pkgmonitor
   if null buildingChroots
-    then return $ filterTasks verrel (`notElem` ["failed","skipped"]) pkgmonitor
+    then return builds
     else do
     mapM_ printCoprTask buildingChroots
     putNewLn
-    forM_ buildingChroots $ \building ->
+    unless dryrun $
+      forM_ buildingChroots $ \building ->
       when (taskChroot building `elem` chroots) $
       -- FIXME check failure
       void $ coprWatchBuild Nothing $ Left building
-    return buildingChroots
+    return builds
 
 filterTasks :: String -> (String -> Bool) -> [CoprTask] -> [CoprTask]
 filterTasks verrel statustest =
@@ -257,15 +260,16 @@ filterTasks verrel statustest =
 
 coprBuild :: Bool -> String -> String -> FilePath -> FilePath -> [Chroot] -> IO ()
 coprBuild _ _ _ _ _ [] = error' "No chroots chosen"
-coprBuild dryrun user project srpm spec buildroots = do
-  let chrootargs = mconcat [["-r", showChroot bldrt] | bldrt <- buildroots]
+coprBuild dryrun user project srpm spec chroots = do
+  let chrootargs = mconcat [["-r", showChroot bldrt] | bldrt <- chroots]
       buildargs = ["build", "--nowait"] ++ chrootargs ++ [project, srpm]
   putNewLn
-  putStrLn $ unwords $ map showChroot buildroots
+  putStrLn $ unwords $ map showChroot chroots
   unless dryrun $ do
     output <- cmd "copr" buildargs
     putStrLn output
     let bid = read $ last $ words $ last $ lines output
+    -- FIXME get the actual build time
     ok <- timeIO $ coprWatchBuild Nothing $ Right bid
     unless ok $ do
       putStrLn $ "Failed: copr" +-+ unwords buildargs
@@ -277,7 +281,7 @@ coprBuild dryrun user project srpm spec buildroots = do
       actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
       -- FIXME which chroot?
       -- FIXME print buildlog size
-      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot (head buildroots) +/+ zbid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
+      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot (head chroots) +/+ zbid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
 
 -- FIXME idea: Maybe Seconds to increment FIXME
 -- sleep should have all chroots in pending CoprTask build
@@ -392,4 +396,4 @@ coprNewProject dryrun project marchs breq pkgs = do
   let chroots = [ Chroot b a | b <- branches, a <- archs]
   (if dryrun then cmdN else cmd_) "copr" $ "create" : concatMap (\ch -> ["--chroot", showChroot ch]) chroots ++ [project]
   unless (null pkgs) $
-    coprCmd False CoprBuild False ValidateByRelease Nothing project (breq, pkgs)
+    coprCmd False CoprBuild False Nothing Nothing project (breq, pkgs)

@@ -374,7 +374,7 @@ main = do
            flagLongWith' CoprNew "new" "Create new copr repo" <|>
            flagWith CoprBuild CoprMonitor 'm' "monitor" "Show project chroots")
       <*> forceOpt "build even if existing n-v-r"
-      <*> buildByOpt
+      <*> optional buildByOpt
       <*> optional archesOpt
       <*> pkgArg "PROJECT"
       <*> branchesPackages
@@ -634,7 +634,10 @@ main = do
       flagWith' PullStash 's' "stash" "Stash local changes" <|>
       flagWith' PullRebase 'r' "rebase" "Git pull instead of fetch"
 
-    buildByOpt = flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|> flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|> flagWith ValidateByRelease ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
+    buildByOpt =
+      flagWith' SingleBuild 'S' "single" "Non-progressive normal single build" <|>
+      flagWith' BuildByRelease 'R' "by-release" "Builds by release" <|>
+      flagWith' ValidateByArch 'A' "by-arch" "Build across latest release archs first (default is across releases for primary arch)"
 
     commandOpt = strOptionWith 'c' "cmd" "SHELLCOMMAND" "Shell command to run in $p"
 
