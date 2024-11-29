@@ -36,7 +36,7 @@ module Git (
   ) where
 
 import Data.Char (isSpace)
-import Distribution.Fedora.Branch (getFedoraBranches, newerBranch)
+import Distribution.Fedora.Branch (getActiveBranches, newerBranch)
 import Say (sayString)
 import SimpleCmd.Git
 import SimplePrompt
@@ -92,7 +92,7 @@ getNewerBranch :: String -> Branch -> IO (Maybe Branch)
 getNewerBranch _ Rawhide = return Nothing
 getNewerBranch pkg br = do
   localbrs <- fedoraBranches (localBranches False)
-  active <- getFedoraBranches
+  active <- getActiveBranches
   case newerBranch br active of
     Just newer ->
       if newer `elem` localbrs

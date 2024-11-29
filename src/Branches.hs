@@ -32,8 +32,8 @@ module Branches (
 ) where
 
 import Data.Either (partitionEithers)
-import Distribution.Fedora.Branch (Branch(..), eitherBranch, getFedoraBranched,
-                                   getFedoraBranches, getLatestFedoraBranch,
+import Distribution.Fedora.Branch (Branch(..), eitherBranch, getActiveBranched,
+                                   getActiveBranches, getLatestFedoraBranch,
                                    readActiveBranch, eitherActiveBranch,
                                    readBranch, showBranch)
 import SimpleCmd.Git
@@ -68,12 +68,12 @@ activeBranches active =
 
 fedoraBranches :: IO [String] -> IO [Branch]
 fedoraBranches mthd = do
-  active <- getFedoraBranches
+  active <- getActiveBranches
   activeBranches active <$> mthd
 
 fedoraBranchesNoRawhide :: IO [String] -> IO [Branch]
 fedoraBranchesNoRawhide mthd = do
-  active <- getFedoraBranched
+  active <- getActiveBranched
   activeBranches active <$> mthd
 
 isFedoraBranch :: Branch -> Bool
@@ -144,21 +144,21 @@ listOfBranches :: Bool -> Bool -> BranchesReq -> IO [Branch]
 listOfBranches distgit _active (BranchOpt AllBranches) =
   if distgit
   then fedoraBranches (localBranches False)
-  else getFedoraBranches
+  else getActiveBranches
 listOfBranches distgit _active (BranchOpt AllFedora) =
   filter isFedoraBranch <$>
   if distgit
   then fedoraBranches (localBranches False)
-  else getFedoraBranches
+  else getActiveBranches
 listOfBranches distgit _active (BranchOpt AllEPEL) =
   filter isEPELBranch <$>
   if distgit
   then fedoraBranches (localBranches False)
-  else getFedoraBranches
+  else getActiveBranches
 listOfBranches distgit _ (BranchOpt (ExcludeBranches brs)) = do
   branches <- if distgit
               then fedoraBranches (localBranches False)
-              else getFedoraBranches
+              else getActiveBranches
   return $ branches \\ brs
 listOfBranches distgit active (Branches brs) =
   if null brs
@@ -167,7 +167,7 @@ listOfBranches distgit active (Branches brs) =
              then getReleaseBranch
              else systemBranch
   else do
-    activeBrs <- getFedoraBranches
+    activeBrs <- getActiveBranches
     forM_ brs $ \ br ->
           if active
             then unless (br `elem` activeBrs) $
@@ -236,7 +236,7 @@ branchVersion (EPELNext n) = show n
 
 getRequestedBranches :: [String] -> BranchesReq -> IO [Branch]
 getRequestedBranches existing breq = do
-  activenew <- filter (\b -> showBranch b `notElem` existing) <$> getFedoraBranched
+  activenew <- filter (\b -> showBranch b `notElem` existing) <$> getActiveBranched
   case breq of
     Branches brs -> if null brs
                     then branchingPrompt activenew

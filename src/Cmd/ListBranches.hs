@@ -4,7 +4,7 @@ module Cmd.ListBranches (
   )
 where
 
-import Distribution.Fedora.Branch (getFedoraBranches, readBranch)
+import Distribution.Fedora.Branch (getActiveBranches, readBranch)
 
 import Branches
 import Common
@@ -77,7 +77,7 @@ branchesCmd skipdead allbrs missing mode (breq, pkgs) = do
               if breq == Branches []
                 then do
                 -- FIXME better to filter inactive instead
-                active <- getFedoraBranches
+                active <- getActiveBranches
                 let result =
                       if missing
                       then active \\ mapMaybe readBranch brs

@@ -22,7 +22,7 @@ import Data.Ini.Config
 import Data.RPM.NVR (nvrVerRel)
 import Data.RPM.VerRel (showVerRel)
 import Data.Tuple.Extra (first)
-import Distribution.Fedora.Branch (getFedoraBranches, getFedoraBranched)
+import Distribution.Fedora.Branch (getActiveBranches, getActiveBranched)
 import Network.HTTP.Query (lookupKey, lookupKey')
 import System.Environment.XDG.BaseDir (getUserConfigDir)
 import System.Time.Extra (sleep)
@@ -138,8 +138,8 @@ coprCmd dryrun mode force mbuildBy marchs project (breq, pkgs) = do
             if null brs
             then return $ (nub . map chrootBranch) chroots
             else listOfBranches False False breq
-          BranchOpt AllFedora -> filter isFedoraBranch <$> getFedoraBranches
-          BranchOpt AllEPEL -> filter isEPELBranch <$> getFedoraBranched
+          BranchOpt AllFedora -> filter isFedoraBranch <$> getActiveBranches
+          BranchOpt AllEPEL -> filter isEPELBranch <$> getActiveBranched
           _ -> listOfBranches False False breq
       let buildroots =
             -- FIXME sort archs appropriately
