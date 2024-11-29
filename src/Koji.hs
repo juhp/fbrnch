@@ -231,7 +231,7 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
   where
     waitRepo :: String -> Maybe Struct -> IO ()
     waitRepo buildtag moldrepo = do
-      when (isJust moldrepo) $ do
+      when (isJust moldrepo) $
         threadDelay (fromEnum (50 :: Micro)) -- 50s
       mrepo <- kojiGetRepo fedoraHub buildtag Nothing Nothing
       case mrepo of
@@ -254,6 +254,7 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
                   else do
                   when (isNothing moldrepo && not quiet) $
                     logSay tz $ "Waiting for" +-+ buildtag +-+ "to have" +-+ showNVR nvr
+                  cmdSilent "koji" ["request-repo", "--nowait", "--quiet", buildtag]
                   waitRepo buildtag mrepo
 
 kojiTagArchs :: String -> IO [String]
