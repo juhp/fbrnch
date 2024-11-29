@@ -5,7 +5,7 @@ module Cmd.Build (
   BuildOpts(..)
   ) where
 
-import Distribution.Fedora.Branch (branchDestTag, branchTarget)
+import Distribution.Fedora.Branch (branchDestTag)
 import SimplePrompt (promptEnter, yesNo)
 
 import Bodhi
@@ -175,8 +175,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
               kojiWatchTask task
             (_:_) -> error' $ show (length opentasks) +-+ "open" +-+ unPackage pkg +-+ "tasks already!"
             [] -> do
-              let tag =
-                    if target == branchTarget br then branchDestTag br else target
+              tag <-
+                if target == showBranch br
+                then branchDestTag br
+                else return target
               mlatest <- kojiLatestNVR tag $ unPackage pkg
               if equivNVR nvr mlatest
                 then putStrLn $ showNVR nvr +-+ "is already latest" +-+ if Just nvr /= mlatest then "(modulo disttag)" else ""

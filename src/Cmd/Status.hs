@@ -81,7 +81,8 @@ statusCmd nofetch reviews latestcommit (breq, pkgs) = do
                     mbuild <- kojiGetBuildID fedoraHub (showNVR nvr)
                     case mbuild of
                       Nothing -> do
-                        mlatest <- kojiLatestNVR (branchDestTag br) (unPackage pkg)
+                        destTag <- branchDestTag br
+                        mlatest <- kojiLatestNVR destTag (unPackage pkg)
                         case mlatest of
                           Nothing -> putStrLn $ "new" +-+ showNVR nvr
                           Just latest ->

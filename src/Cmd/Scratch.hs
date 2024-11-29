@@ -9,7 +9,6 @@ module Cmd.Scratch (
   ) where
 
 import Data.RPM.NVR (NVR)
-import Distribution.Fedora.Branch (branchTarget)
 
 import Branches
 import Common
@@ -39,7 +38,7 @@ scratchCmd :: Bool -> Bool -> Bool -> Bool -> Bool -> Maybe Archs
 scratchCmd dryrun stagger rebuildSrpm nofailfast allowHEAD marchopts sidetagTargets msource (breq,pkgs) =
   withPackagesByBranches HeaderMust False Nothing AnyNumber scratchBuild (breq,pkgs)
   where
-    anyTarget (RelBranch b) = branchTarget b
+    anyTarget (RelBranch b) = showBranch b
     anyTarget _ = "rawhide"
 
     scratchBuild :: Package -> AnyBranch -> IO ()

@@ -35,7 +35,6 @@ import Data.RPM.NVR (NVR, maybeNVR, nvrName)
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Time.LocalTime
-import Distribution.Fedora.Branch (branchTarget)
 import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
 import Say (sayString)
@@ -265,7 +264,7 @@ kojiUserSideTags mbr = do
     Nothing -> do
       maybeTimeout 55 $ kojiListSideTags fedoraKojiHub Nothing (Just user)
     Just br -> do
-      mtags <- kojiBuildTarget fedoraHub (branchTarget br)
+      mtags <- kojiBuildTarget fedoraHub (showBranch br)
       case mtags of
         Nothing -> return []
         Just (buildtag,_desttag) -> do
@@ -306,7 +305,7 @@ targetMaybeSidetag :: Bool -> Bool -> Branch -> Maybe SideTagTarget
                    -> IO String
 targetMaybeSidetag dryrun create br msidetagTarget =
   case msidetagTarget of
-    Nothing -> return $ branchTarget br
+    Nothing -> return $ showBranch br
     Just (Target t) -> return t
     Just SideTag -> do
       sidetags <- map (head . words) <$> kojiUserSideTags (Just br)

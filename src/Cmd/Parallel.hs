@@ -10,7 +10,7 @@ import Common.System
 import Control.Concurrent.Async
 import Control.Exception.Extra (retry)
 import Data.RPM.NVR (NVR)
-import Distribution.Fedora.Branch (branchDestTag, branchTarget)
+import Distribution.Fedora.Branch (branchDestTag)
 import Distribution.RPM.Build.Order (dependencyLayersRpmOpts)
 import Fedora.Bodhi hiding (bodhiUpdate)
 import Say
@@ -110,7 +110,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       unless (isNothing (fst mupdate)) $
         unless (isNothing msidetagTarget) $
         -- FIXME check for an existing sidetag update
-        when (target /= branchTarget rbr) $ do
+        when (target /= showBranch rbr) $ do
         let changelog = intercalate "" $ renderChangelogs $ reverse nvrclogs
         putNewLn
         putStrLn changelog
@@ -275,13 +275,15 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       -- FIXME should compare git refs
       -- FIXME check for target
       buildstatus <- kojiBuildStatus nvr
-      let tag = if target == branchTarget br then branchDestTag br else target
+      tag <- if target == showBranch br
+             then branchDestTag br
+             else return target
       mlatest <- kojiLatestNVR tag $ unPackage pkg
       case buildstatus of
         Just BuildComplete -> do
           -- FIXME detect old stable existing build
           sayString $ color Green (showNVR nvr) +-+ "is already" +-+ color Green "built"
-          when (br /= Rawhide && morelayers && target == branchTarget br) $ do
+          when (br /= Rawhide && morelayers && target == showBranch br) $ do
             tags <- kojiNVRTags nvr
             unless (any (`elem` tags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-override"]) $
               unlessM (checkAutoBodhiUpdate br) $
@@ -349,7 +351,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
             whenJust mBugSess $ \(bid,session) ->
               putBugBuild dryrun session bid nvr
             else do
-            when (target == branchTarget br && morelayers) $
+            when (target == showBranch br && morelayers) $
               -- -- FIXME: avoid prompt in
               -- changelog <- changeLogPrompt False spec
               -- bodhiUpdate (fmap fst mBugSess) changelog nvr
