@@ -63,7 +63,6 @@ import Branches
 import Common
 import Common.System
 import Git
-import Krb
 import Types (ChangeType(..))
 
 fedpkg :: String -> [String] -> IO String
@@ -372,9 +371,7 @@ clonePkg quiet cloneuser mbr pkg = do
         msgout
         git_ "clone" $ ["--quiet"] ++ mbranch ++ ["https://src.fedoraproject.org/rpms/" ++ pkg <.> "git"]
       UserClone -> do
-        fasid <- fasIdFromKrb
-        msgout
-        git_ "clone" $ ["--quiet"] ++ mbranch ++ ["ssh://" ++ fasid ++ "@pkgs.fedoraproject.org/rpms/" ++ pkg <.> "git"]
+        fedpkg_ "clone" $ mbranch ++ [pkg]
   where
     msgout =
       putStrLn $ if quiet then "cloning..." else "Cloning:" +-+ pkg
