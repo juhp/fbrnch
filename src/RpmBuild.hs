@@ -25,7 +25,7 @@ import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 import Data.RPM
 import Distribution.Fedora.Branch (branchDistTag, branchRelease)
-import Distribution.Fedora.Release (Release(releaseVersion))
+import Distribution.Fedora.Release (releaseVersion)
 import Network.HTTP.Directory (Manager, httpExists, httpManager)
 import Safe (lastMay)
 import SimpleCmd.Rpm
@@ -55,16 +55,20 @@ distOptAny b =
 distRpmOptions :: Branch -> IO [String]
 distRpmOptions br =
   map ("--define=" ++) <$> do
-  release <- branchRelease br
-  return $
-    case br of
-      Rawhide ->
-        let ver = releaseVersion release
-        in ["fedora" +-+ ver, "fc" ++ ver +-+ "1"]
-      Fedora n ->
-        ["fedora" +-+ show n, "fc" ++ show n +-+ "1"]
-      EPEL n -> ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
-      EPELNext n -> ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
+  case br of
+    Rawhide -> do
+      ver <- releaseVersion <$> branchRelease br
+      return ["fedora" +-+ ver, "fc" ++ ver +-+ "1"]
+    Fedora n ->
+      return ["fedora" +-+ show n, "fc" ++ show n +-+ "1"]
+    EPEL n ->
+      return ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
+    EPELNext n ->
+      return ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
+
+-- branchToRelease :: AnyBranch -> IO Release
+-- branchToRelease (RelBranch br) = branchRelease br
+-- branchToRelease (OtherBranch b) = error' $ "no release for branch" +-+ b
 
 builtRpms :: AnyBranch -> FilePath -> IO [FilePath]
 builtRpms br spec = do
