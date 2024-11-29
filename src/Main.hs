@@ -53,7 +53,7 @@ import Cmd.Update
 import Cmd.UpdateReview
 import Cmd.WaitRepo
 
-import Bodhi (UpdateType(..),UpdateSeverity(..))
+import Bodhi (UpdateType(..), UpdateSeverity(..), UpdateNotes(..))
 import Branches
 import Common.System
 import Git (CommitOpt(..))
@@ -548,7 +548,7 @@ main = do
       <*> dryrunOpt "Dry run: do not merge/push/build"
       <*> skipFetchOpt
       <*> updateOpt
-      <*> useChangelogOpt
+      <*> optional notesOpt
       <*> switchWith 'p' "by-package" "Build by each package across brs"
       <*> switchLongWith "stash" "git stash before fetching and building"
       where
@@ -557,8 +557,9 @@ main = do
         waitrepoOpt =
           optional (flagWith' True 'w' "waitrepo" "Waitrepo for each build" <|>
                     flagWith' False 'W' "no-waitrepo" "Do not waitrepo for each build")
-        useChangelogOpt =
-          switchWith 'c' "changelog-notes" "Use spec changelog for Bodhi notes"
+        notesOpt =
+          flagWith' NotesChangelog 'c' "changelog-notes" "Use spec changelog for Bodhi notes" <|>
+          NotesText <$> strOptionLongWith "notes" "NOTES" "Bodhi update notes"
 
 --    yesOpt = switchWith 'y' "yes" "Assume yes for questions"
 

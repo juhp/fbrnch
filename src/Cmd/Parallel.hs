@@ -139,7 +139,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         unless okay $ error' "Quitting"
       when (isNothing msidetagTarget) $ do
         let spec = packageSpec pkg
-        bodhiUpdate dryrun mupdate Nothing False spec $
+        bodhiUpdate dryrun mupdate Nothing Nothing spec $
           intercalate "," . map (showNVR . jobNvr) $
           filter ((/= Rawhide) . jobBranch) nvrclogs
       where

@@ -6,6 +6,7 @@ module Bodhi (
   checkAutoBodhiUpdate,
   UpdateType(..),
   UpdateSeverity(..),
+  UpdateNotes(..),
   bodhiUpdate,
   bodhiBuildExists
   )
@@ -102,12 +103,14 @@ bodhiTestingRepo Rawhide = return Nothing
 bodhiTestingRepo br =
   releaseTestingRepo <$> branchRelease br
 
+data UpdateNotes = NotesChangelog | NotesText String
+
 -- FIXME support --no-close-bugs
 -- push comma separated list of builds for a package to bodhi
 bodhiUpdate :: Bool -> (Maybe UpdateType, UpdateSeverity) -> Maybe BugId
-            -> Bool -> FilePath -> String -> IO ()
+            -> Maybe UpdateNotes -> FilePath -> String -> IO ()
 bodhiUpdate _ _ _ _ _ [] = putStrLn "no package to push"
-bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
+bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs = do
   case mupdate of
     Nothing -> return ()
     Just updateType ->
@@ -124,11 +127,14 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
               changelog <- if isJust mreview
                            then getSummaryURL spec
                            else
-                             if usechangelog
-                             then cleanChangelog True spec
-                             else
-                               -- FIXME list open bugs
-                               changeLogPrompt ChangeBodhi spec
+                             case mnotes of
+                               Just NotesChangelog ->
+                                 cleanChangelog True spec
+                               Just (NotesText notes) ->
+                                 return notes
+                               Nothing ->
+                                 -- FIXME list open bugs
+                                 changeLogPrompt ChangeBodhi spec
               if trim (lower changelog) `elem` ["no","n"]
                 then return False
                 else do
@@ -156,7 +162,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
             then do
             putStrLn $ "bodhi submission failed for" +-+ nvrs
             promptEnter "Press Enter to resubmit to Bodhi"
-            bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs
+            bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs
             else
             forM_ updates $ \update ->
             case lookupKey "url" update of
