@@ -5,10 +5,10 @@ module Cmd.Merge (
 where
 
 import Numeric.Natural (Natural)
+import Safe (tailSafe)
 
 import Common
 import Common.System
-
 import Branches
 import Git
 import Package
@@ -46,7 +46,7 @@ mergeCmd dryrun nofetch noprompt mnotrivial showall mfrom =
           then return css
           else do
             -- drop oneline
-            ls <- tail <$> gitLines "show" ["-U1", "--pretty=oneline", commitRef c]
+            ls <- tailSafe <$> gitLines "show" ["-U1", "--pretty=oneline", commitRef c]
             if isTrivialRebuildCommit ls
               then filterOutTrivial (Just (no -1)) cs
               else return css
@@ -65,7 +65,7 @@ mergeBranch :: Bool -> Bool -> Bool -> Bool -> Package
             -> Branch -> Branch -> IO ()
 mergeBranch _ _ _ _ _ _ _ Rawhide = return ()
 mergeBranch _ _ _ _ _ (_,[]) _ _ = return ()
-mergeBranch dryrun build noprompt showall pkg (True, unmerged) from br = do
+mergeBranch dryrun build noprompt showall pkg (True, unmerged@(unmgd:_)) from br = do
   putPkgBrnchHdr pkg br
   isnewrepo <- initialPkgRepo
   putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") +-+ showBranch from ++ ":"
@@ -78,7 +78,7 @@ mergeBranch dryrun build noprompt showall pkg (True, unmerged) from br = do
     putNewLn
   mmerge <-
     if isnewrepo && length unmerged == 1 || noprompt
-    then return $ Just $ commitRef (head unmerged)
+    then return $ Just $ commitRef unmgd
     else refPrompt unmerged ("Press Enter to merge" +-+ showBranch from ++
          (if build then " and build" else "") ++
          (if length unmerged > 1 then "; or give ref to merge" else "") ++

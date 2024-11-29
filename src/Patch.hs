@@ -8,6 +8,8 @@ where
 
 import Common
 
+import Safe (headMay)
+
 simplifyMinimalDiff :: [String] -> [String]
 simplifyMinimalDiff =
   maybeRemoveDiffGit . filterCommon
@@ -50,4 +52,4 @@ isTrivialRebuildCommit ls =
 --    (all . matchPreds (map isPrefixOf ["-Release:", "+Release:"])) ls
 
 removeDiffContext :: [String] -> [String]
-removeDiffContext = filter ((/= ' ') . head)
+removeDiffContext = filter ((/= Just ' ') . headMay)

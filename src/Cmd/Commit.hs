@@ -51,16 +51,16 @@ commitCmd dryrun mopt firstLine unstaged paths = do
                   case clog of
                     [] -> readCommitMsg
                     [msg] -> return msg
-                    msgs ->
+                    (msg:_) ->
                       if firstLine
-                      then return $ removePrefix "- " $ head msgs
+                      then return $ removePrefix "- " msg
                       else do
                         diff <- git "diff" ["-U0", if addall then "HEAD" else "--cached"]
                         let newlogs =
                               filter (\c -> ('+' : c) `elem` lines (unquoteMacros diff)) clog
                         case newlogs of
                           [] -> putStrLn diff >> readCommitMsg
-                          [msg] -> return (removePrefix "- " msg)
+                          [m] -> return (removePrefix "- " m)
                           [m,m'] -> mapM_ putStrLn newlogs >>
                                     return (unlines $ map (removePrefix "- ") [m,"",m'])
                           (m:ms) -> mapM_ putStrLn newlogs >>

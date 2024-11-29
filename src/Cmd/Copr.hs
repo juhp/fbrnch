@@ -24,6 +24,7 @@ import Data.RPM.VerRel (showVerRel)
 import Data.Tuple.Extra (first)
 import Distribution.Fedora.Branch (getActiveBranches, getActiveBranched)
 import Network.HTTP.Query (lookupKey, lookupKey')
+import Safe (headDef)
 import System.Environment.XDG.BaseDir (getUserConfigDir)
 import System.Time.Extra (sleep)
 import Web.Fedora.Copr (coprChroots, fedoraCopr)
@@ -169,27 +170,27 @@ coprCmd dryrun mode force mbuildBy marchs project (breq, pkgs) = do
       actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
       builtChroots <- existingChrootBuilds dryrun user project (Package actualpkg) verrel chroots
       let finalChroots = chroots \\ if force then [] else map taskChroot builtChroots
-      if null finalChroots
-        then putStrLn $ actualpkg ++ '-' : verrel +-+ "built"
-        else
-        case buildBy of
-          SingleBuild -> coprBuild dryrun user project srpm spec finalChroots
-          -- FIXME or default to secondary parallel to previous primary
-          ValidateByRelease -> do
-            let initialChroots =
-                  let primaryArch = chrootArch $ head finalChroots
-                  in map pure $ filter (isArch primaryArch) finalChroots
-                remainingChroots = finalChroots \\ concat initialChroots
-            staggerBuilds srpm spec initialChroots remainingChroots
-          ValidateByArch -> do
-            let initialChroots =
-                  let newestRelease = chrootBranch $ head finalChroots
-                  in map pure $ filter ((== newestRelease) . chrootBranch) finalChroots
-                remainingChroots = finalChroots \\ concat initialChroots
-            staggerBuilds srpm spec initialChroots remainingChroots
-          BuildByRelease -> do
-            let releaseChroots = groupBy sameRelease finalChroots
-            staggerBuilds srpm spec releaseChroots []
+      case finalChroots of
+        [] -> putStrLn $ actualpkg ++ '-' : verrel +-+ "built"
+        (final:_) ->
+          case buildBy of
+            SingleBuild -> coprBuild dryrun user project srpm spec finalChroots
+            -- FIXME or default to secondary parallel to previous primary
+            ValidateByRelease -> do
+              let initialChroots =
+                    let primaryArch = chrootArch final
+                    in map pure $ filter (isArch primaryArch) finalChroots
+                  remainingChroots = finalChroots \\ concat initialChroots
+              staggerBuilds srpm spec initialChroots remainingChroots
+            ValidateByArch -> do
+              let initialChroots =
+                    let newestRelease = chrootBranch final
+                    in map pure $ filter ((== newestRelease) . chrootBranch) finalChroots
+                  remainingChroots = finalChroots \\ concat initialChroots
+              staggerBuilds srpm spec initialChroots remainingChroots
+            BuildByRelease -> do
+              let releaseChroots = groupBy sameRelease finalChroots
+              staggerBuilds srpm spec releaseChroots []
       when morepkgs putNewLn
       where
         staggerBuilds :: FilePath -> FilePath -> [[Chroot]] -> [Chroot] -> IO ()
@@ -281,7 +282,7 @@ coprBuild dryrun user project srpm spec chroots = do
       actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
       -- FIXME which chroot?
       -- FIXME print buildlog size
-      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot (head chroots) +/+ zbid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
+      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot (headDef (error' " nochroot!") chroots) +/+ zbid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
 
 -- FIXME idea: Maybe Seconds to increment FIXME
 -- sleep should have all chroots in pending CoprTask build

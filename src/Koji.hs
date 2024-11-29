@@ -37,6 +37,7 @@ import Data.Time.Format
 import Data.Time.LocalTime
 import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
+import Safe (headMay, tailSafe)
 import Say (sayString)
 import SimplePrompt (promptEnter)
 import System.Exit
@@ -117,7 +118,8 @@ kojiBuild' wait target args = do
   -- for git: drop "Created task: "
   -- init to drop final newline
   unless (B.null out) $
-    logMsg $ (dropPrefix "Task info: " . B.unpack . B.init . B.unlines . tail . B.lines) out
+    -- FIXME include output example here
+    logMsg $ (dropPrefix "Task info: " . B.unpack . B.init . B.unlines . tailSafe . B.lines) out
   if ret == ExitSuccess
     then do
     let kojiurl = B.unpack $ last $ B.words out
@@ -285,9 +287,11 @@ createKojiSidetag dryrun br = do
   out <-
     if dryrun
     then return $ "Side tag '" ++ buildtag ++ "'"
-    else
-      -- FIXME head
-      head . lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
+    else do
+      ls <- lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
+      case ls of
+        [] -> error' "no output from request-side-tag"
+        (l:_) -> return l
   if "Side tag '" `isPrefixOf` out
     then do
     putNewLn

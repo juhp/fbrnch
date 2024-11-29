@@ -5,6 +5,7 @@ module Cmd.SrcDeps (
 where
 
 import Distribution.RPM.Build.Graph
+import Safe (headMay)
 
 import Branches
 import Common
@@ -24,7 +25,7 @@ srcDeps rev macros (rbr,pkgs) = do
   whenM isPkgGitRepo $
     error' "please run from the directory containing the dependency package set"
   listDirectory "." >>=
-    filterM checkPackage . filter ((/= '.') . head) >>=
+    filterM checkPackage . filter ((/= Just '.') . headMay) >>=
     fmap (topsortGraph Combine) . depsGraphDeps rev (map ("-D" +-+) macros) False [] [] False Nothing pkgs
   where
     checkPackage :: FilePath -> IO Bool

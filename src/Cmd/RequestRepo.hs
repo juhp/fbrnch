@@ -4,6 +4,7 @@ module Cmd.RequestRepo (requestRepos) where
 
 import Control.Exception.Extra (retry)
 import Network.HTTP.Directory (httpExists, httpManager)
+import Safe (headMay)
 import SimplePrompt (promptEnter, promptInitial, yesNo)
 import System.Time.Extra (sleep)
 
@@ -45,12 +46,11 @@ requestRepo mock skipcheck resubmit breq pkg = do
       else do
       requests <-
         if skipcheck then return [] else existingRepoRequests
-      unless (null requests) $ do
+      whenJust (headMay requests) $ \request -> do
         putStrLn "Request exists:"
         mapM_ printScmIssue requests
         -- don't resubmit if succeeded
-        -- FIXME head
-        when (resubmit && pagureIssueCloseStatus (head requests) == Just "Processed") $
+        when (resubmit && pagureIssueCloseStatus request == Just "Processed") $
           error' "The last repo request was already successfully Processed"
       when (null requests || resubmit) $ do
         checkNoPagureRepo

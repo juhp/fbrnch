@@ -37,6 +37,7 @@ module Git (
 
 import Data.Char (isSpace)
 import Distribution.Fedora.Branch (getActiveBranches, newerBranch)
+import Safe (tailSafe)
 import Say (sayString)
 import SimpleCmd.Git
 import SimplePrompt
@@ -172,7 +173,7 @@ mkCommit cs =
       case breakEnd isSpace rest of
         -- "(msg txt, date)"
         (plogcs,datep) ->
-          Commit hash (init $ tail $ trim plogcs) (init datep)
+          Commit hash (init $ tailSafe $ trim plogcs) (init datep)
 
 gitPush :: Bool -> Maybe String -> IO ()
 gitPush quiet mref = do

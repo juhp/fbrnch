@@ -362,8 +362,10 @@ approvedReviewBugSession pkg = do
     _ -> error' "more than one review bug found!"
 
 reviewBugToPackage :: Bug -> String
-reviewBugToPackage =
-  head . dropOne ["Request:"] . dropOne ["Review", "Re-Review", "Rename"]  . words . T.unpack . bugSummary
+reviewBugToPackage bug =
+  case (dropOne ["Request:"] . dropOne ["Review", "Re-Review", "Rename"]  . words . T.unpack . bugSummary) bug of
+    [] -> error' $ "failed to determine review package for" +-+ show (bugId bug)
+    (p:_) -> p
   where
     dropOne _ [] = []
     dropOne ks as@(w:ws) = if w `elem` ks then ws else as

@@ -110,19 +110,19 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   nvr <- pkgNameVerRel' br spec
   putNewLn
   mpush <-
-    if null unpushed
-    then return Nothing
-    else do
-      when (not merged || br == Rawhide) $ do
-        -- FIXME should be printed for new package branch
-        putStrLn $ showNVR nvr ++ "\n"
-        putStrLn "Local commits:"
-        displayCommits True unpushed
-        putNewLn
-      -- see mergeBranch for: unmerged == 1 (774b5890)
-      if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
-        then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
-        else return $ Just $ commitRef $ head unpushed
+    case unpushed of
+      [] -> return Nothing
+      (unpd:_) -> do
+        when (not merged || br == Rawhide) $ do
+          -- FIXME should be printed for new package branch
+          putStrLn $ showNVR nvr ++ "\n"
+          putStrLn "Local commits:"
+          displayCommits True unpushed
+          putNewLn
+        -- see mergeBranch for: unmerged == 1 (774b5890)
+        if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
+          then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
+          else return $ Just $ commitRef unpd
   let msidetagTarget = buildoptSidetagTarget opts
   target <- targetMaybeSidetag dryrun True br msidetagTarget
   buildRun spec nvr merged mpush unpushed target msidetagTarget moverride

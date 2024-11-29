@@ -167,8 +167,8 @@ bodhiUpdate dryrun (mupdate,severity) mreview usechangelog spec nvrs = do
     extractBugReferences clog =
       case dropWhile (/= '#') clog of
         "" -> []
-        rest ->
-          case span isDigit (tail rest) of
+        (_:rest) ->
+          case span isDigit rest of
             (ds,more) ->
               -- make sure is contemporary 7-digit bug
               (if length ds > 6 then (ds :) else id) $

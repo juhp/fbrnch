@@ -9,6 +9,7 @@ module Cmd.Scratch (
   ) where
 
 import Data.RPM.NVR (NVR)
+import Safe (tailSafe)
 
 import Branches
 import Common
@@ -68,7 +69,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast allowHEAD marchopts sidetagTarg
                     return $
                       if null excluded
                       then return []
-                      else concatMap tail excluded
+                      else concatMap tailSafe excluded
                   return $ tagArchs \\ (as ++ excludedarchs)
         if stagger
           then do
