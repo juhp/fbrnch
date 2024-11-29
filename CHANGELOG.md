@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.5.1 (2024-11-30)
+- update to fedora-releases-0.2.0 (showBranch and branchDestTag)
+- kojiWaitRepo: now uses request-repo to trigger newrepo
+- 'build': use --notes to set Bodhi update notes text (#59)
+- 'clone' now uses fedpkg for better compatibility (#62)
+- 'copr' refactoring and fix existingChrootBuilds to prevent rebuilds
+- 'create-review': --force to create a new "duplicate" review (#53)
+- 'create-review': include FAS id if can be determined (#42)
+- 'import': prompt whether to build or only push
+- 'parallel': koji-tool tail fail build.log if less than 3 packages in layer
+- 'request-repo': now offers to import the new repo immediately
+- 'request-repo': only post comment if prompt input
+- 'review-package': allow --interactive also for local review
+- 'review-package': summarize long rpmlint error output
+- 'reviews --created': now uses REL_PREP state
+- 'sidetag': add --create
+- 'update': remove %autorelease -b bump when updating version
+- Bodhi: use fedora-releases-0.2
+- Common.System: override cmdFull to avoid weird lazy IO crash
+- Merge: gitMergeable now returns Maybe Bool for reverse ancestry
+- Package pkgNameVerRelDist: add autorelease strict parameter for rpmBuild
+- RpmBuild buildRequires: improve dyn BRs handling
+- dropped all head and tail usage
+- fix merging from new unfetched branch
+- fixup "Push and build" prompt text, which is no longer promptEnter (#47)
+- gitPush: say message and drop "done"
+- sentence-case commit and changelog messages (#38)
+- split CreateReview and UpdateReview out of PkgReview
+- targetMaybeSidetag: now maps "rawhide" to its dist_tag
+
 ## 1.5 (2024-08-17)
 * fedora-releases (using bodhi) replaces fedora-dists (pdc): explicit imports
 - 'bugs': also include product in prefix
