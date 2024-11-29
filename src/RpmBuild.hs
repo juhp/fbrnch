@@ -326,6 +326,7 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
           when (prevsize > currsize) $
             copyFile backup (backup <.> "prev")
         copyFile buildlog (buildlog <.> "prev")
+      -- FIXME also backup successful buildtree (if log ends in "+ exit 0")
       timeIO $
         if not quiet || isShortCircuit mforceshort
         then do

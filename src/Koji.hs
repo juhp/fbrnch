@@ -127,6 +127,7 @@ kojiBuild' wait target args = do
     let kojiurl = B.unpack $ last $ B.words out
         task = (TaskId . read) $ takeWhileEnd isDigit kojiurl
     when wait $ do
+      -- FIXME get actual build time
       timeIO $ kojiWatchTask task
       cmd_ "date" ["+%T"]
     return $ if wait then Right kojiurl else Left task

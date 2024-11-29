@@ -35,4 +35,5 @@ waitrepoCmd dryrun knowntag fetch msidetagTarget = do
       nvr <- pkgNameVerRel' br spec
       target <- targetMaybeSidetag dryrun False br msidetagTarget
       logMsg $ "Waiting for" +-+ showNVR nvr +-+ "to appear in" +-+ target
+      -- FIXME can we get time from koji waitrepo task?
       timeIO $ kojiWaitRepo dryrun True knowntag target nvr

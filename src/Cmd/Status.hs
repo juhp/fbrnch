@@ -99,6 +99,7 @@ statusCmd nofetch reviews latestcommit (breq, pkgs) = do
                           else do
                           -- FIXME hide testing if ga/stable
                           putStr $ showNVR nvr +-+ "(" ++ unwords tags ++ ")"
+                          -- FIXME use stable_tag
                           unless (isStable tags) $ do
                             updates <- bodhiUpdates
                                        [makeItem "display_user" "0",

@@ -242,6 +242,7 @@ boolHeader :: Bool -> HeaderShow
 boolHeader b = if b then HeaderMust else HeaderMay
 
 -- FIXME option to filter out dead.packages
+-- FIXME option to pause between packages?
 withPackagesByBranches :: HeaderShow
                        -> Bool
                        -> Maybe GitOpts

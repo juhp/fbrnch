@@ -70,6 +70,7 @@ buildCmd opts (breq, pkgs) = do
     else
     withPackagesByBranches HeaderMay True gitopts singleBrnch (buildBranch mlastOfPkgs opts) (breq, pkgs)
 
+-- FIXME display existing sidetag early
 -- FIXME what if untracked files
 -- FIXME --merge instead of --yes confusing
 buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()

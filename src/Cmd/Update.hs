@@ -50,6 +50,7 @@ updatePkg onlysources force allowHEAD distgit mver pkg br = do
   spec <- if allowHEAD
           then findSpecfile
           else localBranchSpecFile pkg br
+  -- FIXME detect uncommitted version bump, ie old committed version
   (curver,_) <- pkgVerRel spec
   vdiff <- filter ("Version:" `isInfixOf`) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
   unless (length vdiff `elem` [0,2]) $
