@@ -101,12 +101,12 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         else do
           unless (br == Rawhide) $
             whenJust mnewer $ \newer ->
-            putStrLn $ show newer +-+ "branch not mergeable"
+            putStrLn $ showBranch newer +-+ "branch not mergeable"
           return False
   let spec = packageSpec pkg
   checkForSpecFile spec
   checkSourcesMatch pkg (RelBranch br) spec
-  unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
+  unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
   nvr <- pkgNameVerRel' br spec
   putNewLn
   mpush <-
@@ -149,7 +149,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptUseChangelog opts) spec $ showNVR nvr
               whenJust moverride $ \days -> do
                 tags <- maybeTimeout 30 $ kojiNVRTags nvr
-                unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+                unless (any (`elem` tags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-override"]) $
                   bodhiCreateOverride dryrun (Just days) nvr
             when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
               when ((isJust moverride && mwaitrepo /= Just False) ||
@@ -164,7 +164,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         _ -> do
           mbuildref <-
             case mpush of
-              Nothing -> Just <$> git "show-ref" ["--hash", "origin/" ++ show br]
+              Nothing -> Just <$> git "show-ref" ["--hash", "origin/" ++ showBranch br]
               _ -> return mpush
           opentasks <- kojiOpenTasks pkg mbuildref target
           case opentasks of
@@ -193,7 +193,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                         Nothing -> return $ isNothing mlatest
                         Just newest -> do
                           newestTags <- kojiNVRTags newest
-                          unless (any (`elem` newestTags) [show br, show br ++ "-updates", show br ++ "-updates-pending"]) $ do
+                          unless (any (`elem` newestTags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-updates-pending"]) $ do
                             -- FIXME print how many days left
                             putStrLn $ "Warning:" +-+ showNVR newest +-+ "still in testing?"
                             promptEnter "Press Enter to continue"
@@ -204,8 +204,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 unless dryrun krbTicket
                 whenJust mpush $ \ref ->
                   unless dryrun $
-                  gitPush False $ Just $ ref ++ ":" ++ show br
-                unlessM (null <$> gitOneLineLog ("origin/" ++ show br ++ "..HEAD")) $
+                  gitPush False $ Just $ ref ++ ":" ++ showBranch br
+                unlessM (null <$> gitOneLineLog ("origin/" ++ showBranch br ++ "..HEAD")) $
                   unless dryrun $ do
                   ok <- yesNo "Unpushed changes remain, continue"
                   unless ok $ error' "aborted"

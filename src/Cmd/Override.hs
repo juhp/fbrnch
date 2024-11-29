@@ -46,7 +46,7 @@ overrideCmd dryrun OverrideCreate mduration nowait breqpkgs = do
       nvr <- pkgNameVerRel' br spec
       putStrLn $ showNVR nvr
       tags <- kojiNVRTags nvr
-      unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+      unless (any (`elem` tags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-override"]) $
         unlessM (checkAutoBodhiUpdate br) $
         bodhiCreateOverride dryrun mduration nvr
 overrideCmd _dryrun OverrideList _mduration _nowait (_breq,pkgs) =

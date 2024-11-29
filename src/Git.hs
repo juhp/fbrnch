@@ -59,7 +59,7 @@ gitBool c args =
 -- Just False => reverse ancestor
 gitMergeable :: Bool -> Branch -> IO (Maybe Bool,[Commit])
 gitMergeable origin br = do
-  let ref = (if origin then "origin/" else "") ++ show br
+  let ref = (if origin then "origin/" else "") ++ showBranch br
   mancestor <- do
     ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
     if ancestor
@@ -71,9 +71,9 @@ gitMergeable origin br = do
         else
         if not origin
         then do
-          origancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", "origin/" ++ show br]
+          origancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", "origin/" ++ showBranch br]
           if origancestor
-            then error $ "origin/" ++ show br +-+ "is ancestor but not" +-+ show br
+            then error $ "origin/" ++ showBranch br +-+ "is ancestor but not" +-+ showBranch br
             else return Nothing
         else return Nothing
   commits <- gitOneLineLog ("HEAD.." ++ ref)
@@ -82,9 +82,9 @@ gitMergeable origin br = do
       then do
       diff <- git "diff" [ref]
       unless (null diff) $ do
-        putStrLn $ "current branch is ahead of newer" +-+ show br +-+ "!!"
+        putStrLn $ "current branch is ahead of newer" +-+ showBranch br +-+ "!!"
         promptEnter "Press Enter if you want to continue"
-      else putStrLn $ "current branch" +-+ "is diverged from" +-+ show br
+      else putStrLn $ "current branch" +-+ "is diverged from" +-+ showBranch br
   return (mancestor, commits)
 
 -- FIXME use Package
@@ -125,7 +125,7 @@ newerMergeable pkg br =
     locals <- localBranches True
     case mnewer of
       Just newer -> do
-        (mancestor,commits) <- gitMergeable (show newer `notElem` locals) newer
+        (mancestor,commits) <- gitMergeable (showBranch newer `notElem` locals) newer
         return (mancestor == Just True, commits, Just newer)
       Nothing -> return (False,[],Nothing)
 
@@ -305,11 +305,11 @@ gitSwitchBranch = gitSwitchBranchVerbose False False
 gitSwitchBranch' :: Bool -> Branch -> IO Bool
 gitSwitchBranch' quiet br = do
   localbranches <- gitLines "branch" ["--format=%(refname:short)"]
-  if show br `elem` localbranches
+  if showBranch br `elem` localbranches
     then do
     current <- gitCurrentBranch
     when (current /= RelBranch br) $
-      git_ "switch" ["-q", show br]
+      git_ "switch" ["-q", showBranch br]
     return True
     else do
     -- check remote branch exists
@@ -323,10 +323,10 @@ gitSwitchBranch' quiet br = do
       then do
       name <- getDirectoryName
       unless quiet $
-        warning $ name +-+ show br +-+ "branch does not exist!"
+        warning $ name +-+ showBranch br +-+ "branch does not exist!"
       return False
       else do
-      git_ "checkout" ["-q", "-b", show br, "--track", "origin/" ++ show br]
+      git_ "checkout" ["-q", "-b", showBranch br, "--track", "origin/" ++ showBranch br]
       return True
 
 checkIfRemoteBranchExists :: AnyBranch -> IO Bool

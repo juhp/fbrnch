@@ -201,7 +201,7 @@ putPkgHdr pkg =
 
 putPkgBrnchHdr :: Package -> Branch -> IO ()
 putPkgBrnchHdr pkg br =
-  putStrLn $ "\n==" +-+ unPackage pkg +-+ show br +-+ "=="
+  putStrLn $ "\n==" +-+ unPackage pkg +-+ showBranch br +-+ "=="
 
 putPkgAnyBrnchHdr :: Package -> AnyBranch -> IO ()
 putPkgAnyBrnchHdr pkg br =
@@ -365,7 +365,7 @@ clonePkg quiet cloneuser mbr pkg = do
     else do
     let mbranch = case mbr of
           Nothing -> []
-          Just br -> ["--branch", show br]
+          Just br -> ["--branch", showBranch br]
     case cloneuser of
       AnonClone -> do
         msgout

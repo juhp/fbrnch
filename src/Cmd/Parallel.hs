@@ -102,7 +102,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         unlessM (checkAutoBodhiUpdate rbr) $
           error' "You must use --target/--sidetag to build package layers for this branch"
       when (length branches > 1) $
-        putStrLn $ "#" +-+ show rbr
+        putStrLn $ "#" +-+ showBranch rbr
       target <- targetMaybeSidetag dryrun True rbr mtargetSidetag
       nvrclogs <- concatMapM (timeIO . parallelBuild target rbr)
                       (zip [firstlayer..length allLayers] $
@@ -127,7 +127,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       krbTicket
       currentbranch <- gitCurrentBranch
       putStrLn $ "= Building" +-+ pluralException (length brs) Nothing "branch" "branches" +-+ "in parallel:"
-      putStrLn $ unwords $ map show brs
+      putStrLn $ unwords $ map showBranch brs
       jobs <- mapM setupBranch brs
       (failures,nvrclogs) <- timeIO $ watchJobs (length jobs == 1) Nothing [] [] jobs
       -- switch back to the original branch
@@ -151,7 +151,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
           when (mmerge /= Just False) $ mergeNewerBranch pkg br
           job <- startBuild Nothing 0 False (length brs) target pkg br "." >>= async
           unless dryrun $ sleep delay
-          return (show br,job)
+          return (showBranch br,job)
 
     mergeNewerBranch :: Package -> Branch -> IO ()
     mergeNewerBranch pkg br = do
@@ -251,7 +251,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       let spec = packageSpec pkg
       checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
-      unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
+      unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
       if null unpushed
         then
         when mustpush $ do
@@ -283,7 +283,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
           sayString $ color Green (showNVR nvr) +-+ "is already" +-+ color Green "built"
           when (br /= Rawhide && morelayers && target == branchTarget br) $ do
             tags <- kojiNVRTags nvr
-            unless (any (`elem` tags) [show br, show br ++ "-updates", show br ++ "-override"]) $
+            unless (any (`elem` tags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-override"]) $
               unlessM (checkAutoBodhiUpdate br) $
               bodhiCreateOverride dryrun Nothing nvr
           return $ do
@@ -305,7 +305,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
               maybe "" (\l -> "in layer" +-+ show l) mlayer
             putNewLn
             putStrLn changelog
-          buildref <- git "show-ref" ["--hash", "origin/" ++ show br]
+          buildref <- git "show-ref" ["--hash", "origin/" ++ showBranch br]
           opentasks <- kojiOpenTasks pkg (Just buildref) target
           case opentasks of
             [task] -> do

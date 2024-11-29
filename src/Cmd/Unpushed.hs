@@ -28,7 +28,7 @@ unpushedCmd checknvr latest bump (breq, pkgs) =
       if not brExists
         then do
         name <- getDirectoryName
-        putStrLn $ name +-+ "has no branch" +-+ show br
+        putStrLn $ name +-+ "has no branch" +-+ showBranch br
         else do
         gitSwitchBranch rbr
         let spec = packageSpec pkg
@@ -38,7 +38,7 @@ unpushedCmd checknvr latest bump (breq, pkgs) =
                      then unPackage pkg else "") +-+
                     case breq of
                       Branches brs | length brs <= 1 -> ""
-                      _ -> show br
+                      _ -> showBranch br
               in if null pref then "" else pref ++ ":"
         haveSpec <- doesFileExist spec
         if not haveSpec
@@ -53,7 +53,7 @@ unpushedCmd checknvr latest bump (breq, pkgs) =
             putStrLn "undefined NVR!\n"
             putStr "HEAD "
           unpushed <- gitShortLogN (if latest then Just 1 else Nothing) $
-                      Just $ "origin/" ++ show br ++ "..HEAD"
+                      Just $ "origin/" ++ showBranch br ++ "..HEAD"
           if null unpushed
             then
             when bump $ bumpPkg False False Nothing Nothing pkg rbr

@@ -78,7 +78,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
         mbidsession <- bzReviewSession
         urls <- forM newbranches $ \ br -> do
           when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br Nothing]
-          when (length branches' > 1) $ putStr $ show br ++ " "
+          when (length branches' > 1) $ putStr $ showBranch br ++ " "
           -- 1. Can timeout like this:
           -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
           -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
@@ -90,7 +90,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
           -- misconfiguration and was unable to complete
           -- your request.</p> [...]
           -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
-          u <- fedpkg "request-branch" [show br]
+          u <- fedpkg "request-branch" [showBranch br]
           putStrLn u
           return u
         whenJust mbidsession $ \(bid,session) ->
@@ -114,7 +114,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
       let pkgPrefix = if multiple then unPackage pkg ++ ": " else ""
       forM_ branches $ \ br ->
         when (br `elem` existing) $
-        putStrLn $ pkgPrefix ++ show br +-+ "branch already exists"
+        putStrLn $ pkgPrefix ++ showBranch br +-+ "branch already exists"
       let brs' = branches \\ existing
       if null brs'
         then return []
@@ -122,7 +122,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
         current <- fedoraBranchesNoRawhide $ pagurePkgBranches (unPackage pkg)
         forM_ brs' $ \ br ->
           when (br `elem` current) $
-          putStrLn $ pkgPrefix ++ show br +-+ "remote branch already exists"
+          putStrLn $ pkgPrefix ++ showBranch br +-+ "remote branch already exists"
         let newbranches = brs' \\ current
         if null newbranches
           then return []
@@ -142,12 +142,12 @@ requestPkgBranches quiet multiple mock breq pkg = do
     notExistingRequest requests br = do
       let processed = filter processedIssueFilter requests
       unless (null processed) $ do
-        putStrLn $ "Branch request already exists for" +-+ unPackage pkg ++ ":" ++ show br
+        putStrLn $ "Branch request already exists for" +-+ unPackage pkg ++ ":" ++ showBranch br
         mapM_ printScmIssue processed
       return $ null processed
       where
         processedIssueFilter issue =
-          pagureIssueTitle issue == ("New Branch \"" ++ show br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"")
+          pagureIssueTitle issue == ("New Branch \"" ++ showBranch br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"")
           &&
           pagureIssueCloseStatus issue == Just "Processed"
 

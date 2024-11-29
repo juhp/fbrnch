@@ -56,7 +56,7 @@ mergeable :: Branch -> Branch -> IO (Bool,[Commit])
 mergeable _ Rawhide = return (False,[])
 mergeable from _ = do
   locals <- localBranches True
-  (mancestor, unmerged) <- gitMergeable (show from `notElem` locals) from
+  (mancestor, unmerged) <- gitMergeable (showBranch from `notElem` locals) from
   return (mancestor == Just True, unmerged)
 
 -- FIXME return merged ref
@@ -68,10 +68,10 @@ mergeBranch _ _ _ _ _ (_,[]) _ _ = return ()
 mergeBranch dryrun build noprompt showall pkg (True, unmerged) from br = do
   putPkgBrnchHdr pkg br
   isnewrepo <- initialPkgRepo
-  putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") +-+ show from ++ ":"
+  putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") +-+ showBranch from ++ ":"
   displayCommits showall unmerged
   putNewLn
-  unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
+  unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"
     displayCommits showall unpushed
@@ -79,7 +79,7 @@ mergeBranch dryrun build noprompt showall pkg (True, unmerged) from br = do
   mmerge <-
     if isnewrepo && length unmerged == 1 || noprompt
     then return $ Just $ commitRef (head unmerged)
-    else refPrompt unmerged ("Press Enter to merge" +-+ show from ++
+    else refPrompt unmerged ("Press Enter to merge" +-+ showBranch from ++
          (if build then " and build" else "") ++
          (if length unmerged > 1 then "; or give ref to merge" else "") ++
          "; or 'no' to skip merge")
@@ -87,17 +87,17 @@ mergeBranch dryrun build noprompt showall pkg (True, unmerged) from br = do
   gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ ref -> do
     locals <- localBranches True
-    unless (show from `elem` locals) $
-      git_ "fetch" ["origin", show from ++ ":" ++ show from]
+    unless (showBranch from `elem` locals) $
+      git_ "fetch" ["origin", showBranch from ++ ":" ++ showBranch from]
     unless dryrun $
       -- FIXME merge from origin by default not local branch
       git_ "merge" ["--quiet", ref]
 mergeBranch dryrun build noprompt showall pkg (False,unmerged) from br = do
   unless build $ putPkgBrnchHdr pkg br
-  putStrLn $ show from +-+ "branch is not directly mergeable:"
+  putStrLn $ showBranch from +-+ "branch is not directly mergeable:"
   displayCommits False unmerged
   putNewLn
-  unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
+  unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"
     displayCommits showall unpushed

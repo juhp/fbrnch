@@ -10,6 +10,7 @@ module Branches (
   pagurePkgBranches,
   mockRoot,
   Branch(..),
+  showBranch,
   AnyBranch(..),
   anyBranch,
   isRelBranch,
@@ -34,7 +35,7 @@ import Data.Either (partitionEithers)
 import Distribution.Fedora.Branch (Branch(..), eitherBranch, getFedoraBranched,
                                    getFedoraBranches, getLatestFedoraBranch,
                                    readActiveBranch, eitherActiveBranch,
-                                   readBranch)
+                                   readBranch, showBranch)
 import SimpleCmd.Git
 import SimplePrompt (promptEnter, promptInitial)
 import qualified System.Info (arch)
@@ -57,7 +58,7 @@ isRelBranch (RelBranch _) = True
 isRelBranch _ = False
 
 instance Show AnyBranch where
-  show (RelBranch br) = show br
+  show (RelBranch br) = showBranch br
   show (OtherBranch obr) = obr
 
 activeBranches :: [Branch] -> [String] -> [Branch]
@@ -170,13 +171,13 @@ listOfBranches distgit active (Branches brs) =
     forM_ brs $ \ br ->
           if active
             then unless (br `elem` activeBrs) $
-                 error' $ show br +-+ "is not an active branch"
+                 error' $ showBranch br +-+ "is not an active branch"
             else
             case br of
               Fedora _ -> do
                 let latest = maximum (delete Rawhide activeBrs)
                 when (br > latest) $
-                  error' $ show br +-+ "is newer than latest branch"
+                  error' $ showBranch br +-+ "is newer than latest branch"
               -- FIXME also check for too new EPEL
               _ -> return ()
     return brs
@@ -235,7 +236,7 @@ branchVersion (EPELNext n) = show n
 
 getRequestedBranches :: [String] -> BranchesReq -> IO [Branch]
 getRequestedBranches existing breq = do
-  activenew <- filter (\b -> show b `notElem` existing) <$> getFedoraBranched
+  activenew <- filter (\b -> showBranch b `notElem` existing) <$> getFedoraBranched
   case breq of
     Branches brs -> if null brs
                     then branchingPrompt activenew
@@ -251,7 +252,7 @@ getRequestedBranches existing breq = do
     branchingPrompt :: [Branch] -> IO [Branch]
     branchingPrompt active = do
       inp <- promptInitial "Enter required branches" $
-             unwords $ map show $ take 2 active
+             unwords $ map showBranch $ take 2 active
       let abrs = map anyBranch $ words inp
         in if all isRelBranch abrs
            then return $ map onlyRelBranch abrs
@@ -259,7 +260,7 @@ getRequestedBranches existing breq = do
 
     confirmBranches :: [Branch] -> [Branch] -> IO [Branch]
     confirmBranches activenew requested = do
-      inp <- promptInitial "Confirm branches to request" $ unwords (map show requested)
+      inp <- promptInitial "Confirm branches to request" $ unwords (map showBranch requested)
       let (errs,oks) = partitionEithers $
                        map (eitherActiveBranch activenew) $ words inp
       if null errs

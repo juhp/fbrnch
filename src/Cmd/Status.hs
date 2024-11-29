@@ -49,7 +49,7 @@ statusCmd nofetch reviews latestcommit (breq, pkgs) = do
         if not brExists
           then do
           name <- getDirectoryName
-          putStrLn $ name +-+ "has no branch" +-+ show br
+          putStrLn $ name +-+ "has no branch" +-+ showBranch br
           else do
           gitSwitchBranch rbr
           let spec = packageSpec pkg
@@ -57,7 +57,7 @@ statusCmd nofetch reviews latestcommit (breq, pkgs) = do
           if not exists
             then
             ifM initialPkgRepo
-            (putStrLn $ show br ++ ": initial repo")
+            (putStrLn $ showBranch br ++ ": initial repo")
             (putStrLn $ "missing" +-+ spec)
             else do
             mnvr <- pkgNameVerRel br spec
@@ -75,7 +75,7 @@ statusCmd nofetch reviews latestcommit (breq, pkgs) = do
                 --     unless (null unmerged) $ do
                 --       putStrLn $ "Newer commits in" +-+ show newerBr ++ ":"
                 --       mapM_ putStrLn unmerged
-                munpushed <- gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD"
+                munpushed <- gitShortLog1 $ Just $ "origin/" ++ showBranch br ++ "..HEAD"
                 case munpushed of
                   Nothing -> do
                     mbuild <- kojiGetBuildID fedoraHub (showNVR nvr)
@@ -122,7 +122,7 @@ statusCmd nofetch reviews latestcommit (breq, pkgs) = do
                                 (if length pkgs > 1 then unPackage pkg else "") +-+
                                 case breq of
                                   Branches brs | length brs <= 1 -> ""
-                                  _ -> show br
+                                  _ -> showBranch br
                           in if null pref then "" else pref ++ ":"
                     in putStrLn $ prefix +-+ showCommit unpushed
       where

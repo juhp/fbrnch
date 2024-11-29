@@ -49,5 +49,5 @@ sideTagsCmd dryrun mmode brs = do
 
     addSideTag :: Branch -> IO ()
     addSideTag br =
-      whenM (yesNo $ "Create" +-+ indefinite (show br) +-+ "user sidetag") $
+      whenM (yesNo $ "Create" +-+ indefinite (showBranch br) +-+ "user sidetag") $
       void $ createKojiSidetag dryrun br

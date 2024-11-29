@@ -71,8 +71,8 @@ requestRepo mock skipcheck resubmit breq pkg = do
         branches <- getRequestedBranches [] breq
         forM_ branches $ \ br -> do
           when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br Nothing]
-          putStr $ show br ++ " "
-          fedpkg_ "request-branch" ["--repo", pkg, show br]
+          putStr $ showBranch br ++ " "
+          fedpkg_ "request-branch" ["--repo", pkg, showBranch br]
         putNewLn
         ok <- yesNo $ "Import" +-+ pkg
         when ok $ do

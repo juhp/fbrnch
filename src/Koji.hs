@@ -282,7 +282,7 @@ maybeTimeout secs act = do
 
 createKojiSidetag :: Bool -> Branch -> IO String
 createKojiSidetag dryrun br = do
-  Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (show br)
+  Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (showBranch br)
   out <-
     if dryrun
     then return $ "Side tag '" ++ buildtag ++ "'"
@@ -316,7 +316,7 @@ targetMaybeSidetag dryrun create br msidetagTarget =
           then createKojiSidetag dryrun br
           else error' "incorrect side-tag create request"
         [tag] -> return tag
-        _ -> error' $ "More than one user side-tag found for" +-+ show br
+        _ -> error' $ "More than one user side-tag found for" +-+ showBranch br
 
 logSay :: TimeZone -> String -> IO ()
 logSay tz str = do
