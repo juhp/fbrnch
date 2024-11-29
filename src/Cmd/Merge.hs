@@ -66,7 +66,7 @@ mergeBranch :: Bool -> Bool -> Bool -> Bool -> Package
 mergeBranch _ _ _ _ _ _ _ Rawhide = return ()
 mergeBranch _ _ _ _ _ (_,[]) _ _ = return ()
 mergeBranch dryrun build noprompt showall pkg (True, unmerged@(unmgd:_)) from br = do
-  putPkgBrnchHdr pkg br
+  unless build $ putPkgBrnchHdr pkg br
   isnewrepo <- initialPkgRepo
   putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") +-+ showBranch from ++ ":"
   displayCommits showall unmerged
