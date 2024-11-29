@@ -12,7 +12,8 @@ import Common.System
 import qualified Common.Text as T
 
 import Network.URI
-import SimplePrompt (promptEnter, yesNoDefault)
+import SimplePrompt (promptEnter)
+import SimplePrompt.Internal (runPrompt, mapInput, getPromptLine)
 
 import Branches
 import Bugzilla
@@ -59,12 +60,14 @@ importCmd existingrepo mock (breq, ps) = do
         fedpkg_ "import" [srpmfile]
         git_ "commit" ["--message", "Import rhbz#" ++ show bid]
         nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
-        ok <- yesNoDefault True $ "Push and build" +-+ showNVR nvr
-        when ok $ do
+        mbuild <- promptPushBuild $ "Press Enter to Push & B[uild]" +-+ showNVR nvr ++ ", or just P[ush], or N[o] to skip? [Y/n/b/p]"
+        when (mbuild /= Just False) $ do
           gitPush True Nothing
-          -- FIXME build more branches
-          kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
-          putBugBuild False session bid nvr
+          when (mbuild == Just True) $ do
+            -- FIXME check package exists in koji (for instant import)
+            -- FIXME build more branches
+            kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
+            putBugBuild False session bid nvr
         existing <- fedoraBranchesNoRawhide (localBranches False)
         when (null existing) $ do
           brs <- getRequestedBranches [] breq
@@ -72,6 +75,21 @@ importCmd existingrepo mock (breq, ps) = do
             requestPkgBranches False False mock (Branches brs) (Package pkg)
       when (pkg /= takeFileName dir) $
         setCurrentDirectory dir
+
+    promptPushBuild = runPrompt . mapInput maybePush . getPromptLine
+      where
+        maybePush inp =
+          case lower inp of
+            "" -> Just (Just True)
+            "y" -> Just (Just True)
+            "yes" -> Just (Just True)
+            "b" -> Just (Just True)
+            "build" -> Just (Just True)
+            "p" -> Just Nothing
+            "push" -> Just Nothing
+            "n" -> Just (Just False)
+            "no" -> Just (Just False)
+            _ -> Nothing
 
 downloadReviewSRPM :: Bool -> Bool -> String -> Int -> BugzillaSession
                    -> IO FilePath
