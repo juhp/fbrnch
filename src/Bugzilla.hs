@@ -438,13 +438,15 @@ putBugVer bug = do
   where
     pref = T.unwords (bugProduct bug : bugVersion bug)
 
+bzUrl :: BugId -> String
+bzUrl bid = "https://" <> T.unpack brc <> "/show_bug.cgi?id=" <> show bid
+
 putBugId :: BugId -> IO ()
-putBugId bid =
-  putStrLn $ "https://" <> T.unpack brc <> "/show_bug.cgi?id=" <> show bid
+putBugId = putStrLn . bzUrl
 
 putBugURLStatus :: Bug -> IO ()
 putBugURLStatus bug = do
-  putStr $ "https://" <> T.unpack brc <> "/show_bug.cgi?id=" <> show (bugId bug)
+  putStr $ bzUrl $ bugId bug
   T.putStrLn $ " (" <> bugStatus bug <> ")"
 
 -- uniq for lists
