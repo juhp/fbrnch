@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Bodhi (
   bodhiCreateOverride,
@@ -11,12 +11,10 @@ module Bodhi (
   )
 where
 
-#if MIN_VERSION_aeson(2,0,0)
-import Data.Aeson.Key (fromText)
-#endif
-import Data.Aeson.Types (Object, (.:), parseEither)
 import Data.Char (isDigit)
 import Data.RPM.NVR (NVR)
+import Distribution.Fedora.Branch (branchRelease)
+import Distribution.Fedora.Release (Release(..))
 import Fedora.Bodhi hiding (bodhiUpdate)
 import SimplePrompt (promptEnter, promptNonEmpty)
 import Text.Read
@@ -27,30 +25,13 @@ import Branches
 import Bugzilla (BugId)
 import Common
 import Common.System
-import qualified Common.Text as T
 import Package
 import Types (ChangeType(ChangeBodhi))
 
 checkAutoBodhiUpdate :: Branch -> IO Bool
 checkAutoBodhiUpdate Rawhide = return True
--- epel7 returns 'create_automatic_updates: null' !
-checkAutoBodhiUpdate (EPEL 7) = return False
--- not sure how to best handle next
-checkAutoBodhiUpdate (EPELNext _) = return False
 checkAutoBodhiUpdate br =
-  lookupKey'' "create_automatic_updates" <$> bodhiRelease (show br)
-  where
-    -- Error in $: key "create_automatic_updates" not found
-    lookupKey'' :: T.Text -> Object -> Bool
-    lookupKey'' k obj =
-      let errMsg e = error $ e +-+ show obj in
-        -- bodhi-hs has lookupKeyEither
-        either errMsg id $ parseEither (.: fromText k) obj
-
-#if !MIN_VERSION_aeson(2,0,0)
-    fromText :: T.Text -> T.Text
-    fromText = id
-#endif
+  releaseAutomaticUpdates <$> branchRelease br
 
 -- FIXME should determine 3 days for branched devel release
 -- FIXME handle expired override?
@@ -118,12 +99,8 @@ instance Read UpdateSeverity where
 
 bodhiTestingRepo :: Branch -> IO (Maybe String)
 bodhiTestingRepo Rawhide = return Nothing
-bodhiTestingRepo br = do
-  obj <- bodhiRelease (show br)
-  return $
-    case lookupKey "testing_repository" obj :: Maybe String of
-      Nothing -> Nothing
-      Just _ -> lookupKey' "testing_tag" obj
+bodhiTestingRepo br =
+  releaseTestingRepo <$> branchRelease br
 
 -- FIXME support --no-close-bugs
 -- push comma separated list of builds for a package to bodhi
