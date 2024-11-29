@@ -37,6 +37,8 @@ import Data.Time.Format
 import Data.Time.LocalTime
 import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
+import Distribution.Fedora.Branch (branchRelease)
+import Distribution.Fedora.Release (releaseDistTag)
 import Safe (headMay, tailSafe)
 import Say (sayString)
 import SimplePrompt (promptEnter)
@@ -311,7 +313,11 @@ targetMaybeSidetag :: Bool -> Bool -> Branch -> Maybe SideTagTarget
 targetMaybeSidetag dryrun create br msidetagTarget =
   case msidetagTarget of
     Nothing -> return $ showBranch br
-    Just (Target t) -> return t
+    -- FIXME map "rawhide" to valid target
+    Just (Target t) ->
+      if t == "rawhide"
+      then releaseDistTag <$> branchRelease Rawhide
+      else return t
     Just SideTag -> do
       tags <- kojiUserSideTags (Just br)
       case tags of
