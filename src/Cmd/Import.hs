@@ -41,7 +41,6 @@ importCmd existingrepo mock (breq, ps) = do
         exists <- doesDirectoryExist pkg
         unless exists $ do
           clonePkg True UserClone Nothing pkg
-          putNewLn
         setCurrentDirectory pkg
         -- FIXME: check branch is rawhide
       unlessM isGitRepo $ error' "Not a git repo"
@@ -54,6 +53,7 @@ importCmd existingrepo mock (breq, ps) = do
         (bid,session) <- approvedReviewBugIdSession pkg
         putBugId bid
         srpmfile <- downloadReviewSRPM False True pkg bid session
+        putNewLn
         promptEnter $ "Press Enter to import" +-+ srpmfile
         krbTicket
         fedpkg_ "import" [srpmfile]
