@@ -79,7 +79,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       mtargetSidetag <-
         if msidetagTarget == Just SideTag
         then do
-          tags <- map (head . words) <$> kojiUserSideTags (Just rbr)
+          tags <- kojiUserSideTags (Just rbr)
           case tags of
             [] -> do
               putStrLn "will use new sidetag"

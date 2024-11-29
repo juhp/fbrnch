@@ -262,15 +262,16 @@ kojiTagArchs tag = do
 kojiUserSideTags :: Maybe Branch -> IO [String]
 kojiUserSideTags mbr = do
   user <- fasIdFromKrb
-  case mbr of
-    Nothing -> do
-      maybeTimeout 55 $ kojiListSideTags fedoraKojiHub Nothing (Just user)
-    Just br -> do
-      mtags <- kojiBuildTarget fedoraHub (showBranch br)
-      case mtags of
-        Nothing -> return []
-        Just (buildtag,_desttag) -> do
-          kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)
+  mapMaybe (headMay . words) <$>
+    case mbr of
+      Nothing -> do
+        maybeTimeout 55 $ kojiListSideTags fedoraKojiHub Nothing (Just user)
+      Just br -> do
+        mtags <- kojiBuildTarget fedoraHub (showBranch br)
+        case mtags of
+          Nothing -> return []
+          Just (buildtag,_desttag) -> do
+            kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)
 
 maybeTimeout :: Micro -> IO a -> IO a
 maybeTimeout secs act = do
@@ -312,8 +313,8 @@ targetMaybeSidetag dryrun create br msidetagTarget =
     Nothing -> return $ showBranch br
     Just (Target t) -> return t
     Just SideTag -> do
-      sidetags <- map (head . words) <$> kojiUserSideTags (Just br)
-      case sidetags of
+      tags <- kojiUserSideTags (Just br)
+      case tags of
         [] ->
           if create
           then createKojiSidetag dryrun br
