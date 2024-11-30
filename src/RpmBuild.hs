@@ -120,8 +120,8 @@ getSources spec = do
         uploaded <-
           if isPkgGit then do
             have_sources <- doesFileExist "sources"
-            if have_sources then
-              grep_ src "sources"
+            if have_sources
+              then grep_ src "sources"
               else return False
           else return False
         mfedpkg <- findExecutable "fedpkg"
