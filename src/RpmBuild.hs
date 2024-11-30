@@ -421,7 +421,11 @@ checkSourcesMatch :: Package -> AnyBranch -> FilePath -> IO ()
 checkSourcesMatch pkg br spec = do
   -- "^[Ss]ource[0-9]*:"
   sourcefiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
-  sources <- lines <$> readFile "sources"
+  sources <- do
+    exists <- doesFileExist "sources"
+    if exists
+      then lines <$> readFile "sources"
+      else return []
   gitfiles <- gitLines "ls-files" []
   let missing = filter (\src -> isNothing (find (src `isInfixOf`) sources) &&
                                 src `notElem` gitfiles)
