@@ -16,6 +16,7 @@
 - 'review-package': allow --interactive also for local review
 - 'review-package': summarize long rpmlint error output
 - 'reviews --created': now uses REL_PREP state
+- 'scratch-x86_64','scratch-aarch64': --exclude-arch no longer fast fails
 - 'sidetag': add --create
 - 'update': remove %autorelease -b bump when updating version
 - Bodhi: use fedora-releases-0.2

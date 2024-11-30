@@ -127,16 +127,15 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast allowHEAD marchopts sidetagTarg
               putStrLn $ "Target:" +-+ target
               void $ generateSrpm (Just br) spec >>= kojiScratchBuild target kojiargs
 
--- FIXME default -X to --no-fastfail?
 scratchCmdX86_64 :: Bool -> Bool -> Bool -> Bool -> [SideTagTarget]
                  -> Maybe ScratchSource -> (BranchesReq, [String]) -> IO ()
 scratchCmdX86_64 dryrun rebuildSrpm allowHEAD excludeArch =
-  scratchCmd dryrun False rebuildSrpm False allowHEAD (Just (excludeArchs excludeArch ["x86_64"]))
+  scratchCmd dryrun False rebuildSrpm True allowHEAD (Just (excludeArchs excludeArch ["x86_64"]))
 
 scratchCmdAarch64 :: Bool -> Bool -> Bool -> Bool -> [SideTagTarget]
                   -> Maybe ScratchSource -> (BranchesReq, [String]) -> IO ()
 scratchCmdAarch64 dryrun rebuildSrpm allowHEAD excludeArch =
-  scratchCmd dryrun False rebuildSrpm False allowHEAD (Just (excludeArchs excludeArch ["aarch64"]))
+  scratchCmd dryrun False rebuildSrpm True allowHEAD (Just (excludeArchs excludeArch ["aarch64"]))
 
 excludeArchs :: Bool -> [String] -> Archs
 excludeArchs excl = if excl then ExcludedArchs else Archs
