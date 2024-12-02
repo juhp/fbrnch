@@ -2,7 +2,7 @@
 
 module Bodhi (
   bodhiCreateOverride,
-  bodhiTestingRepo,
+  bodhiTestingRepoTag,
   checkAutoBodhiUpdate,
   UpdateType(..),
   UpdateSeverity(..),
@@ -98,10 +98,13 @@ instance Read UpdateSeverity where
       "urgent" -> RP.lift (R.string s) >> return SeverityUrgent
       _ -> error' "unknown bodhi update severity" >> RP.pfail
 
-bodhiTestingRepo :: Branch -> IO (Maybe String)
-bodhiTestingRepo Rawhide = return Nothing
-bodhiTestingRepo br =
-  releaseTestingRepo <$> branchRelease br
+bodhiTestingRepoTag :: Branch -> IO (Maybe String)
+bodhiTestingRepoTag Rawhide = return Nothing
+bodhiTestingRepoTag br = do
+  rel <- branchRelease br
+  return $ do
+    _ <- releaseTestingRepo rel
+    pure $ releaseTestingTag rel
 
 data UpdateNotes = NotesChangelog | NotesText String
 

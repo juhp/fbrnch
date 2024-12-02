@@ -6,14 +6,14 @@ where
 import Data.Maybe (isJust)
 import SimpleCmd (cmd)
 
-import Bodhi (bodhiTestingRepo)
+import Bodhi (bodhiTestingRepoTag)
 import Branches
 
 -- FIXME use fedora-repoquery library
 -- FIXME default to package
 repoquery :: Branch -> Branch -> [String] -> IO String
 repoquery sysbr br args = do
-  mtesting <- bodhiTestingRepo br
+  mtesting <- bodhiTestingRepoTag br
   let brOpts =
         if sysbr == br
         then []

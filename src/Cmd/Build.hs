@@ -187,11 +187,11 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 when (null unpushed || merged && br /= Rawhide) $ do
                   putStrLn $ showNVR nvr ++ "\n"
                 firstBuild <- do
-                  mtestingRepo <- bodhiTestingRepo br
-                  case mtestingRepo of
+                  mtestingtag <- bodhiTestingRepoTag br
+                  case mtestingtag of
                     Nothing -> return $ isNothing mlatest
-                    Just testing -> do
-                      mnewest <- kojiLatestNVR testing $ unPackage pkg
+                    Just testingtag -> do
+                      mnewest <- kojiLatestNVR testingtag $ unPackage pkg
                       case mnewest of
                         Nothing -> return $ isNothing mlatest
                         Just newest -> do
