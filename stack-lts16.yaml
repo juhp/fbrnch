@@ -14,5 +14,5 @@ extra-deps:
   - simple-prompt-0.2.3
   - haskeline-0.8.0.0
   - http-query-0.1.2
-  - fedora-releases-0.1.0
-  - select-rpms-0.1.0
+  - fedora-releases-0.2.0
+  - select-rpms-0.2.0

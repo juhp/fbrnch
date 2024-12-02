@@ -22,5 +22,5 @@ extra-deps:
   - HsOpenSSL-0.11.7.2
   - simple-prompt-0.2.3
   - haskeline-0.8.0.0
-  - fedora-releases-0.1.0
-  - select-rpms-0.1.0
+  - fedora-releases-0.2.0
+  - select-rpms-0.2.0
