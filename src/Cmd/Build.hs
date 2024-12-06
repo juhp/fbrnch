@@ -138,7 +138,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           putStrLn $ showNVR nvr +-+ "is built"
           when (isJust mpush) $
             error' "Please bump the spec file"
-          when (br /= Rawhide && isNothing msidetagTarget) $ do
+          if br /= Rawhide && isNothing msidetagTarget
+            then do
             updateExists <- maybeTimeout 30 $ bodhiBuildExists nvr
             autoupdate <- checkAutoBodhiUpdate br
             -- FIXME update referenced bugs for autoupdate branch
@@ -155,7 +156,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
               when ((isJust moverride && mwaitrepo /= Just False) ||
                     (autoupdate && mwaitrepo == Just True)) $
-                kojiWaitRepo dryrun True True target nvr
+                kojiWaitRepo dryrun False True target nvr
+            else
+            when (mwaitrepo == Just True) $
+            kojiWaitRepo dryrun False True target nvr
         Just BuildBuilding -> do
           putStrLn $ showNVR nvr +-+ "is already building"
           when (isJust mpush) $
@@ -235,4 +239,4 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
                   when ((isJust moverride && mwaitrepo /= Just False) ||
                         (autoupdate && mwaitrepo == Just True)) $
-                  kojiWaitRepo dryrun True True target nvr
+                  kojiWaitRepo dryrun False True target nvr
