@@ -346,7 +346,7 @@ main = do
       <*> switchWith 'r' "resubmit" "Re-request repo"
       <*> branchesPackages
     , Subcommand "import" "Import new approved created packages from bugzilla review" $
-      importCmd
+      importCmd False
       <$> switchLongWith "existing" "Use an existing repo"
       <*> mockOpt True
       <*> branchesPackages

@@ -26,8 +26,8 @@ import Package
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 -- FIXME add --dryrun
-importCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
-importCmd existingrepo mock (breq, ps) = do
+importCmd :: Bool -> Bool -> Bool -> (BranchesReq,[String]) -> IO ()
+importCmd reporequest existingrepo mock (breq, ps) = do
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviews ReviewRepoCreated
     else return ps
@@ -71,7 +71,7 @@ importCmd existingrepo mock (breq, ps) = do
         existing <- fedoraBranchesNoRawhide (localBranches False)
         when (null existing) $ do
           brs <- getRequestedBranches [] breq
-          unless (null brs) $
+          unless (reporequest || null brs) $
             requestPkgBranches False False mock (Branches brs) (Package pkg)
       when (pkg /= takeFileName dir) $
         setCurrentDirectory dir
