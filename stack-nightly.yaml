@@ -1,6 +1,5 @@
-resolver: nightly-2024-08-13
+resolver: nightly-2024-12-13
 ghc-options:
   HsOpenSSL: -optc=-Wno-incompatible-pointer-types
 extra-deps:
-  - fedora-releases-0.2.0
-  - select-rpms-0.2.0
+  - bugzilla-redhat-1.0.1.1
