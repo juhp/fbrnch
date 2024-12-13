@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.5.1 (2024-11-30)
+## 1.6 (2024-12-13)
 * update to fedora-releases-0.2.0 (showBranch and branchDestTag)
 * kojiWaitRepo: now uses request-repo to trigger newrepo
 - 'build': use --notes to set Bodhi update notes text (#59)
@@ -10,7 +10,7 @@
 * 'create-review': include FAS id if can be determined (#42)
 * 'import': prompt whether to build or only push
 - 'install': add --existing-only, --skip-existing, --no-reinstall options from select-rpms-0.2 (ported from koji-tool --install)
-- 'parallel': koji-tool tail fail build.log if less than 3 packages in layer
+- 'parallel': koji-tool tail of failed build.log if < 3 packages in layer
 * 'request-repo': now offers to import the new repo immediately
 - 'request-repo': only post comment if prompt input
 * 'review-package': allow --interactive also for local review

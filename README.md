@@ -33,7 +33,7 @@ and more.
 ### Cloning and switching branch
 Clone one or more packages:
 ```
-$ fbrnch clone package ...
+$ fbrnch clone [package] ...
 ```
 There are also options to clone all one's packages or another user's packages.
 
@@ -97,13 +97,13 @@ or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f40 package
+$ fbrnch merge f40 [package]
 ```
 which will offer to merge f41 (or up to a git hash you choose) into f40.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build f41 package
+$ fbrnch build f41 [package]
 ```
 will ask if you want to merge newer commits from a newer branch,
 then push and build it.
@@ -114,15 +114,15 @@ Completed branch builds can be pushed to Bodhi.
 
 You can also build all active branches:
 ```
-$ fbrnch build -B package
+$ fbrnch build -B [package]
 ```
 or only all fedora branches:
 ```
-$ fbrnch build -F package
+$ fbrnch build -F [package]
 ```
 or only all epel branches:
 ```
-$ fbrnch build -E package
+$ fbrnch build -E [package]
 ```
 
 Scratch builds can also be done:
@@ -135,12 +135,12 @@ There are arch short-cut aliases: `scratch-x86_64` and `scratch-aarch64`.
 
 You can sort packages by build dependency order:
 ```
-$ fbrnch sort rawhide package1 package2 package3 package4 ...
+$ fbrnch sort rawhide <package1> <package2> <package3> <package4> ...
 ```
 
 ### Local commands
 ```
-$ fbrnch prep rawhide package
+$ fbrnch prep rawhide [package]
 ```
 
 Build locally:
@@ -155,7 +155,7 @@ Or one can specify the path to the package.
 
 Locally build and install:
 ```
-$ fbrnch install package1 package2/ package3 ...
+$ fbrnch install <package1> <package2>/ <package3> ...
 ```
 
 You can use:
@@ -229,7 +229,7 @@ They can be filtered by status with various options like
 
 One can also search for the review(s) of a specific package with:
 ```
-$ fbrnch find-review package-name
+$ fbrnch find-review <package-name>
 ```
 
 Package reviews can be performed with `fbrnch review-package`.
@@ -270,7 +270,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 `$ fbrnch --version`
 
 ```
-1.5
+1.6
 ```
 
 `$ fbrnch --help`
