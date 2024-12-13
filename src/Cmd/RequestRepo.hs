@@ -114,11 +114,11 @@ requestRepo mock skipcheck resubmit breq pkg = do
 
     waitForPagureRepo :: IO ()
     waitForPagureRepo = do
-      sleep 10
       ebrs <- pagureListGitBranches srcfpo $ "rpms/" ++ pkg
       case ebrs of
         Left _err -> do
           putChar '.'
+          sleep 10
           waitForPagureRepo
         Right brs ->
           when (null brs) $
