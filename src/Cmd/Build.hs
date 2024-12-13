@@ -138,10 +138,10 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           putStrLn $ showNVR nvr +-+ "is built"
           when (isJust mpush) $
             error' "Please bump the spec file"
-          if br /= Rawhide && isNothing msidetagTarget
+          autoupdate <- checkAutoBodhiUpdate br
+          if not autoupdate && isNothing msidetagTarget
             then do
             updateExists <- maybeTimeout 30 $ bodhiBuildExists nvr
-            autoupdate <- checkAutoBodhiUpdate br
             -- FIXME update referenced bugs for autoupdate branch
             unless autoupdate $ do
               if updateExists
