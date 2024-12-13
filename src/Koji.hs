@@ -303,9 +303,9 @@ createKojiSidetag dryrun br = do
     let sidetag =
           init . dropWhileEnd (/= '\'') $ dropPrefix "Side tag '" out
     putStrLn $ "Sidetag" +-+ sidetag +-+ "created"
-    logMsg $ "Waiting for" +-+ sidetag +-+ "repo"
-    unless dryrun $
-      cmd_ "koji" ["wait-repo", sidetag]
+    -- logMsg $ "Waiting for" +-+ sidetag +-+ "repo"
+    -- unless dryrun $
+    --   cmd_ "koji" ["wait-repo", sidetag]
     return sidetag
     else error' "'fedpkg request-side-tag' failed"
 
