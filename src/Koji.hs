@@ -301,7 +301,7 @@ targetMaybeSidetag dryrun create br msidetagTarget =
           then createKojiSidetag dryrun br
           else error' "incorrect side-tag create request"
         [tag] -> return tag
-        _ -> error' $ "More than one user side-tag found for" +-+ showBranch br
+        sidetags -> error' $ show (length sidetags) +-+ "user side-tags found for" +-+ showBranch br ++ ":\n" +-+ unwords sidetags
 
 logSay :: TimeZone -> String -> IO ()
 logSay tz str = do
