@@ -15,7 +15,7 @@ module Koji (
   kojiSource,
   kojiBuildTarget,
   kojiTagArchs,
-  kojiWaitRepo,
+  kojiWaitRepoNVR,
   kojiWatchTask,
   kojiWaitTask,
   TaskID,
@@ -202,9 +202,9 @@ kojiBuildBranchNoWait target pkg mref args = do
   Left task <- kojiBuildBranch' False target pkg mref args
   return task
 
-kojiWaitRepo :: Bool -> Bool -> Bool -> String -> NVR -> IO ()
-kojiWaitRepo dryrun quiet knowntag target nvr = do
-  Just (buildtag,desttag) <- kojiBuildTarget fedoraHub target
+kojiWaitRepoNVR :: Bool -> Bool -> Bool -> String -> NVR -> IO ()
+kojiWaitRepoNVR dryrun quiet knowntag target nvr = do
+  (buildtag,desttag) <- kojiBuildTarget' fedoraHub target
   unless dryrun $ do
     mlatest <- kojiLatestNVR buildtag (nvrName nvr)
     if Just nvr == mlatest
@@ -222,7 +222,7 @@ kojiWaitRepo dryrun quiet knowntag target nvr = do
           sleep 40
           -- FIXME need retry
           -- SSL_connect: resource vanished (Connection reset by peer)
-          kojiWaitRepo dryrun quiet knowntag target nvr
+          kojiWaitRepoNVR dryrun quiet knowntag target nvr
           else do
           putStrLn $ "current tags:" +-+ unwords tags
           unless (buildtag `elem` tags) $ do
