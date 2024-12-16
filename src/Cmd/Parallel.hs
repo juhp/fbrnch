@@ -189,9 +189,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       when (null jobs) $
         error' "No jobs run"
       (failures,nvrs) <- watchJobs (length jobs == 1) (if singlelayer then Nothing else Just layernum) [] [] jobs
-      unless (null nvrs) $ do
+      unless (null nvrs && layersleft > 0) $ do
         putNewLn
-        kojiWaitRepoNVRs dryrun target $ map jobNvr nvrs
+        kojiWaitRepoNVRs dryrun False target $ map jobNvr nvrs
       if null failures
         then return nvrs
         else do

@@ -213,30 +213,26 @@ kojiBuildTarget' hub target = do
     Nothing -> error' $ "failed to get BuildTarget for" +-+ target
     Just res -> return res
 
-kojiWaitRepoNVRs :: Bool -> String -> [NVR] -> IO ()
-kojiWaitRepoNVRs dryrun target nvrs = do
+-- FIXME should be NonEmpty
+kojiWaitRepoNVRs :: Bool -> Bool -> String -> [NVR] -> IO ()
+kojiWaitRepoNVRs _ _ _ [] = error' "no NVRs given to wait for"
+kojiWaitRepoNVRs dryrun quiet target nvrs = do
   (buildtag,_desttag) <- kojiBuildTarget' fedoraHub target
   unless dryrun $ do
-    alreadys <- mapM (alreadyAvailable buildtag) nvrs
-    if and alreadys
-      then putStrLn $ pluralOnly nvrs "build" +-+ "already in repo"
-      else do
-      putStrLn $ "waiting for newrepo of" +-+ target
-      (there,out) <- cmdStderrToStdoutIn "koji" (["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag]) ""
-      if there
-        then putStrLn "now in repo"
-        else
-        error' $
-        unlines $
-        filter (`notElem`
-                 ["The --request option is recommended for faster results",
-                   "This tag is not configured for automatic regeneration"]) $
-        lines out
-  where
-    alreadyAvailable :: String -> NVR -> IO Bool
-    alreadyAvailable buildtag nvr = do
-      tags <- cmdLines "koji" ["list-tags", "--build=" ++ showNVR nvr]
-      return $ buildtag `elem` tags
+    tz <- getCurrentTimeZone
+    unless quiet $
+      logSay tz $ "Waiting for" +-+ buildtag +-+ "to have" +-+
+      case nvrs of
+        [nvr] -> showNVR nvr
+        _ -> "builds"
+    (ok,out) <- cmdStderrToStdoutIn "koji" (["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag]) ""
+    unless ok $
+      error' $
+      unlines $
+      filter (`notElem`
+               ["The --request option is recommended for faster results",
+                "This tag is not configured for automatic regeneration"]) $
+      lines out
 
 kojiWaitRepoNVR :: Bool -> Bool -> Bool -> String -> NVR -> IO ()
 kojiWaitRepoNVR dryrun quiet knowntag target nvr = do
