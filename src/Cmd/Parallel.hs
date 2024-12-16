@@ -189,6 +189,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       when (null jobs) $
         error' "No jobs run"
       (failures,nvrs) <- watchJobs (length jobs == 1) (if singlelayer then Nothing else Just layernum) [] [] jobs
+      unless (null nvrs) $ do
+        putNewLn
+        kojiWaitRepoNVRs dryrun target $ map jobNvr nvrs
       if null failures
         then return nvrs
         else do
@@ -288,10 +291,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
             unless (any (`elem` tags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-override"]) $
               unlessM (checkAutoBodhiUpdate br) $
               bodhiCreateOverride dryrun Nothing nvr
-          return $ do
-            when morelayers $
-              kojiWaitRepoNVR dryrun (nopkgs > 5) True target nvr
-            return $ Done pkg nvr br changelog
+          return $ return $ Done pkg nvr br changelog
         Just BuildBuilding -> do
           sayString $ color Yellow (showNVR nvr) +-+ "is already" +-+ color Yellow "building"
           mtask <- kojiGetBuildTaskID fedoraHub $ showNVR nvr
@@ -356,8 +356,6 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
               -- changelog <- changeLogPrompt False spec
               -- bodhiUpdate (fmap fst mBugSess) changelog nvr
               bodhiCreateOverride dryrun Nothing nvr
-          when morelayers $
-            kojiWaitRepoNVR dryrun (nopkgs > 5) True target nvr
 
     -- FIXME map nvr to package?
     renderChangelogs :: [JobDone] -> [String]

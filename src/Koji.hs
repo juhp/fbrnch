@@ -16,6 +16,7 @@ module Koji (
   kojiBuildTarget',
   kojiTagArchs,
   kojiWaitRepoNVR,
+  kojiWaitRepoNVRs,
   kojiWatchTask,
   kojiWaitTask,
   TaskID,
@@ -211,6 +212,31 @@ kojiBuildTarget' hub target = do
   case mres of
     Nothing -> error' $ "failed to get BuildTarget for" +-+ target
     Just res -> return res
+
+kojiWaitRepoNVRs :: Bool -> String -> [NVR] -> IO ()
+kojiWaitRepoNVRs dryrun target nvrs = do
+  (buildtag,_desttag) <- kojiBuildTarget' fedoraHub target
+  unless dryrun $ do
+    alreadys <- mapM (alreadyAvailable buildtag) nvrs
+    if and alreadys
+      then putStrLn $ pluralOnly nvrs "build" +-+ "already in repo"
+      else do
+      putStrLn $ "waiting for newrepo of" +-+ target
+      (there,out) <- cmdStderrToStdoutIn "koji" (["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag]) ""
+      if there
+        then putStrLn "now in repo"
+        else
+        error' $
+        unlines $
+        filter (`notElem`
+                 ["The --request option is recommended for faster results",
+                   "This tag is not configured for automatic regeneration"]) $
+        lines out
+  where
+    alreadyAvailable :: String -> NVR -> IO Bool
+    alreadyAvailable buildtag nvr = do
+      tags <- cmdLines "koji" ["list-tags", "--build=" ++ showNVR nvr]
+      return $ buildtag `elem` tags
 
 kojiWaitRepoNVR :: Bool -> Bool -> Bool -> String -> NVR -> IO ()
 kojiWaitRepoNVR dryrun quiet knowntag target nvr = do

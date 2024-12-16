@@ -11,6 +11,7 @@ module Common (
   (+-+),
   indefinite,
   plural,
+  pluralOnly,
   pluralException,
   singularVerb,
   putNewLn,
@@ -34,6 +35,10 @@ import Data.Semigroup ((<>))
 
 import Network.HTTP.Query ((+/+))
 import SimpleCmd ((+-+))
+
+pluralOnly :: [a] -> String -> String
+pluralOnly xs ns =
+  ns ++ if length xs > 1 then "s" else ""
 
 plural :: Int -> String -> String
 plural i ns =
