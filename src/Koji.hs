@@ -13,7 +13,7 @@ module Koji (
   kojiBuildBranch,
   kojiBuildBranchNoWait,
   kojiSource,
-  kojiBuildTarget,
+  kojiBuildTarget',
   kojiTagArchs,
   kojiWaitRepoNVR,
   kojiWatchTask,
@@ -202,6 +202,16 @@ kojiBuildBranchNoWait target pkg mref args = do
   Left task <- kojiBuildBranch' False target pkg mref args
   return task
 
+-- remove once in koji-hs
+kojiBuildTarget' :: String -- ^ hubUrl
+                 -> String -- ^ target
+                 -> IO (String, String) -- ^ (build-tag,dest-tag)
+kojiBuildTarget' hub target = do
+  mres <- kojiBuildTarget hub target
+  case mres of
+    Nothing -> error' $ "failed to get BuildTarget for" +-+ target
+    Just res -> return res
+
 kojiWaitRepoNVR :: Bool -> Bool -> Bool -> String -> NVR -> IO ()
 kojiWaitRepoNVR dryrun quiet knowntag target nvr = do
   (buildtag,desttag) <- kojiBuildTarget' fedoraHub target
@@ -288,7 +298,7 @@ maybeTimeout secs act = do
 
 createKojiSidetag :: Bool -> Branch -> IO String
 createKojiSidetag dryrun br = do
-  Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub (showBranch br)
+  (buildtag,_desttag) <- kojiBuildTarget' fedoraHub (showBranch br)
   out <-
     if dryrun
     then return $ "Side tag '" ++ buildtag ++ "'"

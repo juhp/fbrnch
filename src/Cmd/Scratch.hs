@@ -62,7 +62,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast allowHEAD marchopts sidetagTarg
               case archopts of
                 Archs as -> return as
                 ExcludedArchs as -> do
-                  Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
+                  (buildtag,_desttag) <- kojiBuildTarget' fedoraHub target
                   tagArchs <- kojiTagArchs buildtag
                   excludedarchs <- do
                     excluded <- map words . filter ("ExcludeArch:" `isPrefixOf`) <$> cmdLines "rpmspec" ["-P", spec]
@@ -76,7 +76,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast allowHEAD marchopts sidetagTarg
           archlist <-
             if null archs
             then do
-              Just (buildtag,_desttag) <- kojiBuildTarget fedoraHub target
+              (buildtag,_desttag) <- kojiBuildTarget' fedoraHub target
               tagArchs <- kojiTagArchs buildtag
               -- prioritize preferred archs
               return $ nub $ priorityArchs ++ tagArchs
