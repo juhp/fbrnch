@@ -8,7 +8,7 @@
 * 'copr' refactoring and fix existingChrootBuilds to prevent rebuilds
 - 'create-review': --force to create a new "duplicate" review (#53)
 * 'create-review': include FAS id if can be determined (#42)
-* 'import': prompt whether to build or only push
+* 'import': prompt whether to build or only push (#47)
 - 'install': add --existing-only, --skip-existing, --no-reinstall options from select-rpms-0.2 (ported from koji-tool --install)
 - 'parallel': koji-tool tail of failed build.log if < 3 packages in layer
 * 'request-repo': now offers to import the new repo immediately
