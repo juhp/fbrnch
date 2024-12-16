@@ -299,7 +299,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
             Nothing -> error' $ "Task for" +-+ showNVR nvr +-+ "not found"
             Just task ->
               return $ do
-              kojiWaitTaskAndRepo (isNothing mlatest) nvr task
+              kojiWaitTaskReport (isNothing mlatest) nvr task
               return $ Done pkg nvr br changelog
         _ -> do
           when (null unpushed) $ do
@@ -313,7 +313,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
             [task] -> do
               putStrLn $ showNVR nvr +-+ "task is already open"
               return $ do
-                kojiWaitTaskAndRepo (isNothing mlatest) nvr task
+                kojiWaitTaskReport (isNothing mlatest) nvr task
                 return $ Done pkg nvr br changelog
             (_:_) -> error' $ show (length opentasks) +-+ "open" +-+ unPackage pkg +-+ "tasks already"
             [] -> do
@@ -329,12 +329,12 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
                   else do
                   task <- kojiBuildBranchNoWait target pkg Nothing $ "--fail-fast" : ["--background" | nopkgs > 5]
                   return $ do
-                    kojiWaitTaskAndRepo (isNothing mlatest) nvr task
+                    kojiWaitTaskReport (isNothing mlatest) nvr task
                     return $ Done pkg nvr br changelog
       where
         -- throws error on build failure
-        kojiWaitTaskAndRepo :: Bool -> NVR -> TaskID -> IO ()
-        kojiWaitTaskAndRepo newpkg nvr task = do
+        kojiWaitTaskReport :: Bool -> NVR -> TaskID -> IO ()
+        kojiWaitTaskReport newpkg nvr task = do
           finish <- retry 3 $ kojiWaitTask task
           if finish
             then sayString $ color Green $ showNVR nvr +-+ "build success"
