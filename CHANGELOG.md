@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.1 (2024-12-17)
+- 'build','parallel': waitrepo now just uses "koji wait-repo --request"
+- Koji targetMaybeSidetag: print sidetags if more than one
+
 ## 1.6 (2024-12-13)
 * update to fedora-releases-0.2.0 (showBranch and branchDestTag)
 * kojiWaitRepo: now uses request-repo to trigger newrepo
