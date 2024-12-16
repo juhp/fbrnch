@@ -29,10 +29,9 @@ module Koji (
 
 import Data.Char (isDigit)
 
-import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Fixed (Micro)
-import Data.RPM.NVR (NVR, maybeNVR, nvrName)
+import Data.RPM.NVR (NVR, maybeNVR)
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Time.LocalTime
@@ -78,12 +77,6 @@ kojiLatestNVR tag pkg = do
              Nothing -> Nothing
              Just bld -> lookupStruct "nvr" bld >>= maybeNVR
 
-kojiLatestNVRRepo :: String -> Int -> String -> IO (Maybe NVR)
-kojiLatestNVRRepo tag event pkg = do
-  mbld <- kojiLatestBuildRepo fedoraHub tag event pkg
-  return $ case mbld of
-             Nothing -> Nothing
-             Just bld -> lookupStruct "nvr" bld >>= maybeNVR
 
 kojiOpenTasks :: Package -> Maybe String -> String -> IO [TaskID]
 kojiOpenTasks pkg mref target = do
@@ -235,60 +228,8 @@ kojiWaitRepoNVRs dryrun quiet target nvrs = do
       lines out
 
 kojiWaitRepoNVR :: Bool -> Bool -> Bool -> String -> NVR -> IO ()
-kojiWaitRepoNVR dryrun quiet knowntag target nvr = do
-  (buildtag,desttag) <- kojiBuildTarget' fedoraHub target
-  unless dryrun $ do
-    mlatest <- kojiLatestNVR buildtag (nvrName nvr)
-    if Just nvr == mlatest
-      then waitRepo buildtag Nothing
-      else do
-      tags <- cmdLines "koji" ["list-tags", "--build=" ++ showNVR nvr]
-      if knowntag
-        then do
-        putStrLn $ "current tags:" +-+ unwords tags
-        waitRepo buildtag Nothing
-        else do
-        mbuilt <- kojiLatestNVR desttag (nvrName nvr)
-        if mbuilt == Just nvr
-          then do
-          sleep 40
-          -- FIXME need retry
-          -- SSL_connect: resource vanished (Connection reset by peer)
-          kojiWaitRepoNVR dryrun quiet knowntag target nvr
-          else do
-          putStrLn $ "current tags:" +-+ unwords tags
-          unless (buildtag `elem` tags) $ do
-            putStrLn $ "no" +-+ showNVR nvr +-+ "tagged" +-+ buildtag
-            promptEnter "Press Enter to continue anyway"
-          waitRepo buildtag Nothing
-  where
-    waitRepo :: String -> Maybe Struct -> IO ()
-    waitRepo buildtag moldrepo = do
-      when (isJust moldrepo) $
-        threadDelay (fromEnum (50 :: Micro)) -- 50s
-      mrepo <- kojiGetRepo fedoraHub buildtag Nothing Nothing
-      case mrepo of
-        Nothing -> error' $ "failed to find koji repo for" +-+ buildtag
-        Just repo ->
-          if moldrepo == mrepo
-          then waitRepo buildtag mrepo
-          else do
-            let mevent = lookupStruct "create_event" repo
-            case mevent of
-              Nothing -> error "create_event not found"
-              Just event -> do
-                latest <- kojiLatestNVRRepo buildtag event (nvrName nvr)
-                tz <- getCurrentTimeZone
-                if latest == Just nvr
-                  then logSay tz $ showNVR nvr +-+
-                       if isNothing moldrepo
-                       then "is in" +-+ buildtag
-                       else "appeared"
-                  else do
-                  when (isNothing moldrepo && not quiet) $
-                    logSay tz $ "Waiting for" +-+ buildtag +-+ "to have" +-+ showNVR nvr
-                  cmdSilent "koji" ["request-repo", "--nowait", "--quiet", buildtag]
-                  waitRepo buildtag mrepo
+kojiWaitRepoNVR dryrun quiet _knowntag target nvr =
+  kojiWaitRepoNVRs dryrun quiet target [nvr]
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do
