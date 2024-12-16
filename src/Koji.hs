@@ -155,7 +155,7 @@ kojiWatchTask task = do
     Just TaskCanceled -> return ()
     _ -> kojiWatchTask task
 
--- FIXME at 4am
+-- FIXME during network disconnection:
 -- Connection timed out: retrying
 -- Connection timed out: retrying
 -- Network.Socket.connect: <socket: 11>: does not exist (No route to host)
