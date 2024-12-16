@@ -247,7 +247,7 @@ kojiUserSideTags mbr = do
         mtags <- kojiBuildTarget fedoraHub (showBranch br)
         case mtags of
           Nothing -> return []
-          Just (buildtag,_desttag) -> do
+          Just (buildtag,_desttag) ->
             kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)
 
 maybeTimeout :: Micro -> IO a -> IO a
