@@ -218,14 +218,7 @@ kojiWaitRepoNVRs dryrun quiet target nvrs = do
       case nvrs of
         [nvr] -> showNVR nvr
         _ -> "builds"
-    (ok,out) <- cmdStderrToStdoutIn "koji" (["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag]) ""
-    unless ok $
-      error' $
-      unlines $
-      filter (`notElem`
-               ["The --request option is recommended for faster results",
-                "This tag is not configured for automatic regeneration"]) $
-      lines out
+    void $ timeIO $ cmd "koji" (["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag])
 
 kojiWaitRepoNVR :: Bool -> Bool -> Bool -> String -> NVR -> IO ()
 kojiWaitRepoNVR dryrun quiet _knowntag target nvr =
