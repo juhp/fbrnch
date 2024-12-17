@@ -189,7 +189,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       when (null jobs) $
         error' "No jobs run"
       (failures,nvrs) <- watchJobs (length jobs == 1) (if singlelayer then Nothing else Just layernum) [] [] jobs
-      unless (null nvrs && layersleft > 0) $ do
+      unless (null nvrs || null nextLayers) $ do
         putNewLn
         kojiWaitRepoNVRs dryrun False target $ map jobNvr nvrs
         putNewLn
@@ -214,13 +214,12 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
                else "failed"
       where
         nopkgs = length layer
-        layersleft = length nextLayers
 
         setupBuild :: Bool -> Int -> String -> IO JobAsync
         setupBuild singlelayer n dir = do
           pkg <- getPackageName dir
           putPkgBrnchHdr pkg br
-          job <- startBuild (if singlelayer then Nothing else Just layernum) n (layersleft > 0) nopkgs target pkg br dir
+          job <- startBuild (if singlelayer then Nothing else Just layernum) n (not $ null nextLayers) nopkgs target pkg br dir
                  >>= async
           unless dryrun $ sleep delay
           return (unPackage pkg,job)
