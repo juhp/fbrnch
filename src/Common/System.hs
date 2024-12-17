@@ -16,10 +16,14 @@ module Common.System (
 #if !MIN_VERSION_simple_cmd(0,2,5)
   timeIO,
 #endif
+  timeIODesc
   ) where
 
 #if !MIN_VERSION_filepath(1,4,2)
 import Data.List
+#endif
+#if MIN_VERSION_time(1,9,0)
+import Data.Time.Format (formatTime, defaultTimeLocale)
 #endif
 import Safe
 import SimpleCmd hiding (
@@ -38,19 +42,36 @@ import System.Directory
 import System.FilePath
 import System.IO
 
-#if !MIN_VERSION_simple_cmd(0,2,5)
 import Control.Exception
 import Data.Time.Clock
 
+#if !MIN_VERSION_simple_cmd(0,2,5)
 timeIO :: IO a -> IO a
-timeIO action = do
+timeIO = timeIOHelper "took"
+#endif
+
+timeIODesc :: String -> IO a -> IO a
+timeIODesc thing = timeIOHelper (thing +-+ "took")
+
+timeIOHelper :: String -> IO a -> IO a
+timeIOHelper msg action = do
   bracket
     getCurrentTime
     (\start -> do
         end <- getCurrentTime
         let duration = diffUTCTime end start
-        putStrLn $ "took" +-+ show duration)
+        putStrLn $ msg +-+ renderDuration duration)
     (const action)
+  where
+#if MIN_VERSION_time(1,9,0)
+    renderDuration dur =
+      let fmtstr
+            | dur < 60 = "%s sec"
+            | dur < 3600 = "%m min %S sec"
+            | otherwise = "%h hours %M min"
+      in formatTime defaultTimeLocale fmtstr dur
+#else
+    renderDuration = show
 #endif
 
 isTty :: IO Bool

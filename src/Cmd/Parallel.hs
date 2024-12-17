@@ -104,7 +104,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       when (length branches > 1) $
         putStrLn $ "#" +-+ showBranch rbr
       target <- targetMaybeSidetag dryrun True rbr mtargetSidetag
-      nvrclogs <- concatMapM (timeIO . parallelBuild target rbr)
+      nvrclogs <- concatMapM (timeIODesc "layer" . parallelBuild target rbr)
                       (zip [firstlayer..length allLayers] $
                        init $ tails layers) -- tails ends in []
       unless (isNothing (fst mupdate)) $
@@ -192,6 +192,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       unless (null nvrs && layersleft > 0) $ do
         putNewLn
         kojiWaitRepoNVRs dryrun False target $ map jobNvr nvrs
+        putNewLn
       if null failures
         then return nvrs
         else do
