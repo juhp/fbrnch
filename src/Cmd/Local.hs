@@ -26,9 +26,9 @@ import Git
 import Package
 import RpmBuild
 
-localCmd :: Bool -> Bool -> Maybe ForceShort -> [BCond]
+localCmd :: Bool -> Bool -> Maybe Natural -> Maybe ForceShort -> [BCond]
          -> (BranchesReq, [String]) -> IO ()
-localCmd quiet debug mforceshort bconds =
+localCmd quiet debug mjobs mforceshort bconds =
   withPackagesByBranches HeaderNone False Nothing ZeroOrOne localBuildPkg
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
@@ -38,7 +38,7 @@ localCmd quiet debug mforceshort bconds =
               then return []
               else builtRpms br spec
       -- FIXME backup BUILD tree to .prev
-      void $ buildRPMs quiet debug True mforceshort bconds rpms br spec
+      void $ buildRPMs quiet debug True mjobs mforceshort bconds rpms br spec
       -- FIXME mark BUILD dir complete
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()

@@ -29,11 +29,11 @@ import RpmBuild
 -- FIXME add --debug or respect --verbose for dnf commands
 -- FIXME handle subpackage renames (eg ghc-rpm-macros-no-prof to ghc-rpm-macros-quick)
 -- FIXME allow building an srpm
--- FIXME ExistingStrategy option
-installCmd :: Bool -> Bool -> Maybe Branch -> Maybe ForceShort -> [BCond]
-           -> Bool -> Bool -> Bool -> Select -> Maybe ExistingStrategy
-           -> (Maybe Branch,[String]) -> IO ()
-installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps select mexisting (mbr, pkgs) = do
+installCmd :: Bool -> Bool -> Maybe Branch -> Maybe Natural
+           -> Maybe ForceShort -> [BCond] -> Bool -> Bool -> Bool -> Select
+           -> Maybe ExistingStrategy -> (Maybe Branch,[String])
+           -> IO ()
+installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuilddeps select mexisting (mbr, pkgs) = do
   when (recurse && isShortCircuit mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch (boolHeader (recurse || length pkgs > 1)) True Nothing installPkg (mbr, pkgs)
@@ -76,7 +76,7 @@ installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps 
                   mpkgdir <- lookForPkgDir rbr ".." dep
                   case mpkgdir of
                     Nothing -> putStrLn $ dep +-+ "not known"
-                    Just pkgdir -> installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps select mexisting (mbr, [pkgdir]) >> putNewLn
+                    Just pkgdir -> installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuilddeps select mexisting (mbr, [pkgdir]) >> putNewLn
                 -- FIXME option to enable/disable installing missing deps
                 -- FIXME --skip-missing-deps or prompt
               else installDeps True spec
@@ -84,7 +84,7 @@ installCmd quiet recurse mfrom mforceshort bconds reinstall nobuild nobuilddeps 
           _wasbuilt <-
             if nobuild
             then return True
-            else buildRPMs quiet False False mforceshort' bconds rpms br spec
+            else buildRPMs quiet False False mjobs mforceshort' bconds rpms br spec
           unless (isShortCircuit mforceshort') $ do
             let nvras = rpmsToNVRAs rpms
                 -- FIXME: prefix = fromMaybe (nvrName nvr) mprefix

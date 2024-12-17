@@ -208,6 +208,7 @@ main = do
       localCmd
       <$> quietOpt "Hide the build.log until it errors"
       <*> debugOpt "show the rpmbuild command"
+      <*> jobsOpt
       <*> optional forceshortOpt
       <*> many bcondOpt
       <*> branchesPackages
@@ -261,6 +262,7 @@ main = do
       <$> quietOpt "Quiet rpmbuild output"
       <*> switchWith 'R' "recurse" "build and install missing deps packages"
       <*> optional (optionLongWith branchM "from" "BRANCH" "Merge branch first")
+      <*> jobsOpt
       <*> optional forceshortOpt
       <*> many bcondOpt
       <*> switchWith 'r' "reinstall" "reinstall rpms"
@@ -707,3 +709,5 @@ main = do
     allowHeadOpt = switchLongWith "allow-head" "allow detached HEAD"
 
     forceOpt = switchWith 'f' "force"
+
+    jobsOpt = optional (optionWith auto 'j' "jobs" "NUM" "Max processes in rpmbuild")

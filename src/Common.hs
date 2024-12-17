@@ -4,6 +4,7 @@ module Common (
   module Control.Monad.Extra,
   module Data.List.Extra,
   module Data.Maybe,
+  Natural,
 #if !MIN_VERSION_base(4,11,0)
   (<>),
 #endif
@@ -34,6 +35,7 @@ import Data.Semigroup ((<>))
 #endif
 
 import Network.HTTP.Query ((+/+))
+import Numeric.Natural (Natural)
 import SimpleCmd ((+-+))
 
 pluralOnly :: [a] -> String -> String

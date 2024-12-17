@@ -4,7 +4,6 @@ module Cmd.Merge (
   getNewerBranch)
 where
 
-import Numeric.Natural (Natural)
 import Safe (tailSafe)
 
 import Common

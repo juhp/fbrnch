@@ -3,6 +3,7 @@
 ## 1.6.1 (2024-12-17)
 - 'build','parallel': waitrepo now just uses "koji wait-repo --request"
 - 'build': now respects --waitrepo
+- 'local','install': new --jobs option for _smp_ncpus_max
 - waitrepo is timed
 - Koji targetMaybeSidetag: print sidetags if more than one
 

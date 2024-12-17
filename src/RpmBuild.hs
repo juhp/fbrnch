@@ -277,9 +277,9 @@ isShortCircuit ms =
 -- Note does not check if bcond changed
 -- FIXME check tarball timestamp
 -- FIXME handle prep (-bp) too?
-buildRPMs :: Bool -> Bool -> Bool -> Maybe ForceShort -> [BCond] -> [FilePath]
-          -> AnyBranch -> FilePath -> IO Bool
-buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
+buildRPMs :: Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
+          -> [BCond] -> [FilePath] -> AnyBranch -> FilePath -> IO Bool
+buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
   needBuild <-
     if isJust mforceshort
     then return True
@@ -306,8 +306,12 @@ buildRPMs quiet debug noclean mforceshort bconds rpms br spec = do
             Just ShortCompile -> ["-bc", "--short-circuit"]
             Just ShortInstall -> ["-bi", "--short-circuit"]
             _ -> "-bb" : ["--noclean" | noclean]
+        jobs =
+          case mjobs of
+            Nothing -> []
+            Just n -> ["--define", "_smp_ncpus_max" +-+ show n]
         args = sourcediropt ++ distopt ++
-               buildopt ++ map show bconds ++ autoreleaseOpt ++ [spec]
+               buildopt ++ jobs ++ map show bconds ++ autoreleaseOpt ++ [spec]
     date <- cmd "date" ["+%T"]
     rbr <- anyBranchToRelease br
     nvr <- do
