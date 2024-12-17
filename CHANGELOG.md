@@ -2,6 +2,8 @@
 
 ## 1.6.1 (2024-12-17)
 - 'build','parallel': waitrepo now just uses "koji wait-repo --request"
+- 'build': now respects --waitrepo
+- waitrepo is timed
 - Koji targetMaybeSidetag: print sidetags if more than one
 
 ## 1.6 (2024-12-13)

@@ -155,7 +155,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                   bodhiCreateOverride dryrun (Just days) nvr
             when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
               when ((isJust moverride && mwaitrepo /= Just False) ||
-                    (autoupdate && mwaitrepo == Just True)) $
+                    (mwaitrepo == Just True)) $
                 kojiWaitRepoNVR dryrun False True target nvr
             else
             when (mwaitrepo == Just True) $
@@ -238,5 +238,5 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                       bodhiCreateOverride dryrun (Just days) nvr
                 when (isJust mlastpkg && mlastpkg /= Just pkg || mwaitrepo == Just True) $
                   when ((isJust moverride && mwaitrepo /= Just False) ||
-                        (autoupdate && mwaitrepo == Just True)) $
+                        (mwaitrepo == Just True)) $
                   kojiWaitRepoNVR dryrun False True target nvr
