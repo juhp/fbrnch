@@ -41,7 +41,7 @@ import Distribution.Fedora.Branch (branchRelease)
 import Distribution.Fedora.Release (releaseDistTag)
 import Safe (headMay, tailSafe)
 import Say (sayString)
-import SimplePrompt (promptEnter)
+import SimplePrompt (promptEnter, yesNo)
 import System.Exit
 import System.Process.Typed
 import System.Timeout (timeout)
@@ -275,17 +275,20 @@ createKojiSidetag dryrun br = do
     return sidetag
     else error' "'fedpkg request-side-tag' failed"
 
--- FIXME check/warn for target/branch mismatch
+-- FIXME offer choice of existing sidetags
 targetMaybeSidetag :: Bool -> Bool -> Branch -> Maybe SideTagTarget
                    -> IO String
 targetMaybeSidetag dryrun create br msidetagTarget =
   case msidetagTarget of
     Nothing -> return $ showBranch br
-    -- FIXME map "rawhide" to valid target
     Just (Target t) ->
-      if t == "rawhide"
+      if t == "rawhide" && br == Rawhide
       then releaseDistTag <$> branchRelease Rawhide
-      else return t
+      else do
+        unless (showBranch br `isPrefixOf` t) $ do
+          ok <- yesNo $ "Branch" +-+ showBranch br +-+ "does not match target" +-+ t +-+ "! Are you sure?"
+          unless ok $ error' "aborted"
+        return t
     Just SideTag -> do
       tags <- kojiUserSideTags (Just br)
       case tags of
