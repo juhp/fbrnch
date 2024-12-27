@@ -103,7 +103,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
           error' "You must use --target/--sidetag to build package layers for this branch"
       when (length branches > 1) $
         putStrLn $ "#" +-+ showBranch rbr
-      target <- targetMaybeSidetag dryrun True rbr mtargetSidetag
+      target <- targetMaybeSidetag dryrun True True rbr mtargetSidetag
       nvrclogs <- concatMapM (timeIODesc "layer" . parallelBuild target rbr)
                       (zip [firstlayer..length allLayers] $
                        init $ tails layers) -- tails ends in []
@@ -147,7 +147,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         setupBranch :: Branch -> IO JobAsync
         setupBranch br = do
           putPkgBrnchHdr pkg br
-          target <- targetMaybeSidetag dryrun True br msidetagTarget
+          target <- targetMaybeSidetag dryrun True True br msidetagTarget
           when (mmerge /= Just False) $ mergeNewerBranch pkg br
           job <- startBuild Nothing 0 False (length brs) target pkg br "." >>= async
           unless dryrun $ sleep delay

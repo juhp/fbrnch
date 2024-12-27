@@ -276,9 +276,9 @@ createKojiSidetag dryrun br = do
     else error' "'fedpkg request-side-tag' failed"
 
 -- FIXME offer choice of existing sidetags
-targetMaybeSidetag :: Bool -> Bool -> Branch -> Maybe SideTagTarget
+targetMaybeSidetag :: Bool -> Bool -> Bool -> Branch -> Maybe SideTagTarget
                    -> IO String
-targetMaybeSidetag dryrun create br msidetagTarget =
+targetMaybeSidetag dryrun strict create br msidetagTarget =
   case msidetagTarget of
     Nothing -> return $ showBranch br
     Just (Target t) ->
@@ -286,8 +286,12 @@ targetMaybeSidetag dryrun create br msidetagTarget =
       then releaseDistTag <$> branchRelease Rawhide
       else do
         unless (showBranch br `isPrefixOf` t) $ do
-          ok <- yesNo $ "Branch" +-+ showBranch br +-+ "does not match target" +-+ t +-+ "! Are you sure?"
-          unless ok $ error' "aborted"
+          ok <- do
+            let msg = "Branch" +-+ showBranch br +-+ "does not match target" +-+ t in
+              if strict
+              then yesNo $ msg ++ "! Are you sure?"
+              else warning ("Note:" +-+ msg) >> return True
+          unless ok $ (if strict then error' else warning) "aborted"
         return t
     Just SideTag -> do
       tags <- kojiUserSideTags (Just br)

@@ -125,7 +125,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
           else return $ Just $ commitRef unpd
   let msidetagTarget = buildoptSidetagTarget opts
-  target <- targetMaybeSidetag dryrun True br msidetagTarget
+  target <- targetMaybeSidetag dryrun True True br msidetagTarget
   buildRun spec nvr merged mpush unpushed target msidetagTarget moverride
   where
     dryrun = buildoptDryrun opts

@@ -33,7 +33,7 @@ waitrepoCmd dryrun knowntag fetch msidetagTarget = do
       gitSwitchBranch rbr
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
-      target <- targetMaybeSidetag dryrun False br msidetagTarget
+      target <- targetMaybeSidetag dryrun True False br msidetagTarget
       logMsg $ "Waiting for" +-+ showNVR nvr +-+ "to appear in" +-+ target
       -- FIXME can we get time from koji waitrepo task?
       timeIO $ kojiWaitRepoNVR dryrun True knowntag target nvr
