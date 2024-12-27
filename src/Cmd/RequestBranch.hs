@@ -7,6 +7,7 @@ module Cmd.RequestBranch (
 
 import Network.HTTP.Query (lookupKey')
 import SimplePrompt (promptEnter)
+import System.Time.Extra (sleep)
 
 import Common
 import Common.System
@@ -15,6 +16,7 @@ import Branches
 import Bugzilla
 import Cmd.SrcDeps (srcDeps)
 import Git
+import Koji (fedoraHub, kojiBuildTarget')
 import Krb
 import ListReviews
 import Package
@@ -95,6 +97,10 @@ requestPkgBranches quiet multiple mock breq pkg = do
           return u
         whenJust mbidsession $ \(bid,session) ->
           commentBug session bid $ unlines urls
+        forM_ newbranches $ \ br -> do
+          putStrLn $ "waiting for" +-+ unPackage pkg +-+ "to be added to" +-+ showBranch br ++ "-build"
+          (buildtag,_desttag) <- kojiBuildTarget' fedoraHub (showBranch br)
+          waitForBuildTag pkg buildtag
   where
     -- doRequestBr :: Bool -> Branch -> IO String
     -- doRequestBr multibr br = do
@@ -171,3 +177,13 @@ havePkgAccess pkg = do
           admins = lookupKey' "admin" access
           collabs = lookupKey' "collaborator" access
       in (owners ++ admins, collabs)
+
+waitForBuildTag :: Package -> String -> IO ()
+waitForBuildTag pkg buildtag = do
+  yes <- cmdBool "koji" ["list-pkgs", "--quiet", "--package=" ++ unPackage pkg, "--tag=" ++ buildtag]
+  if yes
+    then putNewLn
+    else do
+    putChar '.'
+    sleep 60
+    waitForBuildTag pkg buildtag
