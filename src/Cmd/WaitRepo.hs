@@ -7,7 +7,6 @@ where
 import Common.System
 
 import Branches
-import Common (showNVR)
 import Git
 import Koji
 import Package
@@ -34,6 +33,4 @@ waitrepoCmd dryrun knowntag fetch msidetagTarget = do
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
       target <- targetMaybeSidetag dryrun True False br msidetagTarget
-      logMsg $ "Waiting for" +-+ showNVR nvr +-+ "to appear in" +-+ target
-      -- FIXME can we get time from koji waitrepo task?
-      timeIO $ kojiWaitRepoNVR dryrun True knowntag target nvr
+      kojiWaitRepoNVR dryrun False knowntag target nvr
