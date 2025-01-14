@@ -1,6 +1,6 @@
 module Cmd.Update
-  ( updateCmd,
-    updatePkg
+  ( updateSourcesCmd,
+    updateSourcesPkg
   )
 where
 
@@ -20,8 +20,8 @@ import Package
 -- FIXME check EVR increased
 -- FIXME if multiple sources might need to bump release
 -- FIXME Haskell subpackages require release bump even with version bump
-updateCmd :: Bool -> Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
-updateCmd onlysources force allowHEAD (mbr,args) = do
+updateSourcesCmd :: Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
+updateSourcesCmd force allowHEAD (mbr,args) = do
   pkgGit <- isPkgGitSshRepo
   (mver,pkgs) <-
     case args of
@@ -39,12 +39,12 @@ updateCmd onlysources force allowHEAD (mbr,args) = do
         in if pkgGit
            then dirty
            else if null pkgs then Nothing else dirty
-  withPackagesMaybeBranch HeaderMay False mgitops (updatePkg onlysources force allowHEAD pkgGit mver) (mbr, pkgs)
+  withPackagesMaybeBranch HeaderMay False mgitops (updateSourcesPkg force allowHEAD pkgGit mver) (mbr, pkgs)
 
 -- FIXME use tempdir or don't prep to prevent overwriting an ongoing build
-updatePkg :: Bool -> Bool -> Bool -> Bool -> Maybe String -> Package
-          -> AnyBranch -> IO ()
-updatePkg onlysources force allowHEAD distgit mver pkg br = do
+updateSourcesPkg :: Bool -> Bool -> Bool -> Maybe String -> Package
+                 -> AnyBranch -> IO ()
+updateSourcesPkg force allowHEAD distgit mver pkg br = do
   when (distgit && br /= RelBranch Rawhide && isRelBranch br) $
     promptEnter $ "Are you sure you want to update" +-+ show br +-+ "branch?! Press Enter to continue"
   spec <- if allowHEAD
@@ -57,7 +57,7 @@ updatePkg onlysources force allowHEAD distgit mver pkg br = do
     error' $ "diff contains complex version change:\n" ++ unlines vdiff
   case mver of
     Nothing -> do
-      when (null vdiff && not onlysources) $
+      when (null vdiff && isNothing mver) $
         error' "specify or edit version to update"
       putStrLn $ "current version:" +-+ curver
     Just nver -> do
@@ -73,7 +73,8 @@ updatePkg onlysources force allowHEAD distgit mver pkg br = do
             case map (last . words) vdiff of
               [old,new] -> Just (old,new)
               _ -> Nothing
-  unless onlysources $ do
+  when (isJust mver) $
+    when (isJust moldnewver) $ do
     let (oldver,newver) =
           fromMaybe (error' "complex version change") moldnewver
     -- FIXME take epoch into account

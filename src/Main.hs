@@ -182,16 +182,10 @@ main = do
       <*> optional scratchSourceOpt
       <*> branchesPackages
     , Subcommand "update-sources" "Download and update newer sources" $
-      updateCmd True
+      updateSourcesCmd
       <$> forceOpt "Download upstream sources even if they exist locally"
       <*> switchWith 'H' "allow-head" "For updating inside rebase"
-      <*> maybeBranchPackages False
-    , Subcommand "update-version" "Update package in dist-git to newer version" $
-      updateCmd
-      <$> switchWith 's' "sources-only" "Only update sources"
-      <*> forceOpt "Download upstream sources even if they exist locally"
-      <*> switchWith 'H' "allow-head" "For updating inside rebase"
-      <*> maybeBranchPackages False
+      <*> maybeBranchPackages' (Just "[VERSION]") False
     , Subcommand "sort" "Sort packages in build dependency order (default format: chain-build)" $
       sortCmd
       <$> sortDisplayOpt
@@ -490,11 +484,15 @@ main = do
             _ -> error' $ "cannot have more than one branch:" +-+ unwords (map showBranch brs)
 
     maybeBranchPackages :: Bool -> Parser (Maybe Branch,[String])
-    maybeBranchPackages oneplus =
+    maybeBranchPackages = maybeBranchPackages' Nothing
+
+    maybeBranchPackages' :: Maybe String -> Bool
+                        -> Parser (Maybe Branch,[String])
+    maybeBranchPackages' mextraarg oneplus =
       maybeBranchesPkgs <$>
       if oneplus
-      then some (pkgArg "[BRANCH] PKGPATH...")
-      else many (pkgArg "[BRANCH] [PKGPATH]...")
+      then some (pkgArg $ "[BRANCH]" +-+ extraargdesc +-+ "PKGPATH...")
+      else many (pkgArg $ "[BRANCH]" +-+ extraargdesc +-+ "[PKGPATH]...")
       where
         maybeBranchesPkgs :: [String] -> (Maybe Branch,[String])
         maybeBranchesPkgs args =
@@ -503,6 +501,8 @@ main = do
             [] -> (Nothing, pkgs)
             [br] -> (Just br,pkgs)
             _ -> error' $ "cannot have more than one branch:" +-+ unwords (map showBranch brs)
+
+        extraargdesc = fromMaybe "" mextraarg
 
     branchesPackages :: Parser (BranchesReq, [String])
     branchesPackages = branchesPackagesDesc "BRANCH... PKGPATH..."

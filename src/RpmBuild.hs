@@ -36,7 +36,7 @@ import System.Posix.Files
 import System.Process.Typed (proc, readProcessInterleaved)
 
 import Branches
-import Cmd.Update (updatePkg)
+import Cmd.Update (updateSourcesPkg)
 import Common
 import Common.System
 import Git
@@ -438,7 +438,7 @@ checkSourcesMatch pkg br spec = do
     -- FIXME maybe change to yesNo
     promptEnter $ color Red $ unwords missing +-+ "not in sources, press Enter to fix"
     -- FIXME check if already fixed before proceeding
-    updatePkg True False False True Nothing pkg br
+    updateSourcesPkg False False True Nothing pkg br
     git_ "status" ["--short"]
     ok <- yesNo "Amend commit"
     when ok $ git_ "commit" ["--amend"]
