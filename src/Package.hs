@@ -46,6 +46,7 @@ module Package (
   editSpecField,
   isAutoChangelog,
   isAutoRelease,
+  calculateRelease,
   autoReleaseBump,
   sourceFieldFile,
   isArchiveFile,
@@ -392,6 +393,12 @@ autoReleaseBump spec = do
           ("Release:":"%autorelease":"-b":_) -> True
           _ -> False
       _ -> error' $ "multiple autorelease fields in" +-+ spec
+
+calculateRelease :: FilePath -> IO String
+calculateRelease spec = do
+  -- upstream bug "--number-only" doesn't work
+  calculated <- cmd "rpmautospec" ["calculate-release", spec]
+  return $ dropPrefix "Calculated release number: " calculated
 
 isAutoChangelog :: FilePath -> IO Bool
 isAutoChangelog = grep_ "^%autochangelog"

@@ -259,9 +259,8 @@ getAutoReleaseOptions spec = do
       autorelease <- isAutoRelease spec
       if autorelease
         then do
-        -- upstream bug "--number-only" doesn't work
-        calculated <- cmd "rpmautospec" ["calculate-release", spec]
-        return ["--define", "_rpmautospec_release_number" +-+ dropPrefix "Calculated release number: " calculated]
+        calculated <- calculateRelease spec
+        return ["--define", "_rpmautospec_release_number" +-+ calculated]
         else return []
 
 data ForceShort = ForceBuild | ShortCompile | ShortInstall
