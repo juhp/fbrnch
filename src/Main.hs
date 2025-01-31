@@ -403,6 +403,9 @@ main = do
       autospecCmd
       <$> forceOpt "Refresh changelog file to current"
       <*> manyPackages
+    , Subcommand "unautospec" "Unconvert rpmautospec package" $
+      unautospecCmd
+      <$> branchesPackages
     , Subcommand "move-artifacts" "Move old rpm artifacts into rpmbuild dirs" $
       moveArtifactsCmd
       <$> switchWith 'd' "delete" "Remove duplicate artifacts"
