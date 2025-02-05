@@ -294,7 +294,8 @@ main = do
       <*> branchesPackages
     , Subcommand "fetch" "Git fetch packages" $
       fetchPkgs
-      <$> manyPackages
+      <$> switchLongWith "lenient" "skip non dist-git directories"
+      <*> manyPackages
     , Subcommand "push" "Git push packages" $
       pushPkgs
       <$> dryrunOpt "Dry run: do not push"

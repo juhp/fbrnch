@@ -4,18 +4,24 @@ module Cmd.Fetch (
 where
 
 import Branches
+import Common (when, (+-+))
 import Git
 import Package
 
-fetchPkgs :: [String] -> IO ()
-fetchPkgs args =
+fetchPkgs :: Bool -> [String] -> IO ()
+fetchPkgs lenient args =
   withPackagesByBranches
   (if length args > 1 then HeaderMust else HeaderMay)
   False
-  dirtyGit
+  (if lenient then Nothing else dirtyGitFetch)
   Zero
-  fetchPkg (Branches [],args)
+  fetchPkgLenient
+  (Branches [], args)
   where
-    fetchPkg :: Package -> AnyBranch -> IO ()
-    fetchPkg _pkg _br =
-      gitFetchSilent False
+    fetchPkgLenient :: Package -> AnyBranch -> IO ()
+    fetchPkgLenient pkg _br =
+      when lenient $ do
+      haveGit <- isPkgGitRepo
+      if haveGit
+        then gitFetchSilent False
+        else putStrLn $ "ignoring" +-+ unPackage pkg
