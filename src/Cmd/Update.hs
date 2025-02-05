@@ -5,7 +5,9 @@ module Cmd.Update
 where
 
 import Data.RPM.VerCmp
+import Data.Version (parseVersion)
 import SimplePrompt (promptEnter)
+import Text.ParserCombinators.ReadP (readP_to_S)
 
 import Branches
 import Common
@@ -22,24 +24,27 @@ import Package
 -- FIXME Haskell subpackages require release bump even with version bump
 updateSourcesCmd :: Bool -> Bool -> (Maybe Branch,[String]) -> IO ()
 updateSourcesCmd force allowHEAD (mbr,args) = do
-  pkgGit <- isPkgGitSshRepo
   (mver,pkgs) <-
-    case args of
-      [a] -> do
-        if pkgGit
-          then return (Just a,[])
-          else do
-          mspec <- maybeFindSpecfile
-          return $ if isJust mspec
-                   then (Just a,[])
-                   else (Nothing,[a])
-      _ -> return (Nothing,args)
+        case args of
+          [] -> return (Nothing,[])
+          (h:t) -> do
+            exists <- doesDirectoryExist h
+            if exists || not (isVersion h)
+              then return (Nothing, args)
+              else do
+              havespec <- isJust <$> maybeFindSpecfile
+              if null t && not havespec
+                then error' "not a pkg dir"
+                else return (Just h, t)
+  pkgGit <- isPkgGitSshRepo
   let mgitops =
         let dirty = if allowHEAD then dirtyGitHEAD else dirtyGitFetch
         in if pkgGit
            then dirty
            else if null pkgs then Nothing else dirty
   withPackagesMaybeBranch HeaderMay False mgitops (updateSourcesPkg force allowHEAD pkgGit mver) (mbr, pkgs)
+  where
+    isVersion = not . null . readP_to_S parseVersion
 
 -- FIXME use tempdir or don't prep to prevent overwriting an ongoing build
 updateSourcesPkg :: Bool -> Bool -> Bool -> Maybe String -> Package
@@ -52,16 +57,14 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
           else localBranchSpecFile pkg br
   -- FIXME detect uncommitted version bump, ie old committed version
   (curver,_) <- pkgVerRel spec
-  vdiff <- filter ("Version:" `isInfixOf`) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
-  unless (length vdiff `elem` [0,2]) $
-    error' $ "diff contains complex version change:\n" ++ unlines vdiff
+  vdiff <- filter ("+Version:" `isPrefixOf`) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
+  when (length vdiff > 1) $
+    error' $ "diff contains complex multi-version changes:\n" ++ unlines vdiff
   case mver of
     Nothing -> do
-      when (null vdiff && isNothing mver) $
-        error' "specify or edit version to update"
       putStrLn $ "current version:" +-+ curver
     Just nver -> do
-      when (length vdiff == 2) $
+      when (length vdiff == 1) $
         error' $ "spec version already bumped to" +-+ curver
       when (curver == nver) $
         putStrLn $ "already new version" +-+ curver
@@ -89,6 +92,7 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
         autobump <- autoReleaseBump spec
         when autobump $
           editSpecField "Release" "%autorelease" spec
+        -- FIXME if multiple versions need to bump release
         else editSpecField "Release" "0%{?dist}" spec
       -- FIXME should be sure sources exists for distgit
       whenM (doesFileExist "sources") $
