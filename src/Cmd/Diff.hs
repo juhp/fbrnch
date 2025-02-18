@@ -26,6 +26,10 @@ data DiffFilter =
   -- | DiffRegex String | DiffNotRegex String
   deriving Eq
 
+filterOpt :: DiffFilter -> [String]
+filterOpt (DiffMatch m) = ["-G", m]
+filterOpt (DiffNotMatch m) = ["-I", m]
+
 -- FIXME diff other branches without switching
 -- FIXME --older/--newer branch
 diffCmd :: Bool -> Bool -> DiffWork -> DiffFormat -> Bool -> [DiffFilter]
@@ -90,8 +94,10 @@ diffCmd debug speconly work fmt ignorebumps patts mwbr =
                     Just wbr -> case (wbr,br) of
                       (RelBranch rwbr, RelBranch rbr) -> ["-R" | rwbr > rbr]
                       _ -> []
-            diff <- gitLines "diff" $ contxt ++ workOpts ++ revdiff ++ withBranch ++ workArgs ++ file
-            let diffout = (mapMaybe (filterPatterns patts) . simplifyDiff fmt) diff
+                filterOpts =
+                  concatMap filterOpt patts
+            diff <- gitLines "diff" $ contxt ++ workOpts ++ revdiff ++ withBranch ++ filterOpts ++ workArgs ++ file
+            let diffout = simplifyDiff fmt diff
             -- FIXME: sometimes we may want to list even if diff but no diffout
             unless (null diffout) $
               unless (ignorebumps && isTrivialRebuildCommit diffout) $
@@ -106,12 +112,3 @@ diffCmd debug speconly work fmt ignorebumps patts mwbr =
           -- drop "2 files changed, 113 insertions(+)"
           simplifyDiff DiffStats ds = if null ds then ds else init ds
           simplifyDiff _ ds = ds
-
-          filterPatterns :: [DiffFilter] -> String -> Maybe String
-          filterPatterns [] str = Just str
-          filterPatterns (df:dfs) str =
-            if filterPattern df str then filterPatterns dfs str else Nothing
-
-          filterPattern :: DiffFilter -> String -> Bool
-          filterPattern (DiffMatch patt) = (patt `isInfixOf`)
-          filterPattern (DiffNotMatch patt) = not . (patt `isInfixOf`)
