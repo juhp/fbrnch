@@ -172,7 +172,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       putStrLn $ "\n= Building" +-+
         (if singlelayer
          then "in parallel"
-         else (if null nextLayers && not singlelayer then "final" else "") +-+ "parallel layer #" ++ show layernum) ++
+         else (if null nextLayers && not singlelayer then "final" else "") +-+ (if nopkgs > 1 then "parallel" else "") +-+ "layer #" ++ show layernum) ++
         if nopkgs > 1
         then " (" ++ show nopkgs +-+ "packages):"
         else ":"
@@ -185,7 +185,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
           [n] -> plural n "more package" +-+ "left in next final layer"
           _ -> plural (length layerspkgs) "more package layer" +-+ "left:" +-+
                show layerspkgs
-      jobs <- zipWithM (setupBuild singlelayer) (reverse [0..(length layer - 1)]) layer
+      jobs <- zipWithM (setupBuild singlelayer) (reverse [0..(nopkgs - 1)]) layer
       when (null jobs) $
         error' "No jobs run"
       (failures,nvrs) <- watchJobs (length jobs == 1) (if singlelayer then Nothing else Just layernum) [] [] jobs
