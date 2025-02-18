@@ -100,7 +100,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
         forM_ newbranches $ \ br -> do
           putStrLn $ "waiting for" +-+ unPackage pkg +-+ "to be added to" +-+ showBranch br ++ "-build"
           (buildtag,_desttag) <- kojiBuildTarget' fedoraHub (showBranch br)
-          waitForBuildTag pkg buildtag
+          waitForPkgBuildTag pkg buildtag
   where
     -- doRequestBr :: Bool -> Branch -> IO String
     -- doRequestBr multibr br = do
@@ -178,12 +178,8 @@ havePkgAccess pkg = do
           collabs = lookupKey' "collaborator" access
       in (owners ++ admins, collabs)
 
-waitForBuildTag :: Package -> String -> IO ()
-waitForBuildTag pkg buildtag = do
-  yes <- cmdBool "koji" ["list-pkgs", "--quiet", "--package=" ++ unPackage pkg, "--tag=" ++ buildtag]
-  if yes
-    then putNewLn
-    else do
-    putChar '.'
-    sleep 60
-    waitForBuildTag pkg buildtag
+waitForPkgBuildTag :: Package -> String -> IO ()
+waitForPkgBuildTag pkg buildtag = do
+  sleep 30 -- wait first to avoid "(undefined package)"
+  ok <- cmdBool "koji" ["list-pkgs", "--quiet", "--package=" ++ unPackage pkg, "--tag=" ++ buildtag]
+  unless ok $ waitForPkgBuildTag pkg buildtag
