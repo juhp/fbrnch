@@ -28,7 +28,9 @@ requestRepos mock allstates skipcheck resubmit (breq, ps) = do
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviewsAll allstates ReviewWithoutRepoReq
     else return ps
-  mapM_ (requestRepo mock skipcheck resubmit breq) pkgs
+  if null pkgs
+    then error' "No approved package reviews found"
+    else mapM_ (requestRepo mock skipcheck resubmit breq) pkgs
 
 -- FIXME also accept bugid instead
 requestRepo :: Bool -> Bool -> Bool -> BranchesReq -> String -> IO ()
