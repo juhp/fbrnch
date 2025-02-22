@@ -113,7 +113,7 @@ gitMergeOrigin br = do
     unless (null commits) $ do
     pull <- git "pull" []
     unless ("Already up to date." `isPrefixOf` pull) $
-      putStr pull
+      putStrLn pull
 
 -- FIXME maybe require local branch already here
 newerMergeable :: String -> Branch -> IO (Bool,[Commit],Maybe Branch)
