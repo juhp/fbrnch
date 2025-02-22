@@ -151,14 +151,14 @@ kojiWatchTask task = do
       whenJustM (findExecutable "koji-tool") $ \kojitool -> do
         -- FIXME cmdLog deprecated
         cmdLog kojitool ["tasks", "--children", displayID task, "--tail", "-s", "fail"]
-        putStrLn $ taskinfoUrl fedoraHub $ getID task
+        putTaskinfoUrl fedoraHub task
       error' "Task failed!"
     Just TaskCanceled -> return ()
     _ -> kojiWatchTask task
 
-taskinfoUrl :: String -> Int -> String
-taskinfoUrl hub tid =
-  dropSuffix "hub" hub +/+ "taskinfo?taskID=" ++ show tid
+putTaskinfoUrl :: String -> TaskID -> IO ()
+putTaskinfoUrl hub tid =
+  putStrLn $ dropSuffix "hub" hub +/+ "taskinfo?taskID=" ++ show (getID tid)
 
 -- FIXME during network disconnection:
 -- Connection timed out: retrying
