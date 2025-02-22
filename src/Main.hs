@@ -149,7 +149,6 @@ main = do
     , Subcommand "waitrepo" "Wait for build to appear in Koji buildroot" $
       waitrepoCmd
       <$> dryrunOpt "Dry run: do not wait"
-      <*> pure False
       <*> waitfetchOpt
       <*> optional (sidetagTargetOpt Nothing)
       <*> branchesPackages

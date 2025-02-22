@@ -213,6 +213,7 @@ kojiBuildTarget' hub target = do
     Just res -> return res
 
 -- FIXME should be NonEmpty
+-- FIXME add back knowntag?
 kojiWaitRepoNVRs :: Bool -> Bool -> String -> [NVR] -> IO ()
 kojiWaitRepoNVRs _ _ _ [] = error' "no NVRs given to wait for"
 kojiWaitRepoNVRs dryrun quiet target nvrs = do
@@ -224,10 +225,13 @@ kojiWaitRepoNVRs dryrun quiet target nvrs = do
       case nvrs of
         [nvr] -> showNVR nvr
         _ -> "builds"
+    -- FIXME use knowntag to quieten output: for override outputs, eg
+    -- "nvr ghc-rpm-macros-2.7.5-1.fc41 is not current in tag f41-build
+    --    latest build is ghc-rpm-macros-2.7.2-4.fc41"
     void $ timeIO $ cmd "koji" (["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag])
 
-kojiWaitRepoNVR :: Bool -> Bool -> Bool -> String -> NVR -> IO ()
-kojiWaitRepoNVR dryrun quiet _knowntag target nvr =
+kojiWaitRepoNVR :: Bool -> Bool -> String -> NVR -> IO ()
+kojiWaitRepoNVR dryrun quiet target nvr =
   kojiWaitRepoNVRs dryrun quiet target [nvr]
 
 kojiTagArchs :: String -> IO [String]
