@@ -201,14 +201,17 @@ gitRepoName :: IO String
 gitRepoName =
   dropSuffix ".git" . takeFileName <$> git "remote" ["get-url", "origin"]
 
+-- FIXME use Verbose
 gitFetchSilent :: Bool -> IO ()
 gitFetchSilent quiet = do
   name <- gitRepoName
   unless quiet $
     putStr $ "git fetching" +-+ name ++ "... "
   (ok, out, err) <- cmdFull "git" ["fetch"] ""
-  unless (null out) $ putStrLn out
+  unless quiet $
+    unless (null out) $ putStrLn out
   unless ok $ error' err
+  -- could keep From if no header
   let filtered = case lines err of
         [] -> []
         (hd:tl) -> filter (/= "Already up to date.") $
