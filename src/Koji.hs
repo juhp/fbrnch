@@ -19,6 +19,7 @@ module Koji (
   kojiWaitRepoNVRs,
   kojiWatchTask,
   kojiWaitTask,
+  putTaskinfoUrl,
   TaskID,
   displayID,
   fedoraHub,
