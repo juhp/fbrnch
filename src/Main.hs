@@ -710,7 +710,7 @@ main = do
     quietOpt :: String -> Parser Bool
     quietOpt = switchWith 'q' "quiet"
 
-    allowHeadOpt = switchLongWith "allow-head" "allow detached HEAD"
+    allowHeadOpt = switchLongWith "detached-head" "allow detached HEAD"
 
     forceOpt = switchWith 'f' "force"
 
