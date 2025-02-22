@@ -300,9 +300,13 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
             else Just <$> gitCurrentBranch
           else return Nothing
         let fetch = have gitOptFetch
+        brs <- listOfAnyBranches (haveGit && not (have gitOptHEAD)) (have gitOptActive) breq
+        when ((header /= HeaderNone || fetch) && dir /= ".") $
+          case brs of
+            [br] -> when (fetch || header == HeaderMust) $ putPkgAnyBrnchHdr pkg br
+            _ -> when (fetch || header /= HeaderNone) $ putPkgHdr pkg
         -- quiet to avoid output before header
         when fetch $ gitFetchSilent True
-        brs <- listOfAnyBranches (haveGit && not (have gitOptHEAD)) (have gitOptActive) breq
         case limitBranches of
           ZeroOrOne | length brs > 1 ->
             -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)
@@ -312,10 +316,6 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
           ExactlyOne | length brs > 1 ->
             error' "please only specify one branch"
           _ -> return ()
-        when ((header /= HeaderNone || fetch) && dir /= ".") $
-          case brs of
-            [br] -> when (fetch || header == HeaderMust) $ putPkgAnyBrnchHdr pkg br
-            _ -> when (fetch || header /= HeaderNone) $ putPkgHdr pkg
         when haveGit $
           when (have gitOptClean) $ checkWorkingDirClean (have gitOptStash)
         -- FIXME!! no branch restriction
