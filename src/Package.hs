@@ -287,7 +287,7 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
           putStrLn $ "Warning: package name (" ++ unPackage pkg ++ ") differs from spec filename!"
         haveGit <- isPkgGitRepo
         when (isJust mgitopts && not haveGit) $
-          error' $ "Not a pkg git dir:" +-+ unPackage pkg
+          error' $ "Not a package git directory:" +-+ unPackage pkg
         mcurrentbranch <-
           if haveGit
           then
