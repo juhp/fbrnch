@@ -291,11 +291,12 @@ targetMaybeSidetag :: Bool -> Bool -> Bool -> Branch -> Maybe SideTagTarget
 targetMaybeSidetag dryrun strict create br msidetagTarget =
   case msidetagTarget of
     Nothing -> return $ showBranch br
-    Just (Target t) ->
+    Just (Target t) -> do
+      disttag <- releaseDistTag <$> branchRelease br
       if t == "rawhide" && br == Rawhide
-      then releaseDistTag <$> branchRelease Rawhide
+      then return disttag
       else do
-        unless (showBranch br `isPrefixOf` t) $ do
+        unless (disttag `isPrefixOf` t) $ do
           ok <- do
             let msg = "Branch" +-+ showBranch br +-+ "does not match target" +-+ t in
               if strict
