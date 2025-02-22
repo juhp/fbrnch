@@ -1,6 +1,7 @@
 module RpmBuild (
   builtRpms,
   buildRPMs,
+  buildRPMsNoBranch,
   installDeps,
   buildRequires,
   getSources,
@@ -349,10 +350,61 @@ buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
     unless ok $
       error' $ showNVR nvr +-+ "failed to build"
   return needBuild
-  where
-    quoteArg :: String -> String
-    quoteArg cs =
-      if ' ' `elem` cs then '\'' : cs ++ "'" else cs
+
+quoteArg :: String -> String
+quoteArg cs =
+  if ' ' `elem` cs then '\'' : cs ++ "'" else cs
+
+buildRPMsNoBranch :: Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
+                  -> [BCond] -> FilePath -> IO Bool
+buildRPMsNoBranch quiet debug noclean mjobs mforceshort bconds spec = do
+  installDeps True spec
+  void $ getSources spec
+  sourcediropt <- sourceDirCwdOpt
+  let distopt = ["--define", "dist" +-+ "%{?distprefix}"]
+      buildopt =
+        case mforceshort of
+          Just ShortCompile -> ["-bc", "--short-circuit"]
+          Just ShortInstall -> ["-bi", "--short-circuit"]
+          _ -> "-bb" : ["--noclean" | noclean]
+      jobs =
+        case mjobs of
+          Nothing -> []
+          Just n -> ["--define", "_smp_ncpus_max" +-+ show n]
+      args = sourcediropt ++ distopt ++
+             buildopt ++ jobs ++ map show bconds ++ [spec]
+  date <- cmd "date" ["+%T"]
+  nvr <- pkgNameVerRelNodist spec
+  let buildlog = ".build-" ++ (showVerRel . nvrVerRel) nvr ++ "-HEAD" <.> "log"
+  whenM (doesFileExist buildlog) $ do
+    let backup = buildlog <.> "prev"
+    whenM (doesFileExist backup) $ do
+      prevsize <- getFileSize backup
+      currsize <- getFileSize buildlog
+      when (prevsize > currsize) $
+        copyFile backup (backup <.> "prev")
+    copyFile buildlog (buildlog <.> "prev")
+  putStr $ date +-+ "Building" +-+ showNVR nvr +-+ "locally... "
+  ok <- do
+    timeIO $
+      if not quiet || isShortCircuit mforceshort
+      then do
+        putNewLn
+        -- FIXME would like to have pipeOutErr
+        let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ "|&" : "tee" : [buildlog +-+ "&& exit ${PIPESTATUS[0]}"]
+        when debug $ putStrLn buildcmd
+        shellBool buildcmd
+      else do
+        let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ [">&", buildlog]
+        when debug $ putStrLn buildcmd
+        res <- shellBool buildcmd
+        if res
+          then putStrLn "done"
+          else error' "failed to build"
+        return res
+  unless ok $
+    error' $ showNVR nvr +-+ "failed to build"
+  return True
 
 -- FIXME print unavailable deps
 installDeps :: Bool -> FilePath -> IO ()

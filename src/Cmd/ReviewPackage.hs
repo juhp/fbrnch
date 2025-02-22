@@ -113,7 +113,7 @@ doInteractiveReview importsrpm mspec srpm = do
   -- FIXME or download rpms
   build <- yesNoDefault importsrpm "Build package locally"
   when build $
-    localCmd False False Nothing Nothing [] (Branches [],[])
+    localCmd False False False Nothing Nothing [] (Branches [],[])
   putNewLn
   putStrLn "# RpmLint"
   void $ cmdBool "rpmlint" ["."] -- FIXME $ spec:srpm:rpms

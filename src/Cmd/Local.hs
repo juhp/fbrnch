@@ -26,10 +26,15 @@ import Git
 import Package
 import RpmBuild
 
-localCmd :: Bool -> Bool -> Maybe Natural -> Maybe ForceShort -> [BCond]
-         -> (BranchesReq, [String]) -> IO ()
-localCmd quiet debug mjobs mforceshort bconds =
-  withPackagesByBranches HeaderNone False Nothing ZeroOrOne localBuildPkg
+localCmd :: Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
+         -> [BCond] -> (BranchesReq, [String]) -> IO ()
+localCmd quiet debug allowhead mjobs mforceshort bconds (breq,pkgs) =
+  if allowhead
+  then if breq == Branches []
+       then withPackagesMaybeBranch HeaderNone False dirtyGitHEAD localBuildPkgNoBranch (Nothing, pkgs)
+       else error' "--detached-head only supported without specific branch(es)"
+  else
+  withPackagesByBranches HeaderNone False Nothing ZeroOrOne localBuildPkg (breq,pkgs)
   where
     localBuildPkg :: Package -> AnyBranch -> IO ()
     localBuildPkg pkg br = do
@@ -40,6 +45,11 @@ localCmd quiet debug mjobs mforceshort bconds =
       -- FIXME backup BUILD tree to .prev
       void $ buildRPMs quiet debug True mjobs mforceshort bconds rpms br spec
       -- FIXME mark BUILD dir complete
+
+    localBuildPkgNoBranch :: Package -> AnyBranch -> IO ()
+    localBuildPkgNoBranch _pkg _ = do
+      spec <- findSpecfile
+      void $ buildRPMsNoBranch quiet debug True mjobs mforceshort bconds spec
 
 installDepsCmd :: (Maybe Branch,[String]) -> IO ()
 installDepsCmd =

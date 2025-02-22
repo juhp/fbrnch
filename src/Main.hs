@@ -202,6 +202,7 @@ main = do
       localCmd
       <$> quietOpt "Hide the build.log until it errors"
       <*> debugOpt "show the rpmbuild command"
+      <*> allowHeadOpt
       <*> jobsOpt
       <*> optional forceshortOpt
       <*> many bcondOpt
