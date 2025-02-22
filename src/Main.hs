@@ -135,7 +135,8 @@ main = do
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd
       <$> dryrunOpt "Dry-run: no sidetag actions"
-      <*> optional (flagLongWith' SidetagAdd "create" "Create one or more sidetags" <|>
+      <*> optional (flagLongWith' SidetagTagged "tagged" "List tagged builds in sidetag(s)" <|>
+                    flagLongWith' SidetagAdd "create" "Create one or more sidetags" <|>
                     flagLongWith' SidetagRemove "remove" "Remove one or more sidetags")
       <*> many branchArg
     , Subcommand "override" "Tag builds into buildroot override in Koji" $

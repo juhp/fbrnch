@@ -12,7 +12,7 @@ import Git (isPkgGitRepo)
 import Koji
 import Krb (krbTicket)
 
-data SidetagMode = SidetagAdd | SidetagRemove
+data SidetagMode = SidetagAdd | SidetagRemove | SidetagTagged
   deriving Eq
 
 sideTagsCmd :: Bool -> Maybe SidetagMode -> [Branch] -> IO ()
@@ -35,6 +35,7 @@ sideTagsCmd dryrun mmode brs = do
     krbTicket
   case mmode of
     Nothing -> mapM_ putStrLn sidetags
+    Just SidetagTagged -> mapM_ taggedSideTag sidetags
     Just SidetagRemove -> mapM_ removeSideTag sidetags
     Just SidetagAdd -> do
       putStrLn "existing tags:"
@@ -51,3 +52,9 @@ sideTagsCmd dryrun mmode brs = do
     addSideTag br =
       whenM (yesNo $ "Create" +-+ indefinite (showBranch br) +-+ "user sidetag") $
       void $ createKojiSidetag dryrun br
+
+    -- FIXME can we get koji-hs to do this?
+    taggedSideTag :: String -> IO ()
+    taggedSideTag tag = do
+      putStrLn $ "#" +-+ tag
+      cmd_ "koji" ["list-tagged", tag]
