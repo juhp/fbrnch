@@ -294,15 +294,17 @@ targetMaybeSidetag dryrun strict create br msidetagTarget =
     Just (Target t) -> do
       disttag <- releaseDistTag <$> branchRelease br
       if t == "rawhide" && br == Rawhide
-      then return disttag
-      else do
+        then return disttag
+        else do
         unless (disttag `isPrefixOf` t) $ do
-          ok <- do
-            let msg = "Branch" +-+ showBranch br +-+ "does not match target" +-+ t in
-              if strict
-              then yesNo $ msg ++ "! Are you sure?"
-              else warning ("Note:" +-+ msg) >> return True
-          unless ok $ (if strict then error' else warning) "aborted"
+          let msg = "Branch" +-+ showBranch br +-+ "does not match target" +-+ t in
+            if strict
+            then do
+              ok <- yesNo $ msg ++ "! Are you sure?"
+              unless ok $ error' "aborted"
+            else
+              whenM isPkgGitRepo $
+              warning ("Note:" +-+ msg)
         return t
     Just SideTag -> do
       tags <- kojiUserSideTags (Just br)
