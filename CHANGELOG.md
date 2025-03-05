@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.6.2 (2025-03-05)
+- 'diff': use git diff's builtin filtering
+- 'fetch': add --lenient to skip non dist-git directories
+- 'local': --detached-head
+- 'parallel': do not waitrepo for final layer
+- 'parallel': koji-tool tail of failed builds and end with task url
+- 'parallel': only print "parallel layer" is more than one pkg in layer
+- 'request-branches': now waits for package to be listed for branch buildtag
+- 'request-branches': wait 30s before checking for package added to tag
+- 'request-repos': error if no reviews found
+- 'sidetags': --tagged lists tagged builds
+- 'unautospec': new command to remove %autochangelog and/or %autorelease
+- 'update-sources': now takes optional version, replacing 'update-version'
+- 'waitrepo': use kojiWaitRepoNVR output and timing
+- kojiWatchTask: print task url after failure log
+- rename --allow-head to --detached-head
+- targetMaybeSidetag: strict parameter to enforce branch tag match
+- targetMaybeSidetag: warn/prompt if target does not match branch
+- withPackagesByBranches: print package header earlier before fetching
+
 ## 1.6.1 (2024-12-17)
 - 'build','parallel': waitrepo now just uses "koji wait-repo --request"
 - 'build': now respects --waitrepo

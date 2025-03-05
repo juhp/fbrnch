@@ -39,7 +39,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f41 [package] ...
+$ fbrnch switch f42 [package] ...
 ```
 
 You can also git pull over packages:
@@ -97,13 +97,13 @@ or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f40 [package]
+$ fbrnch merge f41 [package]
 ```
-which will offer to merge f41 (or up to a git hash you choose) into f40.
+which will offer to merge f42 (or up to a git hash you choose) into f41.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build f41 [package]
+$ fbrnch build f42 [package]
 ```
 will ask if you want to merge newer commits from a newer branch,
 then push and build it.
@@ -270,7 +270,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 `$ fbrnch --version`
 
 ```
-1.6.1
+1.6.2
 ```
 
 `$ fbrnch --help`
@@ -306,7 +306,6 @@ Available commands:
   scratch-aarch64          Koji aarch64 scratch build of package
   scratch-x86_64           Koji x86_64 scratch build of package
   update-sources           Download and update newer sources
-  update-version           Update package in dist-git to newer version
   sort                     Sort packages in build dependency order (default
                            format: chain-build)
   prep                     Prep sources
@@ -344,6 +343,7 @@ Available commands:
   graph                    Output dependency graph
   ftbfs                    Check FTBFS status
   autospec                 Convert package to use rpmautospec
+  unautospec               Unconvert rpmautospec package
   move-artifacts           Move old rpm artifacts into rpmbuild dirs
 ```
 
