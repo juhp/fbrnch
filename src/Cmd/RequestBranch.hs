@@ -5,6 +5,7 @@ module Cmd.RequestBranch (
   requestPkgBranches
   ) where
 
+import Fedora.Krb (fasIdFromKrb)
 import Network.HTTP.Query (lookupKey')
 import SimplePrompt (promptEnter)
 import System.Time.Extra (sleep)
@@ -17,7 +18,6 @@ import Bugzilla
 import Cmd.SrcDeps (srcDeps)
 import Git
 import Koji (fedoraHub, kojiBuildTarget')
-import Krb
 import ListReviews
 import Package
 import Pagure

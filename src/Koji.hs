@@ -40,6 +40,7 @@ import Distribution.Koji
 import qualified Distribution.Koji.API as Koji
 import Distribution.Fedora.Branch (branchRelease)
 import Distribution.Fedora.Release (releaseDistTag)
+import Fedora.Krb (fasIdFromKrb, krbTicket)
 import Safe (headMay, tailSafe)
 import Say (sayString)
 import SimplePrompt (promptEnter, yesNo)
@@ -52,7 +53,6 @@ import Branches
 import Common
 import Common.System
 import Git
-import Krb
 import Package (fedpkg, Package, unPackage)
 import Pagure
 import Types

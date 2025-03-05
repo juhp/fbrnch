@@ -4,6 +4,7 @@ module Cmd.CreateReview (
 where
 
 import Data.Char (isAscii)
+import Fedora.Krb (maybeFasIdFromKrb)
 import SimpleCmd (cmd, error')
 import SimplePrompt (promptEnter)
 import System.Directory (doesFileExist)
@@ -11,7 +12,6 @@ import System.Directory (doesFileExist)
 import Branches
 import Bugzilla
 import Common
-import Krb
 import Package
 import PkgReview
 import RpmBuild

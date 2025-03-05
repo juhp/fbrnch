@@ -7,5 +7,6 @@ extra-deps:
   - simple-prompt-0.2.3
   - pagure-0.2.1
   - copr-api-0.2.0
+  - fedora-krb-0.1.0
   - fedora-releases-0.2.0
   - select-rpms-0.2.0

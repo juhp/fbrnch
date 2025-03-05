@@ -6,6 +6,7 @@ where
 
 import Data.RPM.VerCmp
 import Data.Version (parseVersion)
+import Fedora.Krb (krbTicket)
 import SimplePrompt (promptEnter)
 import Text.ParserCombinators.ReadP (readP_to_S)
 
@@ -14,7 +15,6 @@ import Common
 import Common.System
 import Git
 import InterleaveOutput (cmdSilent')
-import Krb
 import Package
 
 -- FIXME --no-prep to avoid overwriting ongoing build

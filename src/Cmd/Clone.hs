@@ -1,11 +1,11 @@
 module Cmd.Clone (cloneCmd, CloneRequest(..)) where
 
 import Control.Monad (when)
+import Fedora.Krb
 
 import Branches
 import Common.System
 import qualified Common.Text as T
-import Krb
 import Package
 import Pagure
 

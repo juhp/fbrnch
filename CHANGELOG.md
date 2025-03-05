@@ -15,6 +15,7 @@
 - 'update-sources': now takes optional version, replacing 'update-version'
 - 'waitrepo': use kojiWaitRepoNVR output and timing
 - kojiWatchTask: print task url after failure log
+- Krb module replaced by fedora-krb library: handles different FAS userid (#67)
 - rename --allow-head to --detached-head
 - targetMaybeSidetag: strict parameter to enforce branch tag match
 - targetMaybeSidetag: warn/prompt if target does not match branch

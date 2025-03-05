@@ -1,3 +1,5 @@
 resolver: lts-23.11
 ghc-options:
   HsOpenSSL: -optc=-Wno-incompatible-pointer-types
+extra-deps:
+  - fedora-krb-0.1.0

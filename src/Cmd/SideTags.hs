@@ -3,6 +3,7 @@ module Cmd.SideTags (
   SidetagMode(..))
 where
 
+import Fedora.Krb (krbTicket)
 import SimpleCmd (cmd_, cmdN, error')
 import SimplePrompt (yesNo)
 
@@ -10,7 +11,6 @@ import Branches
 import Common
 import Git (isPkgGitRepo)
 import Koji
-import Krb (krbTicket)
 
 data SidetagMode = SidetagAdd | SidetagRemove | SidetagTagged
   deriving Eq

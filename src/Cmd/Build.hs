@@ -6,6 +6,7 @@ module Cmd.Build (
   ) where
 
 import Distribution.Fedora.Branch (branchDestTag)
+import Fedora.Krb (krbTicket)
 import SimplePrompt (promptEnter, yesNo)
 
 import Bodhi
@@ -15,7 +16,6 @@ import Common
 import Common.System
 import Cmd.Merge
 import Git
-import Krb
 import Koji
 import Package
 import RpmBuild (checkSourcesMatch)

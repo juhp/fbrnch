@@ -8,6 +8,7 @@ where
 
 import Data.Aeson (Object)
 import Fedora.Bodhi (bodhiOverrides)
+import Fedora.Krb (krbTicket)
 import Network.HTTP.Query
 import SimplePrompt (yesNo)
 
@@ -19,7 +20,6 @@ import Branches
 import Cmd.WaitRepo (waitrepoCmd, WaitFetch(WaitNoFetch))
 import Git
 import Koji
-import Krb (krbTicket)
 import Package
 
 data OverrideMode = OverrideCreate | OverrideList | OverrideExpire

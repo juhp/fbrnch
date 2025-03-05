@@ -9,12 +9,12 @@ where
 import Common
 import Common.System
 
+import Fedora.Krb (fasIdFromKrb)
 import Network.HTTP.Directory (httpExists, httpManager)
 import SimplePrompt (promptEnter, yesNoDefault)
 
 import Branches
 import Koji
-import Krb
 import RpmBuild
 
 data ScratchOption = ScratchBuild | ScratchTask Int | SkipScratch

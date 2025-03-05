@@ -13,6 +13,7 @@ import Data.RPM.NVR (NVR)
 import Distribution.Fedora.Branch (branchDestTag)
 import Distribution.RPM.Build.Order (dependencyLayersRpmOpts)
 import Fedora.Bodhi hiding (bodhiUpdate)
+import Fedora.Krb (krbTicket)
 import Say
 import SimplePrompt (prompt, promptEnter, yesNo)
 import System.Console.Pretty
@@ -23,7 +24,6 @@ import Bugzilla
 import Branches
 import Cmd.Merge (mergeBranch)
 import Git
-import Krb
 import Koji
 import Package
 import RpmBuild (checkSourcesMatch, distRpmOptions, getDynSourcesMacros)

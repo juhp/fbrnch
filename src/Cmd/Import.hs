@@ -11,6 +11,7 @@ import Common
 import Common.System
 import qualified Common.Text as T
 
+import Fedora.Krb (krbTicket)
 import Network.URI
 import SimplePrompt (promptEnter)
 import SimplePrompt.Internal (runPrompt, mapInput, getPromptLine)
@@ -20,7 +21,6 @@ import Bugzilla
 import Cmd.RequestBranch (requestPkgBranches)
 import Git
 import Koji
-import Krb
 import ListReviews
 import Package
 

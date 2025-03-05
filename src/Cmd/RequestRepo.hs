@@ -3,6 +3,7 @@
 module Cmd.RequestRepo (requestRepos) where
 
 import Control.Exception.Extra (retry)
+import Fedora.Krb (fasIdFromKrb)
 import Network.HTTP.Directory (httpExists, httpManager)
 import Safe (headMay)
 import SimplePrompt (promptEnter, promptInitial, yesNo)
@@ -14,7 +15,6 @@ import Cmd.Import (importCmd)
 import Common
 import Common.System (error')
 import qualified Common.Text as T
-import Krb
 import ListReviews
 import Package
 import Pagure

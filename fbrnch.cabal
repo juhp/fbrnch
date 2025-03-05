@@ -93,7 +93,6 @@ executable fbrnch
                        Git
                        InterleaveOutput
                        Koji
-                       Krb
                        ListReviews
                        Package
                        Pagure
@@ -120,6 +119,7 @@ executable fbrnch
                        either,
                        email-validate,
                        extra,
+                       fedora-krb,
                        fedora-releases >= 0.2,
                        filepath,
                        http-conduit,
