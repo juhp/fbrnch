@@ -47,10 +47,6 @@ data BuildBy = SingleBuild
 coprServer :: String
 coprServer = "copr.fedorainfracloud.org"
 
-data Chroot = Chroot { chrootBranch :: Branch
-                     , chrootArch :: Arch }
-  deriving Eq
-
 releaseToBranch :: String -> Branch
 releaseToBranch release
   | "fedora-" `isPrefixOf` release =
@@ -71,6 +67,10 @@ branchToRelease (Fedora n) = "fedora-" ++ show n
 branchToRelease (EPEL n) = "epel-" ++ show n
 branchToRelease (EPELNext n) = "epel-" ++ show n ++ "-next"
 
+data Chroot = Chroot { chrootBranch :: Branch
+                     , chrootArch :: Arch }
+  deriving Eq
+
 readChroot :: String -> Chroot
 readChroot ch =
   case stripInfixEnd "-" ch of
@@ -79,6 +79,9 @@ readChroot ch =
 
 showChroot :: Chroot -> String
 showChroot (Chroot br ar) = branchToRelease br ++ '-' : showArch ar
+
+instance Ord Chroot where
+  compare (Chroot b1 _) (Chroot b2 _) = compare b1 b2
 
 data Arch = X86_64 | I686 | AARCH64 | PPC64LE | S390X
   deriving (Eq, Enum)
@@ -130,7 +133,7 @@ coprCmd dryrun mode force mbuildBy marchs project (breq, pkgs) = do
   where
     coprGetChroots :: String -> IO [Chroot]
     coprGetChroots user = do
-      chroots <- map (readChroot . T.unpack) <$> coprChroots coprServer user project
+      chroots <- reverseSort . map (readChroot . T.unpack) <$> coprChroots coprServer user project
       when (null chroots) $
         error' $ "No chroots found for" +-+ user ++ "/" ++ project
       branches <-
