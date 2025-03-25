@@ -112,7 +112,7 @@ getSources spec = do
   (patches,srcs) <- partitionEithers . map sourcePatchFile
                     <$> cmdLines "spectool" ["-a", spec]
   forM_ srcs $ \ src -> do
-    exists <- doesFileExist src &&^ checkCompression src
+    exists <- checkCompression src
     inSrcdir <- doesSourceDirFileExist msrcdir src
     unless exists $ do
       if inSrcdir
@@ -175,7 +175,10 @@ getSources spec = do
           when (isNothing have) $ do
             putStrLn $ "Running 'dnf install'" +-+ prog
             cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"install": ["--assumeyes", prog]
-          cmdBool prog ["-t", file]
+          exists <- doesFileExist file
+          if exists
+            then cmdBool prog ["-t", file]
+            else return False
         Nothing -> return True
 
     maybeSourceDir :: (FilePath -> FilePath -> IO ())
