@@ -570,6 +570,7 @@ isArchiveFile :: FilePath -> Bool
 isArchiveFile f =
   any ($ f) [(".tar." `isInfixOf`),
              (".zip" `isSuffixOf`),
+             (".crate" `isSuffixOf`),
              (".gpg" `isSuffixOf`),
              (".tgz" `isSuffixOf`)]
 
