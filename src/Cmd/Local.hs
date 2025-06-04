@@ -116,20 +116,7 @@ renameMasterCmd pkgs =
   withPackagesByBranches HeaderMay False dirtyGit Zero renameMasterBranch (Branches [], pkgs)
   where
   renameMasterBranch :: Package -> AnyBranch -> IO ()
-  renameMasterBranch _pkg _br = do
-    locals <- gitLines "branch" ["--format=%(refname:short)"]
-    -- FIXME dangling warning in current output:
-      -- From ssh://pkgs.fedoraproject.org/rpms/hedgewars
-      --  - [deleted]         (none)     -> origin/master
-      --    (refs/remotes/origin/HEAD has become dangling)
-      -- Branch 'rawhide' set up to track remote branch 'rawhide' from 'origin'.
-    -- compare commands with github rename
-    unless ("rawhide" `elem` locals) $ do
-      git_ "fetch" ["--prune"]
-      git_ "branch" ["--move", "master", "rawhide"]
-      git_ "remote" ["set-head", "origin", "rawhide"]
-      git_ "branch" ["--set-upstream-to", "origin/rawhide", "rawhide"]
-      git_ "pull" []
+  renameMasterBranch _pkg _br = renameMasterToRawhide
 
 countCmd :: (Maybe Branch,[String]) -> IO ()
 countCmd (mbr,pkgs) =

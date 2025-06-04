@@ -28,7 +28,8 @@ module Branches (
   anyBranchToRelease,
   getRequestedBranches,
   BranchesReq(..),
-  gitLines
+  gitLines,
+  renameMasterToRawhide
 ) where
 
 import Data.Time.Calendar (diffDays)
@@ -263,7 +264,8 @@ gitCurrentBranchWarn = do
   if br == OtherBranch "master"
     then do
     dir <- getDirectoryName
-    promptEnter $ dir ++ ":" +-+ show br +-+ "is not a valid branch, please use 'rename-rawhide'"
+    promptEnter $ dir +-+ show br +-+ "is not a valid branch: press Enter to rename to rawhide"
+    renameMasterToRawhide
     gitCurrentBranchWarn
     else return br
 
@@ -323,3 +325,19 @@ data BranchesReq =
 
 gitLines :: String -> [String] -> IO [String]
 gitLines c args = lines <$> git c args
+
+renameMasterToRawhide :: IO ()
+renameMasterToRawhide = do
+  locals <- gitLines "branch" ["--format=%(refname:short)"]
+  -- FIXME dangling warning in current output:
+    -- From ssh://pkgs.fedoraproject.org/rpms/hedgewars
+    --  - [deleted]         (none)     -> origin/master
+    --    (refs/remotes/origin/HEAD has become dangling)
+    -- Branch 'rawhide' set up to track remote branch 'rawhide' from 'origin'.
+  -- compare commands with github rename
+  unless ("rawhide" `elem` locals) $ do
+    git_ "fetch" ["--prune"]
+    git_ "branch" ["--move", "master", "rawhide"]
+    git_ "remote" ["set-head", "origin", "rawhide"]
+    git_ "branch" ["--set-upstream-to", "origin/rawhide", "rawhide"]
+    git_ "pull" []
