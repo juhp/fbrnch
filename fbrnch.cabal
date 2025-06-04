@@ -120,7 +120,7 @@ executable fbrnch
                        email-validate,
                        extra,
                        fedora-krb,
-                       fedora-releases >= 0.2,
+                       fedora-releases >= 0.3,
                        filepath,
                        http-conduit,
                        http-directory >= 0.1.5,

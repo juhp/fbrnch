@@ -2,4 +2,4 @@ resolver: nightly-2025-03-05
 ghc-options:
   HsOpenSSL: -optc=-Wno-incompatible-pointer-types
 extra-deps:
-  - fedora-krb-0.1.0
+  - fedora-releases-0.3.0

@@ -82,7 +82,9 @@ isFedoraBranch Rawhide = True
 isFedoraBranch _ = False
 
 isEPELBranch :: Branch -> Bool
+isEPELBranch (EPELNext _) = True
 isEPELBranch (EPEL _) = True
+isEPELBranch (EPELMinor _ _) = True
 isEPELBranch _ = False
 
 localBranches :: Bool -> IO [String]
@@ -113,8 +115,9 @@ mockRoot br march =
     case br of
       Rawhide -> "fedora-rawhide-" ++ arch
       Fedora n -> "fedora-" ++ show n ++ "-" ++ arch
-      EPEL n -> "epel-" ++ show n ++ "-" ++ arch
+      EPEL n -> "centos-stream+epel-" ++ show n ++ "-" ++ arch
       EPELNext n -> "centos-stream+epel-next-" ++ show n ++ "-" ++ arch
+      EPELMinor n _ ->  "rhel+epel-" ++ show n ++ "-" ++ arch
 
 ------
 
@@ -233,6 +236,7 @@ branchVersion Rawhide = "rawhide"
 branchVersion (Fedora n) = show n
 branchVersion (EPEL n) = show n
 branchVersion (EPELNext n) = show n
+branchVersion (EPELMinor n _) = show n
 
 getRequestedBranches :: [String] -> BranchesReq -> IO [Branch]
 getRequestedBranches existing breq = do

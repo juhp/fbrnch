@@ -66,6 +66,8 @@ distRpmOptions br =
       return ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
     EPELNext n ->
       return ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
+    EPELMinor n _ ->
+      return ["rhel" +-+ show n, "el" ++ show n +-+ "1"]
 
 -- branchToRelease :: AnyBranch -> IO Release
 -- branchToRelease (RelBranch br) = branchRelease br

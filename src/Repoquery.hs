@@ -29,4 +29,8 @@ repoquery sysbr br args = do
             EPELNext _ -> ["--disablerepo=*", "--enablerepo=epel-next"] ++
                           ["--enablerepo=epel-next-testing" | isJust mtesting] ++
                           ["--releasever=" ++ branchVersion br]
+            -- FIXME: need minor mapping
+            EPELMinor _ _ -> ["--disablerepo=*", "--enablerepo=epel"] ++
+                             ["--enablerepo=epel-testing" | isJust mtesting] ++
+                             ["--releasever=" ++ branchVersion br]
   cmd "dnf" (["repoquery", "--quiet"] ++ brOpts ++ args)

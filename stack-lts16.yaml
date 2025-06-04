@@ -15,5 +15,5 @@ extra-deps:
   - haskeline-0.8.0.0
   - http-query-0.1.2
   - fedora-krb-0.1.0
-  - fedora-releases-0.2.0
+  - fedora-releases-0.3.0
   - select-rpms-0.2.0

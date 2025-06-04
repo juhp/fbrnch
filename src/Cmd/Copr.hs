@@ -66,6 +66,8 @@ branchToRelease Rawhide = "fedora-rawhide"
 branchToRelease (Fedora n) = "fedora-" ++ show n
 branchToRelease (EPEL n) = "epel-" ++ show n
 branchToRelease (EPELNext n) = "epel-" ++ show n ++ "-next"
+-- unsupported really, maybe map to rhel?
+branchToRelease (EPELMinor n _) = "epel-" ++ show n
 
 data Chroot = Chroot { chrootBranch :: Branch
                      , chrootArch :: Arch }
