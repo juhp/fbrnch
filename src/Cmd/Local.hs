@@ -5,7 +5,7 @@ module Cmd.Local (
   localCmd,
   moveArtifactsCmd,
   nvrCmd,
-  renameMasterCmd,
+  renameRawhideCmd,
   srpmCmd,
   srpmSpecCmd
   ) where
@@ -111,8 +111,8 @@ commandCmd ifoutput compact continue cs =
       unless (continue || ret == ExitSuccess)
         exitFailure
 
-renameMasterCmd :: [String] -> IO ()
-renameMasterCmd pkgs =
+renameRawhideCmd :: [String] -> IO ()
+renameRawhideCmd pkgs =
   withPackagesByBranches HeaderMay False dirtyGit Zero renameMasterBranch (Branches [], pkgs)
   where
   renameMasterBranch :: Package -> AnyBranch -> IO ()

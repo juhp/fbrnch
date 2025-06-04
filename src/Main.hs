@@ -380,7 +380,7 @@ main = do
       <*> pkgArg "PROJECT"
       <*> branchesPackages
     , Subcommand "rename-rawhide" "Rename local 'master' branch to 'rawhide'" $
-      renameMasterCmd
+      renameRawhideCmd
       <$> manyPackages
     , Subcommand "count" "Count number of living packages" $
       countCmd
