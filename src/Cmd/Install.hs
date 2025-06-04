@@ -30,10 +30,10 @@ import RpmBuild
 -- FIXME handle subpackage renames (eg ghc-rpm-macros-no-prof to ghc-rpm-macros-quick)
 -- FIXME allow building an srpm
 installCmd :: Bool -> Bool -> Maybe Branch -> Maybe Natural
-           -> Maybe ForceShort -> [BCond] -> Bool -> Bool -> Bool -> Select
-           -> Maybe ExistingStrategy -> (Maybe Branch,[String])
+           -> Maybe ForceShort -> [BCond] -> Bool -> Bool -> Bool -> Yes
+           -> Select -> Maybe ExistingStrategy -> (Maybe Branch,[String])
            -> IO ()
-installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuilddeps select mexisting (mbr, pkgs) = do
+installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuilddeps yes select mexisting (mbr, pkgs) = do
   when (recurse && isShortCircuit mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch (boolHeader (recurse || length pkgs > 1)) True Nothing installPkg (mbr, pkgs)
@@ -76,7 +76,7 @@ installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuil
                   mpkgdir <- lookForPkgDir rbr ".." dep
                   case mpkgdir of
                     Nothing -> putStrLn $ dep +-+ "not known"
-                    Just pkgdir -> installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuilddeps select mexisting (mbr, [pkgdir]) >> putNewLn
+                    Just pkgdir -> installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuilddeps yes select mexisting (mbr, [pkgdir]) >> putNewLn
                 -- FIXME option to enable/disable installing missing deps
                 -- FIXME --skip-missing-deps or prompt
               else installDeps True spec
@@ -88,10 +88,10 @@ installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuil
           unless (isShortCircuit mforceshort') $ do
             let nvras = rpmsToNVRAs rpms
                 -- FIXME: prefix = fromMaybe (nvrName nvr) mprefix
-            decided <- decideRPMs No False mexisting select (unPackage pkg) nvras
+            decided <- decideRPMs yes False mexisting select (unPackage pkg) nvras
             -- FIXME dryrun and debug
             -- FIXME return Bool?
-            installRPMs False False Nothing No $ groupOnArch "RPMS" decided
+            installRPMs False False Nothing yes $ groupOnArch "RPMS" decided
 
         lookForPkgDir :: Branch -> FilePath -> String -> IO (Maybe FilePath)
         lookForPkgDir rbr topdir p = do

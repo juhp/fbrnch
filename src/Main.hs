@@ -8,7 +8,7 @@ import Distribution.Fedora.Branch (partitionBranches, readBranch)
 #if !MIN_VERSION_simple_cmd_args(0,1,7)
 import Options.Applicative (maybeReader, ReadM)
 #endif
-import SelectRPMs (existingStrategyOption, selectRpmsOptions)
+import SelectRPMs (existingStrategyOption, selectRpmsOptions, Yes(..))
 import SimpleCmdArgs
 
 -- commands
@@ -263,6 +263,7 @@ main = do
       <*> switchWith 'r' "reinstall" "reinstall rpms"
       <*> switchLongWith "no-build" "do not (re-)build (install built rpms)"
       <*> switchLongWith "ignore-builddeps" "do not install builddeps"
+      <*> flagWith No Yes 'y' "yes" "Assume yes to questions"
       <*> selectRpmsOptions
       <*> optional existingStrategyOption
       <*> maybeBranchPackages False
