@@ -46,7 +46,7 @@ unautospecCmd =
     when autochange $ do
       changelog <- cmd "rpmautospec" ["generate-changelog", spec]
       cmd_ "sed" ["-i", "/%autochangelog/d", spec]
-      appendFile spec $ "%changelog\n" ++ changelog ++ "\n"
+      appendFile spec $ changelog ++ "\n"
       removeFile "changelog"
     when autorelease $ do
       release <- calculateRelease spec
