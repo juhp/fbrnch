@@ -36,7 +36,7 @@ installCmd :: Bool -> Bool -> Maybe Branch -> Maybe Natural
 installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuilddeps yes select mexisting (mbr, pkgs) = do
   when (recurse && isShortCircuit mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
-  withPackagesMaybeBranch (boolHeader (recurse || length pkgs > 1)) True Nothing installPkg (mbr, pkgs)
+  withPackagesMaybeBranch (boolHeader (recurse || length pkgs > 1)) True Nothing installPkg (mbr, filter (/= ":") pkgs)
   where
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
