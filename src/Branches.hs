@@ -130,18 +130,49 @@ onlyRelBranch (OtherBranch br) = error' $ "Non-release branch not allowed:" +-+ 
 
 systemBranch :: IO Branch
 systemBranch = do
-  platform <- init . removePrefix "PLATFORM_ID=\"platform:" <$> cmd "grep" ["PLATFORM_ID=", "/etc/os-release"]
-  if platform == "eln"
-    then return Rawhide
-    else
-    case readBranch platform of
-      Just br -> do
-        branched <- getLatestFedoraBranch
-        return $
-          if br > branched
-          then Rawhide
-          else br
-      Nothing -> error' $ "could not determine system branch from platform" +-+ platform
+  mplatform <- listToMaybe <$> grep "PLATFORM_ID=" "/etc/os-release"
+  case mplatform of
+    Just p -> do
+      -- PLATFORM_ID="platform:f42"
+      let platform = takeWhileEnd (/= ':') $ dropSuffix "\"" p
+      if platform == "eln"
+        then return Rawhide
+        else
+        case readBranch platform of
+          Just br -> do
+            branched <- getLatestFedoraBranch
+            return $
+              if br > branched
+              then Rawhide
+              else br
+          Nothing -> error' $ "unknown platform" +-+ platform
+    Nothing -> do
+      mcpe <- listToMaybe <$> grep "CPE_NAME=" "/etc/os-release"
+      case mcpe of
+        Just c -> do
+          -- CPE_NAME="cpe:/o:redhat:enterprise_linux:9::baseos"
+          -- CPE_NAME="cpe:/o:fedoraproject:fedora:43"
+          let cpe = takeEnd 2 $ splitOn ":" $ dropPrefix "CPE_NAME=\"cpe:/o:" $ dropSuffix "\"" $ fst $ breakOn "::" c
+          case cpe of
+            [os,ver] ->
+              if ver == "eln"
+              then return Rawhide
+              else
+                case readBranch $ osPrefix os ++ ver of
+                  Just br -> do
+                    branched <- getLatestFedoraBranch
+                    return $
+                      if br > branched
+                      then Rawhide
+                      else br
+                  Nothing -> error' "could not map CPE_NAME to branch"
+            _ -> error' $ "could not parse:" +-+ c
+        Nothing -> error' "CPE_NAME not found in /etc/os-release"
+    where
+      osPrefix "fedora" = "f"
+      osPrefix "centos" = "epel"
+      osPrefix "enterprise_linux" = "epel"
+      osPrefix s = s
 
 listOfBranches :: Bool -> Bool -> BranchesReq -> IO [Branch]
 listOfBranches distgit _active (BranchOpt AllBranches) =
