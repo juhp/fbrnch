@@ -3,7 +3,8 @@
 module Cmd.Install (
   installCmd,
   notInstalledCmd,
-  Select(..)
+  Select(..),
+  unInstallCmd
   ) where
 
 import Data.RPM
@@ -146,3 +147,64 @@ nvraInstalled rpm =
 pkgInstalled :: String -> IO Bool
 pkgInstalled pkg =
   cmdBool "rpm" ["--quiet", "-q", pkg]
+
+unInstallCmd :: Yes -> (Maybe Branch,[String]) -> IO ()
+unInstallCmd yes (mbr, pkgs) = do
+  withPackagesMaybeBranch (boolHeader (length pkgs > 1)) True Nothing unInstallPkg (mbr, pkgs)
+  where
+    unInstallPkg :: Package -> AnyBranch -> IO ()
+    unInstallPkg pkg br = do
+      whenJust mbr $ gitSwitchBranch . RelBranch
+      dead <- doesFileExist "dead.package"
+      if dead
+        then putStrLn "dead package"
+        else do
+        spec <- localBranchSpecFile pkg br
+        built <- builtRpms br spec
+        let rpms = map (rpmName . readNVRA) built
+        -- FIXME can this be removed now?
+        installed <- filterM (\p -> cmdBool "rpm" ["--quiet", "-q", p]) rpms
+        unless (null installed) $ do
+          whenJust (headMay built) $
+            putStrLn . showNVR . dropArch . readNVRA
+          unInstallRPMs False installed
+
+    unInstallRPMs :: Bool -> [String] -> IO ()
+    unInstallRPMs debug rpms =
+      unless (null rpms) $ do
+      mgr <- do
+        ostree <- doesDirectoryExist "/sysroot/ostree"
+        if ostree
+          then return OSTREE
+          else do
+          mdnf5 <- findExecutable "dnf5"
+          return $ maybe DNF3 (const DNF5) mdnf5
+      let pkgmgr =
+            case mgr of
+              DNF3 -> "dnf-3"
+              DNF5 -> "dnf5"
+              RPM -> "rpm"
+              OSTREE -> "rpm-ostree"
+          com = unInstallCommand mgr
+        in
+        do
+          when debug $ mapM_ putStrLn rpms
+          (case mgr of
+            OSTREE -> cmd_
+            _ -> if debug then sudoLog else sudo_) pkgmgr $
+            com ++ rpms ++ ["--assumeyes" | yes == Yes && mgr `elem` [DNF3,DNF5]]
+
+    unInstallCommand :: PkgMgr -> [String]
+    unInstallCommand mgr =
+      case mgr of
+        DNF3 -> ["remove"]
+        DNF5 -> ["remove"]
+        RPM -> ["-e"]
+        OSTREE -> ["uninstall"]
+
+#if !MIN_VERSION_simple_cmd(0,2,7)
+sudoLog :: String -- ^ command
+     -> [String] -- ^ arguments
+     -> IO ()
+sudoLog = sudo_
+#endif

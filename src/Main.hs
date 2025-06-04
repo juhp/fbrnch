@@ -270,6 +270,10 @@ main = do
     , Subcommand "not-installed" "Packages not installed locally" $
       notInstalledCmd
       <$> maybeBranchPackages False
+    , Subcommand "uninstall" "Remove installed package(s)" $
+      unInstallCmd
+      <$> flagWith No Yes 'y' "yes" "Assume yes to questions"
+      <*> maybeBranchPackages False
     , Subcommand "bugs" "List package bugs" $
       bugsCmd
       <$> optional (strOptionWith 's' "summary" "KEY" "Search for bugs containing keyword")
