@@ -12,6 +12,7 @@ module Bodhi (
   )
 where
 
+import Data.Aeson.Types (Object)
 import Data.Char (isDigit)
 import Data.RPM.NVR (NVR)
 import Distribution.Fedora.Branch (branchRelease)
@@ -160,17 +161,20 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs = do
                 return True
         when updatedone $ do
           -- FIXME avoid this if we know the update URLs (split update does not seem to return URLs)
-          updates <- bodhiUpdates [makeItem "display_user" "0", makeItem "builds" nvrs]
-          if null updates
-            then do
-            putStrLn $ "bodhi submission failed for" +-+ nvrs
-            promptEnter "Press Enter to resubmit to Bodhi"
-            bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs
-            else
-            forM_ updates $ \update ->
-            case lookupKey "url" update of
-              Nothing -> error' "Update created but no url"
-              Just uri -> putStrLn uri
+          eupdates <- bodhiUpdatesEither [makeItem "display_user" "0", makeItem "builds" nvrs]
+          case eupdates of
+            Left err -> error' err
+            Right updates ->
+              if null updates
+              then do
+              putStrLn $ "bodhi submission failed for" +-+ nvrs
+              promptEnter "Press Enter to resubmit to Bodhi"
+              bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs
+              else
+              forM_ updates $ \update ->
+              case lookupKey "url" update of
+                Nothing -> error' "Update created but no url"
+                Just uri -> putStrLn uri
   where
     extractBugReferences :: String -> [String]
     extractBugReferences clog =
@@ -198,3 +202,11 @@ bodhiBuildExists :: NVR -> IO Bool
 bodhiBuildExists nvr = do
   obj <- bodhiBuild $ showNVR nvr
   return $ isNothing (lookupKey "status" obj :: Maybe String)
+
+bodhiUpdatesEither :: Query -> IO (Either String [Object])
+bodhiUpdatesEither params = do
+  res <- queryBodhi params "updates/"
+  return $
+    case lookupKey "updates" res of
+      Just updates -> Right updates
+      Nothing -> Left $ "failed to read updates:\n" ++ show res
