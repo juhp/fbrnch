@@ -31,11 +31,15 @@ module Branches (
   gitLines
 ) where
 
+import Data.Time.Calendar (diffDays)
+import Data.Time.Clock (getCurrentTime, utctDay)
 import Data.Either (partitionEithers)
-import Distribution.Fedora.Branch (Branch(..), eitherBranch, getActiveBranched,
+import Distribution.Fedora.Branch (Branch(..), branchRelease,
+                                   eitherBranch, getActiveBranched,
                                    getActiveBranches, getLatestFedoraBranch,
                                    readActiveBranch, eitherActiveBranch,
                                    readBranch, showBranch)
+import Distribution.Fedora.Release (Release(releaseEOL))
 import SimpleCmd.Git
 import SimplePrompt (promptEnter, promptInitial)
 import qualified System.Info (arch)
@@ -204,8 +208,17 @@ listOfBranches distgit active (Branches brs) =
     activeBrs <- getActiveBranches
     forM_ brs $ \ br ->
           if active
-            then unless (br `elem` activeBrs) $
-                 error' $ showBranch br +-+ "is not an active branch"
+            then do
+            unless (br `elem` activeBrs) $
+              error' $ showBranch br +-+ "is not an active branch"
+            rel <- branchRelease br
+            let meol = releaseEOL rel
+            whenJust meol $ \eol -> do
+              let date = read eol
+              today <- utctDay <$> getCurrentTime
+              let diff = diffDays date today
+              when (diff <= 7) $
+                warning $ "EOL for" +-+ showBranch br +-+ "is" +-+ show diff +-+ "days away!"
             else
             case br of
               Fedora _ -> do
