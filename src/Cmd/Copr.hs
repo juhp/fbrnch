@@ -85,7 +85,7 @@ showChroot (Chroot br ar) = branchToRelease br ++ '-' : showArch ar
 instance Ord Chroot where
   compare (Chroot b1 _) (Chroot b2 _) = compare b1 b2
 
-data Arch = X86_64 | I686 | AARCH64 | PPC64LE | S390X
+data Arch = X86_64 | I386 | AARCH64 | PPC64LE | S390X
   deriving (Eq, Enum)
 
 allCoprArchs :: [Arch]
@@ -93,7 +93,7 @@ allCoprArchs = [X86_64 ..]
 
 readArch :: String -> Arch
 readArch "x86_64" = X86_64
-readArch "i686" = I686
+readArch "i386" = I386
 readArch "aarch64" = AARCH64
 readArch "ppc64le" = PPC64LE
 readArch "s390x" = S390X
@@ -101,7 +101,7 @@ readArch a = error' $ "unknown arch:" +-+ a
 
 showArch :: Arch -> String
 showArch X86_64 = "x86_64"
-showArch I686 = "i686"
+showArch I386 = "i386"
 showArch AARCH64 = "aarch64"
 showArch PPC64LE = "ppc64le"
 showArch S390X = "s390x"
