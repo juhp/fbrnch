@@ -317,7 +317,7 @@ targetMaybeSidetag dryrun strict create br msidetagTarget =
               unless ok $ error' "aborted"
             else
               whenM isPkgGitRepo $
-              warning ("Note:" +-+ msg)
+              warning ("Warning:" +-+ msg)
         return t
     Just SideTag -> do
       tags <- kojiUserSideTags (Just br)
