@@ -53,7 +53,7 @@ mockCmd dryrun mnoclean network reinstall mockmode mroot march (breq, ps) = do
       srpms <- mapM (prepSrpm (RelBranch br)) pkgs
       putNewLn
       -- FIXME? is it better just to fail asking for target branch?
-      rootBr <- maybe (if pkggit then getReleaseBranch else systemBranch) return mroot
+      rootBr <- maybe (if pkggit then getReleaseBranch else return br) return mroot
       let resultdir =
             case srpms of
               [] -> error' "cannot build zero packages"
