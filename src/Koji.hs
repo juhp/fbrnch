@@ -46,7 +46,7 @@ import Distribution.Fedora.Release (releaseDistTag)
 import Fedora.Krb (fasIdFromKrb, krbTicket)
 import Safe (headMay, tailSafe)
 import Say (sayString)
-import SimplePrompt (promptEnter, yesNo)
+import SimplePrompt (promptEnter, promptNonEmpty, yesNo)
 import System.Exit
 import System.Process.Typed
 import System.Timeout (timeout)
@@ -298,7 +298,6 @@ createKojiSidetag dryrun br = do
     return sidetag
     else error' "'fedpkg request-side-tag' failed"
 
--- FIXME offer choice of existing sidetags
 targetMaybeSidetag :: Bool -> Bool -> Bool -> Branch -> Maybe SideTagTarget
                    -> IO String
 targetMaybeSidetag dryrun strict create br msidetagTarget =
@@ -325,11 +324,34 @@ targetMaybeSidetag dryrun strict create br msidetagTarget =
         [] ->
           if create
           then createKojiSidetag dryrun br
-          else error' "incorrect side-tag create request"
+          else error' "no existing side-tag"
         [tag] -> return tag
-        sidetags -> error' $ show (length sidetags) +-+ "user side-tags found for" +-+ showBranch br ++ ":\n" +-+ unwords sidetags
+        _ -> do
+          putStrLn $ "User side-tags found for" +-+ showBranch br ++ ":"
+
+          let num = length tags
+              nums = map show [1..num]
+              numtags = zip nums $ sort tags
+          mapM_ (putStrLn . \(n,s) -> n ++ ":" +-+ s) numtags
+          tag <- promptTags numtags $ "Choose" +-+ (if num == 2 then "1 or 2" else "1-" ++ show num) +-+ "or enter sidetag; or 0 to abort"
+          putStrLn $ "will use" +-+ tag
+          putNewLn
+          return tag
 
 logSay :: TimeZone -> String -> IO ()
 logSay tz str = do
   now <- utcToLocalTime tz <$> getCurrentTime
   sayString $ formatTime defaultTimeLocale "%T" now +-+ str
+
+promptTags :: [(String,String)] -> String -> IO String
+promptTags numtags txt = do
+  ans <- promptNonEmpty txt
+  if ans `elem` map snd numtags
+    then return ans
+    else
+    case lookup ans numtags of
+      Just t -> return t
+      Nothing ->
+        if lower ans `elem` ["0", "q", "quit", "no"]
+        then error' "aborting"
+        else promptTags numtags txt
