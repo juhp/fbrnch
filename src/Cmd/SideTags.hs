@@ -28,9 +28,10 @@ sideTagsCmd dryrun mmode brs = do
         else error' "please specify a branch"
     else return brs
   sidetags <-
+    sort <$>
     if null branches
     then kojiUserSideTags Nothing
-    else concat <$> mapM (kojiUserSideTags . Just) branches
+    else concatMapM (kojiUserSideTags . Just) branches
   unless (isNothing mmode)
     krbTicket
   case mmode of
