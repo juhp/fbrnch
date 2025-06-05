@@ -341,7 +341,6 @@ checkIfRemoteBranchExists br =
 data CommitOpt = CommitMsg String | CommitAmend
 
 -- FIXME select ref by number
--- FIXME minimum length of hash
 refPrompt :: [Commit] -> String -> IO (Maybe String)
 refPrompt commits txt = do
   case map commitRef commits of
@@ -356,9 +355,15 @@ refPrompt commits txt = do
         "yes" -> return $ Just c
         "no" -> return Nothing
         "n" -> return Nothing
+        "origin" -> return $ Just "origin"
         _ ->
           case find (ref `isPrefixOf`) cs of
-            Just cref -> return $ Just cref
+            Just cref ->
+              if length ref > 3
+              then return $ Just cref
+              else do
+                putStrLn "ref should be over 3 characters"
+                refPrompt commits txt
             Nothing -> refPrompt commits txt
 
 -- FIXME also include branch
