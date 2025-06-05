@@ -2,7 +2,8 @@
 
 module Cmd.RequestBranch (
   requestBranchesCmd,
-  requestPkgBranches
+  requestPkgBranches,
+  waitForKojiPkgBranch
   ) where
 
 import Fedora.Krb (fasIdFromKrb)
