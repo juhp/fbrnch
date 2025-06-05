@@ -208,11 +208,15 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                       case mnewest of
                         Nothing -> return $ isNothing mlatest
                         Just newest -> do
+                          -- FIXME check Update status instead
                           newestTags <- kojiNVRTags newest
-                          unless (any (`elem` newestTags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-updates-pending"]) $ do
+                          -- FIXME separate fedora and epel tags
+                          unless (any (`elem` newestTags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-updates-pending", showBranch br ++ "-testing"]) $ do
                             -- FIXME print how many days left
-                            putStrLn $ "Warning:" +-+ showNVR newest +-+ "still in testing?"
-                            promptEnter "Press Enter to continue"
+                            putStrLn $ "Warning:" +-+ showNVR newest +-+ "in not stable yet, with current" +-+ pluralOnly newestTags "tag" ++ ":"
+                            mapM_ putStrLn newestTags
+                            putNewLn
+                            promptEnter "Press Enter to continue with build"
                           return False
                 unless (buildoptStash opts) $
                   unlessM isGitDirClean $
