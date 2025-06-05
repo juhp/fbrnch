@@ -3,21 +3,20 @@
 module Cmd.ListPackages (
   listCmd,
   Packager(..),
-  listLocalCmd
+  listLocalCmd,
+  listPackages
   )
 where
 
-import Data.Aeson
 import Fedora.Pagure
 import SimplePrompt (yesNoDefault)
 
 import Branches
 import Common
 import Common.System
-import qualified Common.Text as T
 import Git (gitSwitchBranch')
 import Package
-import Pagure
+import Pagure (srcfpo)
 
 data Packager = Owner String | Committer String
 
@@ -26,26 +25,31 @@ listCmd :: Bool -> Bool -> Maybe Packager -> [String] -> IO ()
 listCmd force count mpackager pkgs = do
   unless (force || count || isJust mpackager || not (null pkgs)) $
     error' "Please give a package pattern, --count, or --owner/--username"
-  if null pkgs then listPackage Nothing
-    else mapM_ (listPackage . Just) pkgs
-  where
-    -- FIXME add default --max-pages?
-    listPackage :: Maybe String -> IO ()
-    listPackage mpattern = do
-      let path = "projects"
-          params = makeKey "short" "1" ++ fork ++ packager ++ makeKey "namespace" "rpms" ++ maybeKey "pattern" mpattern
-      mnum <- queryPagureCount srcfpo path params "pagination"
-      whenJust mnum $ \num ->
+  ecountpkgs <- countListPackages force count mpackager pkgs
+  case ecountpkgs of
+    Left num -> print num
+    Right packages -> mapM_ putStrLn packages
+
+countListPackages :: Bool -> Bool -> Maybe Packager -> [String]
+                  -> IO (Either Integer [String])
+countListPackages force count mpackager pkgs = do
+  emcounts <-
+    if null pkgs
+    then Left <$> countPackages Nothing
+    else Right <$> mapM (countPackages . Just) pkgs
+  case emcounts of
+      Left mcount ->
         if count
-        then print num
-        else do
-          ok <-
-            if num > 1000 && not force
-            then yesNoDefault False $ show num +-+ "results, continue"
-            else return True
-          when ok $ do
-            pages <- queryPagureCountPaged srcfpo False path params ("pagination", "page")
-            mapM_ printPage pages
+        then return $ Left $ fromMaybe 0 mcount
+        else Right <$> doListPackages (mcount, Nothing)
+      Right mcounts ->
+        if count
+        then return $ Left $ sum $ catMaybes mcounts
+        else Right <$> concatMapM doListPackages (zip mcounts $ map Just pkgs)
+  where
+    path = "projects"
+    mkParams mpattern =
+      makeKey "short" "1" ++ makeKey "fork" "0" ++ packager ++ makeKey "namespace" "rpms" ++ maybeKey "pattern" mpattern
       where
         packager =
           case mpackager of
@@ -53,13 +57,27 @@ listCmd force count mpackager pkgs = do
             Just (Owner o) -> makeKey "owner" o
             Just (Committer c) -> makeKey "username" c
 
-        fork = makeKey "fork" "0"
+    countPackages :: Maybe String -> IO (Maybe Integer)
+    countPackages mpattern =
+      queryPagureCount srcfpo path (mkParams mpattern) "pagination"
 
-        printPage :: Object -> IO ()
-        printPage result =
-          let projects = lookupKey' "projects" result :: [Object]
-          in
-          mapM_ (T.putStrLn . lookupKey' "name") projects
+    -- FIXME add default --max-pages?
+    doListPackages :: (Maybe Integer, Maybe String) -> IO [String]
+    doListPackages (Nothing, mpat) =
+      error' $ "no matches found" +-+ maybe "" ("for" +-+) mpat
+    doListPackages (Just 0, _mpat) = return []
+    doListPackages (Just num, mpattern) = do
+      ok <-
+        if num > 1000 && not force
+        then yesNoDefault False $ show num +-+ "results, continue"
+        else return True
+      if ok
+        then do
+        pages <- queryPagureCountPaged srcfpo False path (mkParams mpattern) ("pagination", "page")
+        return $
+          concatMap (map (lookupKey' "name")) $
+          mapMaybe (lookupKey "projects") pages
+        else error' "aborted"
 
 -- FIXME add --count
 listLocalCmd :: (Maybe Branch, [String]) -> IO ()
@@ -67,10 +85,15 @@ listLocalCmd =
   withPackagesMaybeBranch HeaderNone False dirtyGit listLocalPkg
   where
     listLocalPkg :: Package -> AnyBranch -> IO ()
-    listLocalPkg _ (OtherBranch _) =
-      error' "other branches not supported yet"
     listLocalPkg pkg (RelBranch br) = do
       exists <- gitSwitchBranch' True br
       when exists $
         whenM (isJust <$> maybeFindSpecfile) $
         putStrLn $ unPackage pkg
+    listLocalPkg _ (OtherBranch _) =
+      error' "other branches not supported yet"
+
+listPackages :: Bool -> Maybe Packager -> [String] -> IO [String]
+listPackages force mpackager pkgs =
+  either (error' "impossible happened") id <$>
+  countListPackages force False mpackager pkgs

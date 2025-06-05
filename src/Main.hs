@@ -107,7 +107,7 @@ main = do
       buildCmd
       <$> buildOpts
       <*> branchesPackages
-    , Subcommand "list" "List packages in pagure" $
+    , Subcommand "list" "List packages in pagure distgit" $
       listCmd
       <$> forceOpt "Do not prompt if large number of results"
       <*> switchWith 'c' "count" "Print number of packages"
