@@ -223,8 +223,9 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                   error' "local changes remain (dirty)"
                 unless dryrun krbTicket
                 whenJust mpush $ \ref ->
-                  unless dryrun $
+                  unless dryrun $ do
                   gitPush False $ Just $ ref ++ ":" ++ showBranch br
+                  putNewLn
                 unlessM (null <$> gitOneLineLog ("origin/" ++ showBranch br ++ "..HEAD")) $
                   unless dryrun $ do
                   ok <- yesNo "Unpushed changes remain, continue"
