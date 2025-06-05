@@ -228,6 +228,7 @@ generateSrpmNoDist nodist force mbr spec = do
       then buildSrpm srpmfile opts
       else do
       srpmTime <- getModificationTime srpmfile
+      -- FIXME: cp -p means modified patch may look older: maybe should cache/consider file hash
       fileTimes <- mapM getModificationTime (spec:srcs)
       if any (srpmTime <) fileTimes
         then buildSrpm srpmfile opts
@@ -335,8 +336,8 @@ buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
           prevsize <- getFileSize backup
           currsize <- getFileSize buildlog
           when (prevsize > currsize) $
-            copyFile backup (backup <.> "prev")
-        copyFile buildlog (buildlog <.> "prev")
+            cmd_ "cp" ["-p", backup, backup <.> "prev"]
+        cmd_ "cp" ["-p", buildlog, buildlog <.> "prev"]
       -- FIXME also backup successful buildtree (if log ends in "+ exit 0")
       timeIO $
         if not quiet || isShortCircuit mforceshort
