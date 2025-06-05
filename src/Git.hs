@@ -58,9 +58,9 @@ gitBool c args =
 -- Just True => ancestor
 -- Nothing => neither ancestor
 -- Just False => reverse ancestor
-gitMergeable :: Bool -> Branch -> IO (Maybe Bool,[Commit])
-gitMergeable origin br = do
-  let ref = (if origin then "origin/" else "") ++ showBranch br
+gitMergeable :: Branch -> Branch -> IO (Maybe Bool,[Commit])
+gitMergeable target br = do
+  let ref = "origin/" ++ showBranch br
   mancestor <- do
     ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
     if ancestor
@@ -69,16 +69,9 @@ gitMergeable origin br = do
       revancestor <- gitBool "merge-base" ["--is-ancestor", ref, "HEAD"]
       if revancestor
         then return $ Just False
-        else
-        if not origin
-        then do
-          origancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", "origin/" ++ showBranch br]
-          if origancestor
-            then error $ "origin/" ++ showBranch br +-+ "is ancestor but not" +-+ showBranch br
-            else return Nothing
         else return Nothing
   commits <- gitOneLineLog ("HEAD.." ++ ref)
-  when (not origin && null commits && mancestor /= Just True) $
+  when (br /= target && null commits && mancestor /= Just True) $
     if mancestor == Just False
       then do
       diff <- git "diff" [ref]
@@ -108,7 +101,7 @@ getNewerBranch pkg br = do
 
 gitMergeOrigin :: Branch -> IO ()
 gitMergeOrigin br = do
-  (mancestor,commits) <- gitMergeable True br
+  (mancestor,commits) <- gitMergeable br br
   when (mancestor == Just True) $
     unless (null commits) $ do
     pull <- git "pull" []
@@ -116,16 +109,16 @@ gitMergeOrigin br = do
       putStrLn pull
 
 -- FIXME maybe require local branch already here
+-- FIXME also expose local commits
 newerMergeable :: String -> Branch -> IO (Bool,[Commit],Maybe Branch)
 newerMergeable pkg br =
   if br == Rawhide
   then return (False,[],Nothing)
   else do
     mnewer <- getNewerBranch pkg br
-    locals <- localBranches True
     case mnewer of
       Just newer -> do
-        (mancestor,commits) <- gitMergeable (showBranch newer `notElem` locals) newer
+        (mancestor,commits) <- gitMergeable br newer
         return (mancestor == Just True, commits, Just newer)
       Nothing -> return (False,[],Nothing)
 
