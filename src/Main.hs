@@ -285,7 +285,7 @@ main = do
     , Subcommand "bump" "Bump release for package" $
       bumpCmd
       <$> dryrunOpt "Dry run: do not bump"
-      <*> switchWith 'l' "local" "Use local origin rather than checking latest koji"
+      <*> switchLongWith "strict" "Check koji if NVR was built"
       <*> optional (strOptionWith 'm' "message" "COMMITMSG"
                     "Specify commit message")
       <*> optional (strOptionWith 'c' "changelog" "CLOGENTRY"

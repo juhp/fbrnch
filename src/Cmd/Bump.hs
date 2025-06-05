@@ -4,7 +4,7 @@ module Cmd.Bump
   )
 where
 
-import Distribution.Fedora.Branch (branchDestTag)
+import System.Console.Pretty (color, Color(Green, Yellow))
 import System.IO.Extra
 
 import Branches
@@ -15,7 +15,8 @@ import Koji
 import Package
 
 -- FIXME --force
--- FIXME --target
+-- FIXME ignore ":"
+-- FIXME countdown
 bumpCmd :: Bool -> Bool -> Maybe String -> Maybe String
          -> (BranchesReq,[String]) -> IO ()
 bumpCmd dryrun local mcmsg mclog =
@@ -25,7 +26,7 @@ bumpCmd dryrun local mcmsg mclog =
 
 bumpPkg :: Bool -> Bool -> Maybe String -> Maybe String
         -> Package -> AnyBranch -> IO ()
-bumpPkg dryrun local mcmsg mclog pkg br = do
+bumpPkg dryrun strict mcmsg mclog pkg br = do
   dead <- doesFileExist "dead.package"
   if dead
     then putStrLn "dead package"
@@ -34,35 +35,36 @@ bumpPkg dryrun local mcmsg mclog pkg br = do
     unpushed <- gitOneLineLog $ "origin/" ++ show br ++ "..HEAD"
     displayCommits True unpushed
     autorelease <- isAutoRelease spec
-    if autorelease
-      then
-      if not (null unpushed)
-      then putStrLn $ "autorelease: unpushed" +-+
-           case length unpushed of
-             1 -> "commit"
-             n -> show n +-+ "commits"
-      else
-        if dryrun
-        then putStrLn "autorelease: bump with commit"
-        else do
-          let copts =
-                "-m" :
-                case mcmsg of
-                  Just msg -> [msg]
-                  Nothing ->
-                    case mclog of
-                      Just cl -> [cl]
-                      Nothing -> ["Bump release"]
-          git_ "commit" $ "-a" : "--allow-empty" : copts
+    alreadybumped <-
+      if autorelease
+      then do
+        let bumped = not $ null unpushed
+        when bumped $
+          putStrLn $ "autorelease: unpushed" +-+ pluralOnly unpushed "commit"
+        if bumped
+          then return True
+          else do
+          if strict
+            then do
+            rbr <-
+              case br of
+                RelBranch rbr -> return rbr
+                OtherBranch _ -> error' "unsupported branch"
+            newnvr <- pkgNameVerRel' rbr spec
+            mstate <- kojiGetBuildState fedoraHub $ BuildInfoNVR $ showNVR newnvr
+            let built = mstate == Just BuildComplete
+            if built
+              then putStrLn $ color Yellow $ showNVR newnvr +-+ "already built"
+              else putStrLn $ showNVR newnvr +-+ "not built yet"
+            return $ not built
+            else return False
       else do
-      rbr <-
-        case br of
-          RelBranch rbr -> return rbr
-          OtherBranch _ -> systemBranch
-      newnvr <- pkgNameVerRel' rbr spec
-      moldnvr <-
-        if local
-        then do
+        rbr <-
+          case br of
+            RelBranch rbr -> return rbr
+            OtherBranch _ -> error' "unsupported branch"
+        newnvr <- pkgNameVerRel' rbr spec
+        moldnvr <-
           withTempDir $ \tempdir -> do
             git "show" ["origin:" ++ spec] >>=
               writeFile (tempdir </> spec)
@@ -76,33 +78,36 @@ bumpPkg dryrun local mcmsg mclog pkg br = do
                 clonePkg False True AnonClone (Just rbr) $ unPackage pkg
                 withCurrentDirectory (unPackage pkg) $
                   pkgNameVerRel rbr spec
-        else
-          case br of
-            RelBranch rbr' -> do
-              tag <- branchDestTag rbr'
-              kojiLatestNVR tag $ unPackage pkg
-            -- FIXME fallback to local?
-            _ -> return Nothing
-      whenJust moldnvr $ \o -> putStrLn $ showNVR o +-+ "->"
-      putStrLn $ showNVR newnvr
-      if equivNVR newnvr moldnvr
-        then do
-        git_ "log" ["origin..HEAD", "--pretty=oneline"]
-        let clog =
-              case mclog of
-                Just cl -> cl
-                Nothing ->
-                  case mcmsg of
-                    Just msg -> msg
-                    _ -> "Rebuild"
-        unless (autorelease || dryrun) $
-          cmd_ "rpmdev-bumpspec" ["-c", clog, spec]
-        let copts =
-              case mcmsg of
-                Nothing -> ["-m", "Bump release"]
-                Just msg -> ["-m", msg]
+        if equivNVR newnvr moldnvr
+          then
+          if strict
+          then do
+            mstate <- kojiGetBuildState fedoraHub $ BuildInfoNVR $ showNVR newnvr
+            let built = mstate == Just BuildComplete
+            unless built $
+              putStrLn $ showNVR newnvr +-+ "not built yet"
+            return $ not built
+          else return False
+          else do
+            whenJust moldnvr $ \o -> do
+              putStrLn $ showNVR o +-+ "->"
+              putStrLn $ showNVR newnvr
+            return True
+    if alreadybumped
+      then putStrLn $ color Green "already bumped"
+      else do
+      git_ "log" ["origin..HEAD", "--pretty=oneline"]
+      let clog =
+            case mclog of
+              Just cl -> cl
+              Nothing ->
+                case mcmsg of
+                  Just msg -> msg
+                  _ -> "Rebuild"
+      unless (autorelease || dryrun) $
+        cmd_ "rpmdev-bumpspec" ["-c", clog, spec]
+      let cmsg = fromMaybe "Bump release" mcmsg
+      if dryrun
+        then putStrLn $ "would be bumped with commit:" +-+ show cmsg
         -- FIXME quiet commit?
-        if dryrun
-          then putStrLn "would be bumped with commit"
-          else git_ "commit" $ "-a" : (if autorelease then ("--allow-empty" :) else id) copts
-        else putStrLn "already bumped"
+        else git_ "commit" $ "-a" : (if autorelease then ("--allow-empty" :) else id) ["-m", cmsg]
