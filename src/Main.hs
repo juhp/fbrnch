@@ -77,6 +77,7 @@ main = do
     , Subcommand "switch" "Switch branch" $
       switchCmd
       <$> verboseOpt "verbose output"
+      <*> switchLongWith "lenient" "keep going if package missing branch"
       <*> anyBranchArg
       <*> manyPackages
     , Subcommand "nvr" "Print name-version-release" $
@@ -421,6 +422,12 @@ main = do
       moveArtifactsCmd
       <$> switchWith 'd' "delete" "Remove duplicate artifacts"
       <*> manyPackages
+    , Subcommand "tag-build-to-sidetag" "Tag NVR for current branch to sidetag" $
+      tagBuildToSidetagCmd
+      <$> dryrunOpt "Dry run"
+      <*> switchWith 'k' "allow-dirty" "Allow unclean git repo"
+      <*> optionWith branchM 't' "to" "BRANCH" "Target branch of sidetag"
+      <*> maybeBranchPackages False
     ]
   where
     cloneRequest :: Parser CloneRequest
