@@ -5,7 +5,7 @@ where
 
 import Control.Monad.Extra (when, whenJustM)
 import Data.Maybe (isJust)
-import SimpleCmd (error')
+import SimpleCmd (error', (+-+))
 
 import Branches
 import Git
@@ -18,8 +18,13 @@ pushPkgs dryrun nofetch mref (breq, pkgs) = do
   withPackagesByBranches HeaderMust False (if nofetch then cleanGit else cleanGitFetch) AnyNumber pushPkg (breq, pkgs)
   where
     pushPkg :: Package -> AnyBranch -> IO ()
-    pushPkg _pkg br = do
-      whenJustM (gitShortLog1 $ Just $ "origin/" ++ show br ++ "..HEAD") $ putStrLn . showCommit
-      if dryrun
-        then checkOnBranch
-        else gitPush False mref
+    pushPkg _pkg (RelBranch br) = do
+      exists <- gitSwitchBranch' True br
+      if exists
+        then do
+        whenJustM (gitShortLog1 $ Just $ "origin/" ++ showBranch br ++ "..HEAD") $ putStrLn . showCommit
+        if dryrun
+          then checkOnBranch
+          else gitPush False mref
+        else error' $ "no branch:" +-+ showBranch br
+    pushPkg _ (OtherBranch _) = error' "pushing to non-release branches unsupported"
