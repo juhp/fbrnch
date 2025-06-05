@@ -433,8 +433,8 @@ You can create your key at
 
 ## Known issues
 - currently it only checks if already built by NVR not githash
-- parallel and sort, etc do not take pkgconfig() and other meta() deps into
-  account yet (this should be fixed soon in rpmbuild-order)
+- parallel and sort, etc do not take cmake() and other meta() deps correctly
+  into account yet (this may get fixed soon in rpmbuild-order)
 
 ## To do
 - authentication is not implemented yet natively for Koji, Bodhi, Pagure
