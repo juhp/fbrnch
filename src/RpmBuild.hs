@@ -183,7 +183,7 @@ getSources spec = do
           if exists
             then cmdBool prog ["-t", file]
             else return False
-        Nothing -> return True
+        Nothing -> doesFileExist file
 
     maybeSourceDir :: (FilePath -> FilePath -> IO ())
                    -> Maybe FilePath -> FilePath -> IO ()
