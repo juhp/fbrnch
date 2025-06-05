@@ -5,7 +5,7 @@ module Cmd.Build (
   BuildOpts(..)
   ) where
 
-import Distribution.Fedora.Branch (branchDestTag)
+import Distribution.Fedora.Branch (branchDestTag, readBranch)
 import Fedora.Krb (krbTicket)
 import SimplePrompt (promptEnter, yesNo)
 
@@ -107,9 +107,12 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   let spec = packageSpec pkg
   checkForSpecFile spec
   checkSourcesMatch pkg (RelBranch br) spec
+  -- FIXME: check for %macros in %changelog
   unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
-  nvr <- pkgNameVerRel' br spec
   putNewLn
+  let msidetagTarget = buildoptSidetagTarget opts
+  target <- targetMaybeSidetag dryrun True True br msidetagTarget
+  nvr <- pkgNameVerRel' (maybeTargetBranch target) spec
   mpush <-
     case unpushed of
       [] -> return Nothing
@@ -124,11 +127,17 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
         if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
           then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
           else return $ Just $ commitRef unpd
-  let msidetagTarget = buildoptSidetagTarget opts
-  target <- targetMaybeSidetag dryrun True True br msidetagTarget
   buildRun spec nvr merged mpush unpushed target msidetagTarget moverride
   where
     dryrun = buildoptDryrun opts
+
+    maybeTargetBranch target =
+      if showBranch br `isPrefixOf` target
+      then br
+      else
+        case readBranch $ takeWhile (/= '-') target of
+          Just b -> b
+          Nothing -> error' $ "unknown branch for target" +-+ target
 
     buildRun spec nvr merged mpush unpushed target msidetagTarget moverride = do
       let mwaitrepo = buildoptWaitrepo opts
