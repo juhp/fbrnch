@@ -80,7 +80,7 @@ requestRepo mock skipcheck resubmit breq pkg = do
         ok <- yesNo $ "Import" +-+ pkg
         when ok $ do
           waitForPagureRepo
-          importCmd True False False (Branches [],[pkg])
+          importCmd False True False False (Branches [],[pkg])
   where
     existingRepoRequests :: IO [IssueTitleStatus]
     existingRepoRequests = do

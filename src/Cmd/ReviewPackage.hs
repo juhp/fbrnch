@@ -65,7 +65,7 @@ reviewPackageInteractive bid pkg session bug = do
   unless exists $
     createDirectory dir
   setCurrentDirectory dir
-  srpm <- downloadReviewSRPM True False pkg bid session
+  srpm <- downloadReviewSRPM True True False pkg bid session
   importsrpm <-
     if exists
     then do

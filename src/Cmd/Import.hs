@@ -26,8 +26,8 @@ import Package
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 -- FIXME add --dryrun
-importCmd :: Bool -> Bool -> Bool -> (BranchesReq,[String]) -> IO ()
-importCmd reporequest existingrepo mock (breq, ps) = do
+importCmd :: Bool -> Bool -> Bool -> Bool -> (BranchesReq,[String]) -> IO ()
+importCmd showbug reporequest existingrepo mock (breq, ps) = do
   pkgs <- if null ps
     then map reviewBugToPackage <$> listReviews ReviewRepoCreated
     else return ps
@@ -53,7 +53,7 @@ importCmd reporequest existingrepo mock (breq, ps) = do
         -- FIXME get session from importPkgs
         (bid,session) <- approvedReviewBugIdSession pkg
         putBugId bid
-        srpmfile <- downloadReviewSRPM False True pkg bid session
+        srpmfile <- downloadReviewSRPM showbug False True pkg bid session
         putNewLn
         promptEnter $ "Press Enter to import" +-+ srpmfile
         krbTicket
@@ -91,12 +91,13 @@ importCmd reporequest existingrepo mock (breq, ps) = do
             "no" -> Just (Just False)
             _ -> Nothing
 
-downloadReviewSRPM :: Bool -> Bool -> String -> Int -> BugzillaSession
+downloadReviewSRPM :: Bool -> Bool -> Bool -> String -> Int -> BugzillaSession
                    -> IO FilePath
-downloadReviewSRPM getspec prompt pkg bid session = do
-  putNewLn
+downloadReviewSRPM showbug getspec prompt pkg bid session = do
   comments <- getComments session bid
-  mapM_ showComment comments
+  when showbug $ do
+    putNewLn
+    mapM_ showComment comments
   putNewLn
   putStr "Review bug: "
   putBugId bid
