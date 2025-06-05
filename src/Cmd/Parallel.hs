@@ -76,19 +76,13 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
             getPackageName p >>= parallelBranches branches
     _ ->
       forM_ branches $ \rbr -> do
-      mtargetSidetag <-
-        if msidetagTarget == Just SideTag
-        then do
-          tags <- kojiUserSideTags (Just rbr)
+      when (msidetagTarget == Just SideTag) $ do
+        tags <- kojiUserSideTags (Just rbr)
+        putStrLn $
           case tags of
-            [] -> do
-              putStrLn "will use new sidetag"
-              return $ Just SideTag
-            [tag] -> do
-              putStrLn $ "will use" +-+ tag
-              return $ Just (Target tag)
-            _ -> error' $ "multiple existing sidetags:" +-+ show tags
-        else return msidetagTarget
+            [] -> "will use new sidetag"
+            [tag] -> "will use" +-+ tag
+            _ -> "Several user side-tags found for" +-+ showBranch rbr ++ ":\n" ++ unlines tags
       forM_ (filter (/= ":") pkgs) $ \p ->
         when (mmerge /= Just False) $
         withExistingDirectory p $ do
@@ -103,10 +97,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
           error' "You must use --target/--sidetag to build package layers for this branch"
       when (length branches > 1) $
         putStrLn $ "#" +-+ showBranch rbr
-      target <- targetMaybeSidetag dryrun True True rbr mtargetSidetag
-      nvrclogs <- concatMapM (timeIODesc "layer" . parallelBuild target rbr)
-                      (zip [firstlayer..length allLayers] $
-                       init $ tails layers) -- tails ends in []
+      target <- targetMaybeSidetag dryrun True True rbr msidetagTarget
+      -- FIXME "layer N took ..."
+      nvrclogs <- concatMapM (\(n,l) -> timeIODesc ("layer" +-+ show n) (parallelBuild target rbr (n,l)))
+                  (zip [firstlayer..length allLayers] $
+                   init $ tails layers) -- tails ends in []
       unless (isNothing (fst mupdate)) $
         unless (isNothing msidetagTarget) $
         -- FIXME check for an existing sidetag update
