@@ -1,6 +1,7 @@
 module Cmd.SideTags (
   sideTagsCmd,
-  SidetagMode(..))
+  SidetagMode(..),
+  tagBuildToSidetagCmd)
 where
 
 import Fedora.Krb (krbTicket)
@@ -9,8 +10,10 @@ import SimplePrompt (yesNo)
 
 import Branches
 import Common
-import Git (isPkgGitRepo)
+import Git (gitSwitchBranchVerbose, isPkgGitRepo)
 import Koji
+import Package (cleanGit, dirtyGit, findSpecfile, pkgNameVerRel',
+                withPackagesMaybeBranch, HeaderShow(HeaderMust))
 
 data SidetagMode = SidetagAdd | SidetagRemove | SidetagTagged
   deriving Eq
@@ -59,3 +62,31 @@ sideTagsCmd dryrun mmode brs = do
     taggedSideTag tag = do
       putStrLn $ "#" +-+ tag
       cmd_ "koji" ["list-tagged", tag]
+
+tagBuildToSidetagCmd :: Bool -> Bool -> Branch -> (Maybe Branch,[FilePath]) -> IO ()
+tagBuildToSidetagCmd dryrun allowdirty sidebr (mbr, pkgs) = do
+  when (isNothing mbr && length pkgs > 1) $
+    error' "Please specify source branch for multiple packages"
+  sidetags <- fmap sort <$> kojiUserSideTags $ Just sidebr
+  case sidetags of
+    [] -> error' $ "No sidetag for" +-+ showBranch sidebr
+    [sidetag] -> do
+      putStrLn $ "using" +-+ sidetag ++ "\n"
+      withPackagesMaybeBranch HeaderMust False (if allowdirty then dirtyGit else cleanGit) (sideTagBuild sidetag) (mbr, pkgs)
+    _ -> error' $ "More than one sidetag found:\n" +-+ unwords sidetags
+  where
+    sideTagBuild sidetag _pkg (RelBranch br) = do
+      pkggit <- isPkgGitRepo
+      if pkggit
+        then do
+        gitSwitchBranchVerbose True False $ RelBranch br
+        spec <- findSpecfile
+        nvr <- pkgNameVerRel' br spec
+        ok <- yesNo $ "Tag" +-+ show (showNVR nvr) +-+ "into" +-+ show sidetag
+        when ok $
+          if dryrun
+          then putStrLn "tag-build skipped for dry-run"
+          -- FIXME check pkg listed in koji
+          else cmd_ "koji" ["tag-build", sidetag, showNVR nvr]
+        else error' "needs to be run in dist-git dir and with correct branch"
+    sideTagBuild _ _ _ = error' "only for release branches"
