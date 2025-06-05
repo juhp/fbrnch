@@ -326,8 +326,9 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
               when (header /= HeaderNone && length brs > 1) $ putPkgAnyBrnchHdr p b
               action p b
         mapM_ (action' pkg) brs
-        when (length brs /= 1) $
+        when (length brs /= 1 || have gitOptStash) $ do
           whenJust mcurrentbranch gitSwitchBranch
+          when (have gitOptStash) gitUnstash
 
     have :: (GitOpts -> Bool) -> Bool
     have opt = maybe False opt mgitopts

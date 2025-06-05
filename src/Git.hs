@@ -26,6 +26,7 @@ module Git (
   isPkgGitRepo,
   isPkgGitSshRepo,
   checkWorkingDirClean,
+  gitUnstash,
   stashedWithFbrnch,
   isGitDirClean,
   checkIfRemoteBranchExists,
@@ -225,6 +226,14 @@ checkWorkingDirClean stash = do
     else do
       dir <- getCurrentDirectory
       error' $ "Working dir is not clean:" +-+ dir
+
+-- FIXME add quiet option?
+gitUnstash :: IO ()
+gitUnstash = do
+  mstash <- listToMaybe <$> gitLines "stash" ["list"]
+  whenJust mstash $ \stash ->
+    when (stashedWithFbrnch `isSuffixOf` stash) $
+    git_ "stash" ["pop", "--quiet"]
 
 isGitDirClean :: IO Bool
 isGitDirClean =
