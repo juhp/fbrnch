@@ -332,7 +332,7 @@ main = do
       <*> optional (strArg "SPECFILE")
     , Subcommand "review-package" "Run fedora-review on a package Review Request bug" $
       reviewPackage
-      <$> switchWith 'i' "interactive" "Download and check package review without fedora-review mock build"
+      <$> switchWith 'f' "full" "Download and check package review with fedora-review mock build"
       <*> optional (pkgArg "PACKAGE/BZID")
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd

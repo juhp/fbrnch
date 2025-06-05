@@ -25,15 +25,15 @@ import RpmBuild
 -- FIXME does not work with pkg dir/spec: 'fbrnch: No spec file found'
 -- FIXME --user to download all user's review requests
 reviewPackage :: Bool -> Maybe String -> IO ()
-reviewPackage interactive Nothing = do
+reviewPackage full Nothing = do
   -- FIXME catch no spec file
   spec <- findSpecfile
   srpm <- generateSrpm Nothing spec
-  if interactive
+  if not full
     then doInteractiveReview False (Just spec) srpm
     else do
     cmd_ "fedora-review" ["-rn", srpm]
-reviewPackage interactive (Just pkgbug) = do
+reviewPackage full (Just pkgbug) = do
   let epkgbid =
         if all isDigit pkgbug
         then Right $ read pkgbug
@@ -47,7 +47,7 @@ reviewPackage interactive (Just pkgbug) = do
       putReviewBug False bug
       let bid = bugId bug
           pkg = reviewBugToPackage bug
-      if interactive
+      if not full
         then reviewPackageInteractive bid pkg session bug
         else do
         promptEnter "Press Enter to run fedora-review"
