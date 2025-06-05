@@ -1,31 +1,39 @@
 module Cmd.Mock
   ( mockCmd,
     NoClean(..),
-    MockShell(..)
+    MockMode(..)
   )
 where
 
 import Data.RPM
+import Safe (headMay)
+import SelectRPMs
 
 import Branches
 import Common
 import Common.System
 import Git
 import Package
-import RpmBuild (generateSrpm)
+import RpmBuild (builtRpms, generateSrpm, nvraInstalled)
 
 data NoClean = NoCleanBefore | NoCleanAfter | NoCleanAll | MockShortCircuit
   deriving Eq
 
-data MockShell = ShellOnly | BuildShell
+-- FIXME (add MockBuild or MockDefault?)
+data MockMode = ShellOnly | BuildShell | MockInstall
   deriving Eq
 
+reqShell :: Maybe MockMode -> Bool
+reqShell Nothing = False
+reqShell (Just ms) = ms /= MockInstall
+
+-- FIXME error if non-existent branch
 -- FIXME add repo/copr for build
 -- FIXME handle non-release branches (on-branch works)
 -- FIXME option for --shell without rebuild
-mockCmd :: Bool -> Maybe NoClean -> Bool-> Maybe MockShell -> Maybe Branch
-        -> Maybe String -> (BranchesReq, [String]) -> IO ()
-mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
+mockCmd :: Bool -> Maybe NoClean -> Bool -> Bool -> Maybe MockMode
+        -> Maybe Branch -> Maybe String -> (BranchesReq, [String]) -> IO ()
+mockCmd dryrun mnoclean network reinstall mockmode mroot march (breq, ps) = do
   pkggit <- isPkgGitRepo
   branches <-
     case breq of
@@ -65,16 +73,27 @@ mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
           mockshell_opts = mockopts_common "--shell" ++ ["--no-clean" | "--no-clean" `notElem` noclean]
       if dryrun
         then do
-        unless (mockshell == Just ShellOnly) $
+        unless (mockmode == Just ShellOnly) $
           cmdN "mock" mockbuild_opts
-        when (isJust mockshell) $ cmdN "mock" mockshell_opts
+        when (reqShell mockmode) $ cmdN "mock" mockshell_opts
         else do
         ok <-
-          if mockshell == Just ShellOnly
+          if mockmode == Just ShellOnly
           then return True
-          else cmdBool "mock" mockbuild_opts
-        when (isJust mockshell) $ cmd_ "mock" mockshell_opts
+          else do
+            dobuild <-
+              if mockmode == Just MockInstall
+              then do
+                let verrel = showPkgVerRel . readNVRA
+                anyM (\s -> not <$> doesFileExist ("results" </> verrel s </> s)) srpms
+              else return True
+            if dobuild
+              then cmdBool "mock" mockbuild_opts
+              else return True
+        when (reqShell mockmode) $ cmd_ "mock" mockshell_opts
         unless ok $ error' "mockbuild failed"
+        when (mockmode == Just MockInstall) $ do
+          mapM_ mockInstall pkgs
       where
         prepSrpm :: AnyBranch -> FilePath -> IO FilePath
         prepSrpm rbr pkgdir =
@@ -86,3 +105,33 @@ mockCmd dryrun mnoclean network mockshell mroot march (breq, ps) = do
               gitSwitchBranch rbr
             spec <- findSpecfile
             generateSrpm Nothing spec
+
+        mockInstall :: String -> IO ()
+        mockInstall pkg = do
+          spec <- findSpecfile
+          rpms <- builtRpms (RelBranch br) spec
+          let nvras = map readNVRA rpms
+          -- FIXME can this be removed now?
+          already <- filterM nvraInstalled nvras
+          if null already || reinstall
+            then doInstallRPMs rpms
+            else putStrLn $ unlines (map showNVRA already) ++
+                 "\nalready installed!\n"
+            where
+              doInstallRPMs rpms = do
+                -- FIXME show source NVR (eg not pandoc-common)
+                whenJust (headMay rpms) $
+                  putStrLn . showNVR . dropArch . readNVRA
+                let nvras = rpmsToNVRAs rpms
+                -- FIXME: prefix = fromMaybe (nvrName nvr) mprefix
+                decided <- -- decideRPMs yes False mexisting select pkg nvras
+                  decideRPMs Yes False Nothing selectDefault pkg nvras
+                -- FIXME dryrun and debug
+                -- FIXME return Bool?
+                let verrel = showPkgVerRel . readNVRA $ head rpms
+                    results = "results" </> verrel
+                forM_ ["noarch", "x86_64"] $ \arch -> do
+                  let link = results </> arch
+                  unlessM (doesDirectoryExist link) $
+                    createFileLink "." link
+                installRPMs False False Nothing Yes $ groupOnArch results decided

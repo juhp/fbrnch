@@ -243,8 +243,10 @@ main = do
       <$> dryrunOpt "Do not build (but creates srpm)"
       <*> optional nocleanOpt
       <*> switchWith 'N' "network" "Use network during build"
+      <*> switchLongWith "reinstall" "Allow reinstallation with --install"
       <*> optional (flagLongWith' ShellOnly "shell-only" "Skip mock build" <|>
-                    flagWith' BuildShell 's' "shell" "Enter chroot shell after building")
+                    flagWith' BuildShell 's' "shell" "Enter chroot shell after building" <|>
+                    flagLongWith' MockInstall "install" "Install the built rpms")
       <*> optional (optionWith branchM 'r' "root" "BRANCH" "Mock config to use")
       <*> optional archOpt
       <*> branchesPackages
