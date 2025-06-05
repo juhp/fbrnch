@@ -72,7 +72,8 @@ bumpPkg dryrun local mcmsg mclog pkg br = do
                 then pkgNameVerRel rbr spec
                 else do
                 -- FIXME check version unchanged before cloning
-                clonePkg True AnonClone (Just rbr) $ unPackage pkg
+                -- FIXME make silent (no "cloning...")
+                clonePkg False True AnonClone (Just rbr) $ unPackage pkg
                 withCurrentDirectory (unPackage pkg) $
                   pkgNameVerRel rbr spec
         else

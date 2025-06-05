@@ -21,7 +21,7 @@ prepCmd :: Maybe PrepPre -> Bool -> Bool -> Bool -> (Maybe Branch,[String])
         -> IO ()
 prepCmd mpre verbose deps allowhead (mbr,pkgs) = do
   when (mpre == Just PrepClone) $
-    cloneCmd mbr (ClonePkgs pkgs)
+    cloneCmd False mbr (ClonePkgs pkgs)
   withPackagesMaybeBranch HeaderNone False (if allowhead then dirtyGitHEAD else Nothing) prepPackage (mbr,pkgs)
   where
     prepPackage :: Package -> AnyBranch -> IO ()

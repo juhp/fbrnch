@@ -15,8 +15,8 @@ data CloneRequest = CloneGroup String
 
 -- FIXME allow pagure repo wildcard
 -- FIXME (detect commit rights or a ssh key?)
-cloneCmd :: Maybe Branch -> CloneRequest -> IO ()
-cloneCmd mbr request = do
+cloneCmd :: Bool -> Maybe Branch -> CloneRequest -> IO ()
+cloneCmd dryrun mbr request = do
   pkgs <- case request of
             CloneUser mid -> do
               userid <- maybe fasIdFromKrb return mid
@@ -30,4 +30,4 @@ cloneCmd mbr request = do
   when (no > 1) $
     putStrLn $ "cloning" +-+ show no +-+ "pkg repos"
   let auth = maybe AnonClone (const UserClone) mfas
-  mapM_ (clonePkg False auth mbr) pkgs
+  mapM_ (clonePkg dryrun False auth mbr) pkgs

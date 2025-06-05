@@ -358,8 +358,9 @@ withPackagesMaybeBranchNoHeadergit =
 
 data CloneUser = AnonClone | UserClone
 
-clonePkg :: Bool -> CloneUser -> Maybe Branch -> String -> IO ()
-clonePkg quiet cloneuser mbr pkg = do
+-- FIXME use Verbosity
+clonePkg :: Bool -> Bool -> CloneUser -> Maybe Branch -> String -> IO ()
+clonePkg dryrun quiet cloneuser mbr pkg = do
   exists <- doesDirectoryExist pkg
   if exists
     then putStrLn $ pkg ++ "/ already exists"
@@ -370,9 +371,13 @@ clonePkg quiet cloneuser mbr pkg = do
     case cloneuser of
       AnonClone -> do
         msgout
-        git_ "clone" $ ["--quiet"] ++ mbranch ++ ["https://src.fedoraproject.org/rpms/" ++ pkg <.> "git"]
-      UserClone -> do
-        fedpkg_ "clone" $ mbranch ++ [pkg]
+        if dryrun
+          then putStrLn $ "would clone" +-+ pkg
+          else git_ "clone" $ ["--quiet"] ++ mbranch ++ ["https://src.fedoraproject.org/rpms/" ++ pkg <.> "git"]
+      UserClone ->
+        if dryrun
+        then putStrLn $ unwords $ "fedpkg" : "clone" : mbranch ++ [pkg]
+        else fedpkg_ "clone" $ mbranch ++ [pkg]
   where
     msgout =
       putStrLn $ if quiet then "cloning..." else "Cloning:" +-+ pkg

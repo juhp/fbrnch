@@ -71,7 +71,8 @@ main = do
     subcommands
     [ Subcommand "clone" "Clone packages" $
       cloneCmd
-      <$> optional (optionWith branchM 'b' "branch" "BRANCH" "branch")
+      <$> dryrunOpt "Dry run"
+      <*> optional (optionWith branchM 'b' "branch" "BRANCH" "branch")
       <*> cloneRequest
     , Subcommand "switch" "Switch branch" $
       switchCmd

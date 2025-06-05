@@ -41,7 +41,7 @@ importCmd reporequest existingrepo mock (breq, ps) = do
       when (pkg /= takeFileName dir) $ do
         exists <- doesDirectoryExist pkg
         unless exists $ do
-          clonePkg True UserClone Nothing pkg
+          clonePkg False True UserClone Nothing pkg
         setCurrentDirectory pkg
         -- FIXME: check branch is rawhide
       unlessM isGitRepo $ error' "Not a git repo"
