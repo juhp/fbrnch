@@ -48,9 +48,3 @@ pullPkgs pullopt (breq,args) =
           if pullopt == Just PullRebase
             then git_ "pull" ["origin"]
             else gitMergeOrigin current
-          when (pullopt == Just PullStash) $ do
-            stashes <- git "stash" ["list"]
-            case line1 stashes of
-              (s0,_) | stashedWithFbrnch `isSuffixOf` s0 ->
-                       git_ "stash" ["pop", "--quiet"]
-              _ -> return ()
