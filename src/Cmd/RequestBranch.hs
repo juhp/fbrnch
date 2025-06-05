@@ -23,9 +23,9 @@ import Package
 import Pagure
 
 -- FIXME option to do koji scratch build instead of mock
-requestBranchesCmd :: Bool -> Bool -> Maybe Branch -> Bool
+requestBranchesCmd :: Bool -> Bool -> Bool -> Maybe Branch -> Bool
                    -> (BranchesReq,[String]) -> IO ()
-requestBranchesCmd quiet reviews mrecursebr mock (breq, ps) = do
+requestBranchesCmd quiet reviews skipcheck mrecursebr mock (breq, ps) = do
   if null ps
     then do
     when (isJust mrecursebr) $
@@ -34,11 +34,15 @@ requestBranchesCmd quiet reviews mrecursebr mock (breq, ps) = do
     if reviews
       then do
       pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
-      mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches quiet (length pkgs > 1) mock breq (Package p)) pkgs
+      when isPkgGit $
+        promptEnter "Press Enter to continue inside this dist-git dir!"
+      mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches quiet (length pkgs > 1) mock breq (Package $ takeFileName p)) pkgs
       else
       if isPkgGit
-      then
-        getDirectoryName >>= requestPkgBranches quiet False mock breq . Package
+      then do
+        pkg <- Package <$> getDirectoryName
+        requestPkgBranches quiet False mock breq pkg >>=
+          mapM_ (waitForKojiPkgBranch skipcheck pkg)
       else error' "not a dist-git dir: specify package(s)"
     else do
     pkgs <-
@@ -46,61 +50,77 @@ requestBranchesCmd quiet reviews mrecursebr mock (breq, ps) = do
         Just br -> do
           -- FIXME --rpmopt
           deps <- concat <$> srcDeps False [] (br,ps)
+          when (null deps) $
+            error' "no deps found!"
           putStrLn $ unwords deps
           unless quiet $
             promptEnter "\nPress Enter to check these packages for branches"
           return deps
         Nothing -> return ps
-    forM_ pkgs $ \ p ->
+    newPkgBranches <-
+      forM pkgs $ \ p ->
       withExistingDirectory p $ do
-      pkg <- getDirectoryName
-      requestPkgBranches quiet (length pkgs > 1) mock breq (Package pkg)
+      pkg <- Package <$> getDirectoryName
+      requestPkgBranches quiet (length pkgs > 1) mock breq pkg
+    putNewLn
+    forM_ (zip pkgs newPkgBranches) $ \(pkg,newbrs) ->
+      forM_ newbrs $ waitForKojiPkgBranch skipcheck (Package $ takeFileName pkg)
 
-requestPkgBranches :: Bool -> Bool -> Bool -> BranchesReq -> Package -> IO ()
+requestPkgBranches :: Bool -> Bool -> Bool -> BranchesReq -> Package
+                   -> IO [Branch]
 requestPkgBranches quiet multiple mock breq pkg = do
-  when (breq == Branches []) $
+  when (multiple && not quiet) $
     putPkgHdr pkg
   brs <- localBranches False
   branches <- getRequestedBranches brs breq
   if null branches
-    then
-    unless quiet $ do
-    when multiple $ putStr $ unPackage pkg ++ " "
+    then do
     case breq of
       Branches [_] -> putStrLn "exists"
       _ -> putStrLn "branches exist"
+    return []
     else do
-    when multiple $ putStr $ unPackage pkg ++ " "
     gitFetchSilent True
     brs' <- localBranches False
-    branches' <- getRequestedBranches brs' (Branches branches)
-    whenM (havePkgAccess pkg) $ do
-      newbranches <- filterExistingBranchRequests branches'
-      unless (null newbranches) $ do
-        mbidsession <- bzReviewSession
-        urls <- forM newbranches $ \ br -> do
-          when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br Nothing]
-          when (length branches' > 1) $ putStr $ showBranch br ++ " "
-          -- 1. Can timeout like this:
-          -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
-          -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
-          -- &
-          -- 2. Can fail like this:
-          -- Could not execute request_branch: The following error occurred while trying to get the active release branches in PDC: <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-          -- <title>500 Internal Server Error</title>
-          -- <p>The server encountered an internal error or
-          -- misconfiguration and was unable to complete
-          -- your request.</p> [...]
-          -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
-          u <- fedpkg "request-branch" [showBranch br]
-          putStrLn u
-          return u
-        whenJust mbidsession $ \(bid,session) ->
-          commentBug session bid $ unlines urls
-        forM_ newbranches $ \ br -> do
-          putStrLn $ "waiting for" +-+ unPackage pkg +-+ "to be added to" +-+ showBranch br ++ "-build"
-          (buildtag,_desttag) <- kojiBuildTarget' fedoraHub (showBranch br)
-          waitForPkgBuildTag pkg buildtag
+    forM_ branches $ \br ->
+      when (showBranch br `elem` brs') $
+      let pkgPrefix = if multiple then unPackage pkg ++ ": " else ""
+      in putStrLn $ pkgPrefix ++ showBranch br +-+ "branch already exists locally"
+    if null (map showBranch branches \\ brs')
+      then return []
+      else do
+      branches' <- getRequestedBranches brs' (Branches branches)
+      haveAccess <- havePkgAccess pkg
+      if not haveAccess
+        then do
+        putStrLn "You do not have commit access to this package: request would be rejected"
+        return []
+        else do
+        newbranches <- filterExistingBranchRequests branches'
+        if null newbranches
+          then return []
+          else do
+          mbidsession <- bzReviewSession
+          urls <- forM newbranches $ \ br -> do
+            when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br Nothing]
+            when (length branches > 1) $ putStr $ showBranch br ++ " "
+            -- 1. Can timeout like this:
+            -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
+            -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
+            -- &
+            -- 2. Can fail like this:
+            -- Could not execute request_branch: The following error occurred while trying to get the active release branches in PDC: <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+            -- <title>500 Internal Server Error</title>
+            -- <p>The server encountered an internal error or
+            -- misconfiguration and was unable to complete
+            -- your request.</p> [...]
+            -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
+            u <- fedpkg "request-branch" [showBranch br]
+            putStrLn u
+            return u
+          whenJust mbidsession $ \(bid,session) ->
+            commentBug session bid $ unlines urls
+          return newbranches
   where
     -- doRequestBr :: Bool -> Branch -> IO String
     -- doRequestBr multibr br = do
@@ -178,8 +198,16 @@ havePkgAccess pkg = do
           collabs = lookupKey' "collaborator" access
       in (owners ++ admins, collabs)
 
-waitForPkgBuildTag :: Package -> String -> IO ()
-waitForPkgBuildTag pkg buildtag = do
-  sleep 30 -- wait first to avoid "(undefined package)"
-  ok <- cmdBool "koji" ["list-pkgs", "--quiet", "--package=" ++ unPackage pkg, "--tag=" ++ buildtag]
-  unless ok $ waitForPkgBuildTag pkg buildtag
+waitForKojiPkgBranch :: Bool -- skipcheck
+                     -> Package -> Branch -> IO ()
+waitForKojiPkgBranch skipcheck pkg br =
+  unless skipcheck $ do
+  putStrLn $ "waiting for" +-+ unPackage pkg +-+ "to be added to" +-+ showBranch br ++ "-build"
+  (buildtag,_desttag) <- kojiBuildTarget' fedoraHub (showBranch br)
+  waitBuildTag buildtag
+  where
+    waitBuildTag :: String -> IO ()
+    waitBuildTag buildtag = do
+      sleep 30 -- wait first to avoid "(undefined package)"
+      ok <- cmdBool "koji" ["list-pkgs", "--quiet", "--package=" ++ unPackage pkg, "--tag=" ++ buildtag]
+      unless ok $ waitBuildTag buildtag

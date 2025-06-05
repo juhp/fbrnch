@@ -363,6 +363,7 @@ main = do
       requestBranchesCmd
       <$> quietOpt "Quieter output"
       <*> switchWith 'r' "reviews" "Request branches for package reviews"
+      <*> switchLongWith "skip-check" "Skip koji check for branch package"
       <*> optional (optionWith branchM 'R' "recurse-from" "BRANCH" "Add neighboring dependencies from branch")
       <*> mockOpt False
       <*> branchesPackages
