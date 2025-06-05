@@ -489,13 +489,13 @@ checkSourcesMatch pkg br spec = do
     if exists
       then lines <$> readFile "sources"
       else return []
-  gitfiles <- gitLines "ls-files" []
-  let missing = filter (\src -> isNothing (find (src `isInfixOf`) sources) &&
-                                src `notElem` gitfiles)
+  gitfiles <- gitLines "ls-files" ["--no-cached"]
+  -- FIXME warn about non-sha512 sources
+  let missing = filter (\src -> isNothing (find (\s -> ('(' : src ++ ")") `isInfixOf` s || (' ' : src) `isSuffixOf` s) sources) && src `notElem` gitfiles)
                 sourcefiles
   unless (null missing) $ do
     -- FIXME maybe change to yesNo
-    promptEnter $ color Red $ unwords missing +-+ "not in sources, press Enter to fix"
+    promptEnter $ color Red $ unwords missing +-+ "not in" +-+ unPackage pkg +-+ "sources, press Enter to fix"
     -- FIXME check if already fixed before proceeding
     updateSourcesPkg False False True Nothing pkg br
     git_ "status" ["--short"]
