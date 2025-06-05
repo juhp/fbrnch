@@ -15,6 +15,7 @@ module RpmBuild (
   isShortCircuit,
   checkSourcesMatch,
   notInstalled,
+  nvraInstalled,
   rpmEval,
   distRpmOptions
   )
@@ -533,3 +534,7 @@ getDynSourcesMacros :: FilePath -> IO ()
 getDynSourcesMacros spec =
   whenM (grep_ "^%generate_buildrequires" spec) $
    getSourcesMacros spec
+
+nvraInstalled :: NVRA -> IO Bool
+nvraInstalled rpm =
+  cmdBool "rpm" ["--quiet", "-q", showNVRA rpm]
