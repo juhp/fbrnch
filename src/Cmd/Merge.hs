@@ -35,7 +35,7 @@ mergeCmd dryrun nofetch noprompt mnotrivial showall mfrom =
             gitMergeOrigin br
           (ancestor,unmerged) <- mergeable from br
           unmerged' <- filterOutTrivial mnotrivial unmerged
-          mergeBranch dryrun False noprompt showall pkg (ancestor,unmerged') from br
+          mergeBranch dryrun nofetch False noprompt showall pkg (ancestor,unmerged') from br
       where
         filterOutTrivial :: Maybe Natural -> [Commit] -> IO [Commit]
         filterOutTrivial Nothing cs = return cs
@@ -59,13 +59,13 @@ mergeable from _ = do
   return (mancestor == Just True, unmerged)
 
 -- FIXME return merged ref
-mergeBranch :: Bool -> Bool -> Bool -> Bool -> Package
+mergeBranch :: Bool -> Bool -> Bool -> Bool -> Bool -> Package
             -> (Bool,[Commit]) -- (ancestor,unmerged)
             -> Branch -> Branch -> IO ()
-mergeBranch _ _ _ _ _ _ _ Rawhide = return ()
-mergeBranch _ _ _ _ _ (_,[]) _ _ = return ()
-mergeBranch dryrun build noprompt showall pkg (True, unmerged@(unmgd:_)) from br = do
-  unless build $ putPkgBrnchHdr pkg br
+mergeBranch _ _ _ _ _ _ _ _ Rawhide = return ()
+mergeBranch _ _ _ _ _ _ (_,[]) _ _ = return ()
+mergeBranch dryrun nofetch build noprompt showall pkg (True, unmerged@(unmgd:_)) from br = do
+  when (nofetch && not build) $ putPkgBrnchHdr pkg br
   isnewrepo <- initialPkgRepo
   putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") +-+ showBranch from ++ ":"
   displayCommits showall unmerged
@@ -91,8 +91,8 @@ mergeBranch dryrun build noprompt showall pkg (True, unmerged@(unmgd:_)) from br
     unless dryrun $
       -- FIXME merge from origin by default not local branch
       git_ "merge" ["--quiet", ref]
-mergeBranch dryrun build noprompt showall pkg (False,unmerged) from br = do
-  unless build $ putPkgBrnchHdr pkg br
+mergeBranch dryrun nofetch build noprompt showall pkg (False,unmerged) from br = do
+  when (nofetch && not build) $ putPkgBrnchHdr pkg br
   putStrLn $ showBranch from +-+ "branch is not directly mergeable:"
   displayCommits False unmerged
   putNewLn

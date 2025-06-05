@@ -159,7 +159,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       (ancestor,unmerged,mnewer) <- newerMergeable (unPackage pkg) br
       unless dryrun $
         whenJust mnewer $ \newer ->
-        mergeBranch dryrun False (mmerge == Just True) False pkg (ancestor,unmerged) newer br
+        mergeBranch dryrun False False (mmerge == Just True) False pkg (ancestor,unmerged) newer br
 
     -- FIXME time builds or layers
     -- FIXME return Either
