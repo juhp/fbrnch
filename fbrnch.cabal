@@ -1,6 +1,6 @@
 cabal-version:       2.0
 name:                fbrnch
-version:             1.6.2
+version:             1.7
 synopsis:            Fedora packager tool to build package branches
 description:
             fbrnch (fedora branch or "f-branch" for short) is
@@ -35,7 +35,7 @@ extra-doc-files:     CHANGELOG.md
                      README.md
 tested-with:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5,
                      GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8,
-                     GHC == 9.4.8, GHC == 9.6.6, GHC == 9.8.4, GHC == 9.10.1
+                     GHC == 9.4.8, GHC == 9.6.7, GHC == 9.8.4, GHC == 9.10.2
 
 source-repository head
   type:                git

@@ -1,5 +1,66 @@
 # Changelog
 
+## 1.7 (2025-06-05)
+- support epel10.x minors with fedora-releases-0.3.0
+- 'merge': now done from origin for consistency
+- targetMaybeSidetag: prompts to choose which sidetag
+- 'autospec': no duplicate %changelog line
+- 'branches': add --only-dead option
+- 'branches': improve the --current error for multiple branches
+- 'branches': improve the prefixing for multiple packages
+- 'build': newline after git push
+- 'build': update latest tagged check to include epel-testing; print all
+- 'build': use target branch to determine nvr
+- 'bump': complete rework of logic (--strict replaces --local)
+- 'clone': add --dryrun
+- 'clone': now supports globbing of packages
+- 'copr': order chroots by branch (release): so epel10 > epel9
+- 'copr': rename i686 to i386
+- 'fetch': fix --lenient was no-op
+- 'import': better push prompt labeling
+- 'import': now also waits for package to be setup in koji
+- 'install': add --yes
+- 'install': perform also if given a rpm subpackage selection
+- 'install': select-rpms-0.3.0 adds --error-existing
+- 'install': skip ":" separator
+- 'list': refactor with countListPackages
+- 'mock': add experimental --install mode (for single package)
+- 'parallel': better sidetag setup with warnings
+- 'parallel': more color output/tweaks
+- 'parallel': offer to retry failures or continue with waitrepo for layer
+- 'parallel': print nvr earlier and only latest commits
+- 'parallel': reduce default delay to 1s between triggering builds
+- 'parallel': skip "koji-tool builds --tail" and always show task url for fail
+- 'pull': drop stash pop to avoid making conflicts
+- 'push': check local branch exists
+- 'repoquest-repo': does not reprint full bug for import
+- 'request-branches': long todo comment about catching API key expiry
+- 'request-branches': now also checks for commit access via group membership
+- 'request-branches': request all branches/pkgs before waiting for koji pkgs
+- 'review-package': defaults to interactive, use --full for fedora-review
+- 'scratch': do not create a new sidetag!
+- 'sidetags': listings are now sorted
+- 'switch': add --lenient option to avoid error for non-existent branch
+- 'uninstall': new experimental command to remove a package NVR
+- 'update-sources': partition sources by isArchiveFile
+- 'waitrepo': add --no-nvr option for generic wait-repo
+- Bodhi: better error handling with bodhiUpdatesEither refactor
+- Branches gitCurrentBranchWarn: offer to rename master to rawhide
+- Branches listOfBranches: print branch EOL warning when < 7 days left
+- Branches systemBranch: support CPE_NAME
+- Package isArchiveFile: ".sig" files are ascii
+- RpmBuild getSources: use exists for checkCompression of uncompressed file
+- RpmBuild: check/install compression tool before downloading tarball
+- buildRPMs: backup build.log's with cp -p
+- checkSourcesMatch: match sources filenames wrapped with parens
+- mergeBranch: add nofetch switch to avoid refetching
+- new 'tag-build-to-sidetag': tags branch's nvr into a sidetag
+- recognize .crate as archive file (#70)
+- refPrompt: accept "origin" and require ref to over 3 chars
+- refPrompt: append newline if prompt less than 1 line
+- withPackagesByBranches: git fetch earlier to get any new branches
+- withPackagesByBranches: switch back branch before unstash
+
 ## 1.6.2 (2025-03-05)
 - 'diff': use git diff's builtin filtering
 - 'fetch': add --lenient to skip non dist-git directories

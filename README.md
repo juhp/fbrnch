@@ -270,7 +270,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 `$ fbrnch --version`
 
 ```
-1.6.2
+1.7
 ```
 
 `$ fbrnch --help`
@@ -295,7 +295,7 @@ Available commands:
   merge                    Merge from newer branch
   unpushed                 Show unpushed commits
   build                    Build package(s) in Koji
-  list                     List packages in pagure
+  list                     List packages in pagure distgit
   list-local               List packages in branch
   branches                 List package branches
   parallel                 Parallel build packages in Koji
@@ -319,6 +319,7 @@ Available commands:
   builddeps                Install package build dependencies
   install                  Build locally and install package(s)
   not-installed            Packages not installed locally
+  uninstall                Remove installed package(s)
   bugs                     List package bugs
   bump                     Bump release for package
   commit                   Git commit packages
@@ -345,6 +346,7 @@ Available commands:
   autospec                 Convert package to use rpmautospec
   unautospec               Unconvert rpmautospec package
   move-artifacts           Move old rpm artifacts into rpmbuild dirs
+  tag-build-to-sidetag     Tag NVR for current branch to sidetag
 ```
 
 Use `fbrnch <cmd> --help` to get specific help about each of the above commands
