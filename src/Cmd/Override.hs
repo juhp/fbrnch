@@ -37,8 +37,6 @@ overrideCmd dryrun OverrideCreate mduration nowait breqpkgs = do
     waitrepoCmd dryrun False WaitNoFetch Nothing breqpkgs
   where
     overrideBranch :: Package -> AnyBranch -> IO ()
-    overrideBranch _ (OtherBranch _) =
-      error' "override only defined for release branches"
     overrideBranch pkg rbr@(RelBranch br) = do
       gitSwitchBranch rbr
       let spec = packageSpec pkg
@@ -49,6 +47,8 @@ overrideCmd dryrun OverrideCreate mduration nowait breqpkgs = do
       unless (any (`elem` tags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-override"]) $
         unlessM (checkAutoBodhiUpdate br) $
         bodhiCreateOverride dryrun mduration nvr
+    overrideBranch _ (OtherBranch _) =
+      error' "override only defined for release branches"
 overrideCmd _dryrun OverrideList _mduration _nowait (_breq,pkgs) =
   withPackages pkgs $
   packageOverrides >=> mapM_ showOverride
