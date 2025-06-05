@@ -56,12 +56,12 @@ installCmd quiet recurse mfrom mjobs mforceshort bconds reinstall nobuild nobuil
         let nvras = map readNVRA rpms
         -- FIXME can this be removed now?
         already <- filterM nvraInstalled nvras
-        if isJust mforceshort || null already || reinstall
-          then doInstallPkg mforceshort spec rpms
+        if isJust mforceshort || null already || reinstall || select /= selectDefault
+          then doInstallRPMs mforceshort spec rpms
           else putStrLn $ unlines (map showNVRA already) ++
                "\nalready installed!\n"
       where
-        doInstallPkg mforceshort' spec rpms = do
+        doInstallRPMs mforceshort' spec rpms = do
           -- FIXME show source NVR (eg not pandoc-common)
           whenJust (headMay rpms) $
             putStrLn . showNVR . dropArch . readNVRA
