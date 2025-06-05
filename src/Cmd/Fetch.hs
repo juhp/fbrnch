@@ -4,7 +4,8 @@ module Cmd.Fetch (
 where
 
 import Branches
-import Common (when, (+-+))
+import Common ((+-+))
+import Common.System (error')
 import Git
 import Package
 
@@ -19,9 +20,10 @@ fetchPkgs lenient args =
   (Branches [], args)
   where
     fetchPkgLenient :: Package -> AnyBranch -> IO ()
-    fetchPkgLenient pkg _br =
-      when lenient $ do
+    fetchPkgLenient pkg _br = do
       haveGit <- isPkgGitRepo
       if haveGit
         then gitFetchSilent False
-        else putStrLn $ "ignoring" +-+ unPackage pkg
+        else if lenient
+             then putStrLn $ "ignoring" +-+ unPackage pkg
+             else error' "not a dist-git dir"
