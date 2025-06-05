@@ -32,9 +32,10 @@ branchesCmd mdead allbrs missing mode (breq, pkgs) = do
     case breq of
       Branches [_] -> return ()
       Branches [] | not missing -> return ()
-      _ -> error' $ (if missing then "--current --missing needs one branch"
-                     else "use --current with zero or one branches") ++
-           " specified"
+      _ -> error' $ (if missing
+                     then "--current --missing needs one branch"
+                     else "use --current with zero or one branches") +-+
+           "specified"
   if null pkgs
     then branchesPkg "."
     else mapM_ branchesPkg pkgs
