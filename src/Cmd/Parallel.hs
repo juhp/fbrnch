@@ -16,6 +16,7 @@ import Fedora.Bodhi hiding (bodhiUpdate)
 import Fedora.Krb (krbTicket)
 import Say
 import SimplePrompt (prompt, promptEnter, yesNo)
+import SimplePrompt.Internal (runPrompt, mapInput, getPromptLine)
 import System.Console.Pretty (color, Color(..), style, Style(Bold))
 import System.Time.Extra (sleep)
 
@@ -184,29 +185,40 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       when (null jobs) $
         error' "No jobs run"
       (failures,nvrs) <- watchJobs (length jobs == 1) (if singlelayer then Nothing else Just layernum) [] [] jobs
-      unless (null nvrs || null nextLayers) $ do
-        putNewLn
-        kojiWaitRepoNVRs dryrun False target $ map jobNvr nvrs
-        putNewLn
+      let kojiWaitRepoForLayer =
+            unless (null nvrs || null nextLayers) $ do
+            putNewLn
+            kojiWaitRepoNVRs dryrun False target $ map jobNvr nvrs
+            putNewLn
       if null failures
-        then return nvrs
+        then do
+        kojiWaitRepoForLayer
+        return nvrs
         else do
         let pending = sum $ map length nextLayers
         putStrLn $ "\nBuild failures" +-+
           (if singlelayer then ":" else "in layer" +-+ show layernum ++ ":")
           +-+ unwords failures
-        okay <-
+        reply <-
           if null nextLayers
-          then return False
-          else yesNo "Do you want to continue nevertheless"
-        if okay
-          then return nvrs
-          else error' $
-               if pending > 0
-               then
-               plural pending "pending package" ++
-               ":\n" ++ unwords (map unwords nextLayers)
-               else "failed"
+          then return $ Just False
+          -- FIXME edit next layer
+          else promptFailure "Do you want to [c]ontinue nevertheless or maybe fix & [r]etry? [c/N/r]"
+        case reply of
+          Just True -> do
+            kojiWaitRepoForLayer
+            return nvrs
+          Nothing -> do
+            res <- parallelBuild target br (layernum, [failures])
+            kojiWaitRepoForLayer
+            return res
+          Just False ->
+            error' $
+            if pending > 0
+            then
+              plural pending "pending package" ++
+              ":\n" ++ unwords (map unwords nextLayers)
+            else "failed"
       where
         nopkgs = length layer
 
@@ -218,6 +230,21 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
                  >>= async
           unless dryrun $ sleep delay
           return (unPackage pkg,job)
+
+        promptFailure = runPrompt . mapInput maybePush . getPromptLine
+          where
+            maybePush inp =
+              case lower inp of
+                "" -> Just (Just False)
+                "n" -> Just (Just False)
+                "no" -> Just (Just False)
+                "c" -> Just (Just True)
+                "cont" -> Just (Just True)
+                "continue" -> Just (Just True)
+                "r" -> Just Nothing
+                "retry" -> Just Nothing
+                "rebuild" -> Just Nothing
+                _ -> Nothing
 
     watchJobs :: Bool -> Maybe Int -> [String] -> [JobDone] -> [JobAsync]
               -> IO ([String],[JobDone]) -- (failures,successes)
