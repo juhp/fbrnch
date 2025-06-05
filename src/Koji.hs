@@ -19,6 +19,7 @@ module Koji (
   kojiTagArchs,
   kojiWaitRepoNVR,
   kojiWaitRepoNVRs,
+  kojiWaitRepo,
   kojiWatchTask,
   kojiWaitTask,
   putTaskinfoUrl,
@@ -235,6 +236,16 @@ kojiWaitRepoNVRs dryrun quiet target nvrs = do
 kojiWaitRepoNVR :: Bool -> Bool -> String -> NVR -> IO ()
 kojiWaitRepoNVR dryrun quiet target nvr =
   kojiWaitRepoNVRs dryrun quiet target [nvr]
+
+-- FIXME display more status/age info
+kojiWaitRepo :: Bool -> Bool -> String -> IO ()
+kojiWaitRepo dryrun quiet target = do
+  (buildtag,_desttag) <- kojiBuildTarget' fedoraHub target
+  tz <- getCurrentTimeZone
+  unless quiet $
+    logSay tz $ "Waiting for" +-+ buildtag
+  unless dryrun $
+    void $ timeIO $ cmd "koji" ["wait-repo", "--request", "--quiet", buildtag]
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do
