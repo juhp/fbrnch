@@ -22,6 +22,14 @@ import ListReviews
 import Package
 import Pagure
 
+-- FIXME try to catch expired token (maybe record date when key updated?)
+-- request-branch and request-repo require pagure.io API key in ~/.config/rpkg/fedpkg.conf for opening releng-scm issue: following is error for expired key
+
+-- "Could not execute request_branch: The following error occurred while creating a new issue in Pagure: Invalid or expired token. Please visit https://pagure.io/settings#nav-api-tab to get or renew your API token.
+-- For invalid or expired tokens please set a new token in your user configuration by running:
+--         fedpkg set-pagure-token
+-- The command is interactive; enter the new token when prompted."
+
 -- FIXME option to do koji scratch build instead of mock
 requestBranchesCmd :: Bool -> Bool -> Bool -> Maybe Branch -> Bool
                    -> (BranchesReq,[String]) -> IO ()
