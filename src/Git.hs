@@ -349,6 +349,7 @@ refPrompt commits txt = do
     (c:cs) -> do
       -- FIXME use promptMap
       ref <- prompt txt
+      when (length txt < 78) putNewLn
       case lower ref of
         "" -> return $ Just c
         "y" -> return $ Just c
