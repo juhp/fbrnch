@@ -179,16 +179,26 @@ requestPkgBranches quiet multiple mock breq pkg = do
 
 havePkgAccess :: Package -> IO Bool
 havePkgAccess pkg = do
-  -- check have access
   fasid <- fasIdFromKrb
   epkginfo <- pagureProjectInfo srcfpo ("rpms" </> unPackage pkg)
   case epkginfo of
     Left err -> error' err
     Right pkginfo -> do
       let (admins, committers) = usersWithAccess pkginfo :: ([String],[String])
-          access = fasid `elem` admins ++ committers
+          (gadmins, gcommitters) = groupsWithAccess pkginfo :: ([String],[String])
+      access <- do
+        if fasid `elem` admins ++ committers
+          then return True
+          else
+          fmap or <$>
+            forM (gadmins ++ gcommitters) $ \grp -> do
+            egrpinfo <- pagureGroupInfo srcfpo grp []
+            case egrpinfo of
+              Left err -> error' err
+              Right grpinfo ->
+                return $ fasid `elem` (lookupKey' "members" grpinfo :: [String])
       unless access $
-        warning $ "-" +-+ fasid +-+ "does not have access, ask:" +-+ unwords admins
+        warning $ "-" +-+ fasid +-+ "does not have access, ask:" +-+ unwords (nub $ admins ++ gadmins)
       return access
   where
     usersWithAccess pkginfo =
@@ -196,7 +206,15 @@ havePkgAccess pkg = do
           owners = lookupKey' "owner" access
           admins = lookupKey' "admin" access
           collabs = lookupKey' "collaborator" access
-      in (owners ++ admins, collabs)
+          commits = lookupKey' "commit" access
+      in (owners ++ admins, commits ++ collabs)
+
+    groupsWithAccess pkginfo =
+      let access = lookupKey' "access_groups" pkginfo
+          admins = lookupKey' "admin" access
+          collabs = lookupKey' "collaborator" access
+          commits = lookupKey' "commit" access
+      in (admins, commits ++ collabs)
 
 waitForKojiPkgBranch :: Bool -- skipcheck
                      -> Package -> Branch -> IO ()

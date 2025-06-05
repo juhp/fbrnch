@@ -1,6 +1,7 @@
 module Pagure (
   srcfpo,
   pagureio,
+  pagureGroupInfo,
   pagureGroupRepos,
   pagureListGitBranches,
   pagureListProjectIssueTitlesStatus,
