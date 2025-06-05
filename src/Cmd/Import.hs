@@ -60,7 +60,7 @@ importCmd showbug reporequest existingrepo mock (breq, ps) = do
         fedpkg_ "import" [srpmfile]
         git_ "commit" ["--message", "Import rhbz#" ++ show bid]
         nvr <- pkgNameVerRel' Rawhide (pkg <.> "spec")
-        mbuild <- promptPushBuild $ "Press Enter to Push & B[uild]" +-+ showNVR nvr ++ ", or just P[ush], or N[o] to skip? [Y/n/b/p]"
+        mbuild <- promptPushBuild $ "Press Enter to push & [B]uild" +-+ showNVR nvr ++ ", or just [P]ush, or [N]o to skip? [Y/n/b/p]"
         when (mbuild /= Just False) $ do
           gitPush True Nothing
           when (mbuild == Just True) $ do
