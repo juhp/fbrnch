@@ -25,7 +25,7 @@ ftbfsCmd dryrun short mbugsopt (mbr,pkgs) = do
   case mbugsopt of
     Just bugsopt -> do
       unless (null pkgs) $
-        error' "please use bugs option without listing a package"
+        error' $ "Cannot combine bugs option with" +-+ pluralOnly pkgs "package"
       session <- bzApiKeySession
       bugs <-
         case bugsopt of
