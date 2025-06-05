@@ -277,6 +277,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       let spec = packageSpec pkg
       checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
+      putStrLn $ showNVR nvr +-+ "(" ++ target ++ ")" +-+ morepkgs
+      putNewLn
       unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
       if null unpushed
         then
@@ -285,12 +287,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         unless ok $
           error' "no commits with --must-push"
         else do
-        putStrLn $ showNVR nvr +-+ "(" ++ target ++ ")" +-+
-          if nopkgs > 1
-          then pluralException n (if morelayers then Nothing else Just "last") "more" "more" +-+ maybe "" (\l -> "in layer" +-+ show l) mlayer
-          else ""
-        putNewLn
-        displayCommits True unpushed
+        displayCommits False unpushed
       unless (null unpushed) $ do
         checkSourcesMatch pkg (RelBranch br) spec
         unlessM isGitDirClean $
@@ -320,15 +317,13 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
           mtask <- kojiGetBuildTaskID fedoraHub $ showNVR nvr
           case mtask of
             Nothing -> error' $ "Task for" +-+ showNVR nvr +-+ "not found"
-            Just task ->
+            Just task -> do
+              putTaskinfoUrl fedoraHub task
               return $ do
-              kojiWaitTaskReport (isNothing mlatest) nvr task
-              return $ Done pkg nvr br changelog
+                kojiWaitTaskReport (isNothing mlatest) nvr task
+                return $ Done pkg nvr br changelog
         _ -> do
-          when (null unpushed) $ do
-            putStrLn $ showNVR nvr +-+ "(" ++ target ++ ")" +-+ show n +-+ "more" +-+
-              maybe "" (\l -> "in layer" +-+ show l) mlayer
-            putNewLn
+          when (null unpushed) $
             putStrLn changelog
           buildref <- git "show-ref" ["--hash", "origin/" ++ showBranch br]
           opentasks <- kojiOpenTasks pkg (Just buildref) target
@@ -355,6 +350,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
                     kojiWaitTaskReport (isNothing mlatest) nvr task
                     return $ Done pkg nvr br changelog
       where
+        morepkgs =
+          if nopkgs > 1
+          then pluralException n (if morelayers then Nothing else Just "last") "more" "more" +-+ maybe "" (\l -> "in layer" +-+ show l) mlayer
+          else ""
+
         -- throws error on build failure
         kojiWaitTaskReport :: Bool -> NVR -> TaskID -> IO ()
         kojiWaitTaskReport newpkg nvr task = do
