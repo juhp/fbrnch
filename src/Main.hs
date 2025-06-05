@@ -117,7 +117,8 @@ main = do
       <$> maybeBranchPackages True
     , Subcommand "branches" "List package branches" $
       branchesCmd
-      <$> switchWith 'd' "skip-dead" "Skip if dead.package exists"
+      <$> optional (flagLongWith' SkipDead "skip-dead" "Skip if dead.package exists" <|>
+                    flagLongWith' OnlyDead "only-dead" "Skip if not dead.package")
       <*> switchWith 'a' "all" "List all branches"
       <*> switchWith 'm' "missing" "Show missing branches"
       <*> branchesModeOpt

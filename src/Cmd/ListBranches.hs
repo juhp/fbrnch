@@ -1,6 +1,7 @@
 module Cmd.ListBranches (
   branchesCmd,
-  BranchesMode(..)
+  BranchesMode(..),
+  BranchDead(..)
   )
 where
 
@@ -15,11 +16,13 @@ import Package
 data BranchesMode = Local | Remote | Current
   deriving Eq
 
+data BranchDead = SkipDead | OnlyDead
+
 -- FIXME remote/pagures branch and --remote or --no-remote
 -- FIXME --local for existing local branches
-branchesCmd :: Bool -> Bool -> Bool -> BranchesMode -> (BranchesReq,[String])
-            -> IO ()
-branchesCmd skipdead allbrs missing mode (breq, pkgs) = do
+branchesCmd :: Maybe BranchDead -> Bool -> Bool -> BranchesMode
+            -> (BranchesReq,[String]) -> IO ()
+branchesCmd mdead allbrs missing mode (breq, pkgs) = do
   -- when (allbrs $ do
   --   unless (null brs) $
   --     error' "cannot combine --all and branches"
@@ -42,10 +45,14 @@ branchesCmd skipdead allbrs missing mode (breq, pkgs) = do
         then doBranchesPkg
         else
         withExistingDirectory path $
-        if skipdead then
-          unlessM (doesFileExist "dead.package")
-          doBranchesPkg
-        else doBranchesPkg
+        case mdead of
+          Just SkipDead ->
+            unlessM (doesFileExist "dead.package")
+            doBranchesPkg
+          Just OnlyDead ->
+            whenM (doesFileExist "dead.package")
+            doBranchesPkg
+          Nothing -> doBranchesPkg
       where
         doBranchesPkg :: IO ()
         doBranchesPkg = do
