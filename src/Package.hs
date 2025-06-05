@@ -573,6 +573,7 @@ isArchiveFile f =
              (".crate" `isSuffixOf`),
              (".gpg" `isSuffixOf`),
              (".tgz" `isSuffixOf`)]
+  && not (".sig" `isSuffixOf` f)
 
 sourceDirCwdOpt :: IO [String]
 sourceDirCwdOpt = do
