@@ -9,7 +9,6 @@ module Package (
   getChangelog,
   cleanChangelog,
   changeLogPrompt,
-  releaseSystemBranch,
   getPackageName,
   getSummaryURL,
   findSpecfile,
@@ -460,10 +459,6 @@ pkgNameVerRelNodist spec = do
   case mnvr of
     Nothing -> error' $ "rpmspec failed to parse" +-+ spec
     Just nvr -> return nvr
-
-releaseSystemBranch :: AnyBranch -> IO Branch
-releaseSystemBranch (RelBranch br) = return br
-releaseSystemBranch (OtherBranch _) = systemBranch
 
 -- FIXME should be more strict about dist tag (eg .fcNN only)
 equivNVR :: NVR -> Maybe NVR -> Bool

@@ -51,7 +51,7 @@ distOpt br = do
 
 distOptAny :: AnyBranch -> IO [String]
 distOptAny b =
-  releaseSystemBranch b >>= distOpt
+  anyBranchToRelease b >>= distOpt
 
 -- FIXME hardcoding
 distRpmOptions :: Branch -> IO [String]
@@ -210,7 +210,7 @@ generateSrpmNoDist nodist force mbr spec = do
       case mbr of
         Nothing -> return []
         Just br -> do
-          rbr <- releaseSystemBranch br
+          rbr <- anyBranchToRelease br
           distOpt rbr
   msrcrpmdir <- rpmEval "%{_srcrpmdir}"
   autoreleaseOpt <- getAutoReleaseOptions spec
