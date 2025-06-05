@@ -97,12 +97,12 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       -- FIXME should be sure sources exists for distgit
       whenM (doesFileExist "sources") $
         cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
-  whenM isPkgGitSshRepo $ do
+  when distgit $ do
     -- FIXME forM_
     sources <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
     existing <- filterM doesFileExist sources
     unless (existing == sources) $ do
-      cmd_ "fedpkg" ["sources"]
+      fedpkg_ "sources" []
       unless force $
         -- FIXME only if not all exist
         cmd_ "spectool" ["-g", "-S", spec]
@@ -111,12 +111,14 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       unlessM (doesFileExist patch) $
         cmd_ "spectool" ["-g", "-P", spec]
       git_ "add" [patch]
+    let (archives,textsources) = partition isArchiveFile existing
     when force $ do
-      let archives = filter isArchiveFile existing
       forM_ archives removeFile
       cmd_ "spectool" ["-g", "-S", spec]
     krbTicket
-    cmd_ "fedpkg" $ "new-sources" : filter isArchiveFile sources
+    fedpkg_ "new-sources" archives
+    unless (null textsources) $
+      git_ "add" textsources
   whenJust moldnewver $ \(_old,newver) -> do
     versions <- changelogVersions spec
     let missing =
