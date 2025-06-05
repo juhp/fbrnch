@@ -159,6 +159,7 @@ getSources spec = do
              "source" -> Right
              "patch" -> Left
              _ -> error' $! "illegal field:" +-+ f)
+          -- either url or local file (cannot really have subdir/file)
           $ takeFileName v
 
     checkCompression :: FilePath -> IO Bool
