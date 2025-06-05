@@ -132,7 +132,7 @@ main = do
       <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
       <*> optional (sidetagTargetOpt $ Just "or creates one for you (with 'fedpkg request-side-tag --base-tag')")
       <*> switchLongWith "must-push" "Error if no unpushed commits"
-      <*> optionalWith auto 'd' "delay" "SECONDS" "Sleep delay between starting builds [default 4.0]" 4
+      <*> optionalWith auto 'd' "delay" "SECONDS" "Sleep delay between starting builds [default 1s]" 1
       <*> updateOpt
       <*> branchesPackagesDesc "BRANCH... PKG1... [:] PKG2..."
     , Subcommand "sidetags" "List user's side-tags" $
