@@ -61,6 +61,10 @@ branchesCmd mdead allbrs missing mode (breq, pkgs) = do
             unlessM isPkgGitRepo $
             error' "not Fedora dist-git"
           pkg <- getPackageName path
+          let pkgprefix =
+                if length pkgs > 1
+                then unPackage pkg ++ ":"
+                else ""
           if mode == Current
             then do
             br <- gitCurrentBranch'
@@ -69,18 +73,19 @@ branchesCmd mdead allbrs missing mode (breq, pkgs) = do
                     RelBranch rbr -> Branches [rbr] == breq
                     OtherBranch _abr -> False
             if missing
-              then unless onbranch $ putStrLn $ unPackage pkg ++ ":" +-+ show br
+              then unless onbranch $ putStrLn $ pkgprefix +-+ show br
               else case breq of
                      Branches [req] -> when (RelBranch req == br) $
-                                       putStrLn $ unPackage pkg ++ ":" +-+ show br
-                     _ -> putStrLn $ unPackage pkg ++ ":" +-+ show br
+                                       putStrLn $ pkgprefix +-+ show br
+                     _ -> putStrLn $ pkgprefix +-+ show br
             else do
             brs <- delete "main" <$>
                    if mode == Remote
                    then pagurePkgBranches (unPackage pkg)
                    else localBranches False
             if allbrs then do
-              putStrLn $ unPackage pkg ++ ":" +-+ unwords brs
+              -- FIXME epel branches are not sorted correctly: epel10 epel10.0 epel9 f41 ...
+              putStrLn $ pkgprefix +-+ unwords brs
               else do
               if breq == Branches []
                 then do
@@ -90,12 +95,10 @@ branchesCmd mdead allbrs missing mode (breq, pkgs) = do
                       if missing
                       then active \\ mapMaybe readBranch brs
                       else activeBranches active brs
-                putStr $ unPackage pkg ++ ": "
-                putStrLn $ (unwords . map showBranch) result
+                putStrLn $ pkgprefix +-+ (unwords . map showBranch) result
                 else do
                 branches <- listOfBranches True False breq
                 let havebrs = filter (`elem` branches) $ mapMaybe readBranch brs
                     result = if missing then branches \\ havebrs else havebrs
-                unless (null result) $ do
-                  putStr $ unPackage pkg ++ ": "
-                  putStrLn $ (unwords . map showBranch) result
+                unless (null result) $
+                  putStrLn $ pkgprefix +-+ (unwords . map showBranch) result
