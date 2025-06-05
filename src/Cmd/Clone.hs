@@ -1,9 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Cmd.Clone (cloneCmd, CloneRequest(..)) where
 
-import Control.Monad (when)
+import Control.Monad.Extra (concatMapM, when)
 import Fedora.Krb
 
 import Branches
+import Cmd.ListPackages (listPackages)
 import Common.System
 import qualified Common.Text as T
 import Package
@@ -13,7 +16,7 @@ data CloneRequest = CloneGroup String
                   | CloneUser (Maybe String)
                   | ClonePkgs [String]
 
--- FIXME allow pagure repo wildcard
+-- FIXME --exclude
 -- FIXME (detect commit rights or a ssh key?)
 cloneCmd :: Bool -> Maybe Branch -> CloneRequest -> IO ()
 cloneCmd dryrun mbr request = do
@@ -22,7 +25,7 @@ cloneCmd dryrun mbr request = do
               userid <- maybe fasIdFromKrb return mid
               map (takeFileName . T.unpack) <$> pagureUserRepos srcfpo userid
             -- FIXME detect/prevent "path/dir"
-            ClonePkgs ps -> return ps
+            ClonePkgs ps -> concatMapM globPkgs ps
             CloneGroup grp -> do
               map (takeFileName . T.unpack) <$> pagureGroupRepos srcfpo False grp
   mfas <- maybeFasIdFromKrb
@@ -31,3 +34,10 @@ cloneCmd dryrun mbr request = do
     putStrLn $ "cloning" +-+ show no +-+ "pkg repos"
   let auth = maybe AnonClone (const UserClone) mfas
   mapM_ (clonePkg dryrun False auth mbr) pkgs
+
+-- FIXME force
+globPkgs :: String -> IO [String]
+globPkgs pat =
+  if '*' `elem` pat
+  then listPackages False Nothing [pat]
+  else return [pat]
