@@ -16,7 +16,7 @@ import Fedora.Bodhi hiding (bodhiUpdate)
 import Fedora.Krb (krbTicket)
 import Say
 import SimplePrompt (prompt, promptEnter, yesNo)
-import System.Console.Pretty
+import System.Console.Pretty (color, Color(..), style, Style(Bold))
 import System.Time.Extra (sleep)
 
 import Bodhi
@@ -129,7 +129,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       when (length brs /= 1) $
         gitSwitchBranch currentbranch
       unless (null failures) $ do
-        putStrLn $ "Build failures:" +-+ unwords failures
+        putStrLn $ "Build failures:" +-+ color Red (unwords failures)
         okay <- yesNo "Do you want to continue nevertheless"
         unless okay $ error' "Quitting"
       when (isNothing msidetagTarget) $ do
@@ -244,8 +244,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
     startBuild mlayer n morelayers nopkgs target pkg br dir =
       withExistingDirectory dir $ do
       gitSwitchBranch (RelBranch br)
-      unlessM isGitDirClean $
-        error' "local uncommitted changes (dirty)"
+      unlessM isGitDirClean $ do
+        warning $ color Red "local uncommitted changes (dirty)"
+        promptEnter "Press Enter to continue after fixing"
       let spec = packageSpec pkg
       checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
@@ -288,7 +289,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
               bodhiCreateOverride dryrun Nothing nvr
           return $ return $ Done pkg nvr br changelog
         Just BuildBuilding -> do
-          sayString $ color Yellow (showNVR nvr) +-+ "is already" +-+ color Yellow "building"
+          sayString $ color Yellow (showNVR nvr) +-+ "is already" +-+ style Bold (color Yellow "building")
           mtask <- kojiGetBuildTaskID fedoraHub $ showNVR nvr
           case mtask of
             Nothing -> error' $ "Task for" +-+ showNVR nvr +-+ "not found"
@@ -332,7 +333,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         kojiWaitTaskReport newpkg nvr task = do
           finish <- retry 3 $ kojiWaitTask task
           if finish
-            then sayString $ color Green $ showNVR nvr +-+ "build success"
+            then sayString $ color Green (showNVR nvr) +-+ "complete"
             else do
             whenJustM (findExecutable "koji-tool") $ \kojitool -> do
               cmd_ kojitool ["builds", "--tail", "-b", showNVR nvr]
