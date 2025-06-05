@@ -362,11 +362,11 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
           if finish
             then sayString $ color Green (showNVR nvr) +-+ "complete"
             else do
-            whenJustM (findExecutable "koji-tool") $ \kojitool -> do
-              cmd_ kojitool ["builds", "--tail", "-b", showNVR nvr]
-              -- FIXME cmdLog deprecated
-              cmdLog kojitool $ ["tasks", "--children", displayID task, "-s", "fail"] ++ ["--tail" | nopkgs < 3]
-              putTaskinfoUrl fedoraHub task
+            whenJustM (findExecutable "koji-tool") $ \kojitool ->
+              -- FIXME probably only needed for early failure now
+              --cmdLog kojitool ["builds", "--tail", "-b", showNVR nvr]
+              cmdLog kojitool $ ["tasks", "--children", displayID task, "-s", "fail"] ++ [if nopkgs < 5 then "--tail" else "--details"]
+            putTaskinfoUrl fedoraHub task
             error' $ color Red $ showNVR nvr +-+ "build failed"
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then
