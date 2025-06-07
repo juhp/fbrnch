@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.1 (2025-06-07)
+- parallel: restore package heading for merge
+- parallel: fix error for -F/-E when run from outside dist-git
+- createKojiSidetag: needs krbTicket
+
 ## 1.7 (2025-06-05)
 - support epel10.x minors with fedora-releases-0.3.0
 - 'merge': now done from origin for consistency
