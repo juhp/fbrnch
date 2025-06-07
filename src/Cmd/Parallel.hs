@@ -90,6 +90,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         when (mmerge /= Just False) $
         withExistingDirectory p $ do
         pkg <- getPackageName p
+        putPkgBrnchHdr pkg rbr
         mergeNewerBranch pkg rbr
         getDynSourcesMacros $ packageSpec pkg
       distopts <- distRpmOptions rbr
