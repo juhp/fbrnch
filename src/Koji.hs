@@ -282,6 +282,7 @@ createKojiSidetag dryrun br = do
     if dryrun
     then return $ "Side tag '" ++ buildtag ++ "'"
     else do
+      krbTicket
       ls <- lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
       case ls of
         [] -> error' "no output from request-side-tag"
