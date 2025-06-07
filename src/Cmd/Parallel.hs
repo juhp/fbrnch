@@ -65,7 +65,9 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
       _ -> case breq of
              Branches [] -> error' "please specify a branch"
              Branches _ -> listOfBranches True True breq
-             _ -> listOfBranches True True breq
+             _ -> do
+               distgit <- isPkgGitSshRepo
+               listOfBranches distgit True breq
   when (null branches) $
     error' "Please specify at least one branch"
   when (isJust (maybeTarget msidetagTarget) && length branches > 1) $
