@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.7.1 (2025-06-07)
+- Merge: prompt even with --merge (--no-prompt) when branch unmergeable
 - parallel: restore package heading for merge
 - parallel: fix error for -F/-E when run from outside dist-git
 - createKojiSidetag: needs krbTicket
