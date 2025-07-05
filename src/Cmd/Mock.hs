@@ -119,19 +119,20 @@ mockCmd dryrun mnoclean network reinstall mockmode mroot march (breq, ps) = do
                  "\nalready installed!\n"
             where
               doInstallRPMs rpms = do
-                -- FIXME show source NVR (eg not pandoc-common)
-                whenJust (headMay rpms) $
-                  putStrLn . showNVR . dropArch . readNVRA
-                let nvras = rpmsToNVRAs rpms
-                -- FIXME: prefix = fromMaybe (nvrName nvr) mprefix
-                decided <- -- decideRPMs yes False mexisting select pkg nvras
-                  decideRPMs Yes False Nothing selectDefault pkg nvras
-                -- FIXME dryrun and debug
-                -- FIXME return Bool?
-                let verrel = showPkgVerRel . readNVRA $ head rpms
-                    results = "results" </> verrel
-                forM_ ["noarch", "x86_64"] $ \arch -> do
-                  let link = results </> arch
-                  unlessM (doesDirectoryExist link) $
-                    createFileLink "." link
-                installRPMs False False Nothing Yes $ groupOnArch results decided
+                whenJust (headMay rpms) $ \rpm -> do
+                  let nvra = readNVRA rpm
+                  -- FIXME show source NVR (eg not pandoc-common)
+                  putStrLn $ (showNVR . dropArch) nvra
+                  let nvras = rpmsToNVRAs rpms
+                  -- FIXME: prefix = fromMaybe (nvrName nvr) mprefix
+                  decided <- -- decideRPMs yes False mexisting select pkg nvras
+                    decideRPMs Yes False Nothing selectDefault pkg nvras
+                  -- FIXME dryrun and debug
+                  -- FIXME return Bool?
+                  let verrel = showPkgVerRel nvra
+                      results = "results" </> verrel
+                  forM_ ["noarch", "x86_64"] $ \arch -> do
+                    let link = results </> arch
+                    unlessM (doesDirectoryExist link) $
+                      createFileLink "." link
+                  installRPMs False False Nothing Yes $ groupOnArch results decided
