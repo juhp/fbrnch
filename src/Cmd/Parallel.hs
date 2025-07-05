@@ -148,7 +148,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
           putPkgBrnchHdr pkg br
           target <- targetMaybeSidetag dryrun True True br msidetagTarget
           when (mmerge /= Just False) $ mergeNewerBranch pkg br
-          job <- startBuild Nothing 0 False (length brs) target pkg br "." >>= async
+          job <- startBuild Nothing 0 False 1 target pkg br "." >>= async
           unless dryrun $ sleep delay
           return (showBranch br,job)
 
