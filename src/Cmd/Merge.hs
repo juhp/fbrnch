@@ -92,7 +92,7 @@ mergeBranch dryrun nofetch build noprompt showall pkg (True, unmerged@(unmgd:_))
     unless dryrun $
       -- FIXME merge from origin by default not local branch
       git_ "merge" ["--quiet", ref]
-mergeBranch dryrun nofetch build _noprompt showall pkg (False,unmerged) from br = do
+mergeBranch dryrun nofetch build noprompt showall pkg (False,unmerged) from br = do
   unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
   when (nofetch && not build) $ putPkgBrnchHdr pkg br
   putStrLn $ color (if null unpushed then Magenta else Red) $ showBranch from +-+ "branch is not directly mergeable:"
@@ -101,7 +101,10 @@ mergeBranch dryrun nofetch build _noprompt showall pkg (False,unmerged) from br 
   unless (null unpushed) $ do
     putStrLn "Local commits:"
     displayCommits showall unpushed
-  mmerge <- conflictPrompt unmerged $ "Press Enter to skip merge" ++ (if build then " and build" else "") ++ "; or give ref or 'HEAD' to attempt merge"
+  mmerge <-
+    if noprompt && null unpushed
+    then return Nothing
+    else conflictPrompt unmerged $ "Press Enter to skip merge" ++ (if build then " and build" else "") ++ "; or give ref or 'HEAD' to attempt merge"
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
   whenJust mmerge $ \ ref ->
