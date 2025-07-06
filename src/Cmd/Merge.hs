@@ -4,6 +4,7 @@ module Cmd.Merge (
   getNewerBranch)
 where
 
+import System.Console.Pretty (color, Color(Magenta, Red))
 import Safe (tailSafe)
 
 import Common
@@ -92,11 +93,11 @@ mergeBranch dryrun nofetch build noprompt showall pkg (True, unmerged@(unmgd:_))
       -- FIXME merge from origin by default not local branch
       git_ "merge" ["--quiet", ref]
 mergeBranch dryrun nofetch build _noprompt showall pkg (False,unmerged) from br = do
+  unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
   when (nofetch && not build) $ putPkgBrnchHdr pkg br
-  putStrLn $ showBranch from +-+ "branch is not directly mergeable:"
+  putStrLn $ color (if null unpushed then Magenta else Red) $ showBranch from +-+ "branch is not directly mergeable:"
   displayCommits False unmerged
   putNewLn
-  unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
   unless (null unpushed) $ do
     putStrLn "Local commits:"
     displayCommits showall unpushed
