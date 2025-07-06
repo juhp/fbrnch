@@ -3,8 +3,9 @@ module Cmd.Commit
   )
 where
 
-import SimplePrompt (promptNonEmpty)
+import SimplePrompt (promptEnter, promptNonEmpty)
 
+import Branches (getReleaseBranch, showBranch, Branch(Rawhide))
 import Common
 import Common.System
 import Git
@@ -16,8 +17,20 @@ import Package
 -- FIXME --undo last change: eg undo accidential --amend
 -- FIXME --empty
 -- FIXME include only (used) changelog if not staged
-commitCmd :: Bool -> Maybe CommitOpt -> Bool -> Bool -> [String] -> IO ()
-commitCmd dryrun mopt firstLine unstaged paths = do
+commitCmd :: Bool -> Bool -> Maybe CommitOpt -> Bool -> Bool -> [String]
+          -> IO ()
+commitCmd dryrun branched mopt firstLine unstaged paths = do
+  distgit <- isPkgGitSshRepo
+  if distgit
+    then do
+    br <- getReleaseBranch
+    if br == Rawhide
+      then when branched $
+           error' "cannot use --branched for rawhide"
+      else unless branched $
+           promptEnter $ "Are you sure you want to update" +-+ showBranch br +-+ "branch?! Press Enter to continue"
+    else when branched $
+         error' "cannot use --branched with dist-git"
   when (isJust mopt && firstLine) $
     error' "--first-line cannot be used with other commit msg options"
   if null paths

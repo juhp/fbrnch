@@ -296,6 +296,7 @@ main = do
     , Subcommand "commit" "Git commit packages" $
       commitCmd
       <$> dryrunOpt "Dry run: do not commit"
+      <*> switchWith 'b' "branched" "Commit to branched dist-git"
       <*> optional commitOpts
       <*> switchWith '1' "first-line" "use first line of changelog"
       <*> switchWith 'a' "unstaged" "include unstaged changes"
