@@ -27,6 +27,7 @@ import Branches
 import Bugzilla (BugId)
 import Common
 import Common.System
+import Git (gitSwitchBranch)
 import Package
 import Types (ChangeType(ChangeBodhi))
 
@@ -112,9 +113,9 @@ data UpdateNotes = NotesChangelog | NotesText String
 -- FIXME support --no-close-bugs
 -- push comma separated list of builds for a package to bodhi
 bodhiUpdate :: Bool -> (Maybe UpdateType, UpdateSeverity) -> Maybe BugId
-            -> Maybe UpdateNotes -> FilePath -> String -> IO ()
-bodhiUpdate _ _ _ _ _ [] = putStrLn "no package to push"
-bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs = do
+            -> Maybe UpdateNotes -> Maybe Branch -> FilePath -> String -> IO ()
+bodhiUpdate _ _ _ _ _ _ [] = putStrLn "no package to push"
+bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
   case mupdate of
     Nothing -> return ()
     Just updateType ->
@@ -127,6 +128,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs = do
               cmd_ "bodhi" ["updates", "new", "--file", file, nvrs]
               return True
             Nothing -> do
+              whenJust mrbr $ gitSwitchBranch . RelBranch
               -- FIXME also query for open existing bugs
               changelog <- if isJust mreview
                            then getSummaryURL spec
@@ -169,7 +171,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs = do
               then do
               putStrLn $ "bodhi submission failed for" +-+ nvrs
               promptEnter "Press Enter to resubmit to Bodhi"
-              bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs
+              bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs
               else
               forM_ updates $ \update ->
               case lookupKey "url" update of
