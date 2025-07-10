@@ -120,7 +120,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs = do
     Just updateType ->
       unless dryrun $ do
         -- use cmdLog to debug, but notes are not quoted
-        updatedone <- do
+        updateDone <- do
           mtemplate <- maybeTemplate updateType
           case mtemplate of
             Just file -> do
@@ -159,7 +159,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes spec nvrs = do
                 -- {"status": "error", "errors": [{"location": "body", "name": "builds", "description": "Update for ghc9.2-9.2.5-14.fc36 already exists"}]}
                 cmd_ "bodhi" $ ["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", take 10000 changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvrs]
                 return True
-        when updatedone $ do
+        when updateDone $ do
           -- FIXME avoid this if we know the update URLs (split update does not seem to return URLs)
           eupdates <- bodhiUpdatesEither [makeItem "display_user" "0", makeItem "builds" nvrs]
           case eupdates of
