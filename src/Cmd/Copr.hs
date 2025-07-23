@@ -119,22 +119,23 @@ data CoprMode = ListChroots | CoprMonitor | CoprBuild | CoprNew
 -- FIXME time builds?
 coprCmd :: Bool -> CoprMode -> Bool -> Maybe BuildBy -> Maybe Archs -> String
         -> (BranchesReq,[String]) -> IO ()
-coprCmd dryrun mode force mbuildBy marchs project (breq, pkgs) = do
-  user <- getUsername
+coprCmd dryrun mode force mbuildBy marchs copr (breq, pkgs) = do
+  -- FIXME disallow user/project for build/new?
+  (user,project) <- coprUserProject copr
   let buildBy = fromMaybe ValidateByRelease mbuildBy
   case mode of
-    ListChroots -> coprGetChroots user >>= mapM_ (putStrLn . showChroot)
+    ListChroots -> coprGetChroots user project >>= mapM_ (putStrLn . showChroot)
     CoprMonitor -> coprMonitorPackages user project >>= mapM_ printPkgRes
     CoprNew -> coprNewProject dryrun project marchs breq pkgs
     CoprBuild -> do
-      chroots <- coprGetChroots user
+      chroots <- coprGetChroots user project
       if null pkgs
-        then coprBuildPkg user buildBy chroots False
+        then coprBuildPkg user project buildBy chroots False
         else
-        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user buildBy chroots (n>0)) $ zip (reverse [0..length pkgs - 1]) pkgs
+        mapM_ (\(n,p) -> withExistingDirectory p $ coprBuildPkg user project buildBy chroots (n>0)) $ zip (reverse [0..length pkgs - 1]) pkgs
   where
-    coprGetChroots :: String -> IO [Chroot]
-    coprGetChroots user = do
+    coprGetChroots :: String -> String -> IO [Chroot]
+    coprGetChroots user project = do
       chroots <- reverseSort . map (readChroot . T.unpack) <$> coprChroots coprServer user project
       when (null chroots) $
         error' $ "No chroots found for" +-+ user ++ "/" ++ project
@@ -162,8 +163,8 @@ coprCmd dryrun mode force mbuildBy marchs project (breq, pkgs) = do
         then error' "No valid chroots"
         else return buildroots
 
-    coprBuildPkg :: String -> BuildBy -> [Chroot] -> Bool -> IO ()
-    coprBuildPkg user buildBy chroots morepkgs = do
+    coprBuildPkg :: String -> String -> BuildBy -> [Chroot] -> Bool -> IO ()
+    coprBuildPkg user project buildBy chroots morepkgs = do
       -- FIXME check is pkg.spec
       -- was: localBranchSpecFile pkg (RelBranch Rawhide)
       spec <- findSpecfile
@@ -207,6 +208,22 @@ coprCmd dryrun mode force mbuildBy marchs project (breq, pkgs) = do
     isArch arch release = chrootArch release == arch
 
     sameRelease r1 r2 = chrootBranch r1 == chrootBranch r2
+
+-- from copr-tool
+-- FIXME CoprProject datatype
+coprUserProject :: String -> IO (String,String)
+coprUserProject copr =
+  case splitCopr of
+    Just (u,p) -> return (u,p)
+    Nothing -> do
+      fasid <- getUsername
+      return (fasid, copr)
+  where
+    splitCopr :: Maybe (String, String)
+    splitCopr =
+      case splitOn "/" copr of
+        [u,c] | not (null u || null c) -> Just (u,c)
+        _ -> Nothing
 
 getUsername :: IO String
 getUsername = do
