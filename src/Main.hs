@@ -385,7 +385,9 @@ main = do
       <$> dryrunOpt "Dry run: do not build"
       <*> (flagWith' ListChroots 'l' "list-chroots" "Show project chroots" <|>
            flagLongWith' CoprNew "new" "Create new copr repo" <|>
-           flagWith CoprBuild CoprMonitor 'm' "monitor" "Show project chroots")
+           -- FIXME: NonEmpty String
+           flagWith' CoprMonitor 'm' "monitor" "Show project chroots" <*> optional (strOptionLongWith "filter" "NEEDLE" "Filter to results matching NEEDLE") <|>
+           pure CoprBuild)
       <*> forceOpt "build even if existing n-v-r"
       <*> optional buildByOpt
       <*> optional archesOpt

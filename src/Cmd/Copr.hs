@@ -106,7 +106,7 @@ showArch AARCH64 = "aarch64"
 showArch PPC64LE = "ppc64le"
 showArch S390X = "s390x"
 
-data CoprMode = ListChroots | CoprMonitor | CoprBuild | CoprNew
+data CoprMode = ListChroots | CoprMonitor (Maybe String) | CoprBuild | CoprNew
 
 -- FIXME take ExclusiveArch/ExcludeArch into account
 -- FIXME -1 for only first unbuilt chroot
@@ -125,7 +125,7 @@ coprCmd dryrun mode force mbuildBy marchs copr (breq, pkgs) = do
   let buildBy = fromMaybe ValidateByRelease mbuildBy
   case mode of
     ListChroots -> coprGetChroots user project >>= mapM_ (putStrLn . showChroot)
-    CoprMonitor -> coprMonitorPackages user project >>= mapM_ printPkgRes
+    CoprMonitor mneedle -> coprMonitorPackages user project >>= mapM_ (printPkgRes mneedle)
     CoprNew -> coprNewProject dryrun project marchs breq pkgs
     CoprBuild -> do
       chroots <- coprGetChroots user project
@@ -379,15 +379,38 @@ coprMonitorPackages user proj = do
       build <- lookupKey "build_id" obj
       return $ CoprTask (readChroot (T.unpack chroot)) build state version
 
-printPkgRes :: (Package, [CoprTask]) -> IO ()
-printPkgRes (pkg,chroots) = do
-  putStrLn $ "# " <> unPackage pkg
-  mapM_ printCoprTask chroots
+-- FIXME NonEmpty String
+printPkgRes :: Maybe String -> (Package, [CoprTask]) -> IO ()
+printPkgRes Nothing (pkg,chroots) = do
+  putStr $ "# " <> unPackage pkg
+  case chroots of
+    [] ->   putNewLn
+    [ch] -> putStr ": " >> printCoprTask ch
+    _ -> putNewLn >> mapM_ printCoprTask chroots
   putNewLn
+printPkgRes (Just needle) (pkg,chroots) = do
+  case filterResults chroots of
+    [] ->   return ()
+    [ch] -> do
+      putStr $ "# " <> unPackage pkg <> ": "
+      printCoprTask ch
+    _ -> do
+      putStrLn $ "# " <> unPackage pkg
+      mapM_ printCoprTask chroots
+  where
+    filterResults :: [CoprTask] -> [CoprTask]
+    filterResults [] = []
+    filterResults (c:cs) =
+      (if needle `isInfixOf` renderCoprTask c then (c :) else id)
+      $ filterResults cs
+
+renderCoprTask :: CoprTask -> String
+renderCoprTask (CoprTask chr build status version) =
+  version +-+ status +-+ "on" +-+ showChroot chr +-+ show build
 
 printCoprTask :: CoprTask -> IO ()
-printCoprTask (CoprTask chr build status version) =
-  putStrLn $ showChroot chr +-+ show build ++ ":" +-+ status +-+ version
+printCoprTask =
+  putStrLn . renderCoprTask
 
 coprWaitPackage :: Object -> IO ()
 coprWaitPackage build = do
