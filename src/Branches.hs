@@ -115,7 +115,7 @@ pagurePkgBranches pkg = do
 
 mockRoot :: Branch -> Maybe String -> String
 mockRoot br march =
-  let arch = fromMaybe System.Info.arch march
+  let arch = maybe System.Info.arch mapArch march
   in
     case br of
       Rawhide -> "fedora-rawhide-" ++ arch
@@ -123,6 +123,10 @@ mockRoot br march =
       EPEL n -> "centos-stream+epel-" ++ show n ++ "-" ++ arch
       EPELNext n -> "centos-stream+epel-next-" ++ show n ++ "-" ++ arch
       EPELMinor n _ ->  "rhel+epel-" ++ show n ++ "-" ++ arch
+  where
+    mapArch :: String -> String
+    mapArch "i686" = "i386"
+    mapArch a = a
 
 ------
 
