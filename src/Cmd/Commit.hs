@@ -63,7 +63,12 @@ commitCmd dryrun branched mopt firstLine unstaged paths = do
                   clog <- lines <$> cleanChangelog True spec
                   case clog of
                     [] -> readCommitMsg
-                    [msg] -> return msg
+                    [msg] -> do
+                      unless addall $ do
+                        remaining <- git "diff" ["-U0"]
+                        when (msg `isInfixOf` remaining) $
+                          error' "changelog is unstaged!"
+                      return msg
                     (msg:_) ->
                       if firstLine
                       then return $ removePrefix "- " msg
