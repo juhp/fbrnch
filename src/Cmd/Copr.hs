@@ -106,7 +106,7 @@ showArch AARCH64 = "aarch64"
 showArch PPC64LE = "ppc64le"
 showArch S390X = "s390x"
 
-data CoprMode = ListChroots | CoprMonitor (Maybe String) | CoprBuild | CoprNew
+data CoprMode = ListChroots | CoprMonitor (Maybe String) Bool | CoprBuild | CoprNew
 
 -- FIXME take ExclusiveArch/ExcludeArch into account
 -- FIXME -1 for only first unbuilt chroot
@@ -125,7 +125,7 @@ coprCmd dryrun mode force mbuildBy marchs copr (breq, pkgs) = do
   let buildBy = fromMaybe ValidateByRelease mbuildBy
   case mode of
     ListChroots -> coprGetChroots user project >>= mapM_ (putStrLn . showChroot)
-    CoprMonitor mneedle -> coprMonitorPackages user project >>= mapM_ (printPkgRes mneedle)
+    CoprMonitor mneedle nameonly -> coprMonitorPackages user project >>= mapM_ (printPkgRes mneedle nameonly)
     CoprNew -> coprNewProject dryrun project marchs breq pkgs
     CoprBuild -> do
       chroots <- coprGetChroots user project
@@ -380,20 +380,23 @@ coprMonitorPackages user proj = do
       return $ CoprTask (readChroot (T.unpack chroot)) build state version
 
 -- FIXME NonEmpty String
-printPkgRes :: Maybe String -> (Package, [CoprTask]) -> IO ()
-printPkgRes Nothing (pkg,chroots) = do
+printPkgRes :: Maybe String -> Bool -> CoprPackage -> IO ()
+printPkgRes Nothing _nameonly (pkg,chroots) = do
   putStr $ "# " <> unPackage pkg
   case chroots of
     [] ->   putNewLn
     [ch] -> putStr ": " >> printCoprTask ch
     _ -> putNewLn >> mapM_ printCoprTask chroots
   putNewLn
-printPkgRes (Just needle) (pkg,chroots) = do
+printPkgRes (Just needle) nameonly (pkg,chroots) = do
   case filterResults chroots of
     [] ->   return ()
-    [ch] -> do
-      putStr $ "# " <> unPackage pkg <> ": "
-      printCoprTask ch
+    [ch] ->
+      if nameonly
+        then putStrLn $ unPackage pkg
+      else do
+        putStr $ "# " <> unPackage pkg <> ": "
+        printCoprTask ch
     _ -> do
       putStrLn $ "# " <> unPackage pkg
       mapM_ printCoprTask chroots

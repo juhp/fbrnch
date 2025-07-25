@@ -386,7 +386,7 @@ main = do
       <*> (flagWith' ListChroots 'l' "list-chroots" "Show project chroots" <|>
            flagLongWith' CoprNew "new" "Create new copr repo" <|>
            -- FIXME: NonEmpty String
-           flagWith' CoprMonitor 'm' "monitor" "Show project chroots" <*> optional (strOptionLongWith "filter" "NEEDLE" "Filter to results matching NEEDLE") <|>
+           flagWith' CoprMonitor 'm' "monitor" "Show project chroots" <*> optional (strOptionLongWith "filter" "NEEDLE" "Filter to results matching NEEDLE") <*> switchLongWith "name-only" "Only print package names" <|>
            pure CoprBuild)
       <*> forceOpt "build even if existing n-v-r"
       <*> optional buildByOpt
