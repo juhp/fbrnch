@@ -16,6 +16,7 @@ import qualified Data.Aeson.KeyMap as M
 #else
 import qualified Data.HashMap.Strict as M
 #endif
+import qualified Data.ByteString.Lazy.UTF8 as U
 import Data.Char (isDigit)
 import  Data.Either.Combinators (whenLeft)
 import Data.Ini.Config
@@ -24,7 +25,8 @@ import Data.RPM.VerRel (showVerRel)
 import Data.Tuple.Extra (first)
 import Distribution.Fedora.Branch (getActiveBranches, getActiveBranched)
 import Network.HTTP.Query (lookupKey, lookupKey')
-import Safe (headDef)
+import Network.HTTP.Simple as HTTP
+import Safe (headDef, lastMay)
 import System.Environment.XDG.BaseDir (getUserConfigDir)
 import System.Time.Extra (sleep)
 import Web.Fedora.Copr (coprChroots, fedoraCopr)
@@ -106,7 +108,11 @@ showArch AARCH64 = "aarch64"
 showArch PPC64LE = "ppc64le"
 showArch S390X = "s390x"
 
-data CoprMode = ListChroots | CoprMonitor (Maybe String) Bool | CoprBuild | CoprNew
+data CoprMode = ListChroots
+              | CoprMonitor (Maybe String) Bool -- FIXME should be Maybe (String, Bool) probably
+              | CoprBuild
+              | CoprNew
+              | CoprFailures (Maybe String)
 
 -- FIXME take ExclusiveArch/ExcludeArch into account
 -- FIXME -1 for only first unbuilt chroot
@@ -127,6 +133,7 @@ coprCmd dryrun mode force mbuildBy marchs copr (breq, pkgs) = do
     ListChroots -> coprGetChroots user project >>= mapM_ (putStrLn . showChroot)
     CoprMonitor mneedle nameonly -> coprMonitorPackages user project >>= mapM_ (printPkgRes mneedle nameonly)
     CoprNew -> coprNewProject dryrun project marchs breq pkgs
+    CoprFailures mgrep -> coprMonitorPackages user project >>= mapM_ (printFailures user project mgrep)
     CoprBuild -> do
       chroots <- coprGetChroots user project
       if null pkgs
@@ -298,13 +305,15 @@ coprBuild dryrun user project srpm spec chroots = do
       putStrLn $ "Failed: copr" +-+ unwords buildargs
       -- FIXME determine which chroot(s) failed
       -- eg 06482247
-      let zbid =
-            let s = show bid
-            in (if length s < 8 then ('0' :) else id) s
       actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
       -- FIXME which chroot?
       -- FIXME print buildlog size
-      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot (headDef (error' " nochroot!") chroots) +/+ zbid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
+      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot (headDef (error' " nochroot!") chroots) +/+ zeroBuildId bid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
+
+zeroBuildId :: Int -> String
+zeroBuildId bid =
+  let s = show bid
+  in (if length s < 8 then ('0' :) else id) s
 
 -- FIXME idea: Maybe Seconds to increment FIXME
 -- sleep should have all chroots in pending CoprTask build
@@ -414,6 +423,60 @@ renderCoprTask (CoprTask chr build status version) =
 printCoprTask :: CoprTask -> IO ()
 printCoprTask =
   putStrLn . renderCoprTask
+
+-- FIXME only latest pkg builds
+printFailures :: String -> String -> Maybe String -> CoprPackage -> IO ()
+printFailures user project mgrep (pkg,chroots) = do
+  let fails = filter ((== "failed") . taskStatus) chroots
+  unless (null fails) $ do
+    putStrLn $ "#" +-+ unPackage pkg
+    mapM_ (displayLog mgrep . logUrl) fails
+  where
+    logUrl task = "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot (taskChroot task) +/+ zeroBuildId (taskBuild task) ++ "-" ++ unPackage pkg +/+ "builder-live.log.gz"
+
+-- adapted from koji-tool Tasks
+displayLog :: Maybe String -> String -> IO ()
+displayLog mgrep logurl = do
+  req <- HTTP.parseRequest logurl
+  resp <- HTTP.httpLBS req
+  let out = U.toString $ HTTP.getResponseBody resp
+      ls = lines out
+  putStrLn ""
+  let output
+        | length out < 4000 =
+          let excluded = ["Executing command:",
+                          "Child return code was: 0",
+                          "child environment: None",
+                          "ensuring that dir exists:",
+                          "touching file:",
+                          "creating dir:",
+                          "kill orphans"]
+          in
+            map (dropPrefix "DEBUG ") $ takeEnd 30 $
+            filter (\l -> not (any (`isInfixOf` l) excluded)) ls
+        | otherwise =
+            case breakOnEnd ["RPM build errors:"] ls of
+              ([],ls') -> ls'
+              (ls',_) -> dropEnd 2 ls'
+  putStr $ unlines $
+    case mgrep of
+      Nothing -> takeEnd 80 output
+      Just needle ->
+        filter (match needle) ls
+  putStrLn $ '\n' : logurl ++ "\n"
+  where
+    match :: String -> String -> Bool
+    match "" _ = error' "empty grep string not allowed"
+    match _ "" = False
+    match ('^':needle) ls =
+      if lastMay needle == Just '$'
+      then needle == ls
+      else needle `isPrefixOf` ls
+    match needle ls =
+      if lastMay needle == Just '$'
+      then needle `isSuffixOf` ls
+      else needle `isInfixOf` ls
+
 
 coprWaitPackage :: Object -> IO ()
 coprWaitPackage build = do
