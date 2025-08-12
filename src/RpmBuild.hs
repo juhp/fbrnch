@@ -495,7 +495,7 @@ checkSourcesMatch pkg br spec = do
                 sourcefiles
   unless (null missing) $ do
     -- FIXME maybe change to yesNo
-    promptEnter $ color Red $ unwords missing +-+ "not in" +-+ unPackage pkg +-+ "sources, press Enter to fix"
+    promptEnter $ color Red $ unwords missing +-+ "not in" +-+ unPackage pkg +-+ "'sources', press Enter to fix"
     -- FIXME check if already fixed before proceeding
     updateSourcesPkg False False True Nothing pkg br
     git_ "status" ["--short"]
