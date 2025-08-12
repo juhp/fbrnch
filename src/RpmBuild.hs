@@ -510,13 +510,14 @@ checkSourcesMatch pkg br spec = do
   where
     checkLookasideCache :: Manager -> String -> IO ()
     checkLookasideCache mgr source = do
-      let (file,url) =
+      let lookaside = "https://src.fedoraproject.org/lookaside/pkgs" +/+ unPackage pkg
+          (file,url) =
             case words source of
               ("SHA512":('(':fileparen):"=":[hash]) ->
                 let file' = dropSuffix ")" fileparen
-                in (file', "https://src.fedoraproject.org/lookaside/pkgs" +/+ unPackage pkg +/+ file +/+ "sha512" +/+ hash +/+ file)
+                in (file', lookaside +/+ file' +/+ "sha512" +/+ hash +/+ file')
               [hash,file'] ->
-                (file', "https://src.fedoraproject.org/lookaside/pkgs" +/+ unPackage pkg +/+ file +/+ "md5" +/+ hash +/+ file)
+                (file', lookaside +/+ file' +/+ "md5" +/+ hash +/+ file')
               _ -> error' $ "invalid/unknown source:\n" ++ source
       unlessM (httpExists mgr url) $ do
         putStrLn $ url +-+ "not found"
