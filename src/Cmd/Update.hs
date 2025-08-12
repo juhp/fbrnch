@@ -8,6 +8,7 @@ import Data.RPM.VerCmp
 import Data.Version (parseVersion)
 import Fedora.Krb (krbTicket)
 import SimplePrompt (promptEnter)
+import System.IO.Extra (withTempDir)
 import Text.ParserCombinators.ReadP (readP_to_S)
 
 import Branches
@@ -46,7 +47,6 @@ updateSourcesCmd force allowHEAD (mbr,args) = do
   where
     isVersion = not . null . readP_to_S parseVersion
 
--- FIXME use tempdir or don't prep to prevent overwriting an ongoing build
 updateSourcesPkg :: Bool -> Bool -> Bool -> Maybe String -> Package
                  -> AnyBranch -> IO ()
 updateSourcesPkg force allowHEAD distgit mver pkg br = do
@@ -130,8 +130,11 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       git_ "commit" ["-a", "-m", "Update to" +-+ newver]
   putStr "Prepping... "
   sourcediropt <- sourceDirCwdOpt
-  cmdSilent' "rpmbuild" $ "-bp" : sourcediropt ++ ["--nodeps", spec]
-  putStrLn "done"
+  withTempDir $ \tempdir -> do
+    cwd <- getCurrentDirectory
+    withCurrentDirectory tempdir $ do
+      cmdSilent' "rpmbuild" $ "-bp" : sourcediropt ++ ["--nodeps", cwd </> spec]
+      putStrLn "done"
   -- FIXME git amend (if previous commit was update)
 
 pkgVerRel :: FilePath -> IO (String,String)
