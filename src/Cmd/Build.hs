@@ -6,6 +6,7 @@ module Cmd.Build (
   ) where
 
 import Distribution.Fedora.Branch (branchDestTag, readBranch)
+import Distribution.Fedora.Release (getRawhideVersion)
 import Fedora.Krb (krbTicket)
 import SimplePrompt (promptEnter, yesNo)
 
@@ -112,7 +113,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   putNewLn
   let msidetagTarget = buildoptSidetagTarget opts
   target <- targetMaybeSidetag dryrun True True br msidetagTarget
-  nvr <- pkgNameVerRel' (maybeTargetBranch target) spec
+  rawhide <- getRawhideVersion
+  nvr <- pkgNameVerRel' (maybeTargetBranch rawhide target) spec
   mpush <-
     case unpushed of
       [] -> return Nothing
@@ -131,12 +133,16 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   where
     dryrun = buildoptDryrun opts
 
-    maybeTargetBranch target =
+    maybeTargetBranch :: Natural -> String -> Branch
+    maybeTargetBranch rawhide target =
       if showBranch br `isPrefixOf` target
       then br
       else
         case readBranch $ takeWhile (/= '-') target of
-          Just b -> b
+          Just b ->
+            if b == Fedora rawhide
+            then Rawhide
+            else b
           Nothing -> error' $ "unknown branch for target" +-+ target
 
     buildRun spec nvr merged mpush unpushed target msidetagTarget moverride = do
