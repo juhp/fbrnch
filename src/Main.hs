@@ -408,7 +408,7 @@ main = do
     -- , Subcommand "repoquery" "Repoquery branches (put repoquery options after '--')" $
     --   repoqueryCmd
     --   <$> branchesPackages
-    , Subcommand "ftbfs" "Check FTBFS status" $
+    , Subcommand "ftbfs" "Check FTBFS bug status" $
       ftbfsCmd
       <$> dryrunOpt "dry run"
       <*> switchWith 'l' "short" "Only list packages"
