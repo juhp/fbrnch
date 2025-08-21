@@ -47,6 +47,7 @@ import Fedora.Krb (fasIdFromKrb, krbTicket)
 import Safe (headMay, tailSafe)
 import Say (sayString)
 import SimplePrompt (promptEnter, promptNonEmpty, yesNo)
+import System.Environment (lookupEnv)
 import System.Exit
 import System.Process.Typed
 import System.Timeout (timeout)
@@ -98,6 +99,13 @@ kojiScratchBuild target args srpm = do
   Right url <- kojiBuild' True target $ args ++ ["--scratch", "--no-rebuild-srpm", srpm]
   return url
 
+getKojiProgam :: IO FilePath
+getKojiProgam = do
+  mkoji <- lookupEnv "FBRNCH_KOJI"
+  case mkoji of
+    Nothing -> return "koji"
+    Just k -> return k
+
 type KojiBuildTask = Either TaskID String
 
 -- FIXME setTermTitle nvr
@@ -109,11 +117,12 @@ kojiBuild' wait target args = do
              else ".src.rpm" `isSuffixOf` last args
   -- FIXME use tee functionality
   when srpm $ putStrLn "koji srpm build: uploading..."
+  koji <- getKojiProgam
   -- can fail like:
   -- [ERROR] koji: Request error: POST::https://koji.fedoraproject.org/kojihub/ssllogin::<PreparedRequest [POST]>
   -- [ERROR] koji: AuthError: unable to obtain a session
   -- readCreateProcess: koji "build" "--nowait" "f33-build-side-25385" "--fail-fast" "--background" ... (exit 1): failed
-  (ret,out) <- readProcessStdout $ proc "koji" $ ["build", "--nowait", target] ++ args
+  (ret,out) <- readProcessStdout $ proc koji $ ["build", "--nowait", target] ++ args
   -- for srpm: drop uploading line until doing tee
   -- for git: drop "Created task: "
   -- init to drop final newline
@@ -142,12 +151,13 @@ kojiBuild' wait target args = do
 -- FIXME implement native watchTask
 kojiWatchTask :: TaskID -> IO ()
 kojiWatchTask task = do
+  koji <- getKojiProgam
   -- FIXME can error:
   -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
   -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
   -- eg3 [ERROR] koji: ReadTimeout: HTTPSConnectionPool(host='koji.fedoraproject.org', port=443): Read timed out. (read timeout=43200)
   -- This might error with exit 0 occasionally so we check the taskstate always
-  void $ cmdBool "koji" ["watch-task", displayID task]
+  void $ cmdBool koji ["watch-task", displayID task]
   mst <- kojiGetTaskState fedoraHub task
   case mst of
     Just TaskClosed -> return ()
@@ -228,10 +238,12 @@ kojiWaitRepoNVRs dryrun quiet target nvrs = do
       case nvrs of
         [nvr] -> showNVR nvr
         _ -> "builds"
+    koji <- getKojiProgam
     -- FIXME use knowntag to quieten output: for override outputs, eg
     -- "nvr ghc-rpm-macros-2.7.5-1.fc41 is not current in tag f41-build
     --    latest build is ghc-rpm-macros-2.7.2-4.fc41"
-    void $ timeIO $ cmd "koji" (["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag])
+    -- or "No clang18 builds in tag epel10.1-build"
+    void $ timeIO $ cmd koji (["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag])
 
 kojiWaitRepoNVR :: Bool -> Bool -> String -> NVR -> IO ()
 kojiWaitRepoNVR dryrun quiet target nvr =
@@ -244,8 +256,9 @@ kojiWaitRepo dryrun quiet target = do
   tz <- getCurrentTimeZone
   unless quiet $
     logSay tz $ "Waiting for" +-+ buildtag
-  unless dryrun $
-    void $ timeIO $ cmd "koji" ["wait-repo", "--request", "--quiet", buildtag]
+  unless dryrun $ do
+    koji <- getKojiProgam
+    void $ timeIO $ cmd koji ["wait-repo", "--request", "--quiet", buildtag]
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do
@@ -295,7 +308,7 @@ createKojiSidetag dryrun br = do
     putStrLn $ "Sidetag" +-+ sidetag +-+ "created"
     -- logMsg $ "Waiting for" +-+ sidetag +-+ "repo"
     -- unless dryrun $
-    --   cmd_ "koji" ["wait-repo", sidetag]
+    --   cmd_ koji ["wait-repo", sidetag]
     return sidetag
     else error' "'fedpkg request-side-tag' failed"
 
