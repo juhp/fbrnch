@@ -19,6 +19,7 @@ import Cmd.Bump
 import Cmd.Clone
 import Cmd.Commit
 import Cmd.Compare
+import Cmd.CompareTarballs
 import Cmd.CreateReview
 import Cmd.Copr
 import Cmd.Diff
@@ -236,6 +237,8 @@ main = do
       <*> anyBranchArg
       <*> anyBranchArg
       <*> manyPackages
+    , Subcommand "compare-tarballs" "Diff source tarballs" $
+      pure compareTarballsCmd
     , Subcommand "src-deps" "List source package dependencies" $
       srcDepsCmd
       <$> switchWith 'r' "reverse" "Reverse dependencies"

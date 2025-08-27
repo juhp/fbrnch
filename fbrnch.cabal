@@ -54,6 +54,7 @@ executable fbrnch
                        Cmd.Clone
                        Cmd.Commit
                        Cmd.Compare
+                       Cmd.CompareTarballs
                        Cmd.Copr
                        Cmd.CreateReview
                        Cmd.Diff
