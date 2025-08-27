@@ -7,11 +7,12 @@ where
 import Data.RPM.VerCmp
 import Data.Version (parseVersion)
 import Fedora.Krb (krbTicket)
-import SimplePrompt (promptEnter)
+import SimplePrompt (promptEnter, yesNoDefault)
 import System.IO.Extra (withTempDir)
 import Text.ParserCombinators.ReadP (readP_to_S)
 
 import Branches
+import Cmd.CompareTarballs
 import Common
 import Common.System
 import Git
@@ -115,6 +116,8 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
     when force $ do
       forM_ archives removeFile
       cmd_ "spectool" ["-g", "-S", spec]
+    whenM (yesNoDefault False "Do you want to diff the sources?") $
+      compareTarballsCmd
     krbTicket
     fedpkg_ "new-sources" archives
     unless (null textsources) $
