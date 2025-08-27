@@ -230,8 +230,8 @@ main = do
       <*> many diffFilterOpt
       <*> optional (optionWith anyBranchM 'w' "with-branch" "BRANCH" "Compare with BRANCH")
       <*> maybeBranchPackages False
-    , Subcommand "compare" "Show commits between branches" $
-      compareCmd
+    , Subcommand "compare-branches" "Show commits between branches" $
+      compareBranchesCmd
       <$> switchWith 'l' "long" "show full commit log"
       <*> optional (strOptionWith 'i' "ignore" "SUBSTRING" "Matching substring to ignore")
       <*> anyBranchArg

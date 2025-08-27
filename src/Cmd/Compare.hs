@@ -1,5 +1,6 @@
+-- FIXME rename to CompareBranches
 module Cmd.Compare (
-  compareCmd)
+  compareBranchesCmd)
 where
 
 import Branches
@@ -9,8 +10,8 @@ import Git
 import Package
 
 -- FIXME warn if older branch ahead
-compareCmd :: Bool -> Maybe String -> AnyBranch -> AnyBranch -> [String] -> IO ()
-compareCmd long mignore br1 br2 pkgs = do
+compareBranchesCmd :: Bool -> Maybe String -> AnyBranch -> AnyBranch -> [String] -> IO ()
+compareBranchesCmd long mignore br1 br2 pkgs = do
   if null pkgs
     then do
     unlessM isPkgGitRepo $
