@@ -238,7 +238,9 @@ main = do
       <*> anyBranchArg
       <*> manyPackages
     , Subcommand "compare-tarballs" "Diff source tarballs" $
-      pure compareTarballsCmd
+      compareTarballsCmd
+      <$> optional (strArg "[NAME-]VERSION1")
+      <*> optional (strArg "[NAME-]VERSION2")
     , Subcommand "src-deps" "List source package dependencies" $
       srcDepsCmd
       <$> switchWith 'r' "reverse" "Reverse dependencies"

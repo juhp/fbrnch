@@ -117,7 +117,7 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       forM_ archives removeFile
       cmd_ "spectool" ["-g", "-S", spec]
     whenM (yesNoDefault False "Do you want to diff the sources?") $
-      compareTarballsCmd
+      compareTarballsCmd Nothing Nothing
     krbTicket
     fedpkg_ "new-sources" archives
     unless (null textsources) $
