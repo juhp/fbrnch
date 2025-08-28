@@ -57,7 +57,7 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
           then findSpecfile
           else localBranchSpecFile pkg br
   -- FIXME detect uncommitted version bump, ie old committed version
-  (curver,_) <- pkgVerRel spec
+  curver <- pkgVersion spec
   vdiff <- filter ("+Version:" `isPrefixOf`) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
   when (length vdiff > 1) $
     error' $ "diff contains complex multi-version changes:\n" ++ unlines vdiff
@@ -139,23 +139,6 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       cmdSilent' "rpmbuild" $ "-bp" : sourcediropt ++ ["--nodeps", cwd </> spec]
       putStrLn "done"
   -- FIXME git amend (if previous commit was update)
-
-pkgVerRel :: FilePath -> IO (String,String)
-pkgVerRel spec = do
-  --dist <- branchDist br
-  -- workaround dist with bootstrap
-  --hostdist <- cmd "rpm" ["--eval", "%{dist}"]
-  mvr <- cmdMaybe "rpmspec" ["-q", "--srpm", "--qf", "%{version}-%{release}", spec]
-  case mvr of
-    Nothing -> error' $ "Failed to read package ver-rel:" +-+ spec
-    Just vr -> return $ splitBy "-" vr
-
-splitBy :: String -> String -> (String,String)
-splitBy sep xs =
-  let ws = splitOn sep xs in
-    case ws of
-      [f,v] -> (f,v)
-      _ -> error $ "inconsistent field:" +-+ xs
 
 changelogVersions :: FilePath -> IO [String]
 changelogVersions spec = do

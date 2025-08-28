@@ -41,6 +41,7 @@ module Package (
   pkgNameVerRel',
   pkgNameVerRelNodist,
   pkgNameVerRelDist,
+  pkgVersion,
   equivNVR,
   editSpecField,
   isAutoChangelog,
@@ -461,6 +462,16 @@ pkgNameVerRelNodist spec = do
   case mnvr of
     Nothing -> error' $ "rpmspec failed to parse" +-+ spec
     Just nvr -> return nvr
+
+pkgVersion :: FilePath -> IO String
+pkgVersion spec = do
+  --dist <- branchDist br
+  -- workaround dist with bootstrap
+  --hostdist <- cmd "rpm" ["--eval", "%{dist}"]
+  mvr <- cmdMaybe "rpmspec" ["-q", "--srpm", "--qf", "%{version}", spec]
+  case mvr of
+    Nothing -> error' $ "Failed to read package version:" +-+ spec
+    Just vr -> return vr
 
 -- FIXME should be more strict about dist tag (eg .fcNN only)
 equivNVR :: NVR -> Maybe NVR -> Bool
