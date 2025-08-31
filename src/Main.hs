@@ -583,6 +583,7 @@ main = do
       <*> waitrepoOpt
       <*> dryrunOpt "Dry run: do not merge/push/build"
       <*> skipFetchOpt
+      <*> gitrefOpt
       <*> updateOpt
       <*> optional notesOpt
       <*> switchWith 'p' "by-package" "Build by each package across brs"
@@ -593,6 +594,7 @@ main = do
         waitrepoOpt =
           optional (flagWith' True 'w' "waitrepo" "Waitrepo for each build" <|>
                     flagWith' False 'W' "no-waitrepo" "Do not waitrepo for each build")
+        gitrefOpt = optional (strOptionLongWith "ref" "COMMIT" "commit to build")
         notesOpt =
           flagWith' NotesChangelog 'c' "changelog-notes" "Use spec changelog for Bodhi notes" <|>
           NotesText <$> strOptionLongWith "notes" "NOTES" "Bodhi update notes"

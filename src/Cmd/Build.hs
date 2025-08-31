@@ -30,6 +30,7 @@ data BuildOpts = BuildOpts
   , buildoptWaitrepo :: Maybe Bool
   , buildoptDryrun :: Bool
   , buildoptSkipFetch :: Bool
+  , buildoptGitRef :: Maybe String
   , buildoptUpdate :: (Maybe UpdateType, UpdateSeverity)
   , buildoptNotes :: Maybe UpdateNotes
   , buildoptByPackage :: Bool
@@ -44,7 +45,6 @@ data BuildOpts = BuildOpts
 -- FIXME --add-to-update nvr
 -- FIXME --rpmlint (default for rawhide?)
 -- FIXME support --wait-build=NVR
--- FIXME build from ref
 -- FIXME tail of failed build.log
 -- FIXME --auto-override for deps in testing
 -- FIXME -B fails to find new branches (fixed?)
@@ -183,9 +183,14 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           buildRun spec nvr merged mpush unpushed target msidetagTarget moverride
         _ -> do
           mbuildref <-
-            case mpush of
-              Nothing -> Just <$> git "show-ref" ["--hash", "origin/" ++ showBranch br]
-              _ -> return mpush
+            case buildoptGitRef opts of
+              Just ref ->
+                -- FIXME check ref exists
+                return $ Just ref
+              Nothing ->
+                case mpush of
+                  Nothing -> Just <$> git "show-ref" ["--hash", "origin/" ++ showBranch br]
+                  _ -> return mpush
           opentasks <- kojiOpenTasks pkg mbuildref target
           case opentasks of
             [task] -> do
@@ -248,7 +253,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                   then whenJust mBugSess $
                        \ (bid,session) -> putBugBuild dryrun session bid nvr
                   else do
-                  when (isNothing msidetagTarget) $ do
+                  when (isNothing msidetagTarget &&
+                        isNothing (buildoptGitRef opts)) $ do
                     whenJust (fmap fst mBugSess) $
                       \bid -> putStr "review bug: " >> putBugId bid
                     -- FIXME diff previous changelog?
