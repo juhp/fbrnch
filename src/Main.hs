@@ -8,7 +8,8 @@ import Distribution.Fedora.Branch (partitionBranches, readBranch)
 #if !MIN_VERSION_simple_cmd_args(0,1,7)
 import Options.Applicative (maybeReader, ReadM)
 #endif
-import SelectRPMs (existingStrategyOption, selectRpmsOptions, Yes(..))
+import SelectRPMs (existingStrategyOption, pkgMgrOpt, selectRpmsOptions,
+                   Yes(..))
 import SimpleCmdArgs
 
 -- commands
@@ -271,6 +272,7 @@ main = do
       <*> jobsOpt
       <*> optional forceshortOpt
       <*> many bcondOpt
+      <*> optional pkgMgrOpt
       <*> switchWith 'r' "reinstall" "reinstall rpms"
       <*> switchLongWith "allow-erasing" "use dnf --allowerasing"
       <*> switchLongWith "no-build" "do not (re-)build (install built rpms)"
