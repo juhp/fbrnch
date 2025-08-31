@@ -116,13 +116,13 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
     when force $ do
       forM_ archives removeFile
       cmd_ "spectool" ["-g", "-S", spec]
-    whenM (yesNoDefault False "Do you want to diff the sources?") $
-      compareTarballsCmd Nothing Nothing
     krbTicket
     fedpkg_ "new-sources" archives
     unless (null textsources) $
       git_ "add" textsources
   whenJust moldnewver $ \(_old,newver) -> do
+    whenM (yesNoDefault False "Do you want to diff the sources?") $
+      compareTarballsCmd Nothing Nothing
     versions <- changelogVersions spec
     let missing =
           case versions of
