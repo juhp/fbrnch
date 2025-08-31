@@ -76,9 +76,10 @@ statusCmd nofetch reviews latestcommit (breq, pkgs) = do
                 --       putStrLn $ "Newer commits in" +-+ show newerBr ++ ":"
                 --       mapM_ putStrLn unmerged
                 munpushed <- gitShortLog1 $ Just $ "origin/" ++ showBranch br ++ "..HEAD"
+                hub <- getKojiProfileHub
                 case munpushed of
                   Nothing -> do
-                    mbuild <- kojiGetBuildID fedoraHub (showNVR nvr)
+                    mbuild <- kojiGetBuildID hub (showNVR nvr)
                     case mbuild of
                       Nothing -> do
                         destTag <- branchDestTag br
@@ -88,7 +89,7 @@ statusCmd nofetch reviews latestcommit (breq, pkgs) = do
                           Just latest ->
                             putStrLn $ if equivNVR nvr mlatest then showNVR latest +-+ "is latest modulo disttag" else showNVR latest +-+ "->\n" ++ showNVR nvr
                       Just buildid -> do
-                        tags <- kojiBuildTags fedoraHub (buildIDInfo buildid)
+                        tags <- kojiBuildTags hub (buildIDInfo buildid)
                         if null tags
                           then do
                           mstatus <- kojiBuildStatus nvr

@@ -179,7 +179,8 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           putStrLn $ showNVR nvr +-+ "is already building"
           when (isJust mpush) $
             error' "Please bump the spec file"
-          whenJustM (kojiGetBuildTaskID fedoraHub (showNVR nvr)) kojiWatchTask
+          hub <- getKojiProfileHub
+          whenJustM (kojiGetBuildTaskID hub (showNVR nvr)) kojiWatchTask
           buildRun spec nvr merged mpush unpushed target msidetagTarget moverride
         _ -> do
           mbuildref <-

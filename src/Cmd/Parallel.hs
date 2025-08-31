@@ -317,11 +317,12 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
           return $ return $ Done pkg nvr br changelog
         Just BuildBuilding -> do
           sayString $ color Yellow (showNVR nvr) +-+ "is already" +-+ style Bold (color Yellow "building")
-          mtask <- kojiGetBuildTaskID fedoraHub $ showNVR nvr
+          hub <- getKojiProfileHub
+          mtask <- kojiGetBuildTaskID hub $ showNVR nvr
           case mtask of
             Nothing -> error' $ "Task for" +-+ showNVR nvr +-+ "not found"
             Just task -> do
-              putTaskinfoUrl fedoraHub task
+              putTaskinfoUrl hub task
               return $ do
                 kojiWaitTaskReport (isNothing mlatest) nvr task
                 return $ Done pkg nvr br changelog
@@ -369,7 +370,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
               -- FIXME probably only needed for early failure now
               --cmdLog kojitool ["builds", "--tail", "-b", showNVR nvr]
               cmdLog kojitool $ ["tasks", "--children", displayID task, "-s", "fail"] ++ [if nopkgs < 5 then "--tail" else "--details"]
-            putTaskinfoUrl fedoraHub task
+            hub <- getKojiProfileHub
+            putTaskinfoUrl hub task
             error' $ color Red $ showNVR nvr +-+ "build failed"
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then

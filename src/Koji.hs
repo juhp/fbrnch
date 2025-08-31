@@ -26,6 +26,7 @@ module Koji (
   TaskID,
   displayID,
   fedoraHub,
+  getKojiProfileHub,
   maybeTimeout,
   createKojiSidetag,
   targetMaybeSidetag
@@ -64,20 +65,48 @@ import Types
 fedoraHub :: String
 fedoraHub = fedoraKojiHub
 
+getKojiProfile :: IO (Maybe String)
+getKojiProfile = lookupEnv "FBRNCH_KOJI_PROFILE"
+
+getKojiProfileHub' :: Maybe String -> IO String
+getKojiProfileHub' mprofile = do
+  case mprofile of
+    Nothing -> return fedoraKojiHub
+    Just p -> do
+      let file = "/etc/koji.conf.d" </> p <.> "conf"
+      exists <- doesFileExist file
+      if exists
+        then do
+        serv <- grep "^server =" $ "/etc/koji.conf.d" </> p <.> "conf"
+        case serv of
+          [sl] ->
+            case words sl of
+              ["server","=",hub] -> return hub
+              _ -> error' $ "Invalid server config in" +-+ file
+          _ -> error' $ "Undefined server in" +-+ file
+        else error' $ "Undefined koji profile:" +-+ p
+
+getKojiProfileHub :: IO String
+getKojiProfileHub =
+  getKojiProfile >>= getKojiProfileHub'
+
 kojiNVRTags :: NVR -> IO [String]
 kojiNVRTags nvr = do
-  mbldid <- kojiGetBuildID fedoraHub $ showNVR nvr
+  hub <- getKojiProfileHub
+  mbldid <- kojiGetBuildID hub $ showNVR nvr
   case mbldid of
     Nothing -> error' $ showNVR nvr +-+ "koji build not found"
-    Just bldid -> kojiBuildTags fedoraHub (buildIDInfo bldid)
+    Just bldid -> kojiBuildTags hub (buildIDInfo bldid)
 
 kojiBuildStatus :: NVR -> IO (Maybe BuildState)
-kojiBuildStatus nvr =
-  kojiGetBuildState fedoraHub (BuildInfoNVR (showNVR nvr))
+kojiBuildStatus nvr = do
+  hub <- getKojiProfileHub
+  kojiGetBuildState hub (BuildInfoNVR (showNVR nvr))
 
 kojiLatestNVR :: String -> String -> IO (Maybe NVR)
 kojiLatestNVR tag pkg = do
-  mbld <- kojiLatestBuild fedoraHub tag pkg
+  hub <- getKojiProfileHub
+  mbld <- kojiLatestBuild hub tag pkg
   return $ case mbld of
              Nothing -> Nothing
              Just bld -> lookupStruct "nvr" bld >>= maybeNVR
@@ -85,12 +114,13 @@ kojiLatestNVR tag pkg = do
 
 kojiOpenTasks :: Package -> Maybe String -> String -> IO [TaskID]
 kojiOpenTasks pkg mref target = do
+  hub <- getKojiProfileHub
   user <- fasIdFromKrb
-  muserid <- kojiGetUserID fedoraHub user
+  muserid <- kojiGetUserID hub user
   let userid = fromMaybe (error' $ "Koji failed to return userid for '" ++ user ++ "'") muserid
   commit <- maybe (git "rev-parse" ["HEAD"]) return mref
   let source = kojiSource pkg commit
-  kojiUserBuildTasks fedoraHub userid (Just source) (Just target)
+  kojiUserBuildTasks hub userid (Just source) (Just target)
 
 -- * Koji building
 
@@ -98,13 +128,6 @@ kojiScratchBuild :: String -> [String] -> FilePath -> IO String
 kojiScratchBuild target args srpm = do
   Right url <- kojiBuild' True target $ args ++ ["--scratch", "--no-rebuild-srpm", srpm]
   return url
-
-getKojiProgam :: IO FilePath
-getKojiProgam = do
-  mkoji <- lookupEnv "FBRNCH_KOJI"
-  case mkoji of
-    Nothing -> return "koji"
-    Just k -> return k
 
 type KojiBuildTask = Either TaskID String
 
@@ -117,12 +140,12 @@ kojiBuild' wait target args = do
              else ".src.rpm" `isSuffixOf` last args
   -- FIXME use tee functionality
   when srpm $ putStrLn "koji srpm build: uploading..."
-  koji <- getKojiProgam
+  mprofile <- getKojiProfile
   -- can fail like:
   -- [ERROR] koji: Request error: POST::https://koji.fedoraproject.org/kojihub/ssllogin::<PreparedRequest [POST]>
   -- [ERROR] koji: AuthError: unable to obtain a session
   -- readCreateProcess: koji "build" "--nowait" "f33-build-side-25385" "--fail-fast" "--background" ... (exit 1): failed
-  (ret,out) <- readProcessStdout $ proc koji $ ["build", "--nowait", target] ++ args
+  (ret,out) <- readProcessStdout $ proc "koji" $ kojiProfileOpt mprofile ++ ["build", "--nowait", target] ++ args
   -- for srpm: drop uploading line until doing tee
   -- for git: drop "Created task: "
   -- init to drop final newline
@@ -147,25 +170,30 @@ kojiBuild' wait target args = do
 --   Right url <- kojiBuild' True target args
 --   return url
 
+kojiProfileOpt :: Maybe String -> [String]
+kojiProfileOpt Nothing = []
+kojiProfileOpt (Just p) = ["--profile", p]
+
 -- FIXME filter/simplify output
 -- FIXME implement native watchTask
 kojiWatchTask :: TaskID -> IO ()
 kojiWatchTask task = do
-  koji <- getKojiProgam
+  mprofile <- getKojiProfile
   -- FIXME can error:
   -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
   -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
   -- eg3 [ERROR] koji: ReadTimeout: HTTPSConnectionPool(host='koji.fedoraproject.org', port=443): Read timed out. (read timeout=43200)
   -- This might error with exit 0 occasionally so we check the taskstate always
-  void $ cmdBool koji ["watch-task", displayID task]
-  mst <- kojiGetTaskState fedoraHub task
+  void $ cmdBool "koji" $ kojiProfileOpt mprofile ++ ["watch-task", displayID task]
+  hub <- getKojiProfileHub' mprofile
+  mst <- kojiGetTaskState hub task
   case mst of
     Just TaskClosed -> return ()
     Just TaskFailed -> do
       whenJustM (findExecutable "koji-tool") $ \kojitool -> do
         -- FIXME cmdLog deprecated
-        cmdLog kojitool ["tasks", "--children", displayID task, "--tail", "-s", "fail"]
-        putTaskinfoUrl fedoraHub task
+        cmdLog kojitool ["tasks", "--hub", hub, "--children", displayID task, "--tail", "-s", "fail"]
+        putTaskinfoUrl hub task
       error' "Task failed!"
     Just TaskCanceled -> return ()
     _ -> kojiWatchTask task
@@ -180,10 +208,11 @@ putTaskinfoUrl hub tid =
 -- Network.Socket.connect: <socket: 11>: does not exist (No route to host)
 kojiWaitTask :: TaskID -> IO Bool
 kojiWaitTask task = do
+  hub <- getKojiProfileHub
   -- FIXME can error:
   -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
   -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
-  mst <- maybeTimeout 45 $ kojiGetTaskState fedoraHub task
+  mst <- maybeTimeout 45 $ kojiGetTaskState hub task
   case mst of
     Just ts ->
       if ts `elem` openTaskStates
@@ -230,7 +259,8 @@ kojiBuildTarget' hub target = do
 kojiWaitRepoNVRs :: Bool -> Bool -> String -> [NVR] -> IO ()
 kojiWaitRepoNVRs _ _ _ [] = error' "no NVRs given to wait for"
 kojiWaitRepoNVRs dryrun quiet target nvrs = do
-  (buildtag,_desttag) <- kojiBuildTarget' fedoraHub target
+  hub <- getKojiProfileHub
+  (buildtag,_desttag) <- kojiBuildTarget' hub target
   unless dryrun $ do
     tz <- getCurrentTimeZone
     unless quiet $
@@ -238,12 +268,12 @@ kojiWaitRepoNVRs dryrun quiet target nvrs = do
       case nvrs of
         [nvr] -> showNVR nvr
         _ -> "builds"
-    koji <- getKojiProgam
+    mprofile <- getKojiProfile
     -- FIXME use knowntag to quieten output: for override outputs, eg
     -- "nvr ghc-rpm-macros-2.7.5-1.fc41 is not current in tag f41-build
     --    latest build is ghc-rpm-macros-2.7.2-4.fc41"
     -- or "No clang18 builds in tag epel10.1-build"
-    void $ timeIO $ cmd koji (["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag])
+    void $ timeIO $ cmd "koji" (kojiProfileOpt mprofile ++ ["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag])
 
 kojiWaitRepoNVR :: Bool -> Bool -> String -> NVR -> IO ()
 kojiWaitRepoNVR dryrun quiet target nvr =
@@ -252,32 +282,35 @@ kojiWaitRepoNVR dryrun quiet target nvr =
 -- FIXME display more status/age info
 kojiWaitRepo :: Bool -> Bool -> String -> IO ()
 kojiWaitRepo dryrun quiet target = do
-  (buildtag,_desttag) <- kojiBuildTarget' fedoraHub target
+  hub <- getKojiProfileHub
+  (buildtag,_desttag) <- kojiBuildTarget' hub target
   tz <- getCurrentTimeZone
   unless quiet $
     logSay tz $ "Waiting for" +-+ buildtag
   unless dryrun $ do
-    koji <- getKojiProgam
-    void $ timeIO $ cmd koji ["wait-repo", "--request", "--quiet", buildtag]
+    mprofile <- getKojiProfile
+    void $ timeIO $ cmd "koji" $ kojiProfileOpt mprofile ++ ["wait-repo", "--request", "--quiet", buildtag]
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do
-  st <- Koji.getTag fedoraHub (Koji.InfoString tag) Nothing
+  hub <- getKojiProfileHub
+  st <- Koji.getTag hub (Koji.InfoString tag) Nothing
   return $ maybe [] words $ lookupStruct "arches" st
 
 kojiUserSideTags :: Maybe Branch -> IO [String]
 kojiUserSideTags mbr = do
+  hub <- getKojiProfileHub
   user <- fasIdFromKrb
   mapMaybe (headMay . words) <$>
     case mbr of
       Nothing -> do
-        maybeTimeout 55 $ kojiListSideTags fedoraKojiHub Nothing (Just user)
+        maybeTimeout 55 $ kojiListSideTags hub Nothing (Just user)
       Just br -> do
-        mtags <- kojiBuildTarget fedoraHub (showBranch br)
+        mtags <- kojiBuildTarget hub (showBranch br)
         case mtags of
           Nothing -> return []
           Just (buildtag,_desttag) ->
-            kojiListSideTags fedoraKojiHub (Just buildtag) (Just user)
+            kojiListSideTags hub (Just buildtag) (Just user)
 
 maybeTimeout :: Micro -> IO a -> IO a
 maybeTimeout secs act = do
@@ -290,7 +323,8 @@ maybeTimeout secs act = do
 
 createKojiSidetag :: Bool -> Branch -> IO String
 createKojiSidetag dryrun br = do
-  (buildtag,_desttag) <- kojiBuildTarget' fedoraHub (showBranch br)
+  hub <- getKojiProfileHub
+  (buildtag,_desttag) <- kojiBuildTarget' hub (showBranch br)
   out <-
     if dryrun
     then return $ "Side tag '" ++ buildtag ++ "'"
