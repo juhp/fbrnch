@@ -1,6 +1,6 @@
-cabal-version:       2.0
+cabal-version:       2.2
 name:                fbrnch
-version:             1.7.1
+version:             1.7.2
 synopsis:            Fedora packager tool to build package branches
 description:
             fbrnch (fedora branch or "f-branch" for short) is
@@ -24,7 +24,7 @@ description:
             and many more commands.
 homepage:            https://github.com/juhp/fbrnch
 bug-reports:         https://github.com/juhp/fbrnch/issues
-license:             GPL-2
+license:             GPL-2.0-or-later
 license-file:        LICENSE
 author:              Jens Petersen <petersen@redhat.com>
 maintainer:          Jens Petersen <petersen@fedoraproject.org>
@@ -35,7 +35,8 @@ extra-doc-files:     CHANGELOG.md
                      README.md
 tested-with:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5,
                      GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8,
-                     GHC == 9.4.8, GHC == 9.6.7, GHC == 9.8.4, GHC == 9.10.2
+                     GHC == 9.4.8, GHC == 9.6.7, GHC == 9.8.4, GHC == 9.10.2,
+                     GHC == 9.12.2
 
 source-repository head
   type:                git

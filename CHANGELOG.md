@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.7.2 (2025-09-13)
+- 'build --sidetag': fix "release not found for branch f43" rawhide regression
+- 'build': use --ref to build from a commit
+- 'commit': error if changelog is unstaged
+- 'commit': require -b option to confirm non-rawhide commit
+- 'compare-branches': renamed from 'compare'
+- 'compare-tarballs': new command to diff source tarballs
+- 'copr --failures': fetches tails of failed build logs
+- 'copr --monitor': add --filter to only list results matching needle
+- 'copr --monitor': add --name-only to only print package name with filter
+- 'copr': handle user/project (for queries, etc)
+- 'install': select-rpms-0.3.1 allows selecting debuginfo subpkgs
+- 'install': select-rpms-0.3.1 adds --allow-erasing
+- 'install': options to select package manager to use (eg --rpm)
+- 'merge': colorize the unmergeable warning
+- 'update-sources': do sanity prep in a tmpdir to avoid any ongoing build
+- 'update-sources': offer to compare tarballs
+- FBRNCH_KOJI_PROFILE provides experimental Koji profile support (eg riscv)
+- bodhiUpdate: switch back to branch if necessary
+- mergeBranch: relax the unmergeable prompt condition for no unpushed commits
+
 ## 1.7.1 (2025-06-07)
 - Merge: prompt even with --merge (--no-prompt) when branch unmergeable
 - parallel: restore package heading for merge
