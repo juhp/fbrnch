@@ -1,8 +1,6 @@
-resolver: lts-22.44
+resolver: lts-23.28
 ghc-options:
   HsOpenSSL: -optc=-Wno-incompatible-pointer-types
 extra-deps:
-  - select-rpms-0.3.0
+  - select-rpms-0.3.1
   - fedora-releases-0.3.0
-  - pagure-0.2.1
-  - fedora-krb-0.1.0

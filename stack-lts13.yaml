@@ -22,4 +22,4 @@ extra-deps:
   - haskeline-0.8.0.0
   - fedora-krb-0.1.0
   - fedora-releases-0.3.0
-  - select-rpms-0.3.0
+  - select-rpms-0.3.1

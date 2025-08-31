@@ -272,6 +272,7 @@ main = do
       <*> optional forceshortOpt
       <*> many bcondOpt
       <*> switchWith 'r' "reinstall" "reinstall rpms"
+      <*> switchLongWith "allow-erasing" "use dnf --allowerasing"
       <*> switchLongWith "no-build" "do not (re-)build (install built rpms)"
       <*> switchLongWith "ignore-builddeps" "do not install builddeps"
       <*> flagWith No Yes 'y' "yes" "Assume yes to questions"
