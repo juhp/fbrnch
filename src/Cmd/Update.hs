@@ -112,7 +112,7 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       unlessM (doesFileExist patch) $
         cmd_ "spectool" ["-g", "-P", spec]
       git_ "add" [patch]
-    let (archives,textsources) = partition isArchiveFile existing
+    let (archives,textsources) = partition isArchiveFile sources
     when force $ do
       forM_ archives removeFile
       cmd_ "spectool" ["-g", "-S", spec]
