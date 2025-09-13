@@ -80,6 +80,7 @@ main = do
       switchCmd
       <$> verboseOpt "verbose output"
       <*> switchLongWith "lenient" "keep going if package missing branch"
+      <*> switchLongWith "stash" "git stash local changes"
       <*> anyBranchArg
       <*> manyPackages
     , Subcommand "nvr" "Print name-version-release" $
