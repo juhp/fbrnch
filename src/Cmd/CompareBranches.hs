@@ -1,5 +1,4 @@
--- FIXME rename to CompareBranches
-module Cmd.Compare (
+module Cmd.CompareBranches (
   compareBranchesCmd)
 where
 

@@ -19,7 +19,7 @@ import Cmd.Build
 import Cmd.Bump
 import Cmd.Clone
 import Cmd.Commit
-import Cmd.Compare
+import Cmd.CompareBranches
 import Cmd.CompareTarballs
 import Cmd.CreateReview
 import Cmd.Copr
