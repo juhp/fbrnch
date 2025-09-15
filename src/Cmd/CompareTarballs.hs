@@ -79,8 +79,12 @@ diffTarballs src1 src2 = do
     getDirTop subdir topdir src = do
       createDirectory subdir
       withCurrentDirectory subdir $ do
-        cmd_ "tar" ["xf", topdir </> src]
-        ls <- listDirectory "."
-        case ls of
-          [n] -> return n
-          _ -> error' $ "more than one top-level dir in" +-+ src
+        exists <- doesFileExist $ topdir </> src
+        if exists
+          then do
+          cmd_ "tar" ["xf", topdir </> src]
+          ls <- listDirectory "."
+          case ls of
+            [n] -> return n
+            _ -> error' $ "more than one top-level dir in" +-+ src
+          else error' $ src +-+ "not found"
