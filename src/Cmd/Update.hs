@@ -58,14 +58,14 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
           else localBranchSpecFile pkg br
   -- FIXME detect uncommitted version bump, ie old committed version
   curver <- pkgVersion spec
-  vdiff <- filter ("+Version:" `isPrefixOf`) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
-  when (length vdiff > 1) $
+  vdiff <- filter (\v -> any (`isPrefixOf` v) ["-Version:","+Version:"]) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
+  when (length vdiff > 2) $
     error' $ "diff contains complex multi-version changes:\n" ++ unlines vdiff
   case mver of
     Nothing -> do
       putStrLn $ "current version:" +-+ curver
     Just nver -> do
-      when (length vdiff == 1) $
+      when (length vdiff == 2) $
         error' $ "spec version already bumped to" +-+ curver
       when (curver == nver) $
         putStrLn $ "already new version" +-+ curver
