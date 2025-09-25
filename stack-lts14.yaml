@@ -13,7 +13,7 @@ extra-deps:
   - cached-json-file-0.1.0
   - bugzilla-redhat-1.0.1
   - HsOpenSSL-0.11.7.2
-  - simple-cmd-0.2.3
+  - simple-cmd-0.2.7
   - simple-prompt-0.2.3
   - haskeline-0.8.0.0
   - fedora-krb-0.1.0

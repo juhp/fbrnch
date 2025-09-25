@@ -120,11 +120,11 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
     Nothing -> return ()
     Just updateType ->
       unless dryrun $ do
-        -- use cmdLog to debug, but notes are not quoted
         updateDone <- do
           mtemplate <- maybeTemplate updateType
           case mtemplate of
             Just file -> do
+              -- FIXME use cmdLog_ to debug, but notes are not quoted
               cmd_ "bodhi" ["updates", "new", "--file", file, nvrs]
               return True
             Nothing -> do

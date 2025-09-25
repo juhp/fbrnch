@@ -86,7 +86,7 @@ ftbfsCmd dryrun short mbugsopt (mbr,pkgs) = do
               print status
               case status of
                 BuildFailed -> do
-                  cmdLog "koji-tool" ["tasks", "--details", "-T", "-s", "fail", "-b", showNVR nvr]
+                  cmdLog_ "koji-tool" ["tasks", "--details", "-T", "-s", "fail", "-b", showNVR nvr]
                   putNewLn
                 BuildComplete -> do
                   if bugStatus bug `elem` ["NEW", "ASSIGNED", "POST"]

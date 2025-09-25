@@ -368,8 +368,8 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
             else do
             whenJustM (findExecutable "koji-tool") $ \kojitool ->
               -- FIXME probably only needed for early failure now
-              --cmdLog kojitool ["builds", "--tail", "-b", showNVR nvr]
-              cmdLog kojitool $ ["tasks", "--children", displayID task, "-s", "fail"] ++ [if nopkgs < 5 then "--tail" else "--details"]
+              --cmdLog_ kojitool ["builds", "--tail", "-b", showNVR nvr]
+              cmdLog_ kojitool $ ["tasks", "--children", displayID task, "-s", "fail"] ++ [if nopkgs < 5 then "--tail" else "--details"]
             hub <- getKojiProfileHub
             putTaskinfoUrl hub task
             error' $ color Red $ showNVR nvr +-+ "build failed"

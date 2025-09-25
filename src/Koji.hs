@@ -191,8 +191,7 @@ kojiWatchTask task = do
     Just TaskClosed -> return ()
     Just TaskFailed -> do
       whenJustM (findExecutable "koji-tool") $ \kojitool -> do
-        -- FIXME cmdLog deprecated
-        cmdLog kojitool ["tasks", "--hub", hub, "--children", displayID task, "--tail", "-s", "fail"]
+        cmdLog_ kojitool ["tasks", "--hub", hub, "--children", displayID task, "--tail", "-s", "fail"]
         putTaskinfoUrl hub task
       error' "Task failed!"
     Just TaskCanceled -> return ()

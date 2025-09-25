@@ -53,5 +53,5 @@ prepCmd mpre verbose deps allowhead (mbr,pkgs) = do
             then sourceDirCwdOpt
             else return []
         timeIO $
-          (if verbose then cmdLog else cmdSilent') "rpmbuild" $ "-bp" : ["--nodeps" | not deps] ++ sourcediropt ++ [spec]
+          (if verbose then cmdLog_ else cmdSilent') "rpmbuild" $ "-bp" : ["--nodeps" | not deps] ++ sourcediropt ++ [spec]
         putStrLn "done"

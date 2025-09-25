@@ -138,7 +138,7 @@ executable fbrnch
                        safe,
                        say,
                        select-rpms >= 0.3.1,
-                       simple-cmd >= 0.2.3,
+                       simple-cmd >= 0.2.7,
                        simple-cmd-args >= 0.1.8,
                        simple-prompt >= 0.2.3,
                        text,
