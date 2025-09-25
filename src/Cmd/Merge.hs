@@ -4,8 +4,9 @@ module Cmd.Merge (
   getNewerBranch)
 where
 
-import System.Console.Pretty (color, Color(Magenta, Red))
 import Safe (tailSafe)
+import SimplePrompt (promptEnter)
+import System.Console.Pretty (color, Color(Magenta, Red))
 
 import Common
 import Common.System
@@ -68,6 +69,12 @@ mergeBranch _ _ _ _ _ _ (_,[]) _ _ = return ()
 mergeBranch dryrun nofetch build noprompt showall pkg (True, unmerged@(unmgd:_)) from br = do
   when (nofetch && not build) $ putPkgBrnchHdr pkg br
   isnewrepo <- initialPkgRepo
+  newerlocal <- gitOneLineLog $ "origin/" ++ showBranch from ++ ".." ++ showBranch from
+  unless (null newerlocal) $ do
+    putStr "*Warning!* "
+    displayHdrCommits ("Unpushed" +-+ showBranch from +-+ "commit") showall newerlocal
+    putNewLn
+    promptEnter "Press Enter to continue anyway"
   putStrLn $ (if isnewrepo || noprompt then "Merging from" else "New commits in") +-+ "origin/" ++ showBranch from ++ ":"
   displayCommits showall unmerged
   putNewLn
@@ -89,7 +96,6 @@ mergeBranch dryrun nofetch build noprompt showall pkg (True, unmerged@(unmgd:_))
     unless (showBranch from `elem` locals) $
       git_ "fetch" ["origin", showBranch from ++ ":" ++ showBranch from]
     unless dryrun $
-      -- FIXME merge from origin by default not local branch
       git_ "merge" ["--quiet", ref]
 mergeBranch dryrun nofetch build noprompt showall pkg (False,unmerged) from br = do
   unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"

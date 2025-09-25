@@ -111,7 +111,6 @@ gitMergeOrigin br = do
       putStrLn pull
 
 -- FIXME maybe require local branch already here
--- FIXME also expose local commits
 newerMergeable :: String -> Branch -> IO (Bool,[Commit],Maybe Branch)
 newerMergeable pkg br =
   if br == Rawhide
