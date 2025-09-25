@@ -71,7 +71,7 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast allowHEAD marchopts sidetagTarg
                       if null excluded
                       then return []
                       else concatMap tailSafe excluded
-                  return $ tagArchs \\ (as ++ excludedarchs)
+                  return $ tagArchs \\ (map normalArch as ++ excludedarchs)
         if stagger
           then do
           archlist <-
@@ -88,6 +88,9 @@ scratchCmd dryrun stagger rebuildSrpm nofailfast allowHEAD marchopts sidetagTarg
           else doScratchBuild pkggit spec target archs
       where
         priorityArchs = ["x86_64", "aarch64", "ppc64le"]
+
+        normalArch "i386" = "i686"
+        normalArch s = s
 
         doScratchBuild pkggit spec target archs = do
           let kojiargs = ["--arch-override=" ++ intercalate "," archs | notNull archs] ++ ["--fail-fast" | not nofailfast && length archs /= 1] ++ ["--no-rebuild-srpm" | not rebuildSrpm]
