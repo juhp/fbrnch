@@ -77,7 +77,7 @@ gitMergeable target br = do
       then do
       diff <- git "diff" [ref]
       unless (null diff) $ do
-        putStrLn $ "current branch is ahead of newer" +-+ showBranch br +-+ "!!"
+        putStrLn $ showBranch target +-+ "is ahead of newer" +-+ showBranch br +-+ "!!"
         promptEnter "Press Enter if you want to continue"
       else putStrLn $ "current branch" +-+ "is diverged from" +-+ showBranch br
   return (mancestor, commits)
