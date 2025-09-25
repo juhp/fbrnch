@@ -15,6 +15,7 @@ module Git (
   Commit(commitRef,commitLog),
   showCommit,
   displayCommits,
+  displayHdrCommits,
   gitOneLineLog,
   gitShortLogN,
   gitShortLog1,
@@ -140,6 +141,11 @@ displayCommits showall =
     showAll False cs =
       if length cs > 20 then take 20 cs ++ [":"] else cs
     showAll True cs = cs
+
+displayHdrCommits :: String -> Bool -> [Commit] -> IO ()
+displayHdrCommits hdr showall commits = do
+  putStrLn $ pluralOnly commits hdr ++ ":"
+  displayCommits showall commits
 
 gitOneLineLog :: String -> IO [Commit]
 gitOneLineLog range =

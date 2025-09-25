@@ -73,8 +73,7 @@ mergeBranch dryrun nofetch build noprompt showall pkg (True, unmerged@(unmgd:_))
   putNewLn
   unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
   unless (null unpushed) $ do
-    putStrLn "Local commits:"
-    displayCommits showall unpushed
+    displayHdrCommits "Local commit" showall unpushed
     putNewLn
   mmerge <-
     if isnewrepo && length unmerged == 1 || noprompt
@@ -98,9 +97,8 @@ mergeBranch dryrun nofetch build noprompt showall pkg (False,unmerged) from br =
   putStrLn $ color (if null unpushed then Magenta else Red) $ showBranch from +-+ "branch is not directly mergeable:"
   displayCommits False unmerged
   putNewLn
-  unless (null unpushed) $ do
-    putStrLn "Local commits:"
-    displayCommits showall unpushed
+  unless (null unpushed) $
+    displayHdrCommits "Local commits" showall unpushed
   mmerge <-
     if noprompt && null unpushed
     then return Nothing
