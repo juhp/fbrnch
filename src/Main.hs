@@ -93,9 +93,11 @@ main = do
       <*> switchWith 'r' "reviews" "Status of reviewed packages"
       <*> switchWith 'l' "latest-commit" "Show the last commit"
       <*> branchesPackages
-    , Subcommand "branch-logs" "Show logs with branch decor" $
-      branchLogsCmd
-      <$> maybeBranchPackages False
+    , Subcommand "branch-log" "Show log with branches decor" $
+      branchLogCmd
+      <$> switchLongWith "latest" "Find ahead branches"
+      <*> switchWith 'n' "no-simplify-by-decoration" "Do not filter for decorated commits"
+      <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd
       <$> dryrunOpt "Dry run (do not merge)"
