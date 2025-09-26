@@ -49,6 +49,7 @@ executable fbrnch
                        Branches
                        Bugzilla
                        Cmd.Autospec
+                       Cmd.BranchLogs
                        Cmd.Bugs
                        Cmd.Build
                        Cmd.Bump
