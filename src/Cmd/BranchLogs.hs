@@ -4,10 +4,11 @@ module Cmd.BranchLogs (
 where
 
 import Control.Monad.Extra (unlessM)
-import Data.List.Extra (dropPrefix, groupSortOn, isSuffixOf, splitOn, takeWhileEnd)
+import Data.List.Extra (dropPrefix, groupSortOn, isSuffixOf, sortOn, splitOn,
+                        stripInfix, takeWhileEnd, uncons)
 import Data.Maybe (mapMaybe)
 import Distribution.Fedora.Branch (getActiveBranches, readBranch)
-import System.Console.Pretty (color, Color(..))
+import System.Console.Pretty (color, Color(..), supportsPretty)
 
 import Branches
 import Common.System
@@ -17,15 +18,16 @@ import Package
 -- FIXME --all-commits, --all-branches
 branchLogsCmd :: (Maybe Branch,[String]) -> IO ()
 branchLogsCmd (mbr, pkgs) = do
+  colored <- supportsPretty
   unlessM isPkgGitRepo $
     error' "not a git repo"
   active <- getActiveBranches
-  withPackagesMaybeBranch HeaderMay False Nothing (branchLogPkg active) (mbr, pkgs)
+  withPackagesMaybeBranch HeaderMay False Nothing (branchLogPkg colored active) (mbr, pkgs)
  where
-   branchLogPkg :: [Branch] -> Package -> AnyBranch -> IO ()
-   branchLogPkg active _pkg _br = do
+   branchLogPkg :: Bool -> [Branch] -> Package -> AnyBranch -> IO ()
+   branchLogPkg colored active _pkg _br = do
      commits <- mapMaybe (readLogCommit active) <$> gitLines "log" (["--simplify-by-decoration", "--pretty=format:%h\US%D\US%s\US%ch"] ++ maybe [] (pure . showBranch) mbr)
-     mapM_ displayLogCommit commits
+     mapM_ (putStrLn . showLogCommit colored) commits
 
 data LogCommit = LogCommit
                  { _logRef :: String,
@@ -44,23 +46,36 @@ readLogCommit active cs =
       else Just $ LogCommit h brs s t
     _ -> error' $ "malformed log line:" +-+ cs
 
-showLogCommit :: LogCommit -> String
-showLogCommit (LogCommit h brs s t) =
-  h +-+ showBranches brs +-+ s +-+ t
+showLogCommit :: Bool -> LogCommit -> String
+showLogCommit colored (LogCommit h brs s time) =
+  h +-+ showBranches brs +-+ s +-+ time
   where
-    showBranches = unwords . map renderBranches . groupSortOn toBranch
+    showBranches :: [String] -> String
+    showBranches =
+      unwords . reverse . map (renderBranches . sortOn remote) . groupSortOn toBranch
+      where
+        toBranch = readBranch . takeWhileEnd (/= '/')
+
+    remote br =
+      case stripInfix "/" br of
+        Nothing -> Nothing
+        Just (r,_) -> Just r
 
     renderBranches bs =
-      let col = if length bs > 1 then Green else Red
-      in unwords $ map (color col) bs
+      case uncons bs of
+        Nothing -> ""
+        Just (b,t) ->
+          case uncons t of
+            Nothing -> docolor Red b
+            Just (b',t') ->
+              if null t'
+              then
+                case (remote b, remote b') of
+                  (Nothing, Just "origin") ->
+                    origin ++ docolor Green b
+                  _ -> unwords $ map (docolor Red) bs
+              else unwords $ map (docolor Magenta) bs
+      where
+        origin = if colored then "origin/" else "{origin/}"
 
-    -- renderBranch br =
-    --   if "origin/" `isPrefixOf` br
-    --   then color Magenta br
-    --   else color Green br
-
-    toBranch = readBranch . takeWhileEnd (\c -> c /= '/' && c /= ' ')
-
-displayLogCommit :: LogCommit -> IO ()
-displayLogCommit =
-  putStrLn . showLogCommit
+        docolor c = if colored then color c else id
