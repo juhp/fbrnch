@@ -138,11 +138,26 @@ doInteractiveReview importsrpm mspec srpm = do
        unless (null err) $ warning $ "rpmlint stderr:\n" ++ err
        putNewLn
   putStrLn "# Licensing"
-  -- FIXME use build subdir
-  -- FIXME filter out files not in tarball or prep
-  cmdLines "licensecheck" ["-r", "BUILD"] >>=
-    -- handle "FILEPATH: *No copyright* UNKNOWN [generated file]"
-    mapM_ putStrLn . filter (not . (" UNKNOWN" `isInfixOf`))
+  whenM (yesNoDefault True "Run licensecheck") $ do
+    buildls <- listDirectory "BUILD"
+    let builddir =
+          case sort buildls of
+            [] -> error' "empty BUILD/"
+            [d] -> "BUILD" </> d
+            -- FIXME not good enough! use nvr
+            ds -> "BUILD" </> last ds
+    builddirls <- listDirectory builddir
+    let builddir2 =
+          case sort $ builddirls \\ ["BUILDROOT","SPECPARTS"]  of
+            [] -> error' $ "empty" +-+ "BUILD" </> builddir
+            [d] -> builddir </> d
+            -- FIXME? some projects might have more than one topdir
+            ds -> error' $ "more than one dir:" +-+ unwords ds
+    let args = ["--shortname-scheme", "spdx", "-r", builddir2]
+    cmdN "licensecheck" args
+    cmdLines "licensecheck" args >>=
+      -- handle "FILEPATH: *No copyright* UNKNOWN [generated file]"
+      mapM_ putStrLn . filter (not . (" UNKNOWN" `isInfixOf`))
   cmd_ "rpmspec" ["-q", "--srpm", "--qf", "Spec license: %{license}\n", spec]
 
 summarizeErrors :: [String] -> [(String,Int)]
