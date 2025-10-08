@@ -95,8 +95,9 @@ main = do
       <*> branchesPackages
     , Subcommand "branch-log" "Show log with branches decor" $
       branchLogCmd
-      <$> switchLongWith "latest" "Find ahead branches"
-      <*> switchWith 'n' "no-simplify-by-decoration" "Do not filter for decorated commits"
+      <$> switchLongWith "latest" "Find related branches"
+      -- FIXME currently actually no-op
+      <*> pure False --switchWith 'n' "no-simplify-by-decoration" "Do not filter for decorated commits"
       <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd

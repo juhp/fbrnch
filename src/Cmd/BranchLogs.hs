@@ -17,9 +17,8 @@ import Common.System
 import Git (gitSwitchBranch)
 import Package
 
--- FIXME handle missing local branch
--- FIXME --all-commits, --all-branches
--- FIXME find latest branches (local and remote)
+-- FIXME --all-commits
+-- FIXME select latest branches (local and remote)
 -- FIXME how to handle dirty
 -- FIXME handle detached head
 branchLogCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
