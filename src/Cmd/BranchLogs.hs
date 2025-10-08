@@ -5,8 +5,7 @@ where
 
 import Control.Monad (forM_, unless, when)
 import Data.Function (on)
-import Data.List.Extra (dropPrefix, {-groupOn, groupSortOn, isSuffixOf, sortOn,-} splitOn,
-                        stripInfix, {-takeWhileEnd,-} uncons)
+import Data.List.Extra (dropPrefix, find, splitOn, stripInfix, uncons)
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe (mapMaybe)
@@ -46,7 +45,7 @@ branchLogCmd latest nosimplydecor (breq, pkgs) = do
          else error' $ "branch does not exist:" +-+ showBranch br
        gitSwitchBranch current
        if latest
-         then aheadBranches branches
+         then latestBranches branches
          else do
          forM_ branches $ \br -> do
            when (length pkgs > 1 || length branches > 1) $ do
@@ -55,21 +54,40 @@ branchLogCmd latest nosimplydecor (breq, pkgs) = do
                then putPkgBrnchHdr pkg br
                else putPkgHdr pkg
            commits <- getLogCommits simplydecor br
+           checkBranchOrder br $ NE.tail commits
            mapM_ (putLogCommit colored) commits
      where
        simplydecor = not nosimplydecor
 
-       aheadBranches :: [Branch] -> IO ()
-       aheadBranches branches = do
+       checkBranchOrder br oldcommits = do
+         let brs = map logBranches oldcommits
+             newer = mapMaybe (find ((br<) . toBranch)) brs
+         unless (null newer) $
+           putStrLn $ showBranch br +-+ "is ahead of:" +-+ unwords (map showBR newer)
+
+       latestBranches :: [Branch] -> IO ()
+       latestBranches branches = do
          logbrs <- fmap (NE.toList . NE.nubBy ((==) `on` NE.head)) <$> mapM (getLogCommits True) $ NE.fromList branches
          let containedIn l = any ((NE.head l `elem`) . NE.tail)
              reduced = [ l | l <- logbrs, not (l `containedIn` logbrs)]
          forM_ reduced $ \r -> do
+           checkBranchOrders r
            mapM_ (putLogCommit colored) r
            putChar '\n'
 
+       checkBranchOrders commits = do
+         let brs = NE.map logBranches commits
+         forM_ (NE.tails1 brs) $ \(b:|bs) ->
+           forM_ b $ \b' -> do
+           let newer = mapMaybe (find (b'<)) bs
+           unless (null newer) $
+             putStrLn $ showBR b' +-+ "is ahead of:" +-+ unwords (map showBR newer)
+
 data BranchRemote = BR (Maybe String) Branch
   deriving Eq
+
+toBranch :: BranchRemote -> Branch
+toBranch (BR _ b) = b
 
 instance Ord BranchRemote where
   compare (BR mr1 b1) (BR mr2 b2) =
@@ -149,8 +167,6 @@ showBranches :: Bool -> BranchList -> String
 showBranches colored =
   unwords . reverse . NE.toList . NE.map renderBranches . NE.groupWith1 toBranch
   where
-    toBranch (BR _ b) = b
-
     -- groupSortWith1 :: Ord b => (a -> b) -> NonEmpty a -> NonEmpty (NonEmpty a)
     -- groupSortWith1 f = map (map snd) . NE.groupAllWith1 fst . NE.sortWith fst . map (f &&& id)
 
