@@ -98,7 +98,7 @@ doInteractiveReview importsrpm mspec srpm = do
       unless (isArchiveFile src) $
       git_ "add" [src]
     putStrLn $ "# Diff with" +-+ upstreamDir
-    cmd_ "diff" ["-u", spec, upstreamDir </> spec]
+    void $ cmdBool "diff" ["-u", spec, upstreamDir </> spec]
     withCurrentDirectory upstreamDir $
       void $ getSources spec
     diff <- lines <$> cmdIgnoreErr "diff" ["--brief", ".", upstreamDir] ""
