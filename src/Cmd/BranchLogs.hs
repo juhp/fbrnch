@@ -3,7 +3,7 @@ module Cmd.BranchLogs (
   )
 where
 
-import Control.Monad (forM_, when)
+import Control.Monad (forM_, unless, when)
 import Data.Function (on)
 import Data.List.Extra (dropPrefix, {-groupOn, groupSortOn, isSuffixOf, sortOn,-} splitOn,
                         stripInfix, {-takeWhileEnd,-} uncons)
@@ -15,6 +15,7 @@ import System.Console.Pretty (color, Color(..), supportsPretty)
 
 import Branches
 import Common.System
+import Git (gitSwitchBranch)
 import Package
 
 -- FIXME handle missing local branch
@@ -35,6 +36,16 @@ branchLogCmd latest nosimplydecor (breq, pkgs) = do
    logPkg colored active path =
      withExistingDirectory path $ do
        branches <- listOfBranches True True breq
+       locals <- fedoraBranches (localBranches True)
+       remotes <- fedoraBranches (localBranches False)
+       current <- gitCurrentBranch
+       forM_ branches $ \br ->
+         unless (br `elem` locals) $
+         if br `elem` remotes
+         then
+           gitSwitchBranch (RelBranch br)
+         else error' $ "branch does not exist:" +-+ showBranch br
+       gitSwitchBranch current
        if latest
          then aheadBranches branches
          else do
