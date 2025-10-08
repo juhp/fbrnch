@@ -10,7 +10,7 @@ import Data.List.Extra (dropPrefix, {-groupOn, groupSortOn, isSuffixOf, sortOn,-
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe (mapMaybe)
-import Distribution.Fedora.Branch (getActiveBranches, readBranch)
+import Distribution.Fedora.Branch (readBranch)
 import System.Console.Pretty (color, Color(..), supportsPretty)
 
 import Branches
@@ -26,14 +26,13 @@ import Package
 branchLogCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
 branchLogCmd latest nosimplydecor (breq, pkgs) = do
   colored <- supportsPretty
-  active <- getActiveBranches
   if null pkgs
-    then logPkg colored active "."
-    else mapM_ (logPkg colored active) pkgs
+    then logPkg colored "."
+    else mapM_ (logPkg colored) pkgs
 --  withPackagesMaybeBranch (if length pkgs > 1 then HeaderMust else HeaderNone) False Nothing (logPkg colored active) (breq, packages)
  where
-   logPkg :: Bool -> [Branch] -> FilePath -> IO ()
-   logPkg colored active path =
+   logPkg :: Bool -> FilePath -> IO ()
+   logPkg colored path =
      withExistingDirectory path $ do
        branches <- listOfBranches True True breq
        locals <- fedoraBranches (localBranches True)
@@ -55,14 +54,14 @@ branchLogCmd latest nosimplydecor (breq, pkgs) = do
              if length branches > 1
                then putPkgBrnchHdr pkg br
                else putPkgHdr pkg
-           commits <- getLogCommits simplydecor active br
+           commits <- getLogCommits simplydecor br
            mapM_ (putLogCommit colored) commits
      where
        simplydecor = not nosimplydecor
 
        aheadBranches :: [Branch] -> IO ()
        aheadBranches branches = do
-         logbrs <- fmap (NE.toList . NE.nubBy ((==) `on` NE.head)) <$> mapM (getLogCommits True active) $ NE.fromList branches
+         logbrs <- fmap (NE.toList . NE.nubBy ((==) `on` NE.head)) <$> mapM (getLogCommits True) $ NE.fromList branches
          let containedIn l = any ((NE.head l `elem`) . NE.tail)
              reduced = [ l | l <- logbrs, not (l `containedIn` logbrs)]
          forM_ reduced $ \r -> do
@@ -93,22 +92,25 @@ instance Ord LogCommit where
 logCommitFormat :: String
 logCommitFormat = "--pretty=format:%h\US%D\US%s\US%ch"
 
-getLogCommits :: Bool -> [Branch] -> Branch -> IO (NonEmpty LogCommit)
-getLogCommits simplydecor active br = do
-   ls <- mapMaybe readLogCommit <$> gitLines "log" (["--simplify-by-decoration" | simplydecor] ++ [logCommitFormat, showBranch br])
-   case NE.nonEmpty ls of
-     Nothing -> error' $ "empty branch:" +-+ showBranch br
-     Just ne -> return ne
+getLogCommits :: Bool -> Branch -> IO (NonEmpty LogCommit)
+getLogCommits simplydecor br = do
+  existing <- fedoraBranches (localBranches True)
+  unless (br `elem` existing) $
+    error' $ "no local branch:" +-+ showBranch br
+  ls <- mapMaybe (readLogCommit existing) <$> gitLines "log" (["--simplify-by-decoration" | simplydecor] ++ [logCommitFormat, showBranch br])
+  case NE.nonEmpty ls of
+    Nothing -> error' $ "empty branch:" +-+ showBranch br
+    Just ne -> return ne
   where
-    readLogCommit :: String -> Maybe LogCommit
-    readLogCommit cs =
+    readLogCommit :: [Branch] -> String -> Maybe LogCommit
+    readLogCommit existing cs =
       case splitOn "\US" cs of
         [h,ds,s,t] ->
           let mbrs =
                 NE.nonEmpty $
-                filter (\b' -> any (hasBranch b') active) $
-                mapMaybe readBranchRemote $
-                map (dropPrefix "HEAD -> ") $ splitOn ", " ds
+                filter (\b' -> any (hasBranch b') existing) $
+                mapMaybe (readBranchRemote . dropPrefix "HEAD -> ") $
+                splitOn ", " ds
           in
             case mbrs of
               Nothing -> Nothing
