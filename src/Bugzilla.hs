@@ -333,7 +333,7 @@ reviewBugIdSession :: String -> IO (BugId,BugzillaSession)
 reviewBugIdSession pkg = do
   bugs <- bugIdsAnon $ pkgReviews pkg .&&. statusOpen
   case bugs of
-    [] -> error $ "No review bug found for" +-+ pkg
+    [] -> error' $ "No review bug found for" +-+ pkg
     [bug] -> do
       session <- bzApiKeySession
       return (bug, session)
@@ -344,7 +344,7 @@ approvedReviewBugIdSession pkg = do
   bugs <- bugIdsAnon $
           pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bugs of
-    [] -> error $ "No review bug found for" +-+ pkg
+    [] -> error' $ "No review bug found for" +-+ pkg
     [bug] -> do
       session <- bzApiKeySession
       return (bug, session)
@@ -355,7 +355,7 @@ approvedReviewBugSession pkg = do
   bugs <- bugsAnon $
           pkgReviews pkg .&&. statusOpen .&&. reviewApproved
   case bugs of
-    [] -> error $ "No review bug found for" +-+ pkg
+    [] -> error' $ "No review bug found for" +-+ pkg
     [bug] -> do
       session <- bzApiKeySession
       return (bug, session)
