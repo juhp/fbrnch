@@ -18,6 +18,7 @@ import Bugzilla
 import Cmd.Import (downloadReviewSRPM, upstreamDir)
 import Cmd.Install (installCmd)
 import Cmd.Local (localCmd)
+import Cmd.Prep (prepCmd)
 import Git (isGitRepo, git_, gitBool)
 import Package
 import RpmBuild
@@ -100,7 +101,7 @@ doInteractiveReview importsrpm mspec srpm = do
     putStrLn $ "# Diff with" +-+ upstreamDir
     void $ cmdBool "diff" ["-u", spec, upstreamDir </> spec]
     withCurrentDirectory upstreamDir $
-      void $ getSources spec
+      cmd_ "spectool" ["-g", spec]
     diff <- lines <$> cmdIgnoreErr "diff" ["--brief", ".", upstreamDir] ""
     let filterdiff = filter (\d -> not (any (`isSuffixOf` d) ["SPEC","SRPMS","RPMS","BUILD","BUILDROOT","src.rpm",".log", ".git", upstreamDir])) diff
     if null filterdiff
@@ -112,8 +113,9 @@ doInteractiveReview importsrpm mspec srpm = do
   putStrLn "# Build"
   -- FIXME or download rpms
   build <- yesNoDefault importsrpm "Build package locally"
-  when build $
-    localCmd False False False Nothing Nothing [] (Branches [],[])
+  if build
+    then localCmd False False False Nothing Nothing [] (Branches [],[])
+    else prepCmd Nothing False False False (Nothing,[])
   putNewLn
   putStrLn "# RpmLint"
   void $ cmdBool "rpmlint" ["."] -- FIXME $ spec:srpm:rpms

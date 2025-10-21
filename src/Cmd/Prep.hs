@@ -41,12 +41,13 @@ prepCmd mpre verbose deps allowhead (mbr,pkgs) = do
         getSourcesMacros spec
         when deps $
           installDeps False spec
-        case br of
-          RelBranch rbr -> do
-            nvr <- pkgNameVerRel' rbr spec
-            -- newline avoids error starting on same line
-            putStr $ "Prepping" +-+ showNVR nvr ++ ": "
-          _ -> return ()
+        whenM (isPkgGitRepo) $
+          case br of
+            RelBranch rbr -> do
+              nvr <- pkgNameVerRel' rbr spec
+              -- newline avoids error starting on same line
+              putStr $ "Prepping" +-+ showNVR nvr ++ ": "
+            _ -> return ()
         sourcediropt <- do
           distgit <- isGitRepo
           if distgit
