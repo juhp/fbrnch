@@ -4,7 +4,7 @@ module Cmd.RequestRepo (requestRepos) where
 
 import Control.Exception.Extra (retry)
 import Fedora.Krb (fasIdFromKrb)
-import Network.HTTP.Directory (httpExists, httpManager)
+import Network.HTTP.Directory (httpExists')
 import Safe (headMay)
 import SimplePrompt (promptEnter, promptInitial, yesNo)
 import System.Time.Extra (sleep)
@@ -99,8 +99,7 @@ requestRepo mock skipcheck resubmit breq pkg = do
 
     checkNoPagureRepo :: IO ()
     checkNoPagureRepo = do
-      mgr <- httpManager
-      exists <- httpExists mgr $ "https://" ++ srcfpo +/+ "rpms" +/+ pkg
+      exists <- httpExists' $ "https://" ++ srcfpo +/+ "rpms" +/+ pkg
       when exists $
         error' $ "Repo for" +-+ pkg +-+ "already exists"
 

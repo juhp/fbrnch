@@ -18,3 +18,4 @@ extra-deps:
   - fedora-releases-0.3.0
   - select-rpms-0.3.1
   - simple-cmd-0.2.7
+  - http-directory-0.1.9

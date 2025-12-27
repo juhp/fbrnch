@@ -126,7 +126,7 @@ executable fbrnch
                        fedora-releases >= 0.3,
                        filepath,
                        http-conduit,
-                       http-directory >= 0.1.5,
+                       http-directory >= 0.1.9,
                        http-query,
                        koji,
                        network-uri,

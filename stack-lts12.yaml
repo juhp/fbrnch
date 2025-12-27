@@ -1,7 +1,7 @@
 resolver: lts-12.27
 
 extra-deps:
-  - http-directory-0.1.5
+  - http-directory-0.1.9
   - typed-process-0.2.4.0
   - simple-cmd-0.2.7
   - HaXml-1.25.5
