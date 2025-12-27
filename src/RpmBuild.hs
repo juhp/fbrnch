@@ -28,7 +28,7 @@ import Data.Either (partitionEithers)
 import Data.RPM
 import Distribution.Fedora.Branch (branchDistTag, branchRelease)
 import Distribution.Fedora.Release (releaseVersion)
-import Network.HTTP.Directory (Manager, httpExists, httpManager)
+import Network.HTTP.Directory (httpExists')
 import Safe (lastMay)
 import SimpleCmd.Rpm
 import SimplePrompt (promptEnter, yesNo)
@@ -505,11 +505,10 @@ checkSourcesMatch pkg br spec = do
       error' "local changes remain (dirty)"
     checkOnBranch
     checkSourcesMatch pkg br spec
-  mgr <- httpManager
-  mapM_ (checkLookasideCache mgr) sources
+  mapM_ checkLookasideCache sources
   where
-    checkLookasideCache :: Manager -> String -> IO ()
-    checkLookasideCache mgr source = do
+    checkLookasideCache :: String -> IO ()
+    checkLookasideCache source = do
       let lookaside = "https://src.fedoraproject.org/lookaside/pkgs" +/+ unPackage pkg
           (file,url) =
             case words source of
@@ -519,7 +518,7 @@ checkSourcesMatch pkg br spec = do
               [hash,file'] ->
                 (file', lookaside +/+ file' +/+ "md5" +/+ hash +/+ file')
               _ -> error' $ "invalid/unknown source:\n" ++ source
-      unlessM (httpExists mgr url) $ do
+      unlessM (httpExists' url) $ do
         putStrLn $ url +-+ "not found"
         putStrLn $ "uploading" +-+ file +-+ "to lookaside source repo"
         fedpkg_ "upload" [file]
