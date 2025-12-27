@@ -2,7 +2,8 @@ module Types (
   Archs(..),
   SideTagTarget(..),
   maybeTarget,
-  ChangeType(..)
+  ChangeType(..),
+  Package(..)
   )
 where
 
@@ -17,4 +18,7 @@ maybeTarget (Just (Target t)) = Just t
 maybeTarget _ = Nothing
 
 data ChangeType = ChangeBodhi | ChangeCommit | ChangeReview
+  deriving Eq
+
+newtype Package = Package {unPackage :: String}
   deriving Eq

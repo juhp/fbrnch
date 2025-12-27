@@ -58,7 +58,7 @@ import Branches
 import Common
 import Common.System
 import Git
-import Package (fedpkg, Package, unPackage)
+import Package (fedpkg)
 import Pagure
 import Types
 

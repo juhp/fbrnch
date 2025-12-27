@@ -64,7 +64,7 @@ import Branches
 import Common
 import Common.System
 import Git
-import Types (ChangeType(..))
+import Types (ChangeType(..), Package(..))
 
 fedpkg :: String -> [String] -> IO String
 fedpkg c args =
@@ -191,9 +191,6 @@ initialPkgRepo :: IO Bool
 initialPkgRepo = do
   commits <- length <$> gitShortLogN (Just 2) Nothing
   return $ commits <= 1
-
-newtype Package = Package {unPackage :: String}
-  deriving Eq
 
 putPkgHdr :: Package -> IO ()
 putPkgHdr pkg =
