@@ -4,3 +4,4 @@ ghc-options:
 extra-deps:
   - select-rpms-0.3.1
   - fedora-releases-0.3.0
+  - rpmbuild-order-0.4.13

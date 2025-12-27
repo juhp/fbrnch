@@ -2,7 +2,7 @@ resolver: lts-21.25
 ghc-options:
   HsOpenSSL: -optc=-Wno-incompatible-pointer-types
 extra-deps:
-  - rpmbuild-order-0.4.12
+  - rpmbuild-order-0.4.13
   - pagure-0.2.1
   - copr-api-0.2.0
   - simple-prompt-0.2.3

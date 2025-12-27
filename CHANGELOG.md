@@ -29,6 +29,7 @@
 - FBRNCH_KOJI_PROFILE provides experimental Koji profile support (eg riscv)
 - bodhiUpdate: switch back to branch if necessary
 - mergeBranch: relax the unmergeable prompt condition for no unpushed commits
+- use rpmbuild-order-0.4.13: handle cmake dirs and python3dist dyn provides
 
 - mergeBranch: warn about unpushed commits in newer branch
 - use cmdLog_ for forward compatibility: with simple-cmd-0.2.7

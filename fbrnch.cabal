@@ -134,7 +134,7 @@ executable fbrnch
                        pretty-terminal,
                        process,
                        -- regex-tdfa,
-                       rpmbuild-order >= 0.4.12,
+                       rpmbuild-order >= 0.4.13,
                        rpm-nvr >= 0.1.2,
                        safe,
                        say,

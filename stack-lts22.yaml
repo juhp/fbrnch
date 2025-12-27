@@ -6,3 +6,4 @@ extra-deps:
   - fedora-releases-0.3.0
   - pagure-0.2.1
   - fedora-krb-0.1.0
+  - rpmbuild-order-0.4.13

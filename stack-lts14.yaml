@@ -2,7 +2,7 @@ resolver: lts-14.27
 extra-deps:
   - simple-cmd-args-0.1.8
   - koji-0.0.1
-  - rpmbuild-order-0.4.12
+  - rpmbuild-order-0.4.13
   - pretty-terminal-0.1.0.0
   - http-query-0.1.2
   - rpm-nvr-0.1.2
