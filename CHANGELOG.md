@@ -17,6 +17,7 @@
 - 'install': select-rpms-0.3.1 allows selecting debuginfo subpkgs
 - 'install': select-rpms-0.3.1 adds --allow-erasing
 - 'install': options to select package manager to use (eg --rpm)
+- 'repoquery': use fedora-repoquery
 - 'review-package': for licensecheck find build source dir & use SPDX shortnames
 - 'review-package': ignore error for non-zero diff
 - 'merge': colorize the unmergeable warning

@@ -40,7 +40,7 @@ import Cmd.Parallel
 import Cmd.Prep
 import Cmd.Pull
 import Cmd.Push
---import Cmd.Repoquery
+import Cmd.Repoquery
 import Cmd.RequestBranch
 import Cmd.RequestRepo
 import Cmd.ReviewPackage
@@ -421,9 +421,9 @@ main = do
       graphCmd
       <$> switchWith 'o' "output" "Output graph in gv/dot format"
       <*> optional rpmWithOpt <*> maybeBranchPackages True
-    -- , Subcommand "repoquery" "Repoquery branches (put repoquery options after '--')" $
-    --   repoqueryCmd
-    --   <$> branchesPackages
+    , Subcommand "repoquery" "Repoquery branches (put repoquery options after '--')" $
+      repoqueryCmd
+      <$> branchesPackages
     , Subcommand "ftbfs" "Check FTBFS bug status" $
       ftbfsCmd
       <$> dryrunOpt "dry run"

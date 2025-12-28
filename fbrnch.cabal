@@ -75,7 +75,7 @@ executable fbrnch
                        Cmd.Prep
                        Cmd.Pull
                        Cmd.Push
-                       --Cmd.Repoquery
+                       Cmd.Repoquery
                        Cmd.RequestBranch
                        Cmd.RequestRepo
                        Cmd.ReviewPackage
