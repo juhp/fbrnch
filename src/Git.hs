@@ -173,10 +173,15 @@ mkCommit cs =
         (plogcs,datep) ->
           Commit hash (init $ tailSafe $ trim plogcs) (init datep)
 
+-- FIXME Verbosity
 gitPush :: Bool -> Maybe String -> IO ()
 gitPush quiet mref = do
   -- FIXME also check ref on branch
   checkOnBranch
+  br <- getReleaseBranch
+  mupstream <- cmdMaybe "git" ["rev-parse", "--abbrev-ref", showBranch br ++ "@{upstream}"]
+  when (isNothing mupstream) $
+    git_ "branch" ["--set-upstream-to=origin/" ++ showBranch br]
   when quiet $
     sayString "git pushing"
   -- Can error like this:
