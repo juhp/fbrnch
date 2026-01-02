@@ -41,7 +41,7 @@ prepCmd mpre verbose deps allowhead (mbr,pkgs) = do
         getSourcesMacros spec
         when deps $
           installDeps False spec
-        whenM (isPkgGitRepo) $
+        whenM isPkgGitRepo $
           case br of
             RelBranch rbr -> do
               nvr <- pkgNameVerRel' rbr spec

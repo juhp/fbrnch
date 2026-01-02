@@ -144,7 +144,7 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       -- revert release if was already bumped
       whenJust (extractFieldValue <$> mnewrel) $ \newrel -> do
         editSpecField "Release" newrel spec
-        cmd_ "sed" ["-i", "s/> -" +-+ newversion ++ '-' : newrelease ++ "/> -" +-+ newversion ++ '-' : (replace "%{?dist}" "" newrel) ++ "/" , spec]
+        cmd_ "sed" ["-i", "s/> -" +-+ newversion ++ '-' : newrelease ++ "/> -" +-+ newversion ++ '-' : replace "%{?dist}" "" newrel ++ "/" , spec]
       git_ "commit" ["-a", "-m", "Update to" +-+ newversion]
   putStr "Prepping... "
   sourcediropt <- sourceDirCwdOpt

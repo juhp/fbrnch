@@ -125,7 +125,7 @@ mergeable pkg br Nothing =
 -- FIXME check from exists
 mergeable _pkg br (Just from) =
   if br == from
-  then error' $ "cannot merge to same branch!"
+  then error' "cannot merge to same branch!"
   else do
     (mancestor,commits) <- gitMergeable br from
     return (mancestor, commits, from)
