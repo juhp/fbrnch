@@ -1,12 +1,12 @@
 # Changelog
 
-## 1.7.2 (2026-01-02)
+## 1.8 (2026-01-02)
 - 'branch-log': new command to check local and remote branches
 - 'branch-log': --latest finds connected branches
 - 'branch-log': logic to warn about older branch being ahead
 - 'build --sidetag': fix "release not found for branch f43" rawhide regression
 - 'build': use --ref to build from a commit
-- 'build', 'parallel': can now merge --from a particular branch
+- 'build','parallel': can now merge --from a particular branch
 - 'commit': error if changelog is unstaged
 - 'commit': require -b option to confirm non-rawhide commit
 - 'compare-branches': renamed from 'compare'

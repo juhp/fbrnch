@@ -39,7 +39,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f42 [package] ...
+$ fbrnch switch f43 [package] ...
 ```
 
 You can also git pull over packages:
@@ -97,13 +97,13 @@ or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f41 [package]
+$ fbrnch merge f42 [package]
 ```
-which will offer to merge f42 (or up to a git hash you choose) into f41.
+which will offer to merge f43 (or up to a git hash you choose) into f42.
 
 Merging can also be done together with building:
 ```
-$ fbrnch build f42 [package]
+$ fbrnch build f43 [package]
 ```
 will ask if you want to merge newer commits from a newer branch,
 then push and build it.
@@ -270,7 +270,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 `$ fbrnch --version`
 
 ```
-1.7
+1.8
 ```
 
 `$ fbrnch --help`
@@ -292,6 +292,7 @@ Available commands:
   switch                   Switch branch
   nvr                      Print name-version-release
   status                   Status package/branch status
+  branch-log               Show log with branches decor
   merge                    Merge from newer branch
   unpushed                 Show unpushed commits
   build                    Build package(s) in Koji
@@ -313,7 +314,8 @@ Available commands:
   srpm                     Build srpm
   srpm-spec                Show the spec file in an srpm
   diff                     Diff local changes
-  compare                  Show commits between branches
+  compare-branches         Show commits between branches
+  compare-tarballs         Diff source tarballs
   src-deps                 List source package dependencies
   mock                     Local mock build
   builddeps                Install package build dependencies
@@ -342,7 +344,8 @@ Available commands:
   rename-rawhide           Rename local 'master' branch to 'rawhide'
   count                    Count number of living packages
   graph                    Output dependency graph
-  ftbfs                    Check FTBFS status
+  repoquery                Repoquery branches (put repoquery options after '--')
+  ftbfs                    Check FTBFS bug status
   autospec                 Convert package to use rpmautospec
   unautospec               Unconvert rpmautospec package
   move-artifacts           Move old rpm artifacts into rpmbuild dirs
