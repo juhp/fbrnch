@@ -1,15 +1,17 @@
 # Changelog
 
-## 1.7.2 (2025-10-09)
+## 1.7.2 (2026-01-02)
 - 'branch-log': new command to check local and remote branches
 - 'branch-log': --latest finds connected branches
-- 'branch-log': check logic to warn about older branch being ahead
+- 'branch-log': logic to warn about older branch being ahead
 - 'build --sidetag': fix "release not found for branch f43" rawhide regression
 - 'build': use --ref to build from a commit
+- 'build', 'parallel': can now merge --from a particular branch
 - 'commit': error if changelog is unstaged
 - 'commit': require -b option to confirm non-rawhide commit
 - 'compare-branches': renamed from 'compare'
 - 'compare-tarballs': new command to diff source tarballs
+- 'compare-tarballs': add --max-line-length option (default 200)
 - 'copr --failures': fetches tails of failed build logs
 - 'copr --monitor': add --filter to only list results matching needle
 - 'copr --monitor': add --name-only to only print package name with filter
@@ -17,23 +19,30 @@
 - 'install': select-rpms-0.3.1 allows selecting debuginfo subpkgs
 - 'install': select-rpms-0.3.1 adds --allow-erasing
 - 'install': options to select package manager to use (eg --rpm)
+- 'install': use needToBuildRPMS with prompt, factored out of buildRPMs
 - 'repoquery': use fedora-repoquery
 - 'review-package': for licensecheck find build source dir & use SPDX shortnames
 - 'review-package': ignore error for non-zero diff
-- 'merge': colorize the unmergeable warning
+- 'review-package': download upstream with spectool and prep if not building
 - 'scratch': exclude i386 as i686
 - 'switch': add --stash
 - 'update-sources': do sanity prep in a tmpdir to avoid any ongoing build
 - 'update-sources': offer to compare tarballs
 - 'update-sources --force': need to partition all sources not previously existing
 - 'update-sources': detect version change by diff better again
-- FBRNCH_KOJI_PROFILE provides experimental Koji profile support (eg riscv)
+- 'update-sources': if Release was already bumped then use it
+- `FBRNCH_KOJI_PROFILE` provides experimental Koji profile support (eg riscv)
 - bodhiUpdate: switch back to branch if necessary
+- mergeBranch: colorize the unmergeable warning
 - mergeBranch: relax the unmergeable prompt condition for no unpushed commits
-- use rpmbuild-order-0.4.13: handle cmake dirs and python3dist dyn provides
-
 - mergeBranch: warn about unpushed commits in newer branch
-- use cmdLog_ for forward compatibility: with simple-cmd-0.2.7
+- mergeBranch: setup local branch with tracking if missing
+- use rpmbuild-order-0.4.13: handle cmake dirs and python3dist dyn provides
+- use simple-cmd-0.2.7 for cmdLog_ forward compatibility
+- Branches getRequestedBranches: error if no active branches requested
+- Branches: new listBranches/listAllBranches & listRemoteBranches/listRemoteAllBranches
+- Git gitOneLineLog: add '--' after range to avoid path confusion
+- Git gitPush: make sure upstream branch is setup
 
 ## 1.7.1 (2025-06-07)
 - Merge: prompt even with --merge (--no-prompt) when branch unmergeable

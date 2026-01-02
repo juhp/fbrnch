@@ -28,15 +28,15 @@ license:             GPL-2.0-or-later
 license-file:        LICENSE
 author:              Jens Petersen <petersen@redhat.com>
 maintainer:          Jens Petersen <petersen@fedoraproject.org>
-copyright:           2019-2025 Jens Petersen
+copyright:           2019-2026 Jens Petersen
 category:            Distribution
 build-type:          Simple
 extra-doc-files:     CHANGELOG.md
                      README.md
 tested-with:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5,
                      GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8,
-                     GHC == 9.4.8, GHC == 9.6.7, GHC == 9.8.4, GHC == 9.10.2,
-                     GHC == 9.12.2
+                     GHC == 9.4.8, GHC == 9.6.7, GHC == 9.8.4, GHC == 9.10.3,
+                     GHC == 9.12.3
 
 source-repository head
   type:                git
