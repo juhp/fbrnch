@@ -316,9 +316,13 @@ getRequestedBranches :: [String] -> BranchesReq -> IO [Branch]
 getRequestedBranches existing breq = do
   activenew <- filter (\b -> showBranch b `notElem` existing) <$> getActiveBranched
   case breq of
-    Branches brs -> if null brs
-                    then branchingPrompt activenew
-                    else return $ [b | b <- brs, b `elem` activenew]
+    Branches brs ->
+      if null brs
+      then branchingPrompt activenew
+      else
+        case [b | b <- brs, b `elem` activenew] of
+          [] -> error' "no active branch requested"
+          bs -> return bs
     BranchOpt request -> do
       let requested = case request of
                         AllBranches -> activenew
