@@ -63,6 +63,7 @@ mergeBranch dryrun nofetch build noprompt showall pkg (Just True, unmerged@(unmg
   -- FIXME what if branch doesn't exist at all?
   unless (showBranch from `elem` locals) $ do
     git_ "fetch" ["origin"]
+    git_ "branch" ["--track", showBranch from, "origin/" ++ showBranch from]
   newerlocal <- gitOneLineLog $ "origin/" ++ showBranch from ++ ".." ++ showBranch from
   unless (null newerlocal) $ do
     putStr "*Warning!* "
