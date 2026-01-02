@@ -7,6 +7,7 @@ where
 import Data.RPM.VerCmp
 import Data.Version (parseVersion)
 import Fedora.Krb (krbTicket)
+import Safe (headMay, tailSafe)
 import SimplePrompt (promptEnter, yesNoDefault)
 import System.IO.Extra (withTempDir)
 import Text.ParserCombinators.ReadP (readP_to_S)
@@ -56,9 +57,10 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
   spec <- if allowHEAD
           then findSpecfile
           else localBranchSpecFile pkg br
-  -- FIXME detect uncommitted version bump, ie old committed version
   curver <- pkgVersion spec
-  vdiff <- filter (\v -> any (`isPrefixOf` v) ["-Version:","+Version:"]) . filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
+  diff <- filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
+  let vdiff = filter (\v -> any (`isPrefixOf` v) ["-Version:","+Version:"]) diff
+      mnewrel = find ("+Release:" `isPrefixOf`) diff
   when (length vdiff > 2) $
     error' $ "diff contains complex multi-version changes:\n" ++ unlines vdiff
   case mver of
@@ -73,8 +75,7 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
         case mver of
           Just nver -> Just (curver,nver)
           Nothing ->
-            -- FIXME confused by fresh multiversion package (eg hadrian-0.1.0.0 make new ghcX.Y to 0.1.0.0
-            case map (last . words) vdiff of
+            case map extractFieldValue vdiff of
               [old,new] -> Just (old,new)
               _ -> Nothing
   when (isJust mver) $
@@ -86,6 +87,13 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       putStrLn $ "current" +-+ oldver +-+ "is newer!"
     putStrLn $ oldver +-+ "->\n" ++ newver
     when (curver /= newver) $ do
+      specversions <- grep "^Version:" spec
+      case specversions of
+        [] -> error' "no Version field found"
+        [specver] ->
+          when ('%' `elem` specver) $
+          error' "Please edit complex 'Version' fields with macro(s) by hand"
+        _ -> error' "Please edit package with multiple versions by hand"
       editSpecField "Version" newver spec
       autorelease <- isAutoRelease spec
       if autorelease
@@ -129,8 +137,15 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
             [] -> True
             (h:_) -> not $ (newver ++ "-") `isPrefixOf` h
     when missing $ do
-      cmd_ "rpmdev-bumpspec" ["-c", "Update to" +-+ newver, spec]
-      git_ "commit" ["-a", "-m", "Update to" +-+ newver]
+      -- FIXME newver may contain macros!
+      newversion <- pkgVersion spec
+      cmd_ "rpmdev-bumpspec" ["-c", "Update to" +-+ newversion, spec]
+      newrelease <- cmd "rpmspec" ["-q", "--srpm", "--undefine=dist", "--qf", "%{release}", spec]
+      -- revert release if was already bumped
+      whenJust (extractFieldValue <$> mnewrel) $ \newrel -> do
+        editSpecField "Release" newrel spec
+        cmd_ "sed" ["-i", "s/> -" +-+ newversion ++ '-' : newrelease ++ "/> -" +-+ newversion ++ '-' : (replace "%{?dist}" "" newrel) ++ "/" , spec]
+      git_ "commit" ["-a", "-m", "Update to" +-+ newversion]
   putStr "Prepping... "
   sourcediropt <- sourceDirCwdOpt
   withTempDir $ \tempdir -> do
@@ -144,3 +159,10 @@ changelogVersions :: FilePath -> IO [String]
 changelogVersions spec = do
   ns <- cmdLines "rpmspec" ["-q", "--srpm", "--qf", "%{changelogname}", spec]
   return $ map (removePrefix "- " . dropWhile (/= '-')) ns
+
+-- eg "?Release:    0.2%{?dist}"
+extractFieldValue :: String -> String
+extractFieldValue vs =
+  case headMay . tailSafe . words $ vs of
+    Just h -> h
+    Nothing -> error' $ "no field value:" +-+ vs
