@@ -32,33 +32,32 @@ branchLogCmd latest allbrs nosimplydecor (breq, pkgs) = do
    logPkg :: Bool -> FilePath -> IO ()
    logPkg colored path =
      withExistingDirectory path $ do
-     -- FIXME re-indent
-       -- FIXME handle inactive branch automatically (without --inactive or error)
-       branches <- listOfBranches True (not allbrs) breq
-       let listBranches' =
-             if allbrs then listAllBranches else listBranches
-       locals <- listBranches' True
-       remotes <- listBranches' False
-       current <- gitCurrentBranch
-       forM_ branches $ \br ->
-         unless (br `elem` locals) $
-         if br `elem` remotes
-         then
-           gitSwitchBranch (RelBranch br)
-         else error' $ "branch does not exist:" +-+ showBranch br
-       gitSwitchBranch current
-       if latest
-         then latestBranches branches
-         else do
-         forM_ branches $ \br -> do
-           when (length pkgs > 1 || length branches > 1) $ do
-             pkg <- getPackageName "."
-             if length branches > 1
-               then putPkgBrnchHdr pkg br
-               else putPkgHdr pkg
-           commits <- getLogCommits allbrs simplydecor br
-           checkBranchOrder br $ NE.tail commits
-           mapM_ (putLogCommit colored) commits
+     -- FIXME handle inactive branch automatically (without --inactive or error)
+     branches <- listOfBranches True (not allbrs) breq
+     let listBranches' =
+           if allbrs then listAllBranches else listBranches
+     locals <- listBranches' True
+     remotes <- listBranches' False
+     current <- gitCurrentBranch
+     forM_ branches $ \br ->
+       unless (br `elem` locals) $
+       if br `elem` remotes
+       then
+         gitSwitchBranch (RelBranch br)
+       else error' $ "branch does not exist:" +-+ showBranch br
+     gitSwitchBranch current
+     if latest
+       then latestBranches branches
+       else do
+       forM_ branches $ \br -> do
+         when (length pkgs > 1 || length branches > 1) $ do
+           pkg <- getPackageName "."
+           if length branches > 1
+             then putPkgBrnchHdr pkg br
+             else putPkgHdr pkg
+         commits <- getLogCommits allbrs simplydecor br
+         checkBranchOrder br $ NE.tail commits
+         mapM_ (putLogCommit colored) commits
      where
        simplydecor = not nosimplydecor
 
