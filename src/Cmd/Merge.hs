@@ -26,19 +26,15 @@ mergeCmd dryrun nofetch noprompt mnotrivial showall mfrom =
       error' "merge only defined for release branches"
     -- FIXME should rawhide default to no-op
     runMergeBranch pkg (RelBranch br) = do
+      when (mfrom == Just br) $
+        error' "cannot merge branch to itself"
       exists <- gitSwitchBranch' False br
       when exists $ do
-        mfrom' <- if isJust mfrom
-                  then return mfrom
-                  else getNewerBranch (unPackage pkg) br
-        whenJust mfrom' $ \from -> do
-          when (from == br) $
-            error' "cannot merge branch to itself"
-          unless dryrun $
-            gitMergeOrigin br
-          (ancestor,unmerged) <- mergeable from br
-          unmerged' <- filterOutTrivial mnotrivial unmerged
-          mergeBranch dryrun nofetch False noprompt showall pkg (ancestor,unmerged') from br
+        unless dryrun $
+          gitMergeOrigin br
+        (mancestor,unmerged,from) <- mergeable pkg br mfrom
+        unmerged' <- filterOutTrivial mnotrivial unmerged
+        mergeBranch dryrun nofetch False noprompt showall pkg (mancestor,unmerged') from br
       where
         filterOutTrivial :: Maybe Natural -> [Commit] -> IO [Commit]
         filterOutTrivial Nothing cs = return cs
@@ -53,22 +49,20 @@ mergeCmd dryrun nofetch noprompt mnotrivial showall mfrom =
               then filterOutTrivial (Just (no -1)) cs
               else return css
 
--- FIXME maybe require local branch already here
-mergeable :: Branch -> Branch -> IO (Bool,[Commit])
-mergeable _ Rawhide = return (False,[])
-mergeable from to = do
-  (mancestor, unmerged) <- gitMergeable to from
-  return (mancestor == Just True, unmerged)
-
 -- FIXME return merged ref
 mergeBranch :: Bool -> Bool -> Bool -> Bool -> Bool -> Package
-            -> (Bool,[Commit]) -- (ancestor,unmerged)
+            -> (Maybe Bool,[Commit]) -- (mancestor,unmerged)
             -> Branch -> Branch -> IO ()
 mergeBranch _ _ _ _ _ _ _ _ Rawhide = return ()
 mergeBranch _ _ _ _ _ _ (_,[]) _ _ = return ()
-mergeBranch dryrun nofetch build noprompt showall pkg (True, unmerged@(unmgd:_)) from br = do
+mergeBranch _ _ _ _ _ _ (Nothing,_) _ _ = return ()
+mergeBranch dryrun nofetch build noprompt showall pkg (Just True, unmerged@(unmgd:_)) from br = do
   when (nofetch && not build) $ putPkgBrnchHdr pkg br
   isnewrepo <- initialPkgRepo
+  locals <- localBranches True
+  -- FIXME what if branch doesn't exist at all?
+  unless (showBranch from `elem` locals) $ do
+    git_ "fetch" ["origin"]
   newerlocal <- gitOneLineLog $ "origin/" ++ showBranch from ++ ".." ++ showBranch from
   unless (null newerlocal) $ do
     putStr "*Warning!* "
@@ -91,13 +85,9 @@ mergeBranch dryrun nofetch build noprompt showall pkg (True, unmerged@(unmgd:_))
          "; or 'no' to skip merge")
   -- ensure still on same branch!
   gitSwitchBranch (RelBranch br)
-  whenJust mmerge $ \ ref -> do
-    locals <- localBranches True
-    unless (showBranch from `elem` locals) $
-      git_ "fetch" ["origin", showBranch from ++ ":" ++ showBranch from]
-    unless dryrun $
-      git_ "merge" ["--quiet", ref]
-mergeBranch dryrun nofetch build noprompt showall pkg (False,unmerged) from br = do
+  whenJust mmerge $ \ ref ->
+    unless dryrun $ git_ "merge" ["--quiet", ref]
+mergeBranch dryrun nofetch build noprompt showall pkg (Just False,unmerged) from br = do
   unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
   when (nofetch && not build) $ putPkgBrnchHdr pkg br
   putStrLn $ color (if null unpushed then Magenta else Red) $ showBranch from +-+ "branch is not directly mergeable:"

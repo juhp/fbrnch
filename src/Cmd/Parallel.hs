@@ -50,10 +50,11 @@ type JobAsync = (String, Async JobDone)
 -- FIXME push update
 -- FIXME use more say
 -- FIXME --skip-bumps NUM
-parallelBuildCmd :: Bool -> Maybe Bool -> Int -> Maybe SideTagTarget -> Bool
-                 -> Double -> (Maybe UpdateType, UpdateSeverity)
+parallelBuildCmd :: Bool -> Maybe Bool -> Maybe Branch -> Int
+                 -> Maybe SideTagTarget -> Bool -> Double
+                 -> (Maybe UpdateType, UpdateSeverity)
                  -> (BranchesReq, [String]) -> IO ()
-parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate (breq, pkgs) =
+parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mupdate (breq, pkgs) =
   do
   branches <-
     case pkgs of
@@ -91,7 +92,7 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         withExistingDirectory p $ do
         pkg <- getPackageName p
         putPkgBrnchHdr pkg rbr
-        mergeNewerBranch pkg rbr
+        mergeFromBranch pkg rbr
         getDynSourcesMacros $ packageSpec pkg
       distopts <- distRpmOptions rbr
       allLayers <- getLayers distopts pkgs
@@ -147,18 +148,17 @@ parallelBuildCmd dryrun mmerge firstlayer msidetagTarget mustpush delay mupdate 
         setupBranch br = do
           putPkgBrnchHdr pkg br
           target <- targetMaybeSidetag dryrun True True br msidetagTarget
-          when (mmerge /= Just False) $ mergeNewerBranch pkg br
+          when (mmerge /= Just False) $ mergeFromBranch pkg br
           job <- startBuild Nothing 0 False 1 target pkg br "." >>= async
           unless dryrun $ sleep delay
           return (showBranch br,job)
 
-    mergeNewerBranch :: Package -> Branch -> IO ()
-    mergeNewerBranch pkg br = do
+    mergeFromBranch :: Package -> Branch -> IO ()
+    mergeFromBranch pkg br = do
       gitSwitchBranch (RelBranch br)
-      (ancestor,unmerged,mnewer) <- newerMergeable (unPackage pkg) br
+      (mancestor,unmerged,from) <- mergeable pkg br mfrom
       unless dryrun $
-        whenJust mnewer $ \newer ->
-        mergeBranch dryrun False False (mmerge == Just True) False pkg (ancestor,unmerged) newer br
+        mergeBranch dryrun False False (mmerge == Just True) False pkg (mancestor,unmerged) from br
 
     -- FIXME time builds or layers
     -- FIXME return Either

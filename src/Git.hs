@@ -8,7 +8,7 @@ module Git (
   gitMergeable,
   gitMergeOrigin,
   getNewerBranch,
-  newerMergeable,
+  mergeable,
   gitFetchSilent,
   gitPush,
   gitRepoName,
@@ -47,6 +47,7 @@ import SimplePrompt
 import Branches
 import Common
 import Common.System
+import Types (Package(..))
 
 #if !MIN_VERSION_simple_cmd(0,2,2)
 -- | 'gitBool c args' runs git command and return result
@@ -78,13 +79,12 @@ gitMergeable target br = do
       then do
       diff <- git "diff" [ref]
       unless (null diff) $ do
-        putStrLn $ showBranch target +-+ "is ahead of newer" +-+ showBranch br +-+ "!!"
+        putStrLn $ showBranch target +-+ "is ahead of" +-+ ref +-+ "!!"
         promptEnter "Press Enter if you want to continue"
-      else putStrLn $ "current branch" +-+ "is diverged from" +-+ showBranch br
+      else putStrLn $ "current branch" +-+ "is diverged from" +-+ ref
   return (mancestor, commits)
 
--- FIXME use Package
-getNewerBranch :: String -> Branch -> IO (Maybe Branch)
+getNewerBranch :: Package -> Branch -> IO (Maybe Branch)
 getNewerBranch _ Rawhide = return Nothing
 getNewerBranch pkg br = do
   localbrs <- fedoraBranches (localBranches False)
@@ -111,17 +111,24 @@ gitMergeOrigin br = do
       putStrLn pull
 
 -- FIXME maybe require local branch already here
-newerMergeable :: String -> Branch -> IO (Bool,[Commit],Maybe Branch)
-newerMergeable pkg br =
+mergeable :: Package -> Branch -> Maybe Branch -> IO (Maybe Bool,[Commit],Branch)
+mergeable pkg br Nothing =
   if br == Rawhide
-  then return (False,[],Nothing)
+  then return (Nothing,[],br)
   else do
     mnewer <- getNewerBranch pkg br
     case mnewer of
       Just newer -> do
         (mancestor,commits) <- gitMergeable br newer
-        return (mancestor == Just True, commits, Just newer)
-      Nothing -> return (False,[],Nothing)
+        return (mancestor, commits, newer)
+      Nothing -> return (Nothing,[],br)
+-- FIXME check from exists
+mergeable _pkg br (Just from) =
+  if br == from
+  then error' $ "cannot merge to same branch!"
+  else do
+    (mancestor,commits) <- gitMergeable br from
+    return (mancestor, commits, from)
 
 data Commit = Commit
               { commitRef :: String,

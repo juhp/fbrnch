@@ -24,6 +24,7 @@ import Types
 
 data BuildOpts = BuildOpts
   { buildoptMerge :: Maybe Bool
+  , buildoptMergeFrom :: Maybe Branch
   , buildoptNoFailFast :: Bool
   , buildoptSidetagTarget :: Maybe SideTagTarget
   , buildoptOverride :: Maybe Int
@@ -85,25 +86,22 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   gitMergeOrigin br
   newrepo <- initialPkgRepo
   tty <- isTty
-  (ancestor,unmerged,mnewer) <- newerMergeable (unPackage pkg) br
+  (mancestor,unmerged,from) <- mergeable pkg br $ buildoptMergeFrom opts
   -- FIXME if already built or failed, also offer merge
   merged <-
     case buildoptMerge opts of
       Just False -> return False
       Just True -> do
-        whenJust mnewer $ \newer ->
-          mergeBranch (buildoptDryrun opts) False True True False pkg (ancestor,unmerged) newer br
+        mergeBranch (buildoptDryrun opts) False True True False pkg (mancestor,unmerged) from br
         return True
       Nothing ->
-        if ancestor && (newrepo || tty)
+        if mancestor == Just True && (newrepo || tty)
         then do
-          whenJust mnewer $ \newer ->
-            mergeBranch (buildoptDryrun opts) False True False True pkg (ancestor,unmerged) newer br
-          return $ isJust mnewer
+          mergeBranch (buildoptDryrun opts) False True False True pkg (mancestor,unmerged) from br
+          return True
         else do
           unless (br == Rawhide) $
-            whenJust mnewer $ \newer ->
-            putStrLn $ showBranch newer +-+ "branch not mergeable"
+            putStrLn $ showBranch from +-+ "branch not mergeable"
           return False
   let spec = packageSpec pkg
   checkForSpecFile spec
@@ -126,7 +124,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
           displayCommits True unpushed
           putNewLn
         -- see mergeBranch for: unmerged == 1 (774b5890)
-        if tty && (not merged || (newrepo && ancestor && length unmerged == 1))
+        if tty && (not merged || (newrepo && mancestor == Just True && length unmerged == 1))
           then refPrompt unpushed $ "Press Enter to push and build" ++ (if length unpushed > 1 then "; or give ref to push" else "") ++ (if not newrepo then "; or 'no' to skip pushing" else "")
           else return $ Just $ commitRef unpd
   buildRun spec nvr merged mpush unpushed target msidetagTarget moverride

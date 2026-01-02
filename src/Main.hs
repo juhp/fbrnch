@@ -140,6 +140,7 @@ main = do
       parallelBuildCmd
       <$> dryrunOpt "Dry run: do not build anything"
       <*> mergeOpt
+      <*> optional (optionWith branchM 'f' "from" "BRANCH" "Branch to merge from [default newer]")
       <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
       <*> optional (sidetagTargetOpt $ Just "or creates one for you (with 'fedpkg request-side-tag --base-tag')")
       <*> switchLongWith "must-push" "Error if no unpushed commits"
@@ -590,6 +591,7 @@ main = do
     buildOpts =
       BuildOpts
       <$> mergeOpt
+      <*> optional (optionWith branchM 'f' "from" "BRANCH" "Branch to merge from [default newer]")
       <*> noFailFastOpt
       <*> optional (sidetagTargetOpt Nothing)
       <*> overrideOpt
