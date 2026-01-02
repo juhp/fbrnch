@@ -1,3 +1,6 @@
+{-# LANGUAGE CPP #-}
+
+-- FIXME rename to BranchLog?
 module Cmd.BranchLogs (
   branchLogCmd
   )
@@ -5,6 +8,10 @@ where
 
 import Control.Monad (forM_, unless, when)
 import Data.Function (on)
+#if !MIN_VERSION_base(4,18,0)
+import qualified Data.List as List
+import qualified Data.Foldable as Foldable
+#endif
 import Data.List.Extra (dropPrefix, find, splitOn, stripInfix, uncons)
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
@@ -79,7 +86,7 @@ branchLogCmd latest allbrs nosimplydecor (breq, pkgs) = do
 
        checkBranchOrders commits = do
          let brs = NE.map logBranches commits
-         forM_ (NE.tails1 brs) $ \(b:|bs) ->
+         forM_ (tails1 brs) $ \(b:|bs) ->
            forM_ b $ \b' -> do
            let newer = mapMaybe (find (b'<)) bs
            unless (null newer || allbrs) $
@@ -189,3 +196,13 @@ showBranches colored =
         origin = if colored then "origin/" else "{origin/}"
 
         docolor c = if colored then color c else id
+
+
+tails1 :: NonEmpty a -> NonEmpty (NonEmpty a)
+tails1 =
+#if MIN_VERSION_base(4,18,0)
+  NE.tails1
+#else
+  -- from base-4.20
+  NE.fromList . Prelude.map NE.fromList . List.init . List.tails . Foldable.toList
+#endif
