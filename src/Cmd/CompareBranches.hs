@@ -23,8 +23,23 @@ compareBranchesCmd long mignore br1 br2 pkgs = do
   where
     comparePkg :: String -> IO ()
     comparePkg pkgdir =
-      withExistingDirectory pkgdir $
-      unlessM (doesFileExist "dead.package") $ do
+      withExistingDirectory pkgdir $ do
+      local <- compareLocal
+      remote <- compareRemote
+      unless (null local && null remote) $ do
+        unless (null pkgs) $
+          getPackageName pkgdir >>= putPkgHdr
+        unless (null local) $ do
+          putStrLn "local changes:"
+          mapM_ putStrLn local
+        unless (null remote) $ do
+          putStrLn "remote changes:"
+          mapM_ putStrLn remote
+
+    logFormat = "--pretty=format:%h %s (%cs)"
+
+    compareLocal :: IO [String]
+    compareLocal = do
       localbranches <- localBranches True
       oldcurrent <- gitCurrentBranch
       have1 <- haveBranch localbranches br1
@@ -32,12 +47,25 @@ compareBranchesCmd long mignore br1 br2 pkgs = do
       newcurrent <- gitCurrentBranch
       when (newcurrent /= oldcurrent) $
         gitSwitchBranch oldcurrent
-      when (have1 && have2) $ do
-        output <- ignoredLines <$> gitLines "log" (["--format=reference" | not long] ++ [show br1 ++ ".." ++ show br2])
-        unless (null output) $ do
-          unless (null pkgs) $
-            getPackageName pkgdir >>= putPkgHdr
-          mapM_ putStrLn output
+      if have1 && have2
+        then ignoredLines <$> gitLines "log" ([logFormat | not long] ++ [show br1 ++ ".." ++ show br2])
+        else do
+        let missing =
+              map show $ [br1 | not have1] ++ [br2 | not have2]
+        warning $ "didn't find local" +-+ unwords missing
+        return []
+
+    compareRemote :: IO [String]
+    compareRemote = do
+      have1 <- checkIfRemoteBranchExists br1
+      have2 <- checkIfRemoteBranchExists br2
+      if have1 && have2
+        then ignoredLines <$> gitLines "log" ([logFormat | not long] ++ ["origin/" ++ show br1 ++ ".." ++ "origin/" ++ show br2])
+        else do
+        let missing =
+              map show $ [br1 | not have1] ++ [br2 | not have2]
+        warning $ "didn't find remote" +-+ unwords missing
+        return []
 
     ignoredLines :: [String] -> [String]
     ignoredLines =

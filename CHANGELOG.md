@@ -10,6 +10,7 @@
 - 'commit': error if changelog is unstaged
 - 'commit': require -b option to confirm non-rawhide commit
 - 'compare-branches': renamed from 'compare'
+- 'compare-branches': list changes for both local & remote branches
 - 'compare-tarballs': new command to diff source tarballs
 - 'compare-tarballs': add --max-line-length option (default 200)
 - 'copr --failures': fetches tails of failed build logs
