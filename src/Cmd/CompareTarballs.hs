@@ -6,6 +6,7 @@ where
 import Safe (tailSafe)
 import SimpleCmd
 import SimpleCmd.Git
+import System.Console.Pretty (supportsPretty)
 import System.IO.Extra (withTempDir)
 
 import Common
@@ -13,26 +14,28 @@ import Common.System
 import Package (findSpecfile, pkgVersion)
 import Patch (simplifyMinimalDiff)
 
-compareTarballsCmd :: Maybe String -> Maybe String -> IO ()
-compareTarballsCmd (Just nv1) (Just nv2) = diffTarballs nv1 nv2
-compareTarballsCmd (Just nv) Nothing = do
+compareTarballsCmd :: Maybe Natural -> Maybe String -> Maybe String -> IO ()
+compareTarballsCmd mmaxlen (Just nv1) (Just nv2) = diffTarballs mmaxlen nv1 nv2
+compareTarballsCmd mmaxlen (Just nv) Nothing = do
   spec <- findSpecfile
   cur <- pkgVersion spec
   if nv == cur
     then error' "same source version!"
-    else diffTarballs nv cur
-compareTarballsCmd Nothing (Just _) = error' "impossible happened: only second arg"
-compareTarballsCmd Nothing Nothing = do
+    else diffTarballs mmaxlen nv cur
+compareTarballsCmd _ Nothing (Just _) = error' "impossible happened: only second arg"
+compareTarballsCmd mmaxlen Nothing Nothing = do
   let sourcesfile = "sources"
   havesrc <- doesFileExist sourcesfile
   if havesrc
     then do
-    diff <- git "diff" ["-U0", "origin", sourcesfile]
+    -- was "origin"
+    diff <- git "diff" ["-U0", "--cached", sourcesfile]
     case lines diff of
       [] -> error' $ "no uncommitted version changes in" +-+ show sourcesfile
       ls ->
+        -- FIXME cannot handle majorversion macros etc (eg lean4)
         case simplifyMinimalDiff ls of
-          [s1,s2] -> diffTarballs (sourcesFilename s1) (sourcesFilename s2)
+          [s1,s2] -> diffTarballs mmaxlen (sourcesFilename s1) (sourcesFilename s2)
           _ -> error' $ "could not determine changed versions in" +-+ show sourcesfile
     else do
     spec <- findSpecfile
@@ -46,7 +49,7 @@ compareTarballsCmd Nothing Nothing = do
             let newtar = name ++ '-' : specVersion v2 <.> "tar.gz"
             exists <- doesFileExist newtar
             unless exists $ cmd_ "spectool" ["-g", "-S", spec]
-            diffTarballs (name ++ '-' : specVersion v1 <.> "tar.gz") newtar
+            diffTarballs mmaxlen (name ++ '-' : specVersion v1 <.> "tar.gz") newtar
           _ -> error' $ "could not determine changed versions in" +-+ show sourcesfile
   where
     sourcesFilename s =
@@ -62,8 +65,8 @@ compareTarballsCmd Nothing Nothing = do
         _ -> error' $ "Failed to parse:" +-+ s
 
 -- FIXME --reverse diff
-diffTarballs :: String -> String -> IO ()
-diffTarballs src1 src2 = do
+diffTarballs :: Maybe Natural -> String -> String -> IO ()
+diffTarballs mmaxlen src1 src2 = do
   cwd <- getCurrentDirectory
   withTempDir $ \tmp ->
     withCurrentDirectory tmp $ do
@@ -73,7 +76,11 @@ diffTarballs src1 src2 = do
       -- withCurrentDirectory "b" $
       --   cmd_ "tar" ["xf", cwd </> src2]
       --   listDirectory "."
-    void $ cmdBool "diff" ["-u", "-r", "--color=auto", "-w", "a" </> adir, "b" </> bdir]
+    color <- supportsPretty
+    pipe_
+      -- FIXME add option to filter out certain files
+      ("diff", ["--color=always" | color] ++ ["-u", "-r", "-w", "a" </> adir, "b" </> bdir])
+      ("grep", ["-v", ".\\{" ++ maybe "200" show mmaxlen ++ ",\\}"])
   where
     getDirTop :: FilePath -> FilePath -> FilePath -> IO FilePath
     getDirTop subdir topdir src = do

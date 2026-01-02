@@ -121,8 +121,8 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
     unless (null textsources) $
       git_ "add" textsources
   whenJust moldnewver $ \(_old,newver) -> do
-    whenM (yesNoDefault False "Do you want to diff the sources?") $
-      compareTarballsCmd Nothing Nothing
+    whenM (yesNoDefault False "Do you want to diff the sources") $
+      compareTarballsCmd Nothing Nothing Nothing
     versions <- changelogVersions spec
     let missing =
           case versions of
