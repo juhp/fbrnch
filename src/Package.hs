@@ -47,7 +47,7 @@ module Package (
   isAutoChangelog,
   isAutoRelease,
   calculateRelease,
-  autoReleaseBump,
+  autoReleaseReset,
   sourceFieldFile,
   isArchiveFile,
   sourceDirCwdOpt
@@ -386,8 +386,8 @@ isAutoRelease spec = do
   matches <- filter ("Release:" `isPrefixOf`) <$> grep "%autorelease" spec
   return $ not (null matches)
 
-autoReleaseBump :: FilePath -> IO Bool
-autoReleaseBump spec = do
+autoReleaseReset :: FilePath -> IO Bool
+autoReleaseReset spec = do
   matches <- filter ("Release:" `isPrefixOf`) <$> grep "%autorelease" spec
   return $
     case matches of

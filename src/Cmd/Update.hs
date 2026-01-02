@@ -90,8 +90,8 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       autorelease <- isAutoRelease spec
       if autorelease
         then do
-        autobump <- autoReleaseBump spec
-        when autobump $
+        autoreset <- autoReleaseReset spec
+        when autoreset $
           editSpecField "Release" "%autorelease" spec
         -- FIXME if multiple versions need to bump release
         else editSpecField "Release" "0%{?dist}" spec
