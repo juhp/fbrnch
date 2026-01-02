@@ -148,7 +148,7 @@ displayHdrCommits hdr showall commits = do
 
 gitOneLineLog :: String -> IO [Commit]
 gitOneLineLog range =
-  map mkCommit <$> gitLines "log" ["--pretty=format:%H (%s, %cs)", range]
+  map mkCommit <$> gitLines "log" ["--pretty=format:%H (%s, %cs)", range, "--"]
 
 gitShortLogN :: Maybe Int -> Maybe String -> IO [Commit]
 gitShortLogN mnum mrange =
