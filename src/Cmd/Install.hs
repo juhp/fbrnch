@@ -56,36 +56,38 @@ installCmd quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall alloweras
         -- FIXME can this be removed now?
         already <- filterM nvraInstalled nvras
         if isJust mforceshort || null already || reinstall || select /= selectDefault
-          then doInstallRPMs mforceshort spec rpms
+          then doInstallRPMs spec rpms
           else putStrLn $ unlines (map showNVRA already) ++
                "\nalready installed!\n"
       where
-        doInstallRPMs mforceshort' spec rpms = do
+        doInstallRPMs spec rpms = do
           -- FIXME show source NVR (eg not pandoc-common)
           whenJust (headMay rpms) $
             putStrLn . showNVR . dropArch . readNVRA
           unless (nobuilddeps || nobuild) $ do
-            missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
-            unless (null missingdeps) $
-              if recurse
-              then do
-                -- srcs <- nub <$> mapM (derefSrcPkg topdir dist True) hmissing
-                rbr <- anyBranchToRelease br
-                forM_ missingdeps $ \ dep -> do
-                  -- FIXME check not metadep with parens
-                  mpkgdir <- lookForPkgDir rbr ".." dep
-                  case mpkgdir of
-                    Nothing -> putStrLn $ dep +-+ "not known"
-                    Just pkgdir -> installCmd quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall allowerasing nobuild nobuilddeps yes select mexisting (mbr, [pkgdir]) >> putNewLn
-                -- FIXME option to enable/disable installing missing deps
-                -- FIXME --skip-missing-deps or prompt
-              else installDeps True spec
+            needBuild <- needToBuildRPMS True mforceshort rpms spec
+            when needBuild $ do
+              missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
+              unless (null missingdeps) $
+                if recurse
+                then do
+                  -- srcs <- nub <$> mapM (derefSrcPkg topdir dist True) hmissing
+                  rbr <- anyBranchToRelease br
+                  forM_ missingdeps $ \ dep -> do
+                    -- FIXME check not metadep with parens
+                    mpkgdir <- lookForPkgDir rbr ".." dep
+                    case mpkgdir of
+                      Nothing -> putStrLn $ dep +-+ "not known"
+                      Just pkgdir -> installCmd quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall allowerasing nobuild nobuilddeps yes select mexisting (mbr, [pkgdir]) >> putNewLn
+                  -- FIXME option to enable/disable installing missing deps
+                  -- FIXME --skip-missing-deps or prompt
+                else installDeps True spec
           -- FIXME unused
           _wasbuilt <-
             if nobuild
             then return True
-            else buildRPMs quiet False False mjobs mforceshort' bconds rpms br spec
-          unless (isShortCircuit mforceshort') $ do
+            else buildRPMs quiet False False mjobs mforceshort bconds rpms br spec
+          unless (isShortCircuit mforceshort) $ do
             let nvras = rpmsToNVRAs rpms
                 -- FIXME: prefix = fromMaybe (nvrName nvr) mprefix
             decided <- decideRPMs yes False mexisting select (unPackage pkg) nvras

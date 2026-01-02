@@ -2,6 +2,7 @@ module RpmBuild (
   builtRpms,
   buildRPMs,
   buildRPMsNoBranch,
+  needToBuildRPMS,
   installDeps,
   buildRequires,
   getSources,
@@ -29,7 +30,7 @@ import Data.RPM
 import Distribution.Fedora.Branch (branchDistTag, branchRelease)
 import Distribution.Fedora.Release (releaseVersion)
 import Network.HTTP.Directory (httpExists')
-import Safe (lastMay)
+import Safe (lastMay, headMay)
 import SimpleCmd.Rpm
 import SimplePrompt (promptEnter, yesNo)
 import System.Console.Pretty
@@ -281,14 +282,8 @@ isShortCircuit ms =
     Just s -> s /= ForceBuild
     Nothing -> False
 
--- FIXME create build.log
--- Note does not check if bcond changed
--- FIXME check tarball timestamp
--- FIXME handle prep (-bp) too?
-buildRPMs :: Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
-          -> [BCond] -> [FilePath] -> AnyBranch -> FilePath -> IO Bool
-buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
-  needBuild <-
+needToBuildRPMS :: Bool -> Maybe ForceShort -> [FilePath] -> FilePath -> IO Bool
+needToBuildRPMS confirm mforceshort rpms spec =
     if isJust mforceshort
     then return True
     else do
@@ -298,9 +293,24 @@ buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
         else do
         specTime <- getModificationTime spec
         rpmTimes <- sort <$> mapM getModificationTime rpms
-        case rpmTimes of
-          [] -> return True -- corner case
-          (rpmtime:_) -> return $ specTime > rpmtime
+        case headMay rpmTimes of
+          Nothing -> error' "rpms have no modification time!"
+          Just rpmtime ->
+            if specTime > rpmtime
+            then
+              if confirm
+                then yesNo "Rebuild with newer spec file?"
+                else return True
+            else return False
+
+-- FIXME create build.log
+-- Note does not check if bcond changed
+-- FIXME check tarball timestamp
+-- FIXME handle prep (-bp) too?
+buildRPMs :: Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
+          -> [BCond] -> [FilePath] -> AnyBranch -> FilePath -> IO Bool
+buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
+  needBuild <- needToBuildRPMS False mforceshort rpms spec
   if not needBuild then
     putStrLn "Existing rpms are newer than spec file (use --force to rebuild)"
     else do
