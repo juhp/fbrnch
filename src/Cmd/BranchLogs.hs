@@ -21,8 +21,8 @@ import Package
 -- FIXME select latest branches (local and remote)
 -- FIXME how to handle dirty
 -- FIXME handle detached head
-branchLogCmd :: Bool -> Bool -> (BranchesReq,[String]) -> IO ()
-branchLogCmd latest nosimplydecor (breq, pkgs) = do
+branchLogCmd :: Bool -> Bool -> Bool -> (BranchesReq,[String]) -> IO ()
+branchLogCmd latest allbrs nosimplydecor (breq, pkgs) = do
   colored <- supportsPretty
   if null pkgs
     then logPkg colored "."
@@ -32,9 +32,13 @@ branchLogCmd latest nosimplydecor (breq, pkgs) = do
    logPkg :: Bool -> FilePath -> IO ()
    logPkg colored path =
      withExistingDirectory path $ do
-       branches <- listOfBranches True True breq
-       locals <- fedoraBranches (localBranches True)
-       remotes <- fedoraBranches (localBranches False)
+     -- FIXME re-indent
+       -- FIXME handle inactive branch automatically (without --inactive or error)
+       branches <- listOfBranches True (not allbrs) breq
+       let listBranches' =
+             if allbrs then listAllBranches else listBranches
+       locals <- listBranches' True
+       remotes <- listBranches' False
        current <- gitCurrentBranch
        forM_ branches $ \br ->
          unless (br `elem` locals) $
@@ -52,7 +56,7 @@ branchLogCmd latest nosimplydecor (breq, pkgs) = do
              if length branches > 1
                then putPkgBrnchHdr pkg br
                else putPkgHdr pkg
-           commits <- getLogCommits simplydecor br
+           commits <- getLogCommits allbrs simplydecor br
            checkBranchOrder br $ NE.tail commits
            mapM_ (putLogCommit colored) commits
      where
@@ -66,7 +70,7 @@ branchLogCmd latest nosimplydecor (breq, pkgs) = do
 
        latestBranches :: [Branch] -> IO ()
        latestBranches branches = do
-         logbrs <- fmap (NE.toList . NE.nubBy ((==) `on` NE.head)) <$> mapM (getLogCommits True) $ NE.fromList branches
+         logbrs <- fmap (NE.toList . NE.nubBy ((==) `on` NE.head)) <$> mapM (getLogCommits allbrs True) $ NE.fromList branches
          let containedIn l = any ((NE.head l `elem`) . NE.tail)
              reduced = [ l | l <- logbrs, not (l `containedIn` logbrs)]
          forM_ reduced $ \r -> do
@@ -79,7 +83,7 @@ branchLogCmd latest nosimplydecor (breq, pkgs) = do
          forM_ (NE.tails1 brs) $ \(b:|bs) ->
            forM_ b $ \b' -> do
            let newer = mapMaybe (find (b'<)) bs
-           unless (null newer) $
+           unless (null newer || allbrs) $
              putStrLn $ showBR b' +-+ "is ahead of:" +-+ unwords (map showBR newer)
 
 data BranchRemote = BR (Maybe String) Branch
@@ -109,9 +113,9 @@ instance Ord LogCommit where
 logCommitFormat :: String
 logCommitFormat = "--pretty=format:%h\US%D\US%s\US%ch"
 
-getLogCommits :: Bool -> Branch -> IO (NonEmpty LogCommit)
-getLogCommits simplydecor br = do
-  existing <- fedoraBranches (localBranches True)
+getLogCommits :: Bool -> Bool -> Branch -> IO (NonEmpty LogCommit)
+getLogCommits allbrs simplydecor br = do
+  existing <- (if allbrs then listAllBranches else listBranches) True
   unless (br `elem` existing) $
     error' $ "no local branch:" +-+ showBranch br
   ls <- mapMaybe (readLogCommit existing) <$> gitLines "log" (["--simplify-by-decoration" | simplydecor] ++ [logCommitFormat, showBranch br])

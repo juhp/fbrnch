@@ -90,4 +90,4 @@ listReviewsFull mmassignee mmreporter mpat allopen status = do
     branched pkg = not <$> notBranched pkg
 
     notBranched :: String -> IO Bool
-    notBranched pkg = null <$> fedoraBranchesNoRawhide (pagurePkgBranches pkg)
+    notBranched pkg = null . delete Rawhide <$> listRemoteBranches pkg

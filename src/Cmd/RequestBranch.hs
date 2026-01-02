@@ -154,7 +154,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
       if null brs'
         then return []
         else do
-        current <- fedoraBranchesNoRawhide $ pagurePkgBranches (unPackage pkg)
+        current <- delete Rawhide <$> listRemoteBranches (unPackage pkg)
         forM_ brs' $ \ br ->
           when (br `elem` current) $
           putStrLn $ pkgPrefix ++ showBranch br +-+ "remote branch already exists"

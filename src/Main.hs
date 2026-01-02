@@ -96,6 +96,7 @@ main = do
     , Subcommand "branch-log" "Show log with branches decor" $
       branchLogCmd
       <$> switchLongWith "latest" "Find related branches"
+      <*> switchLongWith "inactive" "Include old inactive branches"
       -- FIXME currently actually no-op
       <*> pure False --switchWith 'n' "no-simplify-by-decoration" "Do not filter for decorated commits"
       <*> branchesPackages

@@ -93,7 +93,7 @@ getNewerBranch pkg br = do
       if newer `elem` localbrs
       then return $ Just newer
       else do
-        remotebrs <- fedoraBranches (pagurePkgBranches pkg)
+        remotebrs <- listRemoteBranches (unPackage pkg)
         if newer `elem` remotebrs
           then do
           gitFetchSilent False

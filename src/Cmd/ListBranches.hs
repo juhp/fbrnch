@@ -5,7 +5,7 @@ module Cmd.ListBranches (
   )
 where
 
-import Distribution.Fedora.Branch (getActiveBranches, readBranch)
+import Distribution.Fedora.Branch (getActiveBranches)
 
 import Branches
 import Common
@@ -79,26 +79,30 @@ branchesCmd mdead allbrs missing mode (breq, pkgs) = do
                                        putStrLn $ pkgprefix +-+ show br
                      _ -> putStrLn $ pkgprefix +-+ show br
             else do
-            brs <- delete "main" <$>
-                   if mode == Remote
-                   then pagurePkgBranches (unPackage pkg)
-                   else localBranches False
             if allbrs then do
               -- FIXME epel branches are not sorted correctly: epel10 epel10.0 epel9 f41 ...
-              putStrLn $ pkgprefix +-+ unwords brs
+              brs <-
+                if mode == Remote
+                then listRemoteAllBranches (unPackage pkg)
+                else listAllBranches False
+              putStrLn $ pkgprefix +-+ unwords (map showBranch brs)
               else do
+              brs <-
+                if mode == Remote
+                then listRemoteBranches (unPackage pkg)
+                else listBranches False
               if breq == Branches []
                 then do
                 -- FIXME better to filter inactive instead
                 active <- getActiveBranches
                 let result =
                       if missing
-                      then active \\ mapMaybe readBranch brs
-                      else activeBranches active brs
+                      then active \\ brs
+                      else brs
                 putStrLn $ pkgprefix +-+ (unwords . map showBranch) result
                 else do
                 branches <- listOfBranches True False breq
-                let havebrs = filter (`elem` branches) $ mapMaybe readBranch brs
+                let havebrs = filter (`elem` branches) brs
                     result = if missing then branches \\ havebrs else havebrs
                 unless (null result) $
                   putStrLn $ pkgprefix +-+ (unwords . map showBranch) result

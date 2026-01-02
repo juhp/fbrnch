@@ -1,13 +1,15 @@
 {-# LANGUAGE CPP #-}
 
 module Branches (
-  activeBranches,
   fedoraBranches,
   fedoraBranchesNoRawhide,
   isFedoraBranch,
   isEPELBranch,
   localBranches,
-  pagurePkgBranches,
+  listBranches,
+  listAllBranches,
+  listRemoteBranches,
+  listRemoteAllBranches,
   mockRoot,
   Branch(..),
   showBranch,
@@ -66,20 +68,33 @@ instance Show AnyBranch where
   show (RelBranch br) = showBranch br
   show (OtherBranch obr) = obr
 
-activeBranches :: [Branch] -> [String] -> [Branch]
-activeBranches active =
+-- FIXME replace with next fedora-releases
+readActiveBranches :: [Branch] -> [String] -> [Branch]
+readActiveBranches active =
   -- newest branch first
   reverseSort . mapMaybe (readActiveBranch active)
+
+readAllBranches :: [String] -> [Branch]
+readAllBranches = reverseSort . mapMaybe readBranch
 
 fedoraBranches :: IO [String] -> IO [Branch]
 fedoraBranches mthd = do
   active <- getActiveBranches
-  activeBranches active <$> mthd
+  readActiveBranches active <$> mthd
 
 fedoraBranchesNoRawhide :: IO [String] -> IO [Branch]
 fedoraBranchesNoRawhide mthd = do
   active <- getActiveBranched
-  activeBranches active <$> mthd
+  readActiveBranches active <$> mthd
+
+listBranches :: Bool -- ^ local
+             -> IO [Branch]
+listBranches = fedoraBranches . localBranches
+
+listAllBranches :: Bool -- ^ local
+                -> IO [Branch]
+listAllBranches local =
+  readAllBranches <$> localBranches local
 
 isFedoraBranch :: Branch -> Bool
 isFedoraBranch (Fedora _) = True
@@ -112,6 +127,14 @@ pagurePkgBranches pkg = do
   return $ either (error' . include project) id res
   where
     include p e = e ++ ":" +-+ p
+
+listRemoteBranches :: String -> IO [Branch]
+listRemoteBranches pkg =
+  fedoraBranches (pagurePkgBranches pkg)
+
+listRemoteAllBranches :: String -> IO [Branch]
+listRemoteAllBranches pkg = do
+  readAllBranches <$> pagurePkgBranches pkg
 
 mockRoot :: Branch -> Maybe String -> String
 mockRoot br march =
@@ -183,6 +206,7 @@ systemBranch = do
       osPrefix "enterprise_linux" = "epel"
       osPrefix s = s
 
+-- FIXME should be NonEmpty Branch
 listOfBranches :: Bool -> Bool -> BranchesReq -> IO [Branch]
 listOfBranches distgit _active (BranchOpt AllBranches) =
   if distgit
