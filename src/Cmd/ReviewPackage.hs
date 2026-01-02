@@ -8,6 +8,7 @@ import Common
 import Common.System
 
 import Data.Char
+import Data.Either (isRight)
 import Data.Tuple.Extra (second)
 import Safe (headDef, headMay, tailSafe)
 import SelectRPMs (selectDefault, Yes(No))
@@ -41,11 +42,15 @@ reviewPackage full (Just pkgbug) = do
         else Left pkgbug
   (bugs,session) <- bugsSession $
           case epkgbid of
-            Right bid -> packageReview .&&. statusNewAssigned .&&. bugIdIs bid
+            Right bid -> packageReview .&&. bugIdIs bid
             Left pkg -> pkgReviews pkg .&&. statusNewAssigned
   case bugs of
     [bug] -> do
       putReviewBug False bug
+      when (isRight epkgbid) $
+        unless (bugStatus bug `elem` ["NEW", "ASSIGNED"]) $ do
+        putStrLn "Warning: review is past NEW/ASSIGNED state!"
+        promptEnter "Press Enter to continue anyway"
       let bid = bugId bug
           pkg = reviewBugToPackage bug
       if not full

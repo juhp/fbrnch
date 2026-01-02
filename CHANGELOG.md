@@ -25,6 +25,7 @@
 - 'review-package': for licensecheck find build source dir & use SPDX shortnames
 - 'review-package': ignore error for non-zero diff
 - 'review-package': download upstream with spectool and prep if not building
+- 'review-package': prompt if bugid review not in NEW/ASSIGNED state
 - 'scratch': exclude i386 as i686
 - 'switch': add --stash
 - 'update-sources': do sanity prep in a tmpdir to avoid any ongoing build
