@@ -20,7 +20,6 @@ module Koji (
   kojiWaitRepoNVR,
   kojiWaitRepoNVRs,
   kojiWaitRepo,
-  kojiWatchParentTask,
   kojiWatchTask,
   kojiWaitTask,
   putTaskinfoUrl,
@@ -37,9 +36,12 @@ import Data.Char (isDigit)
 
 import qualified Data.ByteString.Lazy.Char8 as B
 import Control.Concurrent (threadDelay)
+import Data.Either.Extra (eitherToMaybe)
 import Data.Fixed (Micro)
 import qualified Data.Map.Strict as M
+import Data.RPM (dropArch)
 import Data.RPM.NVR (NVR, maybeNVR)
+import Data.RPM.NVRA (maybeNVRA)
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Time.LocalTime
@@ -191,64 +193,54 @@ showTaskState state =
     TaskFree -> "free"
     TaskOpen -> "open"
     TaskClosed -> "closed"
-    TaskCanceled -> "canceled"
+    TaskCanceled -> "Canceled"
     TaskAssigned -> "assigned"
-    TaskFailed -> "failed"
+    TaskFailed -> "FAILED"
 
--- FIXME use Arch type
 data TaskStatus a =
-  -- taskid arch method state
-  TaskStatus { tsId :: Int
-             , tsArch :: String
+  TaskStatus { tsId :: Int -- FIXME should be TaskID
+             , tsArch :: String -- FIXME use Arch type
              , tsMethod :: String
+             , tsNVR :: NVR
              , tsState :: a}
 
 readTaskStatus :: Struct -> Maybe (TaskStatus TaskState)
 readTaskStatus st = do
   tid <- lookupStruct "id" st
   arch <- lookupStruct "arch" st
+  nvr <- eitherToMaybe $ kojiTaskRequestNVRTag st
   method <- lookupStruct "method" st
   state <- readTaskState <$> lookupStruct "state" st
-  return $ TaskStatus tid arch method state
+  return $ TaskStatus tid arch method nvr state
 
--- FIXME print NVR and tag
--- FIXME handle buildArch task correctly
 -- FIXME return failures
 kojiWatchBuildTask :: String -> TaskID -> IO ()
-kojiWatchBuildTask hub parent = do
+kojiWatchBuildTask hub taskid = do
   current <- getChildrenTasks
   tz <- getCurrentTimeZone
   if null current
     then do
-    mstate <- kojiGetTaskState hub parent
+    mstate <- kojiGetTaskState hub taskid
     case mstate of
       Just state ->
-        when (state `elem` openTaskStates) $ do
-        threadDelaySeconds 59
-        kojiWatchBuildTask hub parent
+        if state `elem` openTaskStates
+        then do
+          threadDelaySeconds 59
+          kojiWatchBuildTask hub taskid
+        else do
+          putStrLn $ displayID taskid +-+ "is" +-+ showTaskState state
       Nothing -> do
-        mtaskinfo <- kojiGetTaskInfo hub parent
-        when (isNothing mtaskinfo) $
-          error' $ "no taskinfo for " ++ show parent
-        kojiWatchBuildTask hub parent
+        error' $ "No state for task" +-+ displayID taskid
     else do
     mapM_ (printTaskState tz showTaskState) current
     when (any (\t -> tsState t `elem` openTaskStates) current) $
       loopWatch tz current
-  mstate <- kojiGetTaskState hub parent
-  case mstate of
-    Just state ->
-      (if state == TaskClosed then putStrLn else error') $
-      "Build Task" +-+ displayID parent +-+ showTaskState state
-    Nothing ->
-      error' $ "State not found for task" +-+ displayID parent
     where
       getChildrenTasks =
-        -- True = request
-        sortOn tsId . mapMaybe readTaskStatus <$> kojiGetTaskChildren hub parent False
+        sortOn tsId . mapMaybe readTaskStatus <$> kojiGetTaskChildren hub taskid True
 
       printTaskState tz render ts =
-        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ tsMethod ts +-+ tsArch ts ++ ":" +-+ render (tsState ts)
+        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ tsMethod ts +-+ tsArch ts +-+ '(' : showNVR (tsNVR ts) ++ "):" +-+ render (tsState ts)
 
       loopWatch tz previous = do
         current <- getChildrenTasks
@@ -271,33 +263,68 @@ kojiWatchBuildTask hub parent = do
           let change = maybe "" (\s -> showTaskState s +-+ "->") mold +-+ showTaskState new
           in printTaskState tz id $ ts {tsState = change}
 
-      -- taskOpen struct =
-      --   let mstate = readTaskState <$> lookupStruct "state" struct
-      --   in
-      --     case mstate of
-      --       Nothing -> True
-      --       Just st -> st `elem` openTaskStates
+kojiDoWatchTask :: String -> TaskID -> IO (String, TaskState) -- method
+kojiDoWatchTask hub taskid = do
+  mtaskinfo <- kojiGetTaskInfo hub taskid
+  case mtaskinfo of
+    Nothing -> error' $ "no taskinfo for task" +-+ displayID taskid
+    Just taskinfo -> do
+      case kojiTaskRequestNVRTag taskinfo of
+        Left pkgtag -> putStrLn $ pkgtag
+        Right nvr -> putStrLn $ showNVR nvr
+      case lookupStruct "method" taskinfo of
+        Nothing -> error' $ "No method for task" +-+ displayID taskid
+        Just method -> do
+          state <- do
+            when (method == "build") $
+              kojiWatchBuildTask hub taskid
+            kojiWatchSingleTask
+          putStrLn $
+            method +-+ "task" +-+ displayID taskid +-+ showTaskState state
+          return (method,state)
+          where
+            kojiWatchSingleTask = do
+              mstate <- kojiGetTaskState hub taskid
+              case mstate of
+                Nothing -> error' $ "No state for task" +-+ displayID taskid
+                Just state -> do
+                  tz <- getCurrentTimeZone
+                  when (state `elem` openTaskStates) $
+                    logSay tz $
+                    displayID taskid +-+ method ++ ":" +-+ showTaskState state
+                  loopWatchSingle tz state
 
+            loopWatchSingle tz state =
+              if state `elem` openTaskStates
+              then do
+                threadDelaySeconds 30
+                mstate <- kojiGetTaskState hub taskid
+                case mstate of
+                  Nothing -> error' $ "No state for task" +-+ displayID taskid
+                  Just newstate -> do
+                    when (newstate /= state) $
+                      logSay tz $
+                      '(' : displayID taskid ++ ")" +-+ method ++ ":" +-+ showTaskState state +-+ "->" +-+ showTaskState newstate
+                    loopWatchSingle tz newstate
+              else return state
+
+-- FIXME print target tag
 kojiWatchTask :: TaskID -> IO ()
 kojiWatchTask task = do
   mprofile <- getKojiProfile
   -- (2026) seeing frequent timeouts for each build (every few minutes)
   hub <- getKojiProfileHub' mprofile
-  kojiWatchBuildTask hub task
-  mst <- kojiGetTaskState hub task
-  case mst of
-    Just TaskClosed -> return ()
-    Just TaskFailed -> do
-      whenJustM (findExecutable "koji-tool") $ \kojitool -> do
-        cmdLog_ kojitool ["tasks", "--hub", hub, "--children", displayID task, "--tail", "-s", "fail"]
-        putTaskinfoUrl hub task
-      error' "Task failed!"
-    Just TaskCanceled -> return ()
-    _ -> kojiWatchTask task
+  (method,state) <- kojiDoWatchTask hub task
+  when (state == TaskFailed) $ do
+    whenJustM (findExecutable "koji-tool") $ \kojitool -> do
+      cmdLog_ kojitool ["tasks", "--hub", hub, "--children", displayID task, "--tail", "-s", "fail"]
+      putTaskinfoUrl hub task
+  (if state == TaskClosed then putStrLn else error') $
+    method +-+ "task" +-+ showTaskState state
 
 putTaskinfoUrl :: String -> TaskID -> IO ()
 putTaskinfoUrl hub tid =
-  putStrLn $ dropSuffix "hub" hub +/+ "taskinfo?taskID=" ++ show (getID tid)
+  putStrLn $ dropSuffix "hub" hub +/+ "taskinfo?taskID=" ++ displayID tid
 
 -- FIXME during network disconnection:
 -- Connection timed out: retrying
@@ -500,3 +527,35 @@ promptTags numtags txt = do
         if lower ans `elem` ["0", "q", "quit", "no"]
         then error' "aborting"
         else promptTags numtags txt
+
+-- modified from koji-tool Utils
+-- FIXME better to handle build and buildArch separately
+-- FIXME in theory could read tagId for buildArch
+kojiTaskRequestNVRTag :: Struct -> Either String NVR
+kojiTaskRequestNVRTag task =
+  case lookupStruct "request" task of
+    Just req@(source:rest) ->
+      case getString source of
+        -- non-build task
+        Nothing -> Left $ unwords $ map showValue $ take 2 req
+        Just src ->
+          case maybeNVRA src of
+            Just nvra | not (".git#" `isInfixOf` src) ->
+                        Right $ dropArch nvra
+            _ -> let base = takeBaseName src
+                     tag =
+                       case headMay rest >>= getString of
+                         Nothing -> ""
+                         Just t -> t
+                 in
+              Left $
+              -- fedora-ci_fc87dcd7db694cdfac703cf5af128a72_c1f53c859616fdbf40811058b60bebe2930e3271_0;forks:petersen:rpms:grub2.f38.src.rpm
+              (if "fedora-ci_" `isPrefixOf` base
+               then takeWhileEnd (/= ':') $ dropPrefix ";" $ dropWhile (/= ';') base
+               else base) +-+ tag
+    _ -> error' "could not determine package from build request"
+  where
+    showValue :: Value -> String
+    showValue (ValueString cs) = cs
+    showValue (ValueInt i) = show i
+    showValue val = show val

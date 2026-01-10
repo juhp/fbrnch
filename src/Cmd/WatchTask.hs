@@ -1,5 +1,5 @@
 module Cmd.WatchTask (
-  watchTaskCmd,
+  watchTaskCmd
   )
 where
 
@@ -16,5 +16,5 @@ import Koji
 
 -- FIXME support watching buildArch
 watchTaskCmd :: Natural -> IO ()
-watchTaskCmd taskid = do
-  kojiWatchParentTask fedoraHub (TaskId $ fromIntegral taskid)
+watchTaskCmd taskid =
+  kojiWatchTask (TaskId $ fromIntegral taskid)
