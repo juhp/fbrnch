@@ -90,6 +90,7 @@ executable fbrnch
                        Cmd.Update
                        Cmd.UpdateReview
                        Cmd.WaitRepo
+                       Cmd.WatchTask
                        Common
                        Common.System
                        Common.Text
@@ -117,6 +118,7 @@ executable fbrnch
                        bugzilla-redhat >= 1.0.1,
                        bytestring,
                        config-ini,
+                       containers,
                        copr-api >= 0.2,
                        directory >= 1.2.3,
                        either,

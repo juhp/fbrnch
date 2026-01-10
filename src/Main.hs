@@ -55,6 +55,7 @@ import Cmd.Unpushed
 import Cmd.Update
 import Cmd.UpdateReview
 import Cmd.WaitRepo
+import Cmd.WatchTask
 
 import Bodhi (UpdateType(..), UpdateSeverity(..), UpdateNotes(..))
 import Branches
@@ -168,6 +169,9 @@ main = do
       <*> waitfetchOpt
       <*> optional (sidetagTargetOpt Nothing)
       <*> branchesPackages
+    , Subcommand "watchtask" "Watch a koji build task" $
+      watchTaskCmd
+      <$> argumentWith auto "TASKID"
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd
       <$> dryrunOpt "Dry run: do not build"

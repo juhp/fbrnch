@@ -20,6 +20,7 @@ module Koji (
   kojiWaitRepoNVR,
   kojiWaitRepoNVRs,
   kojiWaitRepo,
+  kojiWatchParentTask,
   kojiWatchTask,
   kojiWaitTask,
   putTaskinfoUrl,
@@ -35,7 +36,9 @@ module Koji (
 import Data.Char (isDigit)
 
 import qualified Data.ByteString.Lazy.Char8 as B
+import Control.Concurrent (threadDelay)
 import Data.Fixed (Micro)
+import qualified Data.Map.Strict as M
 import Data.RPM.NVR (NVR, maybeNVR)
 import Data.Time.Clock
 import Data.Time.Format
@@ -50,7 +53,7 @@ import Say (sayString)
 import SimplePrompt (promptEnter, promptNonEmpty, yesNo)
 import System.Environment (lookupEnv)
 import System.Exit
-import System.Process.Typed
+import System.Process.Typed (proc, readProcessStdout)
 import System.Timeout (timeout)
 import System.Time.Extra (sleep)
 
@@ -174,18 +177,113 @@ kojiProfileOpt :: Maybe String -> [String]
 kojiProfileOpt Nothing = []
 kojiProfileOpt (Just p) = ["--profile", p]
 
--- FIXME filter/simplify output
--- FIXME implement native watchTask
+-- # Native Watch Task
+
+threadDelaySeconds :: Int -> IO ()
+threadDelaySeconds m =
+  -- convert seconds to microseconds
+  threadDelay (fromEnum (fromIntegral m :: Micro))
+
+-- FIXME import from koji-hs once released
+showTaskState :: TaskState -> String
+showTaskState state =
+  case state of
+    TaskFree -> "free"
+    TaskOpen -> "open"
+    TaskClosed -> "closed"
+    TaskCanceled -> "canceled"
+    TaskAssigned -> "assigned"
+    TaskFailed -> "failed"
+
+-- FIXME use Arch type
+data TaskStatus a =
+  -- taskid arch method state
+  TaskStatus { tsId :: Int
+             , tsArch :: String
+             , tsMethod :: String
+             , tsState :: a}
+
+readTaskStatus :: Struct -> Maybe (TaskStatus TaskState)
+readTaskStatus st = do
+  tid <- lookupStruct "id" st
+  arch <- lookupStruct "arch" st
+  method <- lookupStruct "method" st
+  state <- readTaskState <$> lookupStruct "state" st
+  return $ TaskStatus tid arch method state
+
+-- FIXME print NVR and tag
+-- FIXME handle buildArch task correctly
+-- FIXME return failures
+kojiWatchBuildTask :: String -> TaskID -> IO ()
+kojiWatchBuildTask hub parent = do
+  current <- getChildrenTasks
+  tz <- getCurrentTimeZone
+  if null current
+    then do
+    mstate <- kojiGetTaskState hub parent
+    case mstate of
+      Just state ->
+        when (state `elem` openTaskStates) $ do
+        threadDelaySeconds 59
+        kojiWatchBuildTask hub parent
+      Nothing -> do
+        mtaskinfo <- kojiGetTaskInfo hub parent
+        when (isNothing mtaskinfo) $
+          error' $ "no taskinfo for " ++ show parent
+        kojiWatchBuildTask hub parent
+    else do
+    mapM_ (printTaskState tz showTaskState) current
+    when (any (\t -> tsState t `elem` openTaskStates) current) $
+      loopWatch tz current
+  mstate <- kojiGetTaskState hub parent
+  case mstate of
+    Just state ->
+      (if state == TaskClosed then putStrLn else error') $
+      "Build Task" +-+ displayID parent +-+ showTaskState state
+    Nothing ->
+      error' $ "State not found for task" +-+ displayID parent
+    where
+      getChildrenTasks =
+        -- True = request
+        sortOn tsId . mapMaybe readTaskStatus <$> kojiGetTaskChildren hub parent False
+
+      printTaskState tz render ts =
+        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ tsMethod ts +-+ tsArch ts ++ ":" +-+ render (tsState ts)
+
+      loopWatch tz previous = do
+        current <- getChildrenTasks
+        mapM_ (printTaskChange tz) $ updateStates previous current
+        when (any (\t -> tsState t `elem` openTaskStates) current) $ do
+          threadDelaySeconds 31
+          loopWatch tz current
+
+      updateStates :: [TaskStatus TaskState] -> [TaskStatus TaskState] -> [TaskStatus (Maybe TaskState,TaskState)]
+      updateStates previous current =
+        let old = M.fromList [ (tsId task, tsState task) | task <- previous]
+            addOld ts =
+              let moldState = M.lookup (tsId ts) old
+              in ts {tsState = (moldState, tsState ts)}
+        in map addOld current
+
+      printTaskChange tz ts =
+        let (mold,new) = tsState ts in
+          unless (mold == Just new) $
+          let change = maybe "" (\s -> showTaskState s +-+ "->") mold +-+ showTaskState new
+          in printTaskState tz id $ ts {tsState = change}
+
+      -- taskOpen struct =
+      --   let mstate = readTaskState <$> lookupStruct "state" struct
+      --   in
+      --     case mstate of
+      --       Nothing -> True
+      --       Just st -> st `elem` openTaskStates
+
 kojiWatchTask :: TaskID -> IO ()
 kojiWatchTask task = do
   mprofile <- getKojiProfile
-  -- FIXME can error:
-  -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
-  -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
-  -- eg3 [ERROR] koji: ReadTimeout: HTTPSConnectionPool(host='koji.fedoraproject.org', port=443): Read timed out. (read timeout=43200)
-  -- This might error with exit 0 occasionally so we check the taskstate always
-  void $ cmdBool "koji" $ kojiProfileOpt mprofile ++ ["watch-task", displayID task]
+  -- (2026) seeing frequent timeouts for each build (every few minutes)
   hub <- getKojiProfileHub' mprofile
+  kojiWatchBuildTask hub task
   mst <- kojiGetTaskState hub task
   case mst of
     Just TaskClosed -> return ()
