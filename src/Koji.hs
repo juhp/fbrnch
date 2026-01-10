@@ -381,17 +381,17 @@ kojiBuildTarget' hub target = do
 -- FIXME should be NonEmpty
 -- FIXME add back knowntag?
 kojiWaitRepoNVRs :: Bool -> Bool -> String -> [NVR] -> IO ()
-kojiWaitRepoNVRs _ _ _ [] = error' "no NVRs given to wait for"
 kojiWaitRepoNVRs dryrun quiet target nvrs = do
   hub <- getKojiProfileHub
   (buildtag,_desttag) <- kojiBuildTarget' hub target
   unless dryrun $ do
-    tz <- getCurrentTimeZone
-    unless quiet $
-      logSay tz $ "Waiting for" +-+ buildtag +-+ "to have" +-+
-      case nvrs of
-        [nvr] -> showNVR nvr
-        _ -> "builds"
+    unless quiet $ do
+      tz <- getCurrentTimeZone
+      logSay tz $ "Waiting for" +-+ buildtag +-+
+        case nvrs of
+          [] -> ""
+          [nvr] -> "to have" +-+ showNVR nvr
+          _ -> "to have builds"
     mprofile <- getKojiProfile
     -- FIXME use knowntag to quieten output: for override outputs, eg
     -- "nvr ghc-rpm-macros-2.7.5-1.fc41 is not current in tag f41-build
@@ -405,15 +405,8 @@ kojiWaitRepoNVR dryrun quiet target nvr =
 
 -- FIXME display more status/age info
 kojiWaitRepo :: Bool -> Bool -> String -> IO ()
-kojiWaitRepo dryrun quiet target = do
-  hub <- getKojiProfileHub
-  (buildtag,_desttag) <- kojiBuildTarget' hub target
-  tz <- getCurrentTimeZone
-  unless quiet $
-    logSay tz $ "Waiting for" +-+ buildtag
-  unless dryrun $ do
-    mprofile <- getKojiProfile
-    void $ timeIO $ cmd "koji" $ kojiProfileOpt mprofile ++ ["wait-repo", "--request", "--quiet", buildtag]
+kojiWaitRepo dryrun quiet target =
+  kojiWaitRepoNVRs dryrun quiet target []
 
 kojiTagArchs :: String -> IO [String]
 kojiTagArchs tag = do
