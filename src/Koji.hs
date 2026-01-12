@@ -200,6 +200,7 @@ showTaskState state =
 data TaskStatus a =
   TaskStatus { tsId :: Int -- FIXME should be TaskID
              , tsArch :: String -- FIXME use Arch type
+             , tsHostId :: Int
              , tsMethod :: String
              , tsNVR :: NVR
              , tsState :: a}
@@ -208,10 +209,11 @@ readTaskStatus :: Struct -> Maybe (TaskStatus TaskState)
 readTaskStatus st = do
   tid <- lookupStruct "id" st
   arch <- lookupStruct "arch" st
+  hostid <- lookupStruct "host_id" st
   nvr <- eitherToMaybe $ kojiTaskRequestNVRTag st
   method <- lookupStruct "method" st
   state <- readTaskState <$> lookupStruct "state" st
-  return $ TaskStatus tid arch method nvr state
+  return $ TaskStatus tid arch hostid method nvr state
 
 -- FIXME return failures
 kojiWatchBuildTask :: String -> TaskID -> IO ()
@@ -232,13 +234,22 @@ kojiWatchBuildTask hub taskid = do
       Nothing -> do
         error' $ "No state for task" +-+ displayID taskid
     else do
-    mapM_ (printTaskState tz showTaskState) current
+    mapM_ (printInitialState tz) current
     when (any (\t -> tsState t `elem` openTaskStates) current) $
       loopWatch tz current
     where
       getChildrenTasks =
         -- fbrnch: user error (502 Bad Gateway)
         sortOn tsId . mapMaybe readTaskStatus <$> maybeTimeout 25 (kojiGetTaskChildren hub taskid True)
+
+      printHost ts = do
+        host <- Koji.getHost hub (Koji.InfoID $ tsHostId ts) Nothing
+        whenJust (lookupStruct "name" host) $ \name ->
+          sayString $ tsArch ts ++ ":" +-+ name
+
+      printInitialState tz ts = do
+        printHost ts
+        printTaskState tz showTaskState ts
 
       printTaskState tz render ts =
         logSay tz $ '(' : show (tsId ts) ++ ")" +-+ tsMethod ts +-+ tsArch ts +-+ '(' : showNVR (tsNVR ts) ++ "):" +-+ render (tsState ts)
@@ -260,9 +271,12 @@ kojiWatchBuildTask hub taskid = do
 
       printTaskChange tz ts =
         let (mold,new) = tsState ts in
-          unless (mold == Just new) $
-          let change = maybe "" (\s -> showTaskState s +-+ "->") mold +-+ showTaskState new
-          in printTaskState tz id $ ts {tsState = change}
+          do
+            when (isNothing mold) $
+              printHost ts
+            unless (mold == Just new) $
+              let change = maybe "" (\s -> showTaskState s +-+ "->") mold +-+ showTaskState new
+              in printTaskState tz id $ ts {tsState = change}
 
 kojiDoWatchTask :: String -> TaskID -> IO (String, TaskState) -- method
 kojiDoWatchTask hub taskid = do
