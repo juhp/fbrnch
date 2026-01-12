@@ -68,6 +68,7 @@ timeIOHelper msg action = do
       let fmtstr
             | dur < 60 = "%s sec"
             | dur < 3600 = "%m min %S sec"
+            | dur < 7200 = "%h hour %M min"
             | otherwise = "%h hours %M min"
       in formatTime defaultTimeLocale fmtstr dur
 #else
