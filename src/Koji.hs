@@ -237,7 +237,8 @@ kojiWatchBuildTask hub taskid = do
       loopWatch tz current
     where
       getChildrenTasks =
-        sortOn tsId . mapMaybe readTaskStatus <$> kojiGetTaskChildren hub taskid True
+        -- fbrnch: user error (502 Bad Gateway)
+        sortOn tsId . mapMaybe readTaskStatus <$> maybeTimeout 25 (kojiGetTaskChildren hub taskid True)
 
       printTaskState tz render ts =
         logSay tz $ '(' : show (tsId ts) ++ ")" +-+ tsMethod ts +-+ tsArch ts +-+ '(' : showNVR (tsNVR ts) ++ "):" +-+ render (tsState ts)
