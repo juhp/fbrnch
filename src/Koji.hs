@@ -234,7 +234,8 @@ kojiWatchBuildTask hub taskid = do
       Nothing -> do
         error' $ "No state for task" +-+ displayID taskid
     else do
-    mapM_ (printInitialState tz) current
+    mapM_ printHost current
+    mapM_ (printTaskState tz showTaskState) current
     when (any (\t -> tsState t `elem` openTaskStates) current) $
       loopWatch tz current
     where
@@ -242,17 +243,23 @@ kojiWatchBuildTask hub taskid = do
         -- fbrnch: user error (502 Bad Gateway)
         sortOn tsId . mapMaybe readTaskStatus <$> maybeTimeout 25 (kojiGetTaskChildren hub taskid True)
 
+      padArch ts suffix =
+        let arch = tsArch ts
+            pad = 7 - length arch
+        in arch ++ suffix ++ replicate pad ' '
+
+      -- FIXME create a host cache
       printHost ts = do
         host <- Koji.getHost hub (Koji.InfoID $ tsHostId ts) Nothing
         whenJust (lookupStruct "name" host) $ \name ->
-          sayString $ tsArch ts ++ ":" +-+ name
-
-      printInitialState tz ts = do
-        printHost ts
-        printTaskState tz showTaskState ts
+          sayString $ padArch ts ": " ++ name
 
       printTaskState tz render ts =
-        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ tsMethod ts +-+ tsArch ts +-+ '(' : showNVR (tsNVR ts) ++ "):" +-+ render (tsState ts)
+        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ maybeMethod +-+ padArch ts " " ++ '(' : showNVR (tsNVR ts) ++ "):" +-+ render (tsState ts)
+        where
+          maybeMethod =
+            let method = tsMethod ts
+            in if method == "buildArch" then "" else method
 
       loopWatch tz previous = do
         current <- getChildrenTasks
