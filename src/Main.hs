@@ -171,7 +171,8 @@ main = do
       <*> branchesPackages
     , Subcommand "watchtask" "Watch a koji build task" $
       watchTaskCmd
-      <$> argumentWith auto "TASKID"
+      <$> switchLongWith "progress" "Use koji-tool progress"
+      <*> optional (argumentWith auto "TASKID")
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd
       <$> dryrunOpt "Dry run: do not build"
