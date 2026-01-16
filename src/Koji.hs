@@ -203,7 +203,7 @@ data TaskStatus a =
              , tsArch :: String -- FIXME use Arch type
              , tsHostId :: Int
              , tsMethod :: String
-             , tsNVR :: NVR
+             , tsNVR :: Maybe NVR
              , tsState :: a}
 
 readTaskStatus :: Struct -> Maybe (TaskStatus TaskState)
@@ -211,10 +211,10 @@ readTaskStatus st = do
   tid <- lookupStruct "id" st
   arch <- lookupStruct "arch" st
   hostid <- lookupStruct "host_id" st
-  nvr <- eitherToMaybe $ kojiTaskRequestNVRTag st
+  let mnvr = eitherToMaybe $ kojiTaskRequestNVRTag st
   method <- lookupStruct "method" st
   state <- readTaskState <$> lookupStruct "state" st
-  return $ TaskStatus tid arch hostid method nvr state
+  return $ TaskStatus tid arch hostid method mnvr state
 
 -- FIXME return failures
 kojiWatchBuildTask :: String -> TaskID -> IO ()
@@ -250,13 +250,14 @@ kojiWatchBuildTask hub taskid = do
         in arch ++ suffix ++ replicate pad ' '
 
       -- FIXME create a host cache
-      printHost ts = do
+      printHost ts =
+        unless (tsMethod ts == "buildSRPMFromSCM") $ do
         host <- Koji.getHost hub (Koji.InfoID $ tsHostId ts) Nothing
         whenJust (lookupStruct "name" host) $ \name ->
           sayString $ padArch ts ": " ++ name
 
       printTaskState tz render ts =
-        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ maybeMethod +-+ padArch ts " " ++ '(' : showNVR (tsNVR ts) ++ "):" +-+ render (tsState ts)
+        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ maybeMethod +-+ padArch ts " " ++ maybe "" (\nvr -> '(' : showNVR nvr ++ ")") (tsNVR ts) ++ ":" +-+ render (tsState ts)
         where
           maybeMethod =
             let method = tsMethod ts
@@ -559,16 +560,13 @@ kojiTaskRequestNVRTag task =
             Just nvra | not (".git#" `isInfixOf` src) ->
                         Right $ dropArch nvra
             _ -> let base = takeBaseName src
-                     tag =
-                       case headMay rest >>= getString of
-                         Nothing -> ""
-                         Just t -> t
+                     mtag = headMay rest >>= getString
                  in
               Left $
               -- fedora-ci_fc87dcd7db694cdfac703cf5af128a72_c1f53c859616fdbf40811058b60bebe2930e3271_0;forks:petersen:rpms:grub2.f38.src.rpm
               (if "fedora-ci_" `isPrefixOf` base
                then takeWhileEnd (/= ':') $ dropPrefix ";" $ dropWhile (/= ';') base
-               else base) +-+ tag
+               else base) +-+ fromMaybe "" mtag
     _ -> error' "could not determine package from build request"
   where
     showValue :: Value -> String
