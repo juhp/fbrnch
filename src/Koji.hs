@@ -36,6 +36,7 @@ import Data.Char (isDigit)
 
 import qualified Data.ByteString.Lazy.Char8 as B
 import Control.Concurrent (threadDelay)
+import Control.Exception.Extra (retry)
 import Data.Either.Extra (eitherToMaybe)
 import Data.Fixed (Micro)
 import qualified Data.Map.Strict as M
@@ -241,7 +242,7 @@ kojiWatchBuildTask hub taskid = do
     where
       getChildrenTasks =
         -- fbrnch: user error (502 Bad Gateway)
-        sortOn tsId . mapMaybe readTaskStatus <$> maybeTimeout 25 (kojiGetTaskChildren hub taskid True)
+        sortOn tsId . mapMaybe readTaskStatus <$> retry 2 (kojiGetTaskChildren hub taskid True)
 
       padArch ts suffix =
         let arch = tsArch ts
