@@ -217,58 +217,65 @@ readTaskStatus st = do
   return $ TaskStatus tid arch hostid method mnvr state
 
 -- FIXME return failures
-kojiWatchBuildTask :: String -> TaskID -> IO ()
-kojiWatchBuildTask hub taskid = do
+kojiWatchBuildTask :: String -> TimeZone -> TaskID -> TaskState -> IO ()
+kojiWatchBuildTask hub tz taskid state = do
   current <- getChildrenTasks
-  tz <- getCurrentTimeZone
   if null current
+    then
+    if state `elem` openTaskStates
     then do
-    mstate <- kojiGetTaskState hub taskid
-    case mstate of
-      Just state ->
-        if state `elem` openTaskStates
-        then do
-          threadDelaySeconds 59
-          kojiWatchBuildTask hub taskid
-        else do
-          putStrLn $ displayID taskid +-+ "is" +-+ showTaskState state
-      Nothing -> do
-        error' $ "No state for task" +-+ displayID taskid
+      threadDelaySeconds 59
+      mstate <- kojiGetTaskState hub taskid
+      case mstate of
+        Nothing -> error' $ "No state for task" +-+ displayID taskid
+        Just newstate -> kojiWatchBuildTask hub tz taskid newstate
+    else putStrLn $ displayID taskid +-+ "is" +-+ showTaskState state
     else do
     mapM_ printHost current
-    mapM_ (printTaskState tz showTaskState) current
+    mapM_ (printTaskState showTaskState) current
     when (any (\t -> tsState t `elem` openTaskStates) current) $
-      loopWatch tz current
+      loopWatch current
     where
       getChildrenTasks =
         -- fbrnch: user error (502 Bad Gateway)
         sortOn tsId . mapMaybe readTaskStatus <$> retry 2 (kojiGetTaskChildren hub taskid True)
 
-      padArch ts suffix =
-        let arch = tsArch ts
-            pad = 7 - length arch
-        in arch ++ suffix ++ replicate pad ' '
+      pad txt suffix =
+        let spaces = 7 - length txt
+        in txt ++ suffix ++ replicate spaces ' '
 
       -- FIXME create a host cache
-      printHost ts =
-        unless (tsMethod ts == "buildSRPMFromSCM") $ do
+      printHost ts = do
+        let txt =
+              let method = tsMethod ts in
+                if method == "buildArch"
+                then tsArch ts
+                else
+                  if "SRPM" `isInfixOf` method
+                  then "src"
+                  else method
         host <- Koji.getHost hub (Koji.InfoID $ tsHostId ts) Nothing
         whenJust (lookupStruct "name" host) $ \name ->
-          sayString $ padArch ts ": " ++ name
+          sayString $ pad txt ": " ++ name
 
-      printTaskState tz render ts =
-        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ maybeMethod +-+ padArch ts " " ++ maybe "" (\nvr -> '(' : showNVR nvr ++ ")") (tsNVR ts) ++ ":" +-+ render (tsState ts)
+      printTaskState render ts =
+        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ maybeMethod +-+ pad (tsArch ts) " " ++ maybe "" (\nvr -> '(' : showNVR nvr ++ ")") (tsNVR ts) ++ ":" +-+ render (tsState ts)
         where
           maybeMethod =
             let method = tsMethod ts
             in if method == "buildArch" then "" else method
 
-      loopWatch tz previous = do
+      loopWatch previous = do
         current <- getChildrenTasks
-        mapM_ (printTaskChange tz) $ updateStates previous current
-        when (any (\t -> tsState t `elem` openTaskStates) current) $ do
+        mapM_ printTaskChange $ updateStates previous current
+        if any (\t -> tsState t `elem` openTaskStates) current
+          then do
           threadDelaySeconds 31
-          loopWatch tz current
+          loopWatch current
+          else
+          let builds = length $ filter (("buildArch" `isInfixOf`) . tsMethod) current in
+            when (builds < 1) $
+            loopWatch current
 
       updateStates :: [TaskStatus TaskState] -> [TaskStatus TaskState] -> [TaskStatus (Maybe TaskState,TaskState)]
       updateStates previous current =
@@ -278,59 +285,55 @@ kojiWatchBuildTask hub taskid = do
               in ts {tsState = (moldState, tsState ts)}
         in map addOld current
 
-      printTaskChange tz ts =
+      printTaskChange ts =
         let (mold,new) = tsState ts in
           do
             when (isNothing mold) $
               printHost ts
             unless (mold == Just new) $
               let change = maybe "" (\s -> showTaskState s +-+ "->") mold +-+ showTaskState new
-              in printTaskState tz id $ ts {tsState = change}
+              in printTaskState id $ ts {tsState = change}
 
-kojiDoWatchTask :: String -> TaskID -> IO (String, TaskState) -- method
-kojiDoWatchTask hub taskid = do
+kojiWatchTask1 :: String -> TaskID -> IO (String, TaskState) -- method
+kojiWatchTask1 hub taskid = do
   mtaskinfo <- kojiGetTaskInfo hub taskid
   case mtaskinfo of
     Nothing -> error' $ "no taskinfo for task" +-+ displayID taskid
     Just taskinfo -> do
       case kojiTaskRequestNVRTag taskinfo of
-        Left pkgtag -> putStrLn $ pkgtag
+        Left pkgtag -> putStrLn pkgtag
         Right nvr -> putStrLn $ showNVR nvr
-      case lookupStruct "method" taskinfo of
-        Nothing -> error' $ "No method for task" +-+ displayID taskid
-        Just method -> do
-          state <- do
-            when (method == "build") $
-              kojiWatchBuildTask hub taskid
-            kojiWatchSingleTask
-          putStrLn $
-            method +-+ "task" +-+ displayID taskid +-+ showTaskState state
-          return (method,state)
-          where
-            kojiWatchSingleTask = do
-              mstate <- kojiGetTaskState hub taskid
-              case mstate of
-                Nothing -> error' $ "No state for task" +-+ displayID taskid
-                Just state -> do
-                  tz <- getCurrentTimeZone
-                  when (state `elem` openTaskStates) $
+      let mstate = getTaskState taskinfo
+      case mstate of
+        Nothing -> error' $ "No state for task" +-+ displayID taskid
+        Just state -> do
+          tz <- getCurrentTimeZone
+          case lookupStruct "method" taskinfo of
+            Nothing -> error' $ "No method for task" +-+ displayID taskid
+            Just method -> do
+              when (state `elem` openTaskStates) $
+                logSay tz $
+                displayID taskid +-+ method ++ ":" +-+ showTaskState state
+              kojiDoWatchTask tz method state
+        where
+          kojiDoWatchTask tz method oldstate = do
+            if method == "build" && oldstate /= TaskFree
+              then kojiWatchBuildTask hub tz taskid oldstate
+              else threadDelaySeconds 30
+            mstate <- kojiGetTaskState hub taskid
+            case mstate of
+              Nothing -> error' $ "No state for task" +-+ displayID taskid
+              Just state -> do
+                when (state /= oldstate) $ do
+                  logSay tz $
+                    displayID taskid +-+ method ++ ":" +-+ showTaskState oldstate +-+ "->" +-+ showTaskState state
+                if state `elem` openTaskStates
+                  then kojiDoWatchTask tz method state
+                  else do
+                  unless (state `elem` openTaskStates) $
                     logSay tz $
                     displayID taskid +-+ method ++ ":" +-+ showTaskState state
-                  loopWatchSingle tz state
-
-            loopWatchSingle tz state =
-              if state `elem` openTaskStates
-              then do
-                threadDelaySeconds 30
-                mstate <- kojiGetTaskState hub taskid
-                case mstate of
-                  Nothing -> error' $ "No state for task" +-+ displayID taskid
-                  Just newstate -> do
-                    when (newstate /= state) $
-                      logSay tz $
-                      '(' : displayID taskid ++ ")" +-+ method ++ ":" +-+ showTaskState state +-+ "->" +-+ showTaskState newstate
-                    loopWatchSingle tz newstate
-              else return state
+                  return (method,state)
 
 -- FIXME print target tag
 kojiWatchTask :: TaskID -> IO ()
@@ -338,7 +341,7 @@ kojiWatchTask task = do
   mprofile <- getKojiProfile
   -- (2026) seeing frequent timeouts for each build (every few minutes)
   hub <- getKojiProfileHub' mprofile
-  (method,state) <- kojiDoWatchTask hub task
+  (method,state) <- kojiWatchTask1 hub task
   when (state == TaskFailed) $ do
     whenJustM (findExecutable "koji-tool") $ \kojitool -> do
       cmdLog_ kojitool ["tasks", "--hub", hub, "--children", displayID task, "--tail", "-s", "fail"]
