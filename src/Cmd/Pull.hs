@@ -4,6 +4,8 @@ module Cmd.Pull (
   )
 where
 
+import Control.Exception.Extra (retry)
+
 import Branches
 import Common
 --import Common.System (error')
@@ -45,6 +47,7 @@ pullPkgs pullopt (breq,args) =
           current <- getReleaseBranchWarn
           unless (breq == Branches [] || RelBranch current == br) $
             gitSwitchBranch br
-          if pullopt == Just PullRebase
+          retry 2 $
+            if pullopt == Just PullRebase
             then git_ "pull" ["origin"]
             else gitMergeOrigin current
