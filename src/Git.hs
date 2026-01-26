@@ -105,11 +105,18 @@ getNewerBranch pkg br = do
 gitMergeOrigin :: Branch -> IO ()
 gitMergeOrigin br = do
   (mancestor,commits) <- gitMergeable br br
-  when (mancestor == Just True) $
-    unless (null commits) $ do
-    pull <- git "pull" []
-    unless ("Already up to date." `isPrefixOf` pull) $
-      putStrLn pull
+  case mancestor of
+    Just ahead ->
+      when ahead $
+      unless (null commits) $ do
+      pull <- git "pull" ["origin", showBranch br]
+      unless ("Already up to date." `isPrefixOf` pull) $
+        putStrLn pull
+    Nothing -> do
+      displayHdrCommits "Missing origin commit" True commits
+      yes <- yesNo "Do you want to pull --rebase"
+      when yes $
+        git_ "pull" ["--rebase"]
 
 -- FIXME maybe require local branch already here
 mergeable :: Package -> Branch -> Maybe Branch -> IO (Maybe Bool,[Commit],Branch)
