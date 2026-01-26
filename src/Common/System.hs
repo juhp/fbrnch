@@ -42,7 +42,7 @@ import System.Directory
 import System.FilePath
 import System.IO
 
-import Control.Exception
+import Control.Exception (bracket)
 import Data.Time.Clock
 
 #if !MIN_VERSION_simple_cmd(0,2,5)
