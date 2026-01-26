@@ -61,27 +61,28 @@ gitBool c args =
 -- Just True => ancestor
 -- Nothing => neither ancestor
 -- Just False => reverse ancestor
+-- returns commits ahead of origin branch
 gitMergeable :: Branch -> Branch -> IO (Maybe Bool,[Commit])
 gitMergeable target br = do
-  let ref = "origin/" ++ showBranch br
+  let originbr = "origin/" ++ showBranch br
   mancestor <- do
-    ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", ref]
+    ancestor <- gitBool "merge-base" ["--is-ancestor", "HEAD", originbr]
     if ancestor
       then return $ Just True
       else do
-      revancestor <- gitBool "merge-base" ["--is-ancestor", ref, "HEAD"]
+      revancestor <- gitBool "merge-base" ["--is-ancestor", originbr, "HEAD"]
       if revancestor
         then return $ Just False
         else return Nothing
-  commits <- gitOneLineLog ("HEAD.." ++ ref)
+  commits <- gitOneLineLog ("HEAD.." ++ originbr)
   when (br /= target && null commits && mancestor /= Just True) $
     if mancestor == Just False
       then do
-      diff <- git "diff" [ref]
+      diff <- git "diff" [originbr]
       unless (null diff) $ do
-        putStrLn $ showBranch target +-+ "is ahead of" +-+ ref +-+ "!!"
+        putStrLn $ showBranch target +-+ "is ahead of" +-+ originbr +-+ "!!"
         promptEnter "Press Enter if you want to continue"
-      else putStrLn $ "current branch" +-+ "is diverged from" +-+ ref
+      else putStrLn $ "current branch is diverged from" +-+ originbr
   return (mancestor, commits)
 
 getNewerBranch :: Package -> Branch -> IO (Maybe Branch)
