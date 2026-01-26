@@ -128,7 +128,8 @@ requestPkgBranches quiet multiple mock breq pkg = do
             putStrLn u
             return u
           whenJust mbidsession $ \(bid,session) ->
-            commentBug session bid $ unlines urls
+            commentBug session bid $
+            unlines $ zipWith (\u b -> u +-+ showBranch b) urls newbranches
           return newbranches
   where
     -- doRequestBr :: Bool -> Branch -> IO String
