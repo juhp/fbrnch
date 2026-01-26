@@ -95,7 +95,7 @@ mergeBranch dryrun nofetch build noprompt showall pkg (Just False,unmerged) from
   displayCommits False unmerged
   putNewLn
   unless (null unpushed) $
-    displayHdrCommits "Local commits" showall unpushed
+    displayHdrCommits "Local commit" showall unpushed
   mmerge <-
     if noprompt && null unpushed
     then return Nothing
