@@ -279,9 +279,9 @@ kojiWatchBuildTask hub tz taskid state = do
           then do
           threadDelaySeconds 31
           loopWatch current
-          else
-          let builds = length $ filter (("buildArch" `isInfixOf`) . tsMethod) current in
-            when (builds < 1) $
+          else do
+          pstate <- kojiGetTaskState' hub taskid
+          when (pstate `elem` openTaskStates) $
             loopWatch current
 
       updateStates :: [TaskStatus TaskState] -> [TaskStatus TaskState] -> [TaskStatus (Maybe TaskState,TaskState)]
