@@ -216,6 +216,15 @@ readTaskStatus st = do
   state <- readTaskState <$> lookupStruct "state" st
   return $ TaskStatus tid arch hostid method mnvr state
 
+kojiGetTaskState' :: String -- ^ hub url
+                  -> TaskID
+                  -> IO TaskState
+kojiGetTaskState' hub taskid = do
+  mstate <- retry 2 $ kojiGetTaskState hub taskid
+  case mstate of
+    Nothing -> error' $ "No state for task" +-+ displayID taskid
+    Just state -> return state
+
 -- FIXME return failures
 kojiWatchBuildTask :: String -> TimeZone -> TaskID -> TaskState -> IO ()
 kojiWatchBuildTask hub tz taskid state = do
@@ -225,10 +234,8 @@ kojiWatchBuildTask hub tz taskid state = do
     if state `elem` openTaskStates
     then do
       threadDelaySeconds 59
-      mstate <- kojiGetTaskState hub taskid
-      case mstate of
-        Nothing -> error' $ "No state for task" +-+ displayID taskid
-        Just newstate -> kojiWatchBuildTask hub tz taskid newstate
+      newstate <- kojiGetTaskState' hub taskid
+      kojiWatchBuildTask hub tz taskid newstate
     else putStrLn $ displayID taskid +-+ "is" +-+ showTaskState state
     else do
     mapM_ printHost current
@@ -320,20 +327,16 @@ kojiWatchTask1 hub taskid = do
             if method == "build" && oldstate /= TaskFree
               then kojiWatchBuildTask hub tz taskid oldstate
               else threadDelaySeconds 30
-            mstate <- kojiGetTaskState hub taskid
-            case mstate of
-              Nothing -> error' $ "No state for task" +-+ displayID taskid
-              Just state -> do
-                when (state /= oldstate) $ do
-                  logSay tz $
-                    displayID taskid +-+ method ++ ":" +-+ showTaskState oldstate +-+ "->" +-+ showTaskState state
-                if state `elem` openTaskStates
-                  then kojiDoWatchTask tz method state
-                  else do
-                  unless (state `elem` openTaskStates) $
-                    logSay tz $
-                    displayID taskid +-+ method ++ ":" +-+ showTaskState state
-                  return (method,state)
+            state <- kojiGetTaskState' hub taskid
+            when (state /= oldstate) $ do
+              logSay tz $
+                displayID taskid +-+ method ++ ":" +-+ showTaskState oldstate +-+ "->" +-+ showTaskState state
+            if state `elem` openTaskStates
+              then kojiDoWatchTask tz method state
+              else do
+              logSay tz $
+                displayID taskid +-+ method ++ ":" +-+ showTaskState state
+              return (method,state)
 
 -- FIXME print target tag
 kojiWatchTask :: TaskID -> IO ()
@@ -363,16 +366,13 @@ kojiWaitTask task = do
   -- FIXME can error:
   -- eg1 [ERROR] koji: HTTPError: 503 Server Error: Service Unavailable for url: https://koji.fedoraproject.org/kojihub
   -- eg2 [ERROR] koji: ServerOffline: database outage: - user error (Error 1014: database outage)
-  mst <- maybeTimeout 45 $ kojiGetTaskState hub task
-  case mst of
-    Just ts ->
-      if ts `elem` openTaskStates
-      then do
-        sleep 20
-        kojiWaitTask task
-      else return $ ts == TaskClosed
-    Nothing -> do
-      error $ "failed to get info for koji task" +-+ displayID task
+  -- was: maybeTimeout 45 $
+  state <- kojiGetTaskState' hub task
+  if state `elem` openTaskStates
+  then do
+    sleep 20
+    kojiWaitTask task
+  else return $ state == TaskClosed
 
 kojiSource :: Package -> String -> String
 kojiSource pkg ref =
