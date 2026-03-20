@@ -17,7 +17,7 @@ import Fedora.Krb (krbTicket)
 import Say
 import SimplePrompt (prompt, promptEnter, yesNo)
 import SimplePrompt.Internal (runPrompt, mapInput, getPromptLine)
-import System.Console.Pretty (color, Color(..), style, Style(Bold))
+import System.Console.Pretty (color, Color(..), style, Style(Bold,Reverse))
 import System.Time.Extra (sleep)
 
 import Bodhi
@@ -135,7 +135,7 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
         gitSwitchBranch currentbranch
       unless (null failures) $ do
         putStrLn $ "Build failures:" +-+ color Red (unwords failures)
-        okay <- yesNo "Do you want to continue nevertheless"
+        okay <- yesNo $ style Reverse "Do you want to continue nevertheless"
         unless okay $ error' "Quitting"
       when (isNothing msidetagTarget) $ do
         let spec = packageSpec pkg
@@ -206,7 +206,7 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
           if null nextLayers
           then return $ Just False
           -- FIXME edit next layer
-          else promptFailure "Do you want to [c]ontinue nevertheless or maybe fix & [r]etry? [c/N/r]"
+          else promptFailure $ style Reverse "Do you want to [c]ontinue nevertheless or maybe fix & [r]etry? [c/N/r]"
         case reply of
           Just True -> do
             kojiWaitRepoForLayer
@@ -276,7 +276,7 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
       gitSwitchBranch (RelBranch br)
       unlessM isGitDirClean $ do
         warning $ color Red "local uncommitted changes (dirty)"
-        promptEnter "Press Enter to continue after fixing"
+        promptEnter $ style Reverse "Press Enter to continue after fixing"
       let spec = packageSpec pkg
       checkForSpecFile spec
       nvr <- pkgNameVerRel' br spec
@@ -286,9 +286,8 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
       if null unpushed
         then
         when mustpush $ do
-        ok <- yesNo "Nothing to push, okay to continue"
-        unless ok $
-          error' "no commits with --must-push"
+        -- FIXME add skip option?
+        promptEnter $ style Reverse "Nothing to push! Press Enter if you want to continue"
         else do
         displayCommits False unpushed
       unless (null unpushed) $ do
