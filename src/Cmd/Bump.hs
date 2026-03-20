@@ -19,10 +19,10 @@ import Package
 -- FIXME countdown
 bumpCmd :: Bool -> Bool -> Maybe String -> Maybe String
          -> (BranchesReq,[String]) -> IO ()
-bumpCmd dryrun local mcmsg mclog =
-  withPackagesByBranches (boolHeader local) False
-  (if local then cleanGit else cleanGitFetchActive)
-  AnyNumber (bumpPkg dryrun local mcmsg mclog)
+bumpCmd dryrun strict mcmsg mclog =
+  withPackagesByBranches (boolHeader (not strict)) False
+  (if strict then cleanGitFetchActive else cleanGit)
+  AnyNumber (bumpPkg dryrun strict mcmsg mclog)
 
 bumpPkg :: Bool -> Bool -> Maybe String -> Maybe String
         -> Package -> AnyBranch -> IO ()
