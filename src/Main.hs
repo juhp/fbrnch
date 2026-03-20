@@ -315,7 +315,7 @@ main = do
       <*> optional (strOptionWith 'm' "message" "COMMITMSG"
                     "Specify commit message")
       <*> optional (strOptionWith 'c' "changelog" "CLOGENTRY"
-                    "Override changelog entry [default: rebuild]")
+                    "Override changelog entry [default: Rebuild]")
       <*> branchesPackages
     , Subcommand "commit" "Git commit packages" $
       commitCmd
