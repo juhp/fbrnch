@@ -226,80 +226,71 @@ kojiGetTaskState' hub taskid = do
     Just state -> return state
 
 -- FIXME return failures
-kojiWatchBuildTask :: String -> TimeZone -> TaskID -> TaskState -> IO ()
-kojiWatchBuildTask hub tz taskid state = do
+kojiWatchBuildTask :: String -> TimeZone -> TaskID -> IO ()
+kojiWatchBuildTask hub tz taskid = do
   current <- getChildrenTasks
-  if null current
-    then
-    if state `elem` openTaskStates
-    then do
-      threadDelaySeconds 59
-      newstate <- kojiGetTaskState' hub taskid
-      kojiWatchBuildTask hub tz taskid newstate
-    else putStrLn $ displayID taskid +-+ "is" +-+ showTaskState state
-    else do
-    mapM_ printHost current
-    mapM_ (printTaskState showTaskState) current
-    when (any (\t -> tsState t `elem` openTaskStates) current) $
-      loopWatch current
-    where
-      getChildrenTasks =
-        -- fbrnch: user error (502 Bad Gateway)
-        sortOn tsId . mapMaybe readTaskStatus <$> retry 2 (kojiGetTaskChildren hub taskid True)
+  mapM_ printHost current
+  mapM_ (printTaskState showTaskState) current
+  loopWatch current
+  where
+    getChildrenTasks =
+      -- fbrnch: user error (502 Bad Gateway)
+      sortOn tsId . mapMaybe readTaskStatus <$> retry 2 (kojiGetTaskChildren hub taskid True)
 
-      pad txt suffix =
-        let spaces = 7 - length txt
-        in txt ++ suffix ++ replicate spaces ' '
+    pad txt suffix =
+      let spaces = 8 - length txt
+      in txt ++ suffix ++ replicate spaces ' '
 
-      -- FIXME create a host cache
-      printHost ts = do
-        let txt =
-              let method = tsMethod ts in
-                if method == "buildArch"
-                then tsArch ts
-                else
-                  if "SRPM" `isInfixOf` method
-                  then "src"
-                  else method
-        host <- Koji.getHost hub (Koji.InfoID $ tsHostId ts) Nothing
-        whenJust (lookupStruct "name" host) $ \name ->
-          sayString $ pad txt ": " ++ name
+    -- FIXME create a host cache
+    printHost ts = do
+      let txt =
+            let method = tsMethod ts in
+              if method == "buildArch"
+              then tsArch ts
+              else
+                if "SRPM" `isInfixOf` method
+                then "src"
+                else method
+      host <- Koji.getHost hub (Koji.InfoID $ tsHostId ts) Nothing
+      whenJust (lookupStruct "name" host) $ \name ->
+        sayString $ pad txt ": " ++ name
 
-      printTaskState render ts =
-        logSay tz $ '(' : show (tsId ts) ++ ")" +-+ maybeMethod +-+ pad (tsArch ts) " " ++ maybe "" (\nvr -> '(' : showNVR nvr ++ ")") (tsNVR ts) ++ ":" +-+ render (tsState ts)
-        where
-          maybeMethod =
-            let method = tsMethod ts
-            in if method == "buildArch" then "" else method
+    printTaskState render ts =
+      logSay tz $ '(' : show (tsId ts) ++ ")" +-+ maybeMethod +-+ pad (tsArch ts) " " ++ maybe "" (\nvr -> '(' : showNVR nvr ++ ")") (tsNVR ts) ++ ":" +-+ render (tsState ts)
+      where
+        maybeMethod =
+          let method = tsMethod ts
+          in if method == "buildArch" then "" else method
 
-      loopWatch previous = do
-        current <- getChildrenTasks
-        mapM_ printTaskChange $ updateStates previous current
-        if any (\t -> tsState t `elem` openTaskStates) current
-          then do
+    loopWatch previous = do
+      current <- getChildrenTasks
+      mapM_ printTaskChange $ updateStates previous current
+      if any (\t -> tsState t `elem` openTaskStates) current
+        then do
+        threadDelaySeconds 31
+        loopWatch current
+        else do
+        pstate <- kojiGetTaskState' hub taskid
+        when (pstate `elem` openTaskStates) $ do
           threadDelaySeconds 31
           loopWatch current
-          else do
-          pstate <- kojiGetTaskState' hub taskid
-          when (pstate `elem` openTaskStates) $
-            loopWatch current
 
-      updateStates :: [TaskStatus TaskState] -> [TaskStatus TaskState] -> [TaskStatus (Maybe TaskState,TaskState)]
-      updateStates previous current =
-        let old = M.fromList [ (tsId task, tsState task) | task <- previous]
-            addOld ts =
-              let moldState = M.lookup (tsId ts) old
-              in ts {tsState = (moldState, tsState ts)}
-        in map addOld current
+    updateStates :: [TaskStatus TaskState] -> [TaskStatus TaskState] -> [TaskStatus (Maybe TaskState,TaskState)]
+    updateStates previous current =
+      let old = M.fromList [ (tsId task, tsState task) | task <- previous]
+          addOld ts =
+            let moldState = M.lookup (tsId ts) old
+            in ts {tsState = (moldState, tsState ts)}
+      in map addOld current
 
-      printTaskChange ts =
-        let (mold,new) = tsState ts in
-          do
-            when (isNothing mold) $
-              printHost ts
-            unless (mold == Just new) $
-              let change = maybe "" (\s -> showTaskState s +-+ "->") mold +-+ showTaskState new
-              in printTaskState id $ ts {tsState = change}
+    printTaskChange ts =
+      let (mold,new) = tsState ts in
+        do
+          when (isNothing mold) $
+            printHost ts
+          unless (mold == Just new) $
+            let change = maybe "" (\s -> showTaskState s +-+ "->") mold +-+ showTaskState new
+            in printTaskState id $ ts {tsState = change}
 
 kojiWatchTask1 :: String -> TaskID -> IO (String, TaskState) -- method
 kojiWatchTask1 hub taskid = do
@@ -325,7 +316,7 @@ kojiWatchTask1 hub taskid = do
         where
           kojiDoWatchTask tz method oldstate = do
             if method == "build" && oldstate /= TaskFree
-              then kojiWatchBuildTask hub tz taskid oldstate
+              then kojiWatchBuildTask hub tz taskid
               else threadDelaySeconds 30
             state <- kojiGetTaskState' hub taskid
             when (state /= oldstate) $ do
