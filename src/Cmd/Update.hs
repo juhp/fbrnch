@@ -128,25 +128,31 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
     fedpkg_ "new-sources" archives
     unless (null textsources) $
       git_ "add" textsources
-  whenJust moldnewver $ \(_old,newver) -> do
-    whenM (yesNoDefault False "Do you want to diff the sources") $
-      compareTarballsCmd Nothing Nothing Nothing
-    versions <- changelogVersions spec
-    let missing =
-          case versions of
-            [] -> True
-            (h:_) -> not $ (newver ++ "-") `isPrefixOf` h
-    when missing $ do
-      -- FIXME newver may contain macros!
-      newversion <- pkgVersion spec
-      cmd_ "rpmdev-bumpspec" ["-c", "Update to" +-+ newversion, spec]
-      newrelease <- cmd "rpmspec" ["-q", "--srpm", "--undefine=dist", "--qf", "%{release}", spec]
-      -- revert release if was already bumped
-      whenJust (extractFieldValue <$> mnewrel) $ \newrel -> do
-        editSpecField "Release" newrel spec
-        cmd_ "sed" ["-i", "s/> -" +-+ newversion ++ '-' : newrelease ++ "/> -" +-+ newversion ++ '-' : replace "%{?dist}" "" newrel ++ "/" , spec]
-      git_ "commit" ["-a", "-m", "Update to" +-+ newversion]
-  putStr "Prepping... "
+  case moldnewver of
+    Just (_old,newver) -> do
+      whenM (yesNoDefault False "Do you want to diff the sources") $
+        compareTarballsCmd Nothing Nothing Nothing
+      versions <- changelogVersions spec
+      let missing =
+            case versions of
+              [] -> True
+              (h:_) -> not $ (newver ++ "-") `isPrefixOf` h
+      when missing $ do
+        -- FIXME newver may contain macros!
+        newversion <- pkgVersion spec
+        cmd_ "rpmdev-bumpspec" ["-c", "Update to" +-+ newversion, spec]
+        newrelease <- cmd "rpmspec" ["-q", "--srpm", "--undefine=dist", "--qf", "%{release}", spec]
+        -- revert release if was already bumped
+        whenJust (extractFieldValue <$> mnewrel) $ \newrel -> do
+          editSpecField "Release" newrel spec
+          cmd_ "sed" ["-i", "s/> -" +-+ newversion ++ '-' : newrelease ++ "/> -" +-+ newversion ++ '-' : replace "%{?dist}" "" newrel ++ "/" , spec]
+        git_ "commit" ["-a", "-m", "Update to" +-+ newversion]
+    Nothing -> do
+      rawsdiff <- filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", "sources"]
+      unless (null rawsdiff) $
+        whenM (yesNoDefault False "Do you want to diff the sources") $
+        compareTarballsCmd Nothing Nothing Nothing
+  putStr "Prepping in temp dir... "
   sourcediropt <- sourceDirCwdOpt
   withTempDir $ \tempdir -> do
     cwd <- getCurrentDirectory
