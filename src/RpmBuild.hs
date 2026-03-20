@@ -492,22 +492,15 @@ buildRequires spec = do
 
 checkSourcesMatch :: Package -> AnyBranch -> FilePath -> IO ()
 checkSourcesMatch pkg br spec = do
-  -- "^[Ss]ource[0-9]*:"
-  sourcefiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
-  sources <- do
-    exists <- doesFileExist "sources"
-    if exists
-      then lines <$> readFile "sources"
-      else return []
-  gitfiles <- gitLines "ls-files" ["--no-cached"]
-  -- FIXME warn about non-sha512 sources
-  let missing = filter (\src -> isNothing (find (\s -> ('(' : src ++ ")") `isInfixOf` s || (' ' : src) `isSuffixOf` s) sources) && src `notElem` gitfiles)
-                sourcefiles
-  unless (null missing) $ do
+  (sources,missing) <- doCheckSources
+  if null missing
+    then mapM_ checkLookasideCache sources
+    else do
     -- FIXME maybe change to yesNo
     promptEnter $ color Red $ unwords missing +-+ "not in" +-+ unPackage pkg +-+ "'sources', press Enter to fix"
-    -- FIXME check if already fixed before proceeding
-    updateSourcesPkg False False True Nothing pkg br
+    (sources',missing') <- doCheckSources
+    unless (null missing') $
+      updateSourcesPkg False False True Nothing pkg br
     git_ "status" ["--short"]
     ok <- yesNo "Amend commit"
     when ok $ git_ "commit" ["--amend"]
@@ -515,8 +508,22 @@ checkSourcesMatch pkg br spec = do
       error' "local changes remain (dirty)"
     checkOnBranch
     checkSourcesMatch pkg br spec
-  mapM_ checkLookasideCache sources
+    mapM_ checkLookasideCache sources'
   where
+    doCheckSources = do
+      -- "^[Ss]ource[0-9]*:"
+      sourcefiles <- map (takeFileName . last . words) <$> cmdLines "spectool" [spec]
+      sources <- do
+        exists <- doesFileExist "sources"
+        if exists
+          then lines <$> readFile "sources"
+          else return []
+      gitfiles <- gitLines "ls-files" ["--no-cached"]
+      -- FIXME warn about non-sha512 sources
+      let missing = filter (\src -> isNothing (find (\s -> ('(' : src ++ ")") `isInfixOf` s || (' ' : src) `isSuffixOf` s) sources) && src `notElem` gitfiles)
+                    sourcefiles
+      return (sources,missing)
+
     checkLookasideCache :: String -> IO ()
     checkLookasideCache source = do
       let lookaside = "https://src.fedoraproject.org/lookaside/pkgs" +/+ unPackage pkg
