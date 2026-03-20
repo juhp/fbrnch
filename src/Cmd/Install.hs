@@ -88,12 +88,17 @@ installCmd quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall alloweras
             then return True
             else buildRPMs quiet False False mjobs mforceshort bconds rpms br spec
           unless (isShortCircuit mforceshort) $ do
+            -- paths lost here
             let nvras = rpmsToNVRAs rpms
                 -- FIXME: prefix = fromMaybe (nvrName nvr) mprefix
             decided <- decideRPMs yes False mexisting select (unPackage pkg) nvras
+            rpmdir <- fromMaybe "." <$> rpmEval "%{_rpmdir}"
+            unless (rpmdir == ".") $
+              putStrLn $ "Changing directory to:" +-+ rpmdir
             -- FIXME dryrun and debug
             -- FIXME return Bool?
-            installRPMsAllowErasing False False mmgr allowerasing yes $ groupOnArch "RPMS" decided
+            withCurrentDirectory rpmdir $
+              installRPMsAllowErasing False False mmgr allowerasing yes $ groupOnArch "" decided
 
         lookForPkgDir :: Branch -> FilePath -> String -> IO (Maybe FilePath)
         lookForPkgDir rbr topdir p = do
