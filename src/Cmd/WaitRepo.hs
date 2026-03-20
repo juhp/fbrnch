@@ -14,13 +14,14 @@ import Types
 
 data WaitFetch = WaitNoFetch | WaitDirty | WaitFetch
 
+-- FIXME allow generic waitrepo when not package? (without --no-package)
 -- FIXME first check/wait for build to actually exist
 -- FIXME check on previous/origin commit/build
 waitrepoCmd :: Bool -> Bool -> WaitFetch -> Maybe SideTagTarget
             -> (BranchesReq, [String]) -> IO ()
-waitrepoCmd dryrun noNvr fetch msidetagTarget (breq,pkgs) = do
+waitrepoCmd dryrun nopkg fetch msidetagTarget (breq,pkgs) = do
   -- FIXME detect sidetag so not mistaken for pkg
-  if noNvr
+  if nopkg
     then
     if null pkgs
     then withPackagesByBranches HeaderMay False Nothing AnyNumber waitrepoBranch (breq,["."])
