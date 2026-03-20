@@ -39,7 +39,7 @@ There are also options to clone all one's packages or another user's packages.
 
 One can change the branch of one or more packages:
 ```
-$ fbrnch switch f43 [package] ...
+$ fbrnch switch f44 [package] ...
 ```
 
 You can also git pull over packages:
@@ -97,9 +97,9 @@ or you can pass `-m "..."` or amend with `-a`.
 
 You can merge branches with:
 ```
-$ fbrnch merge f42 [package]
+$ fbrnch merge f43 [package]
 ```
-which will offer to merge f43 (or up to a git hash you choose) into f42.
+which will offer to merge f44 (or a git hash you choose) into f43.
 
 Merging can also be done together with building:
 ```
@@ -270,7 +270,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 `$ fbrnch --version`
 
 ```
-1.8
+1.8.1
 ```
 
 `$ fbrnch --help`
@@ -303,6 +303,7 @@ Available commands:
   sidetags                 List user's side-tags
   override                 Tag builds into buildroot override in Koji
   waitrepo                 Wait for build to appear in Koji buildroot
+  watchtask                Watch a koji build task
   scratch                  Scratch build package in Koji
   scratch-aarch64          Koji aarch64 scratch build of package
   scratch-x86_64           Koji x86_64 scratch build of package
@@ -463,7 +464,7 @@ Do report any unsupported or inconsistent workflow steps.
 
 See the TODO list and also the FIXME comments scattered across the source.
 
-Authors of the code:
+People who have contributed to the code:
 
 <a href="https://github.com/juhp/fbrnch/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=juhp/fbrnch" />

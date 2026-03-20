@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.8.1 (2026-03-20)
+- new native watchtask implementation and command
+- local build.log's now generated with 'script' tool instead of tee pipe
+
+- 'compare-tarballs': include extension in file args help
+- 'copr': retry coprGetBuild when watching a build
+- 'install': take %_rpmdir into account
+- 'local','install': rename --rebuild to --force-build
+- 'parallel: for single package do full kojiWaitTask
+- 'parallel: notify-send for failure or --must-push failure
+- 'parallel: use reverse text to highlight problem prompts
+- 'pull: use retry
+- 'request-branches: include branches in comment
+- 'update-sources: for "sources" diff also compare-tarballs
+- 'waitrepo': rename --no-nvr to --no-package
+- Koji getChildrenTasks: use maybeTimeout to avoid crash
+- Koji: introduce kojiGetTaskState' for DRY
+- Koji: kojiBuild output profile if uploading srpm
+- Koji: retry with kojiGetTaskChildren seems to eliminate timeouts yay
+- Revert "Package isArchiveFile: ".sig" files are ascii"
+- RpmBuild checkSourcesMatch: improve logic for missing sources
+- gitMergeOrigin: offer to rebase if remote was ahead
+- kojiWaitRepo: now implemented by kojiWaitRepoNVRs
+- kojiWaitRepoNVRs: check krb ticket before calling koji
+- kojiWatchBuildTask loopWatch: check parent state not number of buildArchs
+- kojiWatchBuildTask: track display of NVR (in Cyan)
+- stack: lts-24.28 has crypton-x509-system-1.6.8
+- 'watchtask': displays build hosts initially
+- 'watchtask': can watch ongoing package branch build; --progress
+- 'watchtask': improve formatting with arch padding and list hosts host
+
 ## 1.8 (2026-01-02)
 - 'branch-log': new command to check local and remote branches
 - 'branch-log': --latest finds connected branches

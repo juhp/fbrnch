@@ -130,7 +130,6 @@ executable fbrnch
                        http-conduit,
                        http-directory >= 0.1.9,
                        http-query,
-                       -- bound for newer haxr?:
                        koji,
                        network-uri,
                        pagure >= 0.2.1,
