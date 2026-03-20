@@ -286,6 +286,7 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
       if null unpushed
         then
         when mustpush $ do
+        notifySend "package without commits to push"
         -- FIXME add skip option?
         promptEnter $ style Reverse "Nothing to push! Press Enter if you want to continue"
         else do
@@ -371,6 +372,7 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
               cmdLog_ kojitool $ ["tasks", "--children", displayID task, "-s", "fail"] ++ [if nopkgs < 5 then "--tail" else "--details"]
             hub <- getKojiProfileHub
             putTaskinfoUrl hub task
+            notifySend $ showNVR nvr +-+ "failed"
             error' $ color Red $ showNVR nvr +-+ "build failed"
           autoupdate <- checkAutoBodhiUpdate br
           if autoupdate then
@@ -428,3 +430,9 @@ getLayers distopts pkgs =
   -- FIXME check no interdeps
   then return $ splitOn [":"] pkgs
   else dependencyLayersRpmOpts distopts pkgs
+
+-- FIXME --beep option
+notifySend :: String -> IO ()
+notifySend msg =
+  whenJustM (findExecutable "notify-send") $ \notify ->
+  cmd_ notify ["--hint=string:sound-name:bell", "fbrnch:" +-+ msg]
