@@ -58,9 +58,9 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
           then findSpecfile
           else localBranchSpecFile pkg br
   curver <- pkgVersion spec
-  diff <- filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
-  let vdiff = filter (\v -> any (`isPrefixOf` v) ["-Version:","+Version:"]) diff
-      mnewrel = find ("+Release:" `isPrefixOf`) diff
+  rawdiff <- filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
+  let vdiff = filter (\v -> any (`isPrefixOf` v) ["-Version:","+Version:"]) rawdiff
+      mnewrel = find ("+Release:" `isPrefixOf`) rawdiff
   when (length vdiff > 2) $
     error' $ "diff contains complex multi-version changes:\n" ++ unlines vdiff
   case mver of
