@@ -362,6 +362,8 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
         -- throws error on build failure
         kojiWaitTaskReport :: Bool -> NVR -> TaskID -> IO ()
         kojiWaitTaskReport newpkg nvr task = do
+          when (nopkgs == 1) $
+            kojiWatchTask task
           finish <- retry 3 $ kojiWaitTask task
           if finish
             then sayString $ color Green (showNVR nvr) +-+ "complete"
