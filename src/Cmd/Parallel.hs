@@ -86,7 +86,7 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
           case tags of
             [] -> "will use new sidetag"
             [tag] -> "will use" +-+ tag
-            _ -> "Several user side-tags found for" +-+ showBranch rbr ++ ":\n" ++ unlines tags
+            _ -> "User side-tags found for" +-+ showBranch rbr ++ ":\n" ++ unlines tags
       forM_ (filter (/= ":") pkgs) $ \p ->
         when (mmerge /= Just False) $
         withExistingDirectory p $ do
