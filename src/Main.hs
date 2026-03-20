@@ -660,7 +660,7 @@ main = do
         updatePair ty sv = (ty,sv)
 
     forceshortOpt =
-      flagWith' ForceBuild 'f' "rebuild" "Rebuild even if already built" <|>
+      flagWith' ForceBuild 'f' "force-build" "Rebuild even if already built" <|>
       flagWith' ShortCompile 'c' "short-compile" "Do rpmbuild --short-circuit -bc" <|>
       flagWith' ShortInstall 's' "short-install" "Do rpmbuild --short-circuit -bi"
 
