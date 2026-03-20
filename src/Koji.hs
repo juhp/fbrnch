@@ -256,7 +256,7 @@ kojiWatchBuildTask hub tz taskid = do
         sayString $ pad txt ": " ++ name
 
     printTaskState render ts =
-      logSay tz $ '(' : show (tsId ts) ++ ")" +-+ maybeMethod +-+ pad (tsArch ts) " " ++ maybe "" (\nvr -> '(' : showNVR nvr ++ ")") (tsNVR ts) ++ ":" +-+ render (tsState ts)
+      logSay tz $ parens (show (tsId ts)) +-+ maybeMethod +-+ pad (tsArch ts) ":" +-+ render (tsState ts)
       where
         maybeMethod =
           let method = tsMethod ts
@@ -311,7 +311,7 @@ kojiWatchTask1 hub taskid = do
             Just method -> do
               when (state `elem` openTaskStates) $
                 logSay tz $
-                displayID taskid +-+ method ++ ":" +-+ showTaskState state
+                parens (displayID taskid) +-+ method ++ ":" +-+ showTaskState state
               kojiDoWatchTask tz method state
         where
           kojiDoWatchTask tz method oldstate = do
@@ -321,12 +321,12 @@ kojiWatchTask1 hub taskid = do
             state <- kojiGetTaskState' hub taskid
             when (state /= oldstate) $ do
               logSay tz $
-                displayID taskid +-+ method ++ ":" +-+ showTaskState oldstate +-+ "->" +-+ showTaskState state
+                parens (displayID taskid) +-+ method ++ ":" +-+ showTaskState oldstate +-+ "->" +-+ showTaskState state
             if state `elem` openTaskStates
               then kojiDoWatchTask tz method state
               else do
               logSay tz $
-                displayID taskid +-+ method ++ ":" +-+ showTaskState state
+                parens (displayID taskid) +-+ method ++ ":" +-+ showTaskState state
               return (method,state)
 
 -- FIXME print target tag
@@ -568,3 +568,7 @@ kojiTaskRequestNVRTag task =
     showValue (ValueString cs) = cs
     showValue (ValueInt i) = show i
     showValue val = show val
+
+parens :: String -> String
+parens str =
+  '(' : str ++ ")"
