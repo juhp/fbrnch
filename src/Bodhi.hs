@@ -159,6 +159,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
                 -- FIXME check for Bodhi URL to confirm update
                 -- FIXME returns json error string if it exists:
                 -- {"status": "error", "errors": [{"location": "body", "name": "builds", "description": "Update for ghc9.2-9.2.5-14.fc36 already exists"}]}
+                -- ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
                 cmd_ "bodhi" $ ["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", take 10000 changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvrs]
                 return True
         when updateDone $ do
