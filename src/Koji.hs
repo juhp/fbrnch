@@ -415,6 +415,7 @@ kojiWaitRepoNVRs dryrun quiet target nvrs = do
     -- "nvr ghc-rpm-macros-2.7.5-1.fc41 is not current in tag f41-build
     --    latest build is ghc-rpm-macros-2.7.2-4.fc41"
     -- or "No clang18 builds in tag epel10.1-build"
+    krbTicket
     void $ timeIO $ cmd "koji" (kojiProfileOpt mprofile ++ ["wait-repo", "--request", "--quiet"] ++ ["--build=" ++ showNVR nvr | nvr <- nvrs] ++ [buildtag])
 
 kojiWaitRepoNVR :: Bool -> Bool -> String -> NVR -> IO ()
