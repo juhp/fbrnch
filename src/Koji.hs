@@ -37,7 +37,7 @@ import Data.Char (isDigit)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Control.Concurrent (threadDelay)
 import Control.Exception.Extra (retry)
-import Data.Either.Extra (eitherToMaybe)
+import Data.Either.Extra (eitherToMaybe, isRight)
 import Data.Fixed (Micro)
 import qualified Data.Map.Strict as M
 import Data.RPM (dropArch)
@@ -54,6 +54,7 @@ import Fedora.Krb (fasIdFromKrb, krbTicket)
 import Safe (headMay, tailSafe)
 import Say (sayString)
 import SimplePrompt (promptEnter, promptNonEmpty, yesNo)
+import System.Console.Pretty (color, Color(Cyan))
 import System.Environment (lookupEnv)
 import System.Exit
 import System.Process.Typed (proc, readProcessStdout)
@@ -226,12 +227,13 @@ kojiGetTaskState' hub taskid = do
     Just state -> return state
 
 -- FIXME return failures
-kojiWatchBuildTask :: String -> TimeZone -> TaskID -> IO ()
-kojiWatchBuildTask hub tz taskid = do
+kojiWatchBuildTask :: String -> TimeZone -> Bool -> TaskID -> IO ()
+kojiWatchBuildTask hub tz nvrdisplayed' taskid = do
   current <- getChildrenTasks
+  nvrdisplayed <- maybeDisplayNVR nvrdisplayed' current
   mapM_ printHost current
   mapM_ (printTaskState showTaskState) current
-  loopWatch current
+  loopWatch nvrdisplayed current
   where
     getChildrenTasks =
       -- fbrnch: user error (502 Bad Gateway)
@@ -253,7 +255,7 @@ kojiWatchBuildTask hub tz taskid = do
                 else method
       host <- Koji.getHost hub (Koji.InfoID $ tsHostId ts) Nothing
       whenJust (lookupStruct "name" host) $ \name ->
-        sayString $ pad txt ": " ++ name
+        sayString $ pad txt ":" +-+ name
 
     printTaskState render ts =
       logSay tz $ parens (show (tsId ts)) +-+ maybeMethod +-+ pad (tsArch ts) ":" +-+ render (tsState ts)
@@ -262,18 +264,29 @@ kojiWatchBuildTask hub tz taskid = do
           let method = tsMethod ts
           in if method == "buildArch" then "" else method
 
-    loopWatch previous = do
+    maybeDisplayNVR nvrdisplayed current =
+      if nvrdisplayed
+      then return True
+      else
+        case mapMaybe tsNVR current of
+          [] -> return False
+          (nvr:_) -> do
+            putStrLn $ "Koji NVR:" +-+ color Cyan (showNVR nvr)
+            return True
+
+    loopWatch wasdisplayed previous = do
       current <- getChildrenTasks
+      nvrdisplayed <- maybeDisplayNVR wasdisplayed current
       mapM_ printTaskChange $ updateStates previous current
       if any (\t -> tsState t `elem` openTaskStates) current
         then do
         threadDelaySeconds 31
-        loopWatch current
+        loopWatch nvrdisplayed current
         else do
         pstate <- kojiGetTaskState' hub taskid
         when (pstate `elem` openTaskStates) $ do
           threadDelaySeconds 31
-          loopWatch current
+          loopWatch nvrdisplayed current
 
     updateStates :: [TaskStatus TaskState] -> [TaskStatus TaskState] -> [TaskStatus (Maybe TaskState,TaskState)]
     updateStates previous current =
@@ -299,8 +312,8 @@ kojiWatchTask1 hub taskid = do
     Nothing -> error' $ "no taskinfo for task" +-+ displayID taskid
     Just taskinfo -> do
       case kojiTaskRequestNVRTag taskinfo of
-        Left pkgtag -> putStrLn pkgtag
-        Right nvr -> putStrLn $ showNVR nvr
+        Left pkgtag -> sayString $ color Cyan pkgtag
+        Right nvr -> sayString $ showNVR nvr
       let mstate = getTaskState taskinfo
       case mstate of
         Nothing -> error' $ "No state for task" +-+ displayID taskid
@@ -316,7 +329,7 @@ kojiWatchTask1 hub taskid = do
         where
           kojiDoWatchTask tz method oldstate = do
             if method == "build" && oldstate /= TaskFree
-              then kojiWatchBuildTask hub tz taskid
+              then kojiWatchBuildTask hub tz (isRight $ kojiTaskRequestNVRTag taskinfo) taskid
               else threadDelaySeconds 30
             state <- kojiGetTaskState' hub taskid
             when (state /= oldstate) $ do
