@@ -36,7 +36,11 @@ compareTarballsCmd mmaxlen Nothing Nothing = do
         -- FIXME cannot handle majorversion macros etc (eg lean4)
         case simplifyMinimalDiff ls of
           [s1,s2] -> diffTarballs mmaxlen (sourcesFilename s1) (sourcesFilename s2)
-          _ -> error' $ "could not determine changed versions in" +-+ show sourcesfile
+          ss -> do
+            putNewLn
+            error' $
+              unlines $
+              ("More than one source archive changed in" +-+ show sourcesfile ++ ":") : map sourcesFilename ss ++ ["", "Run: fbrnch compare-tarballs <source1> <source2>"]
     else do
     spec <- findSpecfile
     diff <- git "diff" ["-U0", spec]
