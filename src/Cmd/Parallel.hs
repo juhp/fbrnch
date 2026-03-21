@@ -50,6 +50,7 @@ type JobAsync = (String, Async JobDone)
 -- FIXME push update
 -- FIXME use more say
 -- FIXME --skip-bumps NUM
+-- FIXME rename --must-push to --should-push?
 parallelBuildCmd :: Bool -> Maybe Bool -> Maybe Branch -> Int
                  -> Maybe SideTagTarget -> Bool -> Double
                  -> (Maybe UpdateType, UpdateSeverity)
@@ -279,6 +280,7 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
         promptEnter $ style Reverse "Press Enter to continue after fixing"
       let spec = packageSpec pkg
       checkForSpecFile spec
+      -- FIXME make sure branch is up-to-date (otherwise autorelease may be wrong!)
       nvr <- pkgNameVerRel' br spec
       putStrLn $ showNVR nvr +-+ "(" ++ target ++ ")" +-+ morepkgs
       putNewLn
@@ -295,6 +297,7 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
         checkSourcesMatch pkg (RelBranch br) spec
         unlessM isGitDirClean $
           error' "local changes remain (dirty)"
+        -- FIXME: check for %macros in %changelog
         unless dryrun $
           gitPush True Nothing
       changelog <- unlines <$> getChangelog spec

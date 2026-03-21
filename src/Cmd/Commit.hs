@@ -11,6 +11,8 @@ import Common.System
 import Git
 import Package
 
+-- FIXME convert long #bz to keyword rhbz# so that bodhi will update the bug
+-- FIXME reject %macro's in %changelog
 -- FIXME reject if nvr ahead of newer branch
 -- FIXME use branches after all?
 -- FIXME handle multiline changelog entries with "-m description"
@@ -60,6 +62,7 @@ commitCmd dryrun branched mopt firstLine unstaged paths = do
                   -- rpmautospec generates "Uncommitted changes"
                   then error' "set commit msg with --message"
                   else do
+                  -- FIXME handle staged change to previous changelog entry
                   clog <- lines <$> cleanChangelog True spec
                   case clog of
                     [] -> readCommitMsg

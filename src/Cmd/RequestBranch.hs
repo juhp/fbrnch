@@ -89,6 +89,7 @@ requestPkgBranches quiet multiple mock breq pkg = do
       _ -> putStrLn "branches exist"
     return []
     else do
+    -- FIXME is this enough actually?
     gitFetchSilent True
     brs' <- localBranches False
     forM_ branches $ \br ->

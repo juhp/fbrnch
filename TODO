@@ -1,4 +1,21 @@
+```
+:HEAD$ fbrnch scratch-x86_64 -t epel9
+fedora-repoquery: HEAD is not a branch, please fix:
+```
+
+- offer to clone (for prep, scratch, etc)
+
+- instant fetch branch after request-branches?
+- "fbrnch review-package aws-c-auth" fails to find patch
+- build/parallel: --new-sidetag
+- 'composes' command
+- check-FTI to close bugs
+- need-rebuild
+- add move/tag-build
+
 - EDITOR feature
+
+- `build next`: to build next branch
 
 - warn about macros in %changelog
 

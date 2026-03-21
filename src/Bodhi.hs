@@ -125,6 +125,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
           case mtemplate of
             Just file -> do
               -- FIXME use cmdLog_ to debug, but notes are not quoted
+              -- FIXME does not fail
               cmd_ "bodhi" ["updates", "new", "--file", file, nvrs]
               return True
             Nothing -> do
@@ -135,6 +136,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
                            else
                              case mnotes of
                                Just NotesChangelog ->
+                                 -- FIXME all changes since last update!
                                  cleanChangelog True spec
                                Just (NotesText notes) ->
                                  return notes

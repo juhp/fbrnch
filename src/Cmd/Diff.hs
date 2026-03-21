@@ -32,6 +32,7 @@ filterOpt (DiffNotMatch m) = ["-I", m]
 
 -- FIXME diff other branches without switching
 -- FIXME --older/--newer branch
+-- FIXME option/support for non-distgit
 diffCmd :: Bool -> Bool -> DiffWork -> DiffFormat -> Bool -> [DiffFilter]
         -> Maybe AnyBranch -> (Maybe Branch,[String]) -> IO ()
 diffCmd debug speconly work fmt ignorebumps patts mwbr =

@@ -16,6 +16,8 @@ import Package
 
 data FTBFSBugs = FtbfsUser (Maybe String) | FtbfsSubstring String
 
+--- * revisit 1.6.3 dropped changes *
+-- FIXME take bug's Fedora version into account => check tags including newer
 -- FIXME option for status filter
 -- FIXME check arch
 -- FIXME ask resolution

@@ -28,6 +28,7 @@ showScratchSource pushed nvr Nothing =
 showScratchSource _ _ (Just (ScratchRef ref)) = ref
 showScratchSource _ _ (Just (ScratchSRPM srpm)) = srpm
 
+-- FIXME --use-srpm
 -- FIXME --no-tail
 -- FIXME --with --without ?
 -- FIXME allow parallel targets

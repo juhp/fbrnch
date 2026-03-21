@@ -20,6 +20,7 @@ import Package
 import Repoquery
 import RpmBuild
 
+-- FIXME allow installing old branch: "release not found for branch f37"
 -- FIXME --rpm to avoid dnf
 -- FIXME --subpackage to specify subpackage(s) to install/add
 -- FIXME --exclude to specify subpackage(s) not to install

@@ -39,6 +39,7 @@ waitrepoCmd dryrun nopkg fetch msidetagTarget (breq,pkgs) = do
       let spec = packageSpec pkg
       nvr <- pkgNameVerRel' br spec
       target <- targetMaybeSidetag dryrun True False br msidetagTarget
+      -- FIXME first wait for Bodhi to tag build
       kojiWaitRepoNVR dryrun False target nvr
     waitrepoBranchPkg _ (OtherBranch _) =
       error' "waitrepo only defined for release branches"

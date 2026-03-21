@@ -13,6 +13,7 @@ import Git
 import Package
 
 -- FIXME! calculate baserelease: calculate bumped release and count back to last version bump commit
+-- FIXME add --stash
 autospecCmd :: Bool -> [String] -> IO ()
 autospecCmd force pkgs =
   withPackagesByBranches HeaderMay False cleanGitFetchActive ExactlyOne autospecPkg (Branches [Rawhide], pkgs)

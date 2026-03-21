@@ -115,6 +115,7 @@ data CoprMode = ListChroots
               | CoprNew
               | CoprFailures (Maybe String)
 
+-- FIXME fbrnch: unknown release: centos-stream-9
 -- FIXME take ExclusiveArch/ExcludeArch into account
 -- FIXME -1 for only first unbuilt chroot
 -- FIXME check branch
@@ -177,6 +178,7 @@ coprCmd dryrun mode force mbuildBy marchs copr (breq, pkgs) = do
       -- was: localBranchSpecFile pkg (RelBranch Rawhide)
       spec <- findSpecfile
       -- pkg <- takeFileName <$> getCurrentDirectory
+      -- FIXME: for HLS would prefer to generate srpm later after checking if MVR already built
       srpm <- if not dryrun
               then generateSrpmNoDist True False Nothing spec
               else return spec -- hack to avoid generating srpm for dryrun

@@ -18,6 +18,7 @@ srcDepsCmd rev macros (rbr,pkgs) =
   srcDeps rev macros (rbr,pkgs) >>=
   mapM_ (putStrLn . unwords)
 
+-- FIXME --undefine
 srcDeps :: Bool -> [String] -> (Branch,[String]) -> IO [[String]]
 srcDeps rev macros (rbr,pkgs) = do
   when (null pkgs) $

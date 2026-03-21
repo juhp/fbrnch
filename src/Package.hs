@@ -179,6 +179,7 @@ localBranchSpecFile pkg br = do
         Nothing -> error' $ "No spec file for:" +-+ unPackage pkg
     else findSpecfile
 
+-- FIXME should pass Package name (since may be dirpath)
 withExistingDirectory :: FilePath -> IO a -> IO a
 withExistingDirectory dir act = do
   exists <- doesDirectoryExist dir
@@ -560,6 +561,7 @@ equivNVR nvr1 (Just nvr2) =
 --         toPackage (Unknown p) = p
 --         toPackage (IsBr b) = error' $ "can't map branch to package:" +-+ show b
 
+-- FIXME do not edit more than one Version field!! (eg ghc-hadrian)
 editSpecField :: String -> String -> FilePath -> IO ()
 editSpecField field new spec =
   cmd_ "sed" ["-i", "-e s/^\\(" ++ field ++ ":\\s\\+\\).*/\\1" ++ new ++ "/", spec]
