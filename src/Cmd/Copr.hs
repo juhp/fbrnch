@@ -274,7 +274,7 @@ existingChrootBuilds dryrun user project actualpkg verrel chroots = do
   let pkgmonitor = fromMaybe [] $ lookup actualpkg monitorPkgs
   let buildingChroots =
         filterTasks verrel (`elem` coprProcessingStates) pkgmonitor
-      builds = filterTasks verrel (`notElem` ["failed","skipped"]) pkgmonitor
+      builds = filterTasks verrel (`notElem` ["failed","skipped","canceled"]) pkgmonitor
   if null buildingChroots
     then return builds
     else do
