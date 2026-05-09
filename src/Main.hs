@@ -445,7 +445,7 @@ main = do
     , Subcommand "autospec" "Convert package to use rpmautospec" $
       autospecCmd
       <$> forceOpt "Refresh changelog file to current"
-      <*> manyPackages
+      <*> maybeBranchPackages False
     , Subcommand "unautospec" "Unconvert rpmautospec package" $
       unautospecCmd
       <$> branchesPackages

@@ -5,6 +5,7 @@ module Cmd.Autospec (
 where
 
 import Control.Monad.Extra (unlessM, when)
+import Data.Maybe (maybeToList)
 import SimpleCmd (cmd, cmd_)
 import System.Directory (doesFileExist, removeFile)
 
@@ -14,9 +15,9 @@ import Package
 
 -- FIXME! calculate baserelease: calculate bumped release and count back to last version bump commit
 -- FIXME add --stash
-autospecCmd :: Bool -> [String] -> IO ()
-autospecCmd force pkgs =
-  withPackagesByBranches HeaderMay False cleanGitFetchActive ExactlyOne autospecPkg (Branches [Rawhide], pkgs)
+autospecCmd :: Bool -> (Maybe Branch, [String]) -> IO ()
+autospecCmd force (mbr,pkgs) =
+  withPackagesMaybeBranch HeaderMay False cleanGitFetchActive autospecPkg (mbr, pkgs)
   where
   autospecPkg :: Package -> AnyBranch -> IO ()
   autospecPkg _pkg br = do
@@ -33,7 +34,9 @@ autospecCmd force pkgs =
           git_ "add" [changelogfile]
           git_ "commit" ["-m", "Refresh changelog"]
       else putStrLn "'changelog' file already exists"
-      else cmd_ "rpmautospec" ["convert"]
+      else do
+      mspec <- maybeFindSpecfile
+      cmd_ "rpmautospec" $ "convert" : maybeToList mspec
 
 unautospecCmd :: (BranchesReq, [String]) -> IO ()
 unautospecCmd =
