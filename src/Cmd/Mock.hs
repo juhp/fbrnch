@@ -31,9 +31,10 @@ reqShell (Just ms) = ms /= MockInstall
 -- FIXME add repo/copr for build
 -- FIXME handle non-release branches (on-branch works)
 -- FIXME option for --shell without rebuild
-mockCmd :: Bool -> Maybe NoClean -> Bool -> Bool -> Maybe MockMode
-        -> Maybe Branch -> Maybe String -> (BranchesReq, [String]) -> IO ()
-mockCmd dryrun mnoclean network reinstall mockmode mroot march (breq, ps) = do
+mockCmd :: Bool -> Maybe NoClean -> Bool -> Maybe String -> Bool -> Bool
+        -> Maybe MockMode -> Maybe Branch -> Maybe String
+        -> (BranchesReq, [String]) -> IO ()
+mockCmd dryrun mnoclean noPull mconfigOptions network reinstall mockmode mroot march (breq, ps) = do
   pkggit <- isPkgGitRepo
   branches <-
     case breq of
@@ -69,7 +70,8 @@ mockCmd dryrun mnoclean network reinstall mockmode mroot march (breq, ps) = do
                       Just NoCleanAll -> ["--no-clean", "--no-cleanup-after"]
                       Just MockShortCircuit -> ["--short-circuit", "install"]
           mockopts_common c = [c, "--root", mockRoot rootBr march] ++ noclean ++ ["--enable-network" | network]
-          mockbuild_opts = mockopts_common command ++ ["--config-opts=cleanup_on_failure=False" | mnoclean `elem` [Nothing, Just NoCleanBefore]] ++ resultdir ++ srpms
+          config_opts = ["cleanup_on_failure=False" | mnoclean `elem` [Nothing, Just NoCleanBefore]] ++ ["buildroot_image_skip_pull=True" | noPull] ++ maybe [] words mconfigOptions
+          mockbuild_opts = mockopts_common command ++ ["--config-opts=" ++ unwords config_opts | not (null config_opts)] ++ resultdir ++ srpms
           mockshell_opts = mockopts_common "--shell" ++ ["--no-clean" | "--no-clean" `notElem` noclean]
       if dryrun
         then do

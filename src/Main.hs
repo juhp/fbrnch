@@ -267,6 +267,8 @@ main = do
       mockCmd
       <$> dryrunOpt "Do not build (but creates srpm)"
       <*> optional nocleanOpt
+      <*> switchLongWith "no-pull" "Do not pull latest buildroot image"
+      <*> optional (strOptionLongWith "config-options" "'OPTION=VALUE ..'" "Set mock config_opts")
       <*> switchWith 'N' "network" "Use network during build"
       <*> switchLongWith "reinstall" "Allow reinstallation with --install"
       <*> optional (flagLongWith' ShellOnly "shell-only" "Skip mock build" <|>
