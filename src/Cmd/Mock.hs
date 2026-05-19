@@ -51,7 +51,7 @@ mockCmd dryrun mnoclean noPull mconfigOptions network reinstall mockmode mroot m
   where
     mockBuildPkgs :: Bool -> Bool -> [String] -> Branch -> IO ()
     mockBuildPkgs pkggit noswitch pkgs br = do
-      srpms <- mapM (prepSrpm (RelBranch br)) pkgs
+      srpms <- mapM (prepSrpm (RelBranch $ fromMaybe br mroot)) pkgs
       putNewLn
       -- FIXME? is it better just to fail asking for target branch?
       rootBr <- maybe (if pkggit then getReleaseBranch else return br) return mroot
@@ -106,7 +106,7 @@ mockCmd dryrun mnoclean noPull mconfigOptions network reinstall mockmode mroot m
               unless noswitch $
               gitSwitchBranch rbr
             spec <- findSpecfile
-            generateSrpm Nothing spec
+            generateSrpm (Just rbr) spec
 
         mockInstall :: String -> IO ()
         mockInstall pkg = do
