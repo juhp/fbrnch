@@ -207,56 +207,60 @@ systemBranch = do
       osPrefix s = s
 
 -- FIXME should be NonEmpty Branch
-listOfBranches :: Bool -> Bool -> BranchesReq -> IO [Branch]
-listOfBranches distgit _active (BranchOpt AllBranches) =
+listOfBranches' :: Bool -> BranchesReq -> IO [Branch]
+listOfBranches' distgit (BranchOpt AllBranches) =
   if distgit
   then fedoraBranches (localBranches False)
   else getActiveBranches
-listOfBranches distgit _active (BranchOpt AllFedora) =
+listOfBranches' distgit (BranchOpt AllFedora) =
   filter isFedoraBranch <$>
   if distgit
   then fedoraBranches (localBranches False)
   else getActiveBranches
-listOfBranches distgit _active (BranchOpt AllEPEL) =
+listOfBranches' distgit (BranchOpt AllEPEL) =
   filter isEPELBranch <$>
   if distgit
   then fedoraBranches (localBranches False)
   else getActiveBranches
-listOfBranches distgit _ (BranchOpt (ExcludeBranches brs)) = do
+listOfBranches' distgit (BranchOpt (ExcludeBranches brs)) = do
   branches <- if distgit
               then fedoraBranches (localBranches False)
               else getActiveBranches
   return $ branches \\ brs
-listOfBranches distgit active (Branches brs) =
+listOfBranches' distgit (Branches brs) =
   if null brs
   then
     pure <$> if distgit
              then getReleaseBranch
              else systemBranch
-  else do
-    activeBrs <- getActiveBranches
-    forM_ brs $ \ br ->
-          if active
-            then do
-            unless (br `elem` activeBrs) $
-              error' $ showBranch br +-+ "is not an active branch"
-            rel <- branchRelease br
-            let meol = releaseEOL rel
-            whenJust meol $ \eol -> do
-              let date = read eol
-              today <- utctDay <$> getCurrentTime
-              let diff = diffDays date today
-              when (diff <= 7) $
-                warning $ "EOL for" +-+ showBranch br +-+ "is" +-+ show diff +-+ "days away!"
-            else
-            case br of
-              Fedora _ -> do
-                let latest = maximum (delete Rawhide activeBrs)
-                when (br > latest) $
-                  error' $ showBranch br +-+ "is newer than latest branch"
-              -- FIXME also check for too new EPEL
-              _ -> return ()
-    return brs
+  else return brs
+
+listOfBranches :: Bool -> Bool -> BranchesReq -> IO [Branch]
+listOfBranches distgit active breq = do
+  brs <- listOfBranches' distgit breq
+  activeBrs <- getActiveBranches
+  forM_ brs $ \ br ->
+    if active
+    then do
+      unless (br `elem` activeBrs) $
+        error' $ showBranch br +-+ "is not an active branch"
+      rel <- branchRelease br
+      let meol = releaseEOL rel
+      whenJust meol $ \eol -> do
+        let date = read eol
+        today <- utctDay <$> getCurrentTime
+        let diff = diffDays date today
+        when (diff <= 7) $
+          warning $ "EOL for" +-+ showBranch br +-+ "is" +-+ show diff +-+ "days away!"
+    else
+      case br of
+        Fedora _ -> do
+          let latest = maximum (delete Rawhide activeBrs)
+          when (br > latest) $
+            error' $ showBranch br +-+ "is newer than latest branch"
+        -- FIXME also check for too new EPEL
+        _ -> return ()
+  return brs
 
 listOfAnyBranches :: Bool -> Bool -> BranchesReq -> IO [AnyBranch]
 listOfAnyBranches distgit active breq =
