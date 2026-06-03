@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.8.3 (2026-06-03)
+- 'compare-tarballs': order tarballs by removal and addition
+
 ## 1.8.2 (2026-06-03)
 - 'autospec': don't switch to rawhide and pass pkg spec file to convert
 - 'copr': filter out canceled builds from existing builds

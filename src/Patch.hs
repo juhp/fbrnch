@@ -12,7 +12,7 @@ import Safe (headMay)
 
 simplifyMinimalDiff :: [String] -> [String]
 simplifyMinimalDiff =
-  maybeRemoveDiffGit . filterCommon
+  sortOn diffKey . maybeRemoveDiffGit . filterCommon
   where
     filterCommon =
       filter (not .
@@ -24,6 +24,10 @@ simplifyMinimalDiff =
         if length gitDiffs == 1
         then ls \\ gitDiffs
         else ls
+
+    diffKey ('-':fs) = (False, fs)
+    diffKey ('+':fs) = (True, fs)
+    diffKey s = error $ "bad diff line:" +-+ show s
 
 -- adapted from flist in swish
 matchPreds :: [a -> Bool] -> a -> Bool
