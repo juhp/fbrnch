@@ -425,27 +425,28 @@ pkgNameVerRelDist strict (Just br) spec = do
   hostdist <- cmd "rpm" ["--eval", "%{dist}"]
   -- FIXME more precise regexp with "Release:"
   autorelease <- isAutoRelease spec
-  nvrs <- do
-    if autorelease
+  if autorelease
+    then do
+    pkggit <- isPkgGitRepo
+    if pkggit
       then do
-      pkggit <- isPkgGitRepo
-      if pkggit
-        then do
-        mfedpkg <- findExecutable "fedpkg"
-        when (isNothing mfedpkg) $
-          error' "requires fedpkg.."
-        cmdLines "fedpkg" ["verrel"]
-        else
-        if strict
-        then error' "cannot determine NVR accurately for autorelease outside dist-git"
-        else return []
-    else rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
-  seq disttag $
-    return $
-    case nvrs of
-      [] -> Nothing
-      [nvr] -> maybeNVR (replace hostdist disttag nvr)
-      _ -> error' "could not determine unique nvr"
+      mfedpkg <- findExecutable "fedpkg"
+      when (isNothing mfedpkg) $
+        error' "requires fedpkg.."
+      maybeNVR <$> cmd "fedpkg" ["verrel"]
+      else
+      if strict
+      then error' "cannot determine NVR accurately for autorelease outside dist-git"
+      else return Nothing
+    else
+    seq disttag $
+    do
+      nvrs <- rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
+      return $
+        case nvrs of
+          [] -> Nothing
+          [nvr] -> maybeNVR (replace hostdist disttag nvr)
+          _ -> error' "could not determine unique nvr"
 
 pkgNameVerRel' :: Branch -> FilePath -> IO NVR
 pkgNameVerRel' br spec = do
