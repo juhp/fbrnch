@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.2 (2026-06-03)
+- 'autospec': don't switch to rawhide and pass pkg spec file to convert
+- 'copr': filter out canceled builds from existing builds
+- 'mock': add --no-pull and --config-options
+- 'mock': use target branch for srpm and build disttag
+- 'nvr': fix for epel10 disttag with autorelease
+- Branches listOfBranches: do eol/branched checks for all BranchesReq
+
 ## 1.8.1 (2026-03-20)
 - new native watchtask implementation and command
 - local build.log's now generated with 'script' tool instead of tee pipe
