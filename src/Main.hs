@@ -104,17 +104,19 @@ renderVertGridWithBoxes termWidth items =
 main :: IO ()
 main = do
   args <- getArgs
-  if null args
-    then do
-    putStrLn "Usage: 'fbrnch <command>' where <command> is one of:\n"
-    w <- getTerminalWidth
-    putStrLn $ renderVertGridWithBoxes w . sort $ map cmdName progCommands
-    putStrLn "Use -h (--help) for details"
-    else do
-    setNoBuffering
-    simpleCmdArgs (Just version) "Fedora branch building tool"
-      "A tool to help with updating and building package branches https://github.com/juhp/fbrnch#readme" $
-      subcommands progCommands
+  case args of
+    [] -> do
+      putStrLn "Usage: 'fbrnch <command>' where <command> is one of:\n"
+      w <- getTerminalWidth
+      putStrLn $ renderVertGridWithBoxes w . sort $ map cmdName progCommands
+      putStrLn "Use -h (--help) for details"
+    ["--list-commands"] ->
+      mapM_ putStrLn $ sort $ map cmdName progCommands
+    _ -> do
+      setNoBuffering
+      simpleCmdArgs (Just version) "Fedora branch building tool"
+        "A tool to help with updating and building package branches https://github.com/juhp/fbrnch#readme" $
+        subcommands progCommands
   where
     cmdName (Subcommand name _ _) = name
 
