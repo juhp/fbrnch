@@ -2,7 +2,7 @@
 
 module Main (main) where
 
-import Data.List.Extra (dropSuffix)
+import Data.List.Extra (chunksOf, dropSuffix, sort)
 import Data.Maybe (fromMaybe)
 import Distribution.Fedora.Branch (partitionBranches, readBranch)
 #if !MIN_VERSION_simple_cmd_args(0,1,7)
@@ -11,6 +11,9 @@ import Options.Applicative (maybeReader, ReadM)
 import SelectRPMs (existingStrategyOption, pkgMgrOpt, selectRpmsOptions,
                    Yes(..))
 import SimpleCmdArgs
+import System.Environment (getArgs)
+import System.Console.Terminal.Size (size, Window(..))
+import qualified Text.PrettyPrint.Boxes as B
 
 -- commands
 import Cmd.Autospec
@@ -67,12 +70,56 @@ import RpmBuild (ForceShort(..), BCond(..))
 import Paths_fbrnch (version)
 import Types (SideTagTarget(..))
 
+getTerminalWidth :: IO Int
+getTerminalWidth = do
+  mSize <- size
+  case mSize of
+    Just s  -> return (width s)
+    Nothing -> return 80
+
+renderVertGridWithBoxes :: Int -> [String] -> String
+renderVertGridWithBoxes termWidth items =
+  let matrix = commandMatrix
+      boxMatrix = map (map B.text) matrix
+      columns = map (B.vcat B.left) boxMatrix
+      finalBox  = B.hsep 4 B.left columns
+  in B.render finalBox
+  where
+    commandMatrix :: [[String]]
+    commandMatrix =
+      if null items
+      then []
+      else
+        let numCols = max 1 $ min 6 (termWidth `div` 20)
+        in toVerticalGrid numCols
+
+    toVerticalGrid :: Int -> [[String]]
+    toVerticalGrid numCols =
+      let numItems = length items
+          numRows  = (numItems + numCols - 1) `div` numCols
+          -- Pad with empty strings to make a perfect rectangle
+          padded   = items ++ replicate (numRows * numCols - numItems) ""
+      in chunksOf numRows padded
+
 main :: IO ()
 main = do
-  setNoBuffering
-  simpleCmdArgs (Just version) "Fedora branch building tool"
-    "A tool to help with updating and building package branches https://github.com/juhp/fbrnch#readme" $
-    subcommands
+  args <- getArgs
+  if null args
+    then do
+    putStrLn "Usage: 'fbrnch <command>' where <command> is one of:\n"
+    w <- getTerminalWidth
+    putStrLn $ renderVertGridWithBoxes w . sort $ map cmdName progCommands
+    putStrLn "Use -h (--help) for details"
+    else do
+    setNoBuffering
+    simpleCmdArgs (Just version) "Fedora branch building tool"
+      "A tool to help with updating and building package branches https://github.com/juhp/fbrnch#readme" $
+      subcommands progCommands
+  where
+    cmdName (Subcommand name _ _) = name
+
+progCommands :: [Subcommand]
+progCommands =
     [ Subcommand "clone" "Clone packages" $
       cloneCmd
       <$> dryrunOpt "Dry run"
