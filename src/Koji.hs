@@ -473,11 +473,11 @@ maybeTimeout secs act = do
 createKojiSidetag :: Bool -> Branch -> IO String
 createKojiSidetag dryrun br = do
   hub <- getKojiProfileHub
-  (buildtag,_desttag) <- kojiBuildTarget' hub (showBranch br)
   out <-
     if dryrun
-    then return $ "Side tag '" ++ buildtag ++ "'"
+    then return $ "Side tag '" ++ showBranch br ++ "'"
     else do
+      buildtag <- fst <$> kojiBuildTarget' hub (showBranch br)
       krbTicket
       ls <- lines <$> fedpkg "request-side-tag" ["--base-tag",  buildtag]
       case ls of
