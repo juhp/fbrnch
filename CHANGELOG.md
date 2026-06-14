@@ -19,13 +19,16 @@
 - 'copr': retry coprGetBuild when watching a build
 - 'install': take %_rpmdir into account
 - 'local','install': rename --rebuild to --force-build
-- 'parallel: for single package do full kojiWaitTask
-- 'parallel: notify-send for failure or --must-push failure
-- 'parallel: use reverse text to highlight problem prompts
-- 'pull: use retry
-- 'request-branches: include branches in comment
-- 'update-sources: for "sources" diff also compare-tarballs
+- 'parallel': for single package do full kojiWaitTask
+- 'parallel': notify-send for failure or --must-push failure
+- 'parallel': use reverse text to highlight problem prompts
+- 'pull': use retry
+- 'request-branches': include branches in comment
+- 'update-sources': for "sources" diff also compare-tarballs
 - 'waitrepo': rename --no-nvr to --no-package
+- 'watchtask': displays build hosts initially
+- 'watchtask': can watch ongoing package branch build; --progress
+- 'watchtask': improve formatting with arch padding and list hosts host
 - Koji getChildrenTasks: use maybeTimeout to avoid crash
 - Koji: introduce kojiGetTaskState' for DRY
 - Koji: kojiBuild output profile if uploading srpm
@@ -38,9 +41,6 @@
 - kojiWatchBuildTask loopWatch: check parent state not number of buildArchs
 - kojiWatchBuildTask: track display of NVR (in Cyan)
 - stack: lts-24.28 has crypton-x509-system-1.6.8
-- 'watchtask': displays build hosts initially
-- 'watchtask': can watch ongoing package branch build; --progress
-- 'watchtask': improve formatting with arch padding and list hosts host
 
 ## 1.8 (2026-01-02)
 - 'branch-log': new command to check local and remote branches
