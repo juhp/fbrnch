@@ -315,6 +315,7 @@ progCommands =
     , Subcommand "mock" "Local mock build" $
       mockCmd
       <$> dryrunOpt "Do not build (but creates srpm)"
+      <*> switchLongWith "no-bootstrap" "Use --no-bootstrap-chroot to avoid podman"
       <*> optional nocleanOpt
       <*> switchLongWith "no-pull" "Do not pull latest buildroot image"
       <*> optional (strOptionLongWith "config-options" "'OPTION=VALUE ..'" "Set mock config_opts")

@@ -31,10 +31,10 @@ reqShell (Just ms) = ms /= MockInstall
 -- FIXME add repo/copr for build
 -- FIXME handle non-release branches (on-branch works)
 -- FIXME option for --shell without rebuild
-mockCmd :: Bool -> Maybe NoClean -> Bool -> Maybe String -> Bool -> Bool
+mockCmd :: Bool -> Bool -> Maybe NoClean -> Bool -> Maybe String -> Bool -> Bool
         -> Maybe MockMode -> Maybe Branch -> Maybe String
         -> (BranchesReq, [String]) -> IO ()
-mockCmd dryrun mnoclean noPull mconfigOptions network reinstall mockmode mroot march (breq, ps) = do
+mockCmd dryrun nobootstrap mnoclean noPull mconfigOptions network reinstall mockmode mroot march (breq, ps) = do
   pkggit <- isPkgGitRepo
   branches <-
     case breq of
@@ -62,6 +62,7 @@ mockCmd dryrun mnoclean noPull mconfigOptions network reinstall mockmode mroot m
                 let verrel = showPkgVerRel . readNVRA $ srpm
                  in ["--resultdir=results" </> verrel]
               _ -> []
+      incontainer <- doesFileExist "/run/.containerenv"
       let command = if length pkgs > 1 then "--chain" else "--rebuild"
           noclean = case mnoclean of
                       Nothing -> []
@@ -69,7 +70,7 @@ mockCmd dryrun mnoclean noPull mconfigOptions network reinstall mockmode mroot m
                       Just NoCleanAfter -> ["--no-cleanup-after"]
                       Just NoCleanAll -> ["--no-clean", "--no-cleanup-after"]
                       Just MockShortCircuit -> ["--short-circuit", "install"]
-          mockopts_common c = [c, "--root", mockRoot rootBr march] ++ noclean ++ ["--enable-network" | network]
+          mockopts_common c = [c, "--root", mockRoot rootBr march] ++ noclean ++ ["--enable-network" | network] ++ ["--no-bootstrap-chroot" | nobootstrap || incontainer]
           config_opts = ["cleanup_on_failure=False" | mnoclean `elem` [Nothing, Just NoCleanBefore]] ++ ["buildroot_image_skip_pull=True" | noPull] ++ maybe [] words mconfigOptions
           mockbuild_opts = mockopts_common command ++ ["--config-opts=" ++ unwords config_opts | not (null config_opts)] ++ resultdir ++ srpms
           mockshell_opts = mockopts_common "--shell" ++ ["--no-clean" | "--no-clean" `notElem` noclean]
