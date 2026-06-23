@@ -27,6 +27,7 @@ import Cmd.Merge (mergeBranch)
 import Git
 import Koji
 import Package
+import Pagure (pagurePRs)
 import RpmBuild (checkSourcesMatch, distRpmOptions, getDynSourcesMacros)
 import Types
 
@@ -283,6 +284,7 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
       -- FIXME make sure branch is up-to-date (otherwise autorelease may be wrong!)
       nvr <- pkgNameVerRel' br spec
       putStrLn $ showNVR nvr +-+ "(" ++ target ++ ")" +-+ morepkgs
+      pagurePRs $ unPackage pkg
       putNewLn
       unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
       if null unpushed

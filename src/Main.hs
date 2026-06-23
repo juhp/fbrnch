@@ -39,6 +39,7 @@ import Cmd.Merge
 import Cmd.Mock
 import Cmd.Override
 import Cmd.Owner
+import Cmd.PRs
 import Cmd.Parallel
 import Cmd.Prep
 import Cmd.Pull
@@ -360,6 +361,9 @@ progCommands =
       bugsCmd
       <$> optional (strOptionWith 's' "summary" "KEY" "Search for bugs containing keyword")
       <*> manyPackages
+    , Subcommand "prs" "List package PRs" $
+      prsCmd
+      <$> manyPackages
     , Subcommand "bump" "Bump release for package" $
       bumpCmd
       <$> dryrunOpt "Dry run: do not bump"

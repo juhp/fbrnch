@@ -19,6 +19,7 @@ import Cmd.Merge
 import Git
 import Koji
 import Package
+import Pagure (pagurePRs)
 import RpmBuild (checkSourcesMatch)
 import Types
 
@@ -107,6 +108,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
   checkForSpecFile spec
   checkSourcesMatch pkg (RelBranch br) spec
   -- FIXME: check for %macros in %changelog
+  pagurePRs $ unPackage pkg
   unpushed <- gitOneLineLog $ "origin/" ++ showBranch br ++ "..HEAD"
   putNewLn
   let msidetagTarget = buildoptSidetagTarget opts

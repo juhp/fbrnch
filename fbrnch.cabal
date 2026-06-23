@@ -71,6 +71,7 @@ executable fbrnch
                        Cmd.Mock
                        Cmd.Override
                        Cmd.Owner
+                       Cmd.PRs
                        Cmd.Parallel
                        Cmd.Prep
                        Cmd.Pull
@@ -132,7 +133,8 @@ executable fbrnch
                        http-query,
                        koji,
                        network-uri,
-                       pagure >= 0.2.1,
+                       pagure >= 0.2.2,
+                       pagure-cli,
                        pretty-terminal,
                        process,
                        -- regex-tdfa,

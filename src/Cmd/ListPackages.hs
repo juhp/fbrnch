@@ -73,7 +73,7 @@ countListPackages force count mpackager pkgs = do
         else return True
       if ok
         then do
-        pages <- queryPagureCountPaged srcfpo False path (mkParams mpattern) ("pagination", "page")
+        pages <- queryPagurePaged srcfpo path (mkParams mpattern) ("pagination", "page")
         return $
           concatMap (map (lookupKey' "name")) $
           mapMaybe (lookupKey "projects") pages
