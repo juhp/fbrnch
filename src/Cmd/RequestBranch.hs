@@ -9,6 +9,7 @@ module Cmd.RequestBranch (
 import Fedora.Krb (fasIdFromKrb)
 import Network.HTTP.Query (lookupKey')
 import SimplePrompt (promptEnter)
+import qualified System.Process.Typed as P
 import System.Time.Extra (sleep)
 
 import Common
@@ -22,14 +23,6 @@ import Koji (fedoraHub, kojiBuildTarget')
 import ListReviews
 import Package
 import Pagure
-
--- FIXME try to catch expired token (maybe record date when key updated?)
--- request-branch and request-repo require pagure.io API key in ~/.config/rpkg/fedpkg.conf for opening releng-scm issue: following is error for expired key
-
--- "Could not execute request_branch: The following error occurred while creating a new issue in Pagure: Invalid or expired token. Please visit https://pagure.io/settings#nav-api-tab to get or renew your API token.
--- For invalid or expired tokens please set a new token in your user configuration by running:
---         fedpkg set-pagure-token
--- The command is interactive; enter the new token when prompted."
 
 -- FIXME option to do koji scratch build instead of mock
 requestBranchesCmd :: Bool -> Bool -> Bool -> Maybe Branch -> Bool
@@ -114,27 +107,44 @@ requestPkgBranches quiet multiple mock breq pkg = do
           urls <- forM newbranches $ \ br -> do
             when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br Nothing]
             when (length branches > 1) $ putStr $ showBranch br ++ " "
-            -- 1. Can timeout like this:
-            -- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
-            -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
-            -- &
-            -- 2. Can fail like this:
-            -- Could not execute request_branch: The following error occurred while trying to get the active release branches in PDC: <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-            -- <title>500 Internal Server Error</title>
-            -- <p>The server encountered an internal error or
-            -- misconfiguration and was unable to complete
-            -- your request.</p> [...]
-            -- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
-            u <- fedpkg "request-branch" [showBranch br]
-            putStrLn u
-            return u
+            url <- doRequestBr br
+            putStrLn url
+            return url
           whenJust mbidsession $ \(bid,session) ->
             commentBug session bid $
             unlines $ zipWith (\u b -> u +-+ showBranch b) urls newbranches
           return newbranches
   where
-    -- doRequestBr :: Bool -> Branch -> IO String
-    -- doRequestBr multibr br = do
+-- 1. Can timeout like this:
+-- Could not execute request_branch: HTTPSConnectionPool(host='pagure.io', port=443): Read timed out. (read timeout=60)
+-- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
+-- &
+-- 2. Can fail like this:
+-- Could not execute request_branch: The following error occurred while trying to get the active release branches in PDC: <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+-- <title>500 Internal Server Error</title>
+-- <p>The server encountered an internal error or
+-- misconfiguration and was unable to complete
+-- your request.</p> [...]
+-- fbrnch: readCreateProcess: fedpkg "request-branch" "epel9" (exit 1): failed
+    doRequestBr :: Branch -> IO String
+    doRequestBr br = do
+      (ok, u, err) <- cmdFull "fedpkg" ["request-branch", showBranch br] ""
+      if ok
+        then return u
+        else do
+        -- "Could not execute request_branch: The following error occurred while creating a new issue in Pagure: Invalid or expired token. Please visit https://pagure.io/settings#nav-api-tab to get or renew your API token.
+        -- For invalid or expired tokens please set a new token in your user configuration by running:
+        --         fedpkg set-pagure-token
+        -- The command is interactive; enter the new token when prompted."
+        if "Invalid or expired token." `isInfixOf` err
+          then do
+          putStrLn "pagure.io token expired"
+          putStrLn "Refresh token at https://pagure.io/settings#nav-api-tab and paste here directly into 'fedpkg set-pagure-token' now"
+          ret <- P.runProcess $ P.proc "fedpkg" ["set-pagure-token"]
+          if ret == P.ExitSuccess
+            then doRequestBr br
+            else error' "Failed to set token"
+          else error' err
     --   when mock $ fedpkg_ "mockbuild" ["--root", mockRoot br]
     --   when multiple $ putStr (unPackage pkg ++ " ")
     --   when multibr $ putStr (show br)
