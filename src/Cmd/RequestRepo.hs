@@ -3,10 +3,14 @@
 module Cmd.RequestRepo (requestRepos) where
 
 import Control.Exception.Extra (retry)
+import qualified Data.ByteString.Lazy.Char8 as B
 import Fedora.Krb (fasIdFromKrb)
 import Network.HTTP.Directory (httpExists')
 import Safe (headMay)
 import SimplePrompt (promptEnter, promptInitial, yesNo)
+import System.Directory (doesFileExist)
+import System.Environment.XDG.BaseDir (getUserConfigFile)
+import qualified System.Process.Typed as P
 import System.Time.Extra (sleep)
 
 import Branches
@@ -64,7 +68,7 @@ requestRepo mock skipcheck resubmit breq pkg = do
         putNewLn
         promptEnter "Press Enter to continue"
         -- FIXME check api key is still valid or open pagure ticket directly
-        fedpkg_ "request-repo" [pkg, show bid]
+        doRequestRepo pkg bid
         putNewLn
         let draft = "Thank you for the review" ++ maybe "" ("," +-+) (assigneeFirstname $ bugAssignedToDetail bug)
         input <- promptInitial "Enter comment" draft
@@ -124,3 +128,29 @@ requestRepo mock skipcheck resubmit breq pkg = do
         Right brs ->
           when (null brs) $
           error' $ "no branches in dist-git for" +-+ pkg
+
+doRequestRepo :: String -> Int -> IO ()
+doRequestRepo pkg bid = do
+  file <- getUserConfigFile "rpkg" "fedpkg.conf"
+  cfg <- doesFileExist file
+  if cfg
+    then do
+    (exit, err) <- P.readProcessStderr $ P.proc "fedpkg" ["request-repo", pkg, show bid]
+    let errstr = B.unpack err
+    unless (exit == P.ExitSuccess) $ do
+      if "Invalid or expired token." `isInfixOf` errstr
+        then do
+        putStrLn "pagure.io token expired or invalid"
+        putStrLn "Refresh token at https://pagure.io/settings#nav-api-tab and paste here directly into 'fedpkg set-pagure-token' now"
+        setPagureToken
+        else error' errstr
+    else do
+    putStrLn "Missing pagure.io token"
+    putStrLn "Please create a token for issue creation at https://pagure.io/settings#nav-api-tab and paste here into 'fedpkg set-pagure-token' now"
+    setPagureToken
+  where
+    setPagureToken = do
+      ret <- P.runProcess $ P.proc "fedpkg" ["set-pagure-token"]
+      if ret == P.ExitSuccess
+        then doRequestRepo pkg bid
+        else error' "Failed to set token"
