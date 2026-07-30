@@ -17,17 +17,17 @@ import System.Directory (doesFileExist)
 import Branches
 import Git
 import Package
-import RpmBuild (distRpmOptions, getDynSourcesMacros)
+import RpmBuild (distRpmOptions, getDynSourcesMacros, installDeps)
 
 data RpmWith = RpmWith String | RpmWithout String
 
 data SortDisplay = SortParallel | SortChain | SortLayers | SortPlain
 
 -- FIXME ghc-attempt f37 branch does not exist! (coming from f29)
-sortCmd :: SortDisplay -> Maybe RpmWith -> (Branch,[String]) -> IO ()
-sortCmd _ _ (_,[]) = return ()
-sortCmd displaymode mrpmwith (br, pkgs) = do
-  withPackagesBranch HeaderNone False Nothing setupPkg (br, pkgs)
+sortCmd :: SortDisplay -> Bool -> Maybe RpmWith -> (Branch,[String]) -> IO ()
+sortCmd _ _ _ (_,[]) = return ()
+sortCmd displaymode deps mrpmwith (br, pkgs) = do
+  withPackagesBranch HeaderNone False Nothing (setupPkg deps) (br, pkgs)
   distopts <- distRpmOptions br
   let rpmopts = maybe [] toRpmOption mrpmwith ++ distopts
   case displaymode of
@@ -43,19 +43,21 @@ sortCmd displaymode mrpmwith (br, pkgs) = do
     SortPlain ->
       dependencySortRpmOpts rpmopts (reverse pkgs) >>= putStrLn . unwords
 
-setupPkg :: Package -> AnyBranch -> IO ()
-setupPkg pkg br = do
+setupPkg :: Bool -> Package -> AnyBranch -> IO ()
+setupPkg deps pkg br = do
   whenM isPkgGitRepo $ gitSwitchBranch br
-  unlessM (doesFileExist "dead.package") $
+  unlessM (doesFileExist "dead.package") $ do
     getDynSourcesMacros $ packageSpec pkg
+    when deps $
+      localBranchSpecFile pkg br >>= installDeps False
 
 toRpmOption :: RpmWith -> [String]
 toRpmOption (RpmWith opt) = ["--with=" ++ opt]
 toRpmOption (RpmWithout opt) = ["--without=" ++ opt]
 
-graphCmd :: Bool -> Maybe RpmWith -> (Maybe Branch,[FilePath]) -> IO ()
-graphCmd dot mrpmwith (mbr, pkgs) = do
-  withPackagesMaybeBranchNoHeadergit setupPkg (mbr, pkgs)
+graphCmd :: Bool -> Bool -> Maybe RpmWith -> (Maybe Branch,[FilePath]) -> IO ()
+graphCmd dot deps mrpmwith (mbr, pkgs) = do
+  withPackagesMaybeBranchNoHeadergit (setupPkg deps) (mbr, pkgs)
   let rpmopts = maybe [] toRpmOption mrpmwith
   createGraph4 False [] rpmopts False False True Nothing pkgs >>=
     if dot then printGraph else renderGraph

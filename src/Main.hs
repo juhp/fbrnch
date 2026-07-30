@@ -260,6 +260,7 @@ progCommands =
     , Subcommand "sort" "Sort packages in build dependency order (default format: chain-build)" $
       sortCmd
       <$> sortDisplayOpt
+      <*> switchWith 'd' "deps" "require deps to be installed"
       <*> optional rpmWithOpt
       <*> branchPackages
     , Subcommand "prep" "Prep sources" $
@@ -484,6 +485,7 @@ progCommands =
     , Subcommand "graph" "Output dependency graph" $
       graphCmd
       <$> switchWith 'o' "output" "Output graph in gv/dot format"
+      <*> switchWith 'd' "deps" "require deps to be installed"
       <*> optional rpmWithOpt <*> maybeBranchPackages True
     , Subcommand "repoquery" "Repoquery branches (put repoquery options after '--')" $
       repoqueryCmd
