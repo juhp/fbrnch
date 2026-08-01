@@ -433,7 +433,7 @@ pkgNameVerRelDist strict (Just br) spec = do
       mfedpkg <- findExecutable "fedpkg"
       when (isNothing mfedpkg) $
         error' "requires fedpkg.."
-      maybeNVR <$> cmd "fedpkg" ["verrel"]
+      maybeNVR <$> fedpkg "verrel" []
       else
       if strict
       then error' "cannot determine NVR accurately for autorelease outside dist-git"

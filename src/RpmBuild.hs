@@ -149,7 +149,7 @@ getSources spec = do
           else return False
         mfedpkg <- findExecutable "fedpkg"
         if uploaded && isJust mfedpkg
-          then cmd_ "fedpkg" ["sources"]
+          then fedpkg_ "sources" []
           else do
           cmd_ "spectool" ["-g", "-S", spec]
           unlessM (doesFileExist src) $
@@ -262,7 +262,7 @@ generateSrpmNoDist nodist force mbr spec = do
         -- prevent Ctrl-c from truncating srpm to corrupted file
         fmap words . uninterruptibleMask_ $
         if autospec
-        then cmd "fedpkg" $ "srpm" : opts
+        then fedpkg "srpm" opts
         else cmd "rpmbuild" (opts ++ ["-bs", spec])
       case filter ("src.rpm" `isExtensionOf`) outs of
         [srpm] -> do
