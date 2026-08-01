@@ -113,8 +113,26 @@ getSources spec = do
             then return msourcedir
             else return Nothing
   isPkgGit <- isPkgGitRepo
-  (patches,srcs) <- partitionEithers . map sourcePatchFile
-                    <$> cmdLines "spectool" ["-a", spec]
+  (patches,srcs) <- partitionEithers . map sourcePatchFile <$>
+                    do
+                      -- can fail in pathological case: eg dl_poly (#74)
+                      (ok, out, err) <- cmdFull "spectool" ["-a", spec] ""
+                      if ok
+                        then return $ lines out
+                        else do
+                        warning err
+                        if isPkgGit then do
+                          warning "running fedpkg sources first"
+                          have_sources <- doesFileExist "sources"
+                          if not have_sources
+                            then error' "spectool failed to parse sources"
+                            else do
+                            fedpkg_ "sources" []
+                            (ok', out', err') <- cmdFull "spectool" ["-a", spec] ""
+                            if ok'
+                              then return $ lines out'
+                              else error' err'
+                          else error' "spectool failed to parse sources"
   forM_ srcs $ \ src -> do
     exists <- checkCompression src
     inSrcdir <- doesSourceDirFileExist msrcdir src
