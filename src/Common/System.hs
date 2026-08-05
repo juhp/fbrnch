@@ -24,10 +24,12 @@ import Control.Monad.IO.Class
 #if !MIN_VERSION_filepath(1,4,2)
 import Data.List
 #endif
-#if MIN_VERSION_time(1,9,0)
+#if MIN_VERSION_time(1,9,0) && !MIN_VERSION_simple_cmd(0,2,8)
 import Data.Time.Format (formatTime, defaultTimeLocale)
 #endif
+#if !MIN_VERSION_simple_cmd(0,2,8)
 import Safe
+#endif
 import SimpleCmd hiding (
   error',
 #if !MIN_VERSION_simple_cmd(0,2,8)
@@ -45,8 +47,10 @@ import System.Directory
 import System.FilePath
 import System.IO
 
+#if !MIN_VERSION_simple_cmd(0,2,8)
 import Control.Exception (bracket)
 import Data.Time.Clock
+#endif
 
 #if !MIN_VERSION_simple_cmd(0,2,5)
 timeIO :: IO a -> IO a
@@ -56,6 +60,7 @@ timeIO = timeIOHelper "took"
 timeIODesc :: String -> IO a -> IO a
 timeIODesc thing = timeIOHelper (thing +-+ "took")
 
+#if !MIN_VERSION_simple_cmd(0,2,8)
 timeIOHelper :: String -> IO a -> IO a
 timeIOHelper msg action = do
   bracket
@@ -76,6 +81,7 @@ timeIOHelper msg action = do
       in formatTime defaultTimeLocale fmtstr dur
 #else
     renderDuration = show
+#endif
 #endif
 
 isTty :: IO Bool
