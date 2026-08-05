@@ -55,13 +55,13 @@ mockCmd dryrun nobootstrap mnoclean noPull mconfigOptions network reinstall mock
       putNewLn
       -- FIXME? is it better just to fail asking for target branch?
       rootBr <- maybe (if pkggit then getReleaseBranch else return br) return mroot
-      let resultdir =
-            case srpms of
-              [] -> error' "cannot build zero packages"
-              [srpm] ->
-                let verrel = showPkgVerRel . readNVRA $ srpm
-                 in ["--resultdir=results" </> verrel]
-              _ -> []
+      resultdir <-
+        case srpms of
+          [] -> error' "cannot build zero packages"
+          [srpm] ->
+            let verrel = showPkgVerRel . readNVRA $ srpm
+            in return ["--resultdir=results" </> verrel]
+          _ -> return []
       incontainer <- doesFileExist "/run/.containerenv"
       let command = if length pkgs > 1 then "--chain" else "--rebuild"
           noclean = case mnoclean of

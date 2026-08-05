@@ -147,19 +147,19 @@ doInteractiveReview importsrpm mspec srpm = do
   putStrLn "# Licensing"
   whenM (yesNoDefault True "Run licensecheck") $ do
     buildls <- listDirectory "BUILD"
-    let builddir =
-          case sort buildls of
-            [] -> error' "empty BUILD/"
-            [d] -> "BUILD" </> d
-            -- FIXME not good enough! use nvr
-            ds -> "BUILD" </> last ds
+    builddir <-
+      case sort buildls of
+        [] -> error' "empty BUILD/"
+        [d] -> return $ "BUILD" </> d
+        -- FIXME not good enough! use nvr
+        ds -> return $ "BUILD" </> last ds
     builddirls <- listDirectory builddir
-    let builddir2 =
-          case sort $ builddirls \\ ["BUILDROOT","SPECPARTS"]  of
-            [] -> error' $ "empty" +-+ "BUILD" </> builddir
-            [d] -> builddir </> d
-            -- FIXME? some projects might have more than one topdir
-            ds -> error' $ "more than one dir:" +-+ unwords ds
+    builddir2 <-
+      case sort $ builddirls \\ ["BUILDROOT","SPECPARTS","rpmbuild.env"]  of
+        [] -> error' $ "empty" +-+ "BUILD" </> builddir
+        [d] -> return $ builddir </> d
+        -- FIXME? some projects might have more than one topdir
+        ds -> error' $ "more than one dir:" +-+ unwords ds
     let args = ["--shortname-scheme", "spdx", "-r", builddir2]
     cmdN "licensecheck" args
     cmdLines "licensecheck" args >>=

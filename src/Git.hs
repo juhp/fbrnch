@@ -181,7 +181,7 @@ gitShortLog1 mrange = do
 mkCommit :: String -> Commit
 mkCommit cs =
   case word1 cs of
-    ("",_) -> error' "empty commit log line!"
+    ("",_) -> error "empty commit log line!"
     (hash,rest) ->
       case breakEnd isSpace rest of
         -- "(msg txt, date)"

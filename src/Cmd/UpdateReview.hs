@@ -4,11 +4,11 @@ module Cmd.UpdateReview (
 where
 
 import Control.Monad (when)
-import SimpleCmd (cmd, error')
+import SimpleCmd (cmd)
 import System.FilePath (takeFileName)
 
 import Bugzilla
---import Common
+import Common.System (error')
 import qualified Common.Text as T
 import Package
 import PkgReview

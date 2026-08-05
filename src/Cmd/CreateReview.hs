@@ -5,13 +5,14 @@ where
 
 import Data.Char (isAscii)
 import Fedora.Krb (maybeFasIdFromKrb)
-import SimpleCmd (cmd, error')
+import SimpleCmd (cmd)
 import SimplePrompt (promptEnter)
 import System.Directory (doesFileExist)
 
 import Branches
 import Bugzilla
 import Common
+import Common.System (error')
 import Package
 import PkgReview
 import RpmBuild

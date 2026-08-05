@@ -27,7 +27,7 @@ import Data.Tuple.Extra (first)
 import Distribution.Fedora.Branch (getActiveBranches, getActiveBranched)
 import Network.HTTP.Query (lookupKey, lookupKey')
 import Network.HTTP.Simple as HTTP
-import Safe (headDef, lastMay)
+import Safe (lastMay)
 import System.Environment.XDG.BaseDir (getUserConfigDir)
 import System.Time.Extra (sleep)
 import Web.Fedora.Copr (coprChroots, fedoraCopr)
@@ -56,13 +56,13 @@ releaseToBranch release
     case dropPrefix "fedora-" release of
       "rawhide" -> Rawhide
       n | all isDigit n -> Fedora (read n)
-        | otherwise -> error' $ "unknown fedora release:" +-+ release
+        | otherwise -> error $ "unknown fedora release:" +-+ release
   | "epel-" `isPrefixOf` release =
     let next = "-next" `isSuffixOf` release
     in case dropSuffix "-next" (dropPrefix "epel-" release) of
          n | all isDigit n -> (if next then EPELNext else EPEL) $ read n
-           | otherwise -> error' $ "unknown epel release:" +-+ release
-  | otherwise = error' $ "unknown release:" +-+ release
+           | otherwise -> error $ "unknown epel release:" +-+ release
+  | otherwise = error $ "unknown release:" +-+ release
 
 branchToRelease :: Branch -> String
 branchToRelease Rawhide = "fedora-rawhide"
@@ -79,7 +79,7 @@ data Chroot = Chroot { chrootBranch :: Branch
 readChroot :: String -> Chroot
 readChroot ch =
   case stripInfixEnd "-" ch of
-    Nothing -> error' $ "invalid chroot:" +-+ ch
+    Nothing -> error $ "invalid chroot:" +-+ ch
     Just (b,a) -> Chroot (releaseToBranch b) (readArch a)
 
 showChroot :: Chroot -> String
@@ -100,7 +100,7 @@ readArch "i386" = I386
 readArch "aarch64" = AARCH64
 readArch "ppc64le" = PPC64LE
 readArch "s390x" = S390X
-readArch a = error' $ "unknown arch:" +-+ a
+readArch a = error $ "unknown arch:" +-+ a
 
 showArch :: Arch -> String
 showArch X86_64 = "x86_64"
@@ -254,7 +254,7 @@ readIniConfig inifile iniparser record = do
     else do
     ini <- T.readFile inifile
     let config = parseIniFile ini iniparser
-    return $ either error' record config
+    either error' (return . record) config
 
 -- from copr/frontend/coprs_frontend/coprs/logic/builds_logic.py
 -- FIXME after adding to copr-api
@@ -293,7 +293,7 @@ filterTasks verrel statustest =
 
 coprBuild :: Bool -> String -> String -> FilePath -> FilePath -> [Chroot] -> IO ()
 coprBuild _ _ _ _ _ [] = error' "No chroots chosen"
-coprBuild dryrun user project srpm spec chroots = do
+coprBuild dryrun user project srpm spec chroots@(c:_) = do
   let chrootargs = mconcat [["-r", showChroot bldrt] | bldrt <- chroots]
       buildargs = ["build", "--nowait"] ++ chrootargs ++ [project, srpm]
   putNewLn
@@ -311,7 +311,7 @@ coprBuild dryrun user project srpm spec chroots = do
       actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
       -- FIXME which chroot?
       -- FIXME print buildlog size
-      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot (headDef (error' " nochroot!") chroots) +/+ zeroBuildId bid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
+      error' $ "https://download.copr.fedorainfracloud.org/results" +/+ user +/+ project +/+ showChroot c +/+ zeroBuildId bid ++ "-" ++ actualpkg +/+ "builder-live.log.gz"
 
 zeroBuildId :: Int -> String
 zeroBuildId bid =
@@ -469,7 +469,7 @@ displayLog mgrep logurl = do
   putStrLn $ '\n' : logurl ++ "\n"
   where
     match :: String -> String -> Bool
-    match "" _ = error' "empty grep string not allowed"
+    match "" _ = error "empty grep string not allowed"
     match _ "" = False
     match ('^':needle) ls =
       if lastMay needle == Just '$'

@@ -13,12 +13,14 @@ module Common.System (
 #if !MIN_VERSION_simple_cmd(0,2,8)
   cmdFull,
 #endif
+  error',
 #if !MIN_VERSION_simple_cmd(0,2,5)
   timeIO,
 #endif
   timeIODesc
   ) where
 
+import Control.Monad.IO.Class
 #if !MIN_VERSION_filepath(1,4,2)
 import Data.List
 #endif
@@ -27,6 +29,7 @@ import Data.Time.Format (formatTime, defaultTimeLocale)
 #endif
 import Safe
 import SimpleCmd hiding (
+  error',
 #if !MIN_VERSION_simple_cmd(0,2,8)
   cmdFull,
 #endif
@@ -34,8 +37,8 @@ import SimpleCmd hiding (
   ifM,whenM
 #endif
   )
-#if !MIN_VERSION_simple_cmd(0,2,8)
 import System.Exit
+#if !MIN_VERSION_simple_cmd(0,2,8)
 import System.Process
 #endif
 import System.Directory
@@ -106,3 +109,9 @@ isExtensionOf :: String -> FilePath -> Bool
 isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
 isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
 #endif
+
+error':: MonadIO m => String -> m a
+error' err = do
+  liftIO $ do
+    putStrLn err
+    exitFailure

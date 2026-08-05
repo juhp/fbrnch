@@ -80,8 +80,8 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
               _ -> Nothing
   when (isJust mver) $
     when (isJust moldnewver) $ do
-    let (oldver,newver) =
-          fromMaybe (error' "complex version change") moldnewver
+    (oldver,newver) <-
+      maybe (error' "complex version change") return moldnewver
     -- FIXME take epoch into account
     when (rpmVerCompare oldver newver == GT) $
       putStrLn $ "current" +-+ oldver +-+ "is newer!"
@@ -171,4 +171,4 @@ extractFieldValue :: String -> String
 extractFieldValue vs =
   case headMay . tailSafe . words $ vs of
     Just h -> h
-    Nothing -> error' $ "no field value:" +-+ vs
+    Nothing -> error $ "no field value:" +-+ vs

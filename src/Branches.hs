@@ -124,7 +124,7 @@ pagurePkgBranches :: String -> IO [String]
 pagurePkgBranches pkg = do
   let project = "rpms/" ++ pkg
   res <- pagureListGitBranches srcfpo project
-  return $ either (error' . include project) id res
+  either (error' . include project) return res
   where
     include p e = e ++ ":" +-+ p
 
@@ -158,7 +158,7 @@ data BranchOpts = AllBranches | AllFedora | AllEPEL | ExcludeBranches [Branch]
 
 onlyRelBranch :: AnyBranch -> Branch
 onlyRelBranch (RelBranch br) = br
-onlyRelBranch (OtherBranch br) = error' $ "Non-release branch not allowed:" +-+ br
+onlyRelBranch (OtherBranch br) = error $ "Non-release branch not allowed:" +-+ br
 
 systemBranch :: IO Branch
 systemBranch = do

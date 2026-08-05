@@ -4,7 +4,6 @@ module Cmd.CompareTarballs (
 where
 
 import Safe (tailSafe)
-import SimpleCmd
 import SimpleCmd.Git
 import System.Console.Pretty (supportsPretty)
 import System.IO.Extra (withTempDir)
@@ -60,13 +59,13 @@ compareTarballsCmd mmaxlen Nothing Nothing = do
       -- "+SHA512 (filestore-0.6.5.1.tar.gz) = 9eec4d23737bcdfc3d0ded..."
       case words s of
         (_:"SHA512") : ('(':fp) : "=" : _hash -> init fp
-        _ -> error' $ "Failed to parse:" +-+ s
+        _ -> error $ "Failed to parse:" +-+ s
 
     specVersion s =
       -- "-Version:        0.1.50.1"
       case words s of
         (_:"Version:") : [ver] -> ver
-        _ -> error' $ "Failed to parse:" +-+ s
+        _ -> error $ "Failed to parse:" +-+ s
 
 -- FIXME --reverse diff
 diffTarballs :: Maybe Natural -> String -> String -> IO ()

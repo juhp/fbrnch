@@ -149,10 +149,10 @@ brc = "bugzilla.redhat.com"
 bzBugMaybe :: BugzillaSession -> SearchExpression -> IO (Maybe Bug)
 bzBugMaybe session query = do
   bugs <- searchBugs session query
-  return $ case bugs of
-             [] -> Nothing
-             [bug] -> Just bug
-             _ -> error' "more that one bug found"
+  case bugs of
+    [] -> return Nothing
+    [bug] -> return $ Just bug
+    _ -> error' "more that one bug found"
 
 bzReviewAnon :: IO (Maybe BugId)
 bzReviewAnon = do
@@ -364,7 +364,7 @@ approvedReviewBugSession pkg = do
 reviewBugToPackage :: Bug -> String
 reviewBugToPackage bug =
   case (dropOne ["Request:"] . dropOne ["Review", "Re-Review", "Rename"]  . words . T.unpack . bugSummary) bug of
-    [] -> error' $ "failed to determine review package for" +-+ show (bugId bug)
+    [] -> error $ "failed to determine review package for" +-+ show (bugId bug)
     (p:_) -> p
   where
     dropOne _ [] = []
@@ -373,10 +373,9 @@ reviewBugToPackage bug =
 readIniConfig :: FilePath -> IniParser a -> (a -> b) -> IO b
 readIniConfig inifile iniparser fn = do
   ini <- T.readFile inifile
-  return $
-    case parseIniFile ini iniparser of
-      Left err -> error' $ err ++ "\nin" +-+ inifile
-      Right res -> fn res
+  case parseIniFile ini iniparser of
+    Left err -> error' $ err ++ "\nin" +-+ inifile
+    Right res -> return $ fn res
 
 sortBugsByID :: [Bug] -> [Bug]
 sortBugsByID = sortOn bugId

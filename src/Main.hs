@@ -589,9 +589,9 @@ progCommands =
         branchPkgs args =
           let (brs,pkgs) = partitionBranches args
           in case brs of
-            [] -> error' "specify one branch"
+            [] -> error "specify one branch"
             [br] -> (br,pkgs)
-            _ -> error' $ "cannot have more than one branch:" +-+ unwords (map showBranch brs)
+            _ -> error $ "cannot have more than one branch:" +-+ unwords (map showBranch brs)
 
     maybeBranchPackages :: Bool -> Parser (Maybe Branch,[String])
     maybeBranchPackages = maybeBranchPackages' Nothing
@@ -610,7 +610,7 @@ progCommands =
           in case brs of
             [] -> (Nothing, pkgs)
             [br] -> (Just br,pkgs)
-            _ -> error' $ "cannot have more than one branch:" +-+ unwords (map showBranch brs)
+            _ -> error $ "cannot have more than one branch:" +-+ unwords (map showBranch brs)
 
         extraargdesc = fromMaybe "" mextraarg
 
@@ -628,7 +628,7 @@ progCommands =
           in case mbrnchopts of
             Nothing -> (Branches brs, pkgs)
             Just req | null brs -> (BranchOpt req, pkgs)
-                     | otherwise -> error' "cannot have branch option and branch list"
+                     | otherwise -> error "cannot have branch option and branch list"
 
     prepPreOpts :: Parser PrepPre
     prepPreOpts =
@@ -710,11 +710,11 @@ progCommands =
         updatePair :: Maybe UpdateType -> UpdateSeverity
                    -> (Maybe UpdateType, UpdateSeverity)
         updatePair (Just SecurityUpdate) SeverityUnspecified =
-          error' "Security update requires specifying Severity"
+          error "Security update requires specifying Severity"
         updatePair Nothing sev | sev /= SeverityUnspecified =
-          error' "cannot have --severity with --no-update"
+          error "cannot have --severity with --no-update"
         updatePair (Just TemplateUpdate) sev | sev /= SeverityUnspecified =
-          error' "Template update cannot have --severity"
+          error "Template update cannot have --severity"
         updatePair ty sv = (ty,sv)
 
     forceshortOpt =

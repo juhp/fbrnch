@@ -76,7 +76,7 @@ instance Read UpdateType where
       "enhancement" -> RP.lift (R.string s) >> return EnhancementUpdate
       "newpackage" -> RP.lift (R.string s) >> return NewPackageUpdate
       "template" -> RP.lift (R.string s) >> return TemplateUpdate
-      _ -> error' "unknown bodhi update type" >> RP.pfail
+      _ -> error "unknown bodhi update type" >> RP.pfail
 
 data UpdateSeverity =
   SeverityLow | SeverityMedium | SeverityHigh | SeverityUrgent |
@@ -98,7 +98,7 @@ instance Read UpdateSeverity where
       "medium" -> RP.lift (R.string s) >> return SeverityMedium
       "high" -> RP.lift (R.string s) >> return SeverityHigh
       "urgent" -> RP.lift (R.string s) >> return SeverityUrgent
-      _ -> error' "unknown bodhi update severity" >> RP.pfail
+      _ -> error "unknown bodhi update severity" >> RP.pfail
 
 bodhiTestingRepoTag :: Branch -> IO (Maybe String)
 bodhiTestingRepoTag Rawhide = return Nothing

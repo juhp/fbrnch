@@ -124,10 +124,12 @@ kojiOpenTasks pkg mref target = do
   hub <- getKojiProfileHub
   user <- fasIdFromKrb
   muserid <- kojiGetUserID hub user
-  let userid = fromMaybe (error' $ "Koji failed to return userid for '" ++ user ++ "'") muserid
-  commit <- maybe (git "rev-parse" ["HEAD"]) return mref
-  let source = kojiSource pkg commit
-  kojiUserBuildTasks hub userid (Just source) (Just target)
+  case muserid of
+    Nothing -> error' $ "Koji failed to return userid for '" ++ user ++ "'"
+    Just userid -> do
+      commit <- maybe (git "rev-parse" ["HEAD"]) return mref
+      let source = kojiSource pkg commit
+      kojiUserBuildTasks hub userid (Just source) (Just target)
 
 -- * Koji building
 
@@ -142,12 +144,13 @@ type KojiBuildTask = Either TaskID String
 kojiBuild' :: Bool -> String -> [String] -> IO KojiBuildTask
 kojiBuild' wait target args = do
   krbTicket
-  let srpm = if null args
-             then error' "no args passed to koji build"
-             else ".src.rpm" `isSuffixOf` last args
+  issrpm <-
+    if null args
+    then error "no args passed to koji build"
+    else return $ ".src.rpm" `isSuffixOf` last args
   -- FIXME use tee functionality
   mprofile <- getKojiProfile
-  when srpm $ putStrLn $ "koji srpm build: uploading..." +-+ maybe "" ("to" +-+) mprofile
+  when issrpm $ putStrLn $ "koji srpm build: uploading..." +-+ maybe "" ("to" +-+) mprofile
   -- can fail like:
   -- [ERROR] koji: Request error: POST::https://koji.fedoraproject.org/kojihub/ssllogin::<PreparedRequest [POST]>
   -- [ERROR] koji: AuthError: unable to obtain a session
@@ -390,9 +393,9 @@ kojiBuildBranch' wait target pkg mref args = do
 
 kojiBuildBranch :: String -> Package -> Maybe String -> [String] -> IO ()
 kojiBuildBranch target pkg mref args =
-  checkResult <$> kojiBuildBranch' True target pkg mref args
+  kojiBuildBranch' True target pkg mref args >>= checkResult
   where
-    checkResult = either (\ task -> error' (displayID task +-+ "not completed")) (const ())
+    checkResult = either (\ task -> error' (displayID task +-+ "not completed")) (const $ return ())
 
 kojiBuildBranchNoWait ::String -> Package -> Maybe String -> [String] -> IO TaskID
 kojiBuildBranchNoWait target pkg mref args = do
@@ -575,7 +578,7 @@ kojiTaskRequestNVRTag task =
               (if "fedora-ci_" `isPrefixOf` base
                then takeWhileEnd (/= ':') $ dropPrefix ";" $ dropWhile (/= ';') base
                else base) +-+ fromMaybe "" mtag
-    _ -> error' "could not determine package from build request"
+    _ -> error "could not determine package from build request"
   where
     showValue :: Value -> String
     showValue (ValueString cs) = cs

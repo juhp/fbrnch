@@ -5,11 +5,12 @@ module Cmd.SideTags (
 where
 
 import Fedora.Krb (krbTicket)
-import SimpleCmd (cmd_, cmdN, error')
+import SimpleCmd (cmd_, cmdN)
 import SimplePrompt (yesNo)
 
 import Branches
 import Common
+import Common.System (error')
 import Git (gitSwitchBranchVerbose, isPkgGitRepo)
 import Koji
 import Package (cleanGit, dirtyGit, findSpecfile, pkgNameVerRel',

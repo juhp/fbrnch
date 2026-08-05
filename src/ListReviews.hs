@@ -7,9 +7,8 @@ module ListReviews (
   listReviewsFull
   ) where
 
-import SimpleCmd (error')
-
 import Common
+import Common.System (error')
 
 import Branches
 import Bugzilla

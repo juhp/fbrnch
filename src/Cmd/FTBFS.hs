@@ -44,7 +44,7 @@ ftbfsCmd dryrun short mbugsopt (mbr,pkgs) = do
     bugComponents bug =
       case bugComponent bug of
         [component] -> T.unpack component
-        _ -> error' $ "multiple components!\n" ++ show bug
+        _ -> error $ "multiple components!\n" ++ show bug
 
     query =
       ftbfsFedoraBugs .&&.

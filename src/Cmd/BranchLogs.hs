@@ -142,7 +142,7 @@ getLogCommits allbrs simplydecor br = do
             case mbrs of
               Nothing -> Nothing
               Just brs -> Just $ LogCommit h (NE.sort brs) s t
-        _ -> error' $ "malformed log line:" +-+ cs
+        _ -> error $ "malformed log line:" +-+ cs
 
 hasBranch :: BranchRemote -> Branch -> Bool
 hasBranch (BR _ b1) b2 = b1 == b2

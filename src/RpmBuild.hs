@@ -177,7 +177,7 @@ getSources spec = do
           (case lower (dropWhileEnd isDigit (init f)) of
              "source" -> Right
              "patch" -> Left
-             _ -> error' $! "illegal field:" +-+ f)
+             _ -> error $! "illegal field:" +-+ f)
           -- either url or local file (cannot really have subdir/file)
           $ takeFileName v
 
@@ -502,7 +502,7 @@ buildRequires spec = do
   where
     primary dep =
       case words dep of
-        [] -> error' "empty dep" -- corner case
+        [] -> error "empty dep" -- corner case
         (('(':h):_) -> Just h
         (d:_) -> if "rpmlib(" `isPrefixOf` d
              then Nothing
@@ -545,14 +545,14 @@ checkSourcesMatch pkg br spec = do
     checkLookasideCache :: String -> IO ()
     checkLookasideCache source = do
       let lookaside = "https://src.fedoraproject.org/lookaside/pkgs" +/+ unPackage pkg
-          (file,url) =
-            case words source of
-              ("SHA512":('(':fileparen):"=":[hash]) ->
-                let file' = dropSuffix ")" fileparen
-                in (file', lookaside +/+ file' +/+ "sha512" +/+ hash +/+ file')
-              [hash,file'] ->
-                (file', lookaside +/+ file' +/+ "md5" +/+ hash +/+ file')
-              _ -> error' $ "invalid/unknown source:\n" ++ source
+      (file,url) <-
+        case words source of
+          ("SHA512":('(':fileparen):"=":[hash]) ->
+            let file' = dropSuffix ")" fileparen
+            in return (file', lookaside +/+ file' +/+ "sha512" +/+ hash +/+ file')
+          [hash,file'] ->
+            return (file', lookaside +/+ file' +/+ "md5" +/+ hash +/+ file')
+          _ -> error' $ "invalid/unknown source:\n" ++ source
       unlessM (httpExists' url) $ do
         putStrLn $ url +-+ "not found"
         putStrLn $ "uploading" +-+ file +-+ "to lookaside source repo"

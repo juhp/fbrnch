@@ -143,7 +143,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
             if b == Fedora rawhide
             then Rawhide
             else b
-          Nothing -> error' $ "unknown branch for target" +-+ target
+          Nothing -> error $ "unknown branch for target" +-+ target
 
     buildRun spec nvr merged mpush unpushed target msidetagTarget moverride = do
       let mwaitrepo = buildoptWaitrepo opts

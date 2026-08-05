@@ -95,5 +95,5 @@ listLocalCmd =
 
 listPackages :: Bool -> Maybe Packager -> [String] -> IO [String]
 listPackages force mpackager pkgs =
-  either (error' "impossible happened") id <$>
-  countListPackages force False mpackager pkgs
+  countListPackages force False mpackager pkgs >>=
+  either (const $ error' "impossible happened") return

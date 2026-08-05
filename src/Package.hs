@@ -390,14 +390,14 @@ isAutoRelease spec = do
 autoReleaseReset :: FilePath -> IO Bool
 autoReleaseReset spec = do
   matches <- filter ("Release:" `isPrefixOf`) <$> grep "%autorelease" spec
-  return $
-    case matches of
-      [] -> False
-      [release] ->
-        case words release of
-          ("Release:":"%autorelease":"-b":_) -> True
-          _ -> False
-      _ -> error' $ "multiple autorelease fields in" +-+ spec
+  case matches of
+    [] -> return False
+    [release] ->
+      return $
+      case words release of
+        ("Release:":"%autorelease":"-b":_) -> True
+        _ -> False
+    _ -> error' $ "multiple autorelease fields in" +-+ spec
 
 calculateRelease :: FilePath -> IO String
 calculateRelease spec = do
@@ -414,11 +414,10 @@ pkgNameVerRel = pkgNameVerRelDist True . Just
 pkgNameVerRelDist :: Bool -> Maybe Branch -> FilePath -> IO (Maybe NVR)
 pkgNameVerRelDist _strict Nothing spec = do
   nvrs <- rpmspec ["--srpm", "--undefine=dist"] (Just "%{name}-%{version}-%{release}") spec
-  return $
-    case nvrs of
-      [] -> Nothing
-      [nvr] -> maybeNVR nvr
-      _ -> error' "could not determine unique nvr"
+  case nvrs of
+    [] -> return Nothing
+    [nvr] -> return $ maybeNVR nvr
+    _ -> error' "could not determine unique nvr"
 pkgNameVerRelDist strict (Just br) spec = do
   disttag <- branchDistTag br
   -- workaround dist with bootstrap
@@ -442,11 +441,10 @@ pkgNameVerRelDist strict (Just br) spec = do
     seq disttag $
     do
       nvrs <- rpmspec ["--srpm"] (Just "%{name}-%{version}-%{release}") spec
-      return $
-        case nvrs of
-          [] -> Nothing
-          [nvr] -> maybeNVR (replace hostdist disttag nvr)
-          _ -> error' "could not determine unique nvr"
+      case nvrs of
+        [] -> return Nothing
+        [nvr] -> return $ maybeNVR (replace hostdist disttag nvr)
+        _ -> error' "could not determine unique nvr"
 
 pkgNameVerRel' :: Branch -> FilePath -> IO NVR
 pkgNameVerRel' br spec = do
