@@ -125,8 +125,10 @@ doInteractiveReview importsrpm mspec srpm = do
     prepCmd Nothing False False False (Nothing,[])
   putNewLn
   putStrLn "# RpmLint"
-  void $ cmdBool "rpmlint" ["."] -- FIXME $ spec:srpm:rpms
   spec <- maybe findSpecfile return mspec
+  br <- systemBranch
+  built <- builtRpms (RelBranch br) spec
+  void $ cmdBool "rpmlint" $ spec : srpm : built
   whenM (yesNoDefault importsrpm "Install packages locally") $ do
     installCmd False False Nothing Nothing Nothing [] Nothing False False True True No selectDefault Nothing (Nothing,[])
     rpms <- cmdLines "rpmspec" ["-q", "--rpms", "--qf", "%{name}\n", spec]
