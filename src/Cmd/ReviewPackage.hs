@@ -120,7 +120,9 @@ doInteractiveReview importsrpm mspec srpm = do
   build <- yesNoDefault importsrpm "Build package locally"
   if build
     then localCmd False False False Nothing Nothing [] (Branches [],[])
-    else prepCmd Nothing False False False (Nothing,[])
+    else do
+    putStr "prep "
+    prepCmd Nothing False False False (Nothing,[])
   putNewLn
   putStrLn "# RpmLint"
   void $ cmdBool "rpmlint" ["."] -- FIXME $ spec:srpm:rpms
