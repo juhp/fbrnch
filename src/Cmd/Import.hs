@@ -69,11 +69,12 @@ importCmd showbug reporequest existingrepo mock (breq, ps) = do
             kojiBuildBranch "rawhide" (Package pkg) Nothing ["--fail-fast"]
             putBugBuild False session bid nvr
         existing <- fedoraBranchesNoRawhide (localBranches False)
-        when (null existing) $ do
-          brs <- getRequestedBranches [] breq
-          unless (reporequest || null brs) $
-            requestPkgBranches False False mock (Branches brs) (Package pkg) >>=
-            mapM_ (waitForKojiPkgBranch False (Package pkg))
+        when (null existing) $
+          unless reporequest $ do
+            brs <- getRequestedBranches [] breq
+            unless (null brs) $
+              requestPkgBranches False False False mock (Branches brs) (Package pkg) >>=
+              mapM_ (waitForKojiPkgBranch False (Package pkg))
       when (pkg /= takeFileName dir) $
         setCurrentDirectory dir
 
