@@ -25,9 +25,9 @@ import Package
 import Pagure
 
 -- FIXME option to do koji scratch build instead of mock
-requestBranchesCmd :: Bool -> Bool -> Bool -> Maybe Branch -> Bool
+requestBranchesCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch -> Bool
                    -> (BranchesReq,[String]) -> IO ()
-requestBranchesCmd quiet reviews skipcheck mrecursebr mock (breq, ps) = do
+requestBranchesCmd quiet reviews skipreqchk skipkojicheck mrecursebr mock (breq, ps) = do
   if null ps
     then do
     when (isJust mrecursebr) $
@@ -38,13 +38,13 @@ requestBranchesCmd quiet reviews skipcheck mrecursebr mock (breq, ps) = do
       pkgs <- map reviewBugToPackage <$> listReviews ReviewUnbranched
       when isPkgGit $
         promptEnter "Press Enter to continue inside this dist-git dir!"
-      mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches quiet (length pkgs > 1) mock breq (Package $ takeFileName p)) pkgs
+      mapM_ (\ p -> withExistingDirectory p $ requestPkgBranches quiet (length pkgs > 1) skipreqchk mock breq (Package $ takeFileName p)) pkgs
       else
       if isPkgGit
       then do
         pkg <- Package <$> getDirectoryName
-        requestPkgBranches quiet False mock breq pkg >>=
-          mapM_ (waitForKojiPkgBranch skipcheck pkg)
+        requestPkgBranches quiet False skipreqchk mock breq pkg >>=
+          mapM_ (waitForKojiPkgBranch skipkojicheck pkg)
       else error' "not a dist-git dir: specify package(s)"
     else do
     pkgs <-
@@ -63,14 +63,14 @@ requestBranchesCmd quiet reviews skipcheck mrecursebr mock (breq, ps) = do
       forM pkgs $ \ p ->
       withExistingDirectory p $ do
       pkg <- Package <$> getDirectoryName
-      requestPkgBranches quiet (length pkgs > 1) mock breq pkg
+      requestPkgBranches quiet (length pkgs > 1) skipreqchk mock breq pkg
     putNewLn
     forM_ (zip pkgs newPkgBranches) $ \(pkg,newbrs) ->
-      forM_ newbrs $ waitForKojiPkgBranch skipcheck (Package $ takeFileName pkg)
+      forM_ newbrs $ waitForKojiPkgBranch skipkojicheck (Package $ takeFileName pkg)
 
-requestPkgBranches :: Bool -> Bool -> Bool -> BranchesReq -> Package
+requestPkgBranches :: Bool -> Bool -> Bool -> Bool -> BranchesReq -> Package
                    -> IO [Branch]
-requestPkgBranches quiet multiple mock breq pkg = do
+requestPkgBranches quiet multiple skipreqchk mock breq pkg = do
   when (multiple && not quiet) $
     putPkgHdr pkg
   brs <- localBranches False
@@ -173,6 +173,9 @@ requestPkgBranches quiet multiple mock breq pkg = do
         let newbranches = brs' \\ current
         if null newbranches
           then return []
+          else
+          if skipreqchk
+          then return newbranches
           else do
           fasid <- fasIdFromKrb
           -- FIXME retry on HttpExceptionRequest ... ConnectionTimeout
@@ -237,10 +240,9 @@ havePkgAccess pkg = do
           commits = lookupKey' "commit" access
       in (admins, commits ++ collabs)
 
-waitForKojiPkgBranch :: Bool -- skipcheck
-                     -> Package -> Branch -> IO ()
-waitForKojiPkgBranch skipcheck pkg br =
-  unless skipcheck $ do
+waitForKojiPkgBranch :: Bool -> Package -> Branch -> IO ()
+waitForKojiPkgBranch skipkojicheck pkg br =
+  unless skipkojicheck $ do
   putStrLn $ "waiting for" +-+ unPackage pkg +-+ "to be added to" +-+ showBranch br ++ "-build"
   (buildtag,_desttag) <- kojiBuildTarget' fedoraHub (showBranch br)
   waitBuildTag buildtag

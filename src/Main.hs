@@ -445,6 +445,7 @@ progCommands =
       requestBranchesCmd
       <$> quietOpt "Quieter output"
       <*> switchWith 'r' "reviews" "Request branches for package reviews"
+      <*> switchLongWith "skip-request-check" "Skip check for package branch ticket"
       <*> switchLongWith "skip-koji-check" "Skip koji check for branch package"
       <*> optional (optionWith branchM 'R' "recurse-from" "BRANCH" "Add neighboring dependencies from branch")
       <*> mockOpt False
