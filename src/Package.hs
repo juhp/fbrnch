@@ -300,12 +300,14 @@ withPackagesByBranches header count mgitopts limitBranches action (breq,pkgs) =
         let fetch = have gitOptFetch
         -- quiet to avoid output before header
         -- fetch first to include any new branches
-        when fetch $ gitFetchSilent True
+        when fetch $ do
+          when (header /= HeaderNone) $ putPkgHdr pkg
+          gitFetchSilent True
         brs <- listOfAnyBranches (haveGit && not (have gitOptHEAD)) (have gitOptActive) breq
-        when ((header /= HeaderNone || fetch) && dir /= ".") $
+        when (header /= HeaderNone && not fetch && dir /= ".") $
           case brs of
-            [br] -> when (fetch || header == HeaderMust) $ putPkgAnyBrnchHdr pkg br
-            _ -> when (fetch || header /= HeaderNone) $ putPkgHdr pkg
+            [br] -> when (header == HeaderMust) $ putPkgAnyBrnchHdr pkg br
+            _ -> when (header /= HeaderNone) $ putPkgHdr pkg
         case limitBranches of
           ZeroOrOne | length brs > 1 ->
             -- FIXME: could be handled better (testcase: run long list of packages in wrong directory)

@@ -4,7 +4,7 @@ module Cmd.Fetch (
 where
 
 import Branches
-import Common ((+-+))
+import Common (when, (+-+))
 import Common.System (error')
 import Git
 import Package
@@ -23,7 +23,7 @@ fetchPkgs lenient args =
     fetchPkgLenient pkg _br = do
       haveGit <- isPkgGitRepo
       if haveGit
-        then gitFetchSilent False
+        then when lenient $ gitFetchSilent False
         else if lenient
              then putStrLn $ "ignoring" +-+ unPackage pkg
              else error' "not a dist-git dir"
