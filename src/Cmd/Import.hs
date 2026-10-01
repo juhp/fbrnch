@@ -146,9 +146,8 @@ downloadReviewSRPM showbug getspec prompt pkg bid session = do
 
     downloadSpec :: [Comment] -> IO ()
     downloadSpec comments = do
-      let specs = map (T.replace "/reviews//" "/reviews/") $ concatMap findSpecs comments
+      let specs = map (T.replace "/reviews//" "/reviews/") . nub $ concatMap findSpecs comments
       mapM_ T.putStrLn specs
-      unless (null specs) putNewLn
       case (filter ((pkg <.> "spec") `isSuffixOf`) . words . T.unpack . last) specs of
         [] -> error' "no spec filename found"
         specfiles ->
@@ -156,12 +155,9 @@ downloadReviewSRPM showbug getspec prompt pkg bid session = do
             [] -> error "no valid spec urls found"
             [specurl] -> do
               let specfile = upstreamDir </> takeFileName specurl
-              havespec <- doesFileExist specfile
-              if havespec
-                then putStrLn $ specfile +-+ "already exists"
-                else
-                cmd_ "curl" ["--silent", "--show-error", "--create-dirs", "--output", specfile, specurl]
+              cmd_ "curl" ["--silent", "--show-error", "--create-dirs", "--output", specfile, specurl]
             specurls -> error' $ "multiple spec urls:" +-+ unwords specurls
+      unless (null specs) putNewLn
 
 upstreamDir :: FilePath
 upstreamDir = "UPSTREAM"
