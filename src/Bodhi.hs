@@ -120,14 +120,14 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
     Nothing -> return ()
     Just updateType ->
       unless dryrun $ do
-        updateDone <- do
+        (updateDone,mnotes') <- do
           mtemplate <- maybeTemplate updateType
           case mtemplate of
             Just file -> do
               -- FIXME use cmdLog_ to debug, but notes are not quoted
               -- FIXME does not fail
               cmd_ "bodhi" ["updates", "new", "--file", file, nvrs]
-              return True
+              return (True,mnotes)
             Nothing -> do
               whenJust mrbr $ gitSwitchBranch . RelBranch
               -- FIXME also query for open existing bugs
@@ -144,7 +144,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
                                  -- FIXME list open bugs
                                  changeLogPrompt ChangeBodhi spec
               if trim (lower changelog) `elem` ["no","n"]
-                then return False
+                then return (False, mnotes)
                 else do
                 when (length changelog > 10000) $
                   putStrLn "Bodhi only accepts up to 10000 chars: will be truncated"
@@ -163,7 +163,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
                 -- {"status": "error", "errors": [{"location": "body", "name": "builds", "description": "Update for ghc9.2-9.2.5-14.fc36 already exists"}]}
                 -- ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
                 cmd_ "bodhi" $ ["updates", "new", "--type", if isJust mreview then "newpackage" else show updateType, "--severity", show severity, "--request", "testing", "--notes", take 10000 changelog, "--autokarma", "--autotime", "--close-bugs"] ++ bugs ++ [nvrs]
-                return True
+                return (True, Just $ NotesText changelog)
         when updateDone $ do
           -- FIXME avoid this if we know the update URLs (split update does not seem to return URLs)
           eupdates <- bodhiUpdatesEither [makeItem "display_user" "0", makeItem "builds" nvrs]
@@ -174,7 +174,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
               then do
               putStrLn $ "bodhi submission failed for" +-+ nvrs
               promptEnter "Press Enter to resubmit to Bodhi"
-              bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs
+              bodhiUpdate dryrun (mupdate,severity) mreview mnotes' mrbr spec nvrs
               else
               forM_ updates $ \update ->
               case lookupKey "url" update of
