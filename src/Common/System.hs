@@ -27,7 +27,9 @@ import Data.Time.Format (formatTime, defaultTimeLocale)
 #endif
 import Safe
 import SimpleCmd hiding (
-#if !MIN_VERSION_simple_cmd(0,2,8)
+#if MIN_VERSION_simple_cmd(0,2,8)
+  timeIOHelper,
+#else
   cmdFull,
 #endif
 #if MIN_VERSION_simple_cmd(0,2,1)
