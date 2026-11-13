@@ -374,7 +374,7 @@ buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
           -- FIXME would like to have pipeOutErr
           let buildcmd = "rpmbuild" : map quoteArg args
           when debug $ putStrLn $ unwords buildcmd
-          cmdBool "script" ["-c", unwords buildcmd, buildlog]
+          cmdBool "script" ["-e", "-c", unwords buildcmd, buildlog]
         else do
           let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ [">&", buildlog]
           when debug $ putStrLn buildcmd
@@ -429,7 +429,7 @@ buildRPMsNoBranch quiet debug noclean mjobs mforceshort bconds spec = do
         -- FIXME would like to have pipeOutErr
         let buildcmd = "rpmbuild" : map quoteArg args
         when debug $ putStrLn $ unwords buildcmd
-        cmdBool "script" ["-c", unwords buildcmd, buildlog]
+        cmdBool "script" ["-e", "-c", unwords buildcmd, buildlog]
       else do
         let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ [">&", buildlog]
         when debug $ putStrLn buildcmd
