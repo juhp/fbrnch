@@ -330,7 +330,7 @@ buildRPMs :: Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
 buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
   needBuild <- needToBuildRPMS False mforceshort rpms spec
   if not needBuild then
-    putStrLn "Existing rpms are newer than spec file (use --force to rebuild)"
+    putStrLn "Existing rpms are newer than spec file (use -f to rebuild)"
     else do
     installDeps True spec
     void $ getSources spec
