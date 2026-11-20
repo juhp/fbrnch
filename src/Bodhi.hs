@@ -113,10 +113,11 @@ data UpdateNotes = NotesChangelog | NotesText String
 
 -- FIXME support --no-close-bugs
 -- push comma separated list of builds for a package to bodhi
-bodhiUpdate :: Bool -> (Maybe UpdateType, UpdateSeverity) -> Maybe BugId
-            -> Maybe UpdateNotes -> Maybe Branch -> FilePath -> String -> IO ()
-bodhiUpdate _ _ _ _ _ _ [] = putStrLn "no package to push"
-bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
+bodhiUpdate :: Bool -> Bool -> (Maybe UpdateType, UpdateSeverity)
+            -> Maybe BugId -> Maybe UpdateNotes -> Maybe Branch -> FilePath
+            -> String -> IO ()
+bodhiUpdate _ _ _ _ _ _ _ [] = putStrLn "no package to push"
+bodhiUpdate dryrun reattempt (mupdate,severity) mreview mnotes mrbr spec nvrs = do
   case mupdate of
     Nothing -> return ()
     Just updateType ->
@@ -132,18 +133,19 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
             Nothing -> do
               whenJust mrbr $ gitSwitchBranch . RelBranch
               -- FIXME also query for open existing bugs
-              changelog <- if isJust mreview
-                           then getSummaryURL spec
-                           else
-                             case mnotes of
-                               Just NotesChangelog ->
-                                 -- FIXME all changes since last update!
-                                 cleanChangelog True spec
-                               Just (NotesText notes) ->
-                                 return notes
-                               Nothing ->
-                                 -- FIXME list open bugs
-                                 changeLogPrompt ChangeBodhi spec
+              changelog <-
+                if isJust mreview && not reattempt
+                then getSummaryURL spec
+                else
+                  case mnotes of
+                    Just NotesChangelog ->
+                      -- FIXME all changes since last update!
+                      cleanChangelog True spec
+                    Just (NotesText notes) ->
+                      return notes
+                    Nothing ->
+                      -- FIXME list open bugs
+                      changeLogPrompt ChangeBodhi spec
               if trim (lower changelog) `elem` ["no","n"]
                 then return (False, mnotes)
                 else do
@@ -175,7 +177,7 @@ bodhiUpdate dryrun (mupdate,severity) mreview mnotes mrbr spec nvrs = do
               then do
               putStrLn $ "bodhi submission failed for" +-+ nvrs
               promptEnter "Press Enter to resubmit to Bodhi"
-              bodhiUpdate dryrun (mupdate,severity) mreview mnotes' mrbr spec nvrs
+              bodhiUpdate dryrun True (mupdate,severity) mreview mnotes' mrbr spec nvrs
               else
               forM_ updates $ \update ->
               case lookupKey "url" update of

@@ -163,7 +163,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                 then putStrLn "update exists"
                 else do
                 mbug <- bzReviewAnon
-                bodhiUpdate dryrun (buildoptUpdate opts) mbug (buildoptNotes opts) (Just br) spec $ showNVR nvr
+                bodhiUpdate dryrun False (buildoptUpdate opts) mbug (buildoptNotes opts) (Just br) spec $ showNVR nvr
               whenJust moverride $ \days -> do
                 tags <- maybeTimeout 30 $ kojiNVRTags nvr
                 unless (any (`elem` tags) [showBranch br, showBranch br ++ "-updates", showBranch br ++ "-override"]) $
@@ -259,7 +259,7 @@ buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
                     whenJust (fmap fst mBugSess) $
                       \bid -> putStr "review bug: " >> putBugId bid
                     -- FIXME diff previous changelog?
-                    bodhiUpdate dryrun (buildoptUpdate opts) (fmap fst mBugSess) (buildoptNotes opts) (Just br) spec $ showNVR nvr
+                    bodhiUpdate dryrun False (buildoptUpdate opts) (fmap fst mBugSess) (buildoptNotes opts) (Just br) spec $ showNVR nvr
                     -- FIXME prompt for override note
                     whenJust moverride $ \days ->
                       bodhiCreateOverride dryrun (Just days) nvr
