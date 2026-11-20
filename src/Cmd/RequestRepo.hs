@@ -5,6 +5,7 @@ module Cmd.RequestRepo (requestRepos) where
 import Control.Exception.Extra (retry)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Fedora.Krb (fasIdFromKrb)
+import Gitea.Forgejo (fedoraForge, listRepoIssues, RepoIssueOptions(..))
 import Network.HTTP.Directory (httpExists')
 import Safe (headMay)
 import SimplePrompt (promptEnter, promptInitial, yesNo)
@@ -19,9 +20,10 @@ import Cmd.Import (importCmd)
 import Common
 import Common.System (error')
 import qualified Common.Text as T
+import Forgejo
 import ListReviews
 import Package
-import Pagure
+import Pagure (pagureListGitBranches, srcfpo)
 
 -- FIXME separate pre-checked listReviews and direct pkg call, which needs checks
 requestRepos :: Bool -> Bool -> Bool -> Bool -> (BranchesReq, [String])
@@ -56,7 +58,7 @@ requestRepo mock skipcheck resubmit breq pkg = do
         putStrLn "Request exists:"
         mapM_ printScmIssue requests
         -- don't resubmit if succeeded
-        when (resubmit && pagureIssueCloseStatus request == Just "Processed") $
+        when (resubmit && hasIssueLabel "Processed" request) $
           error' "The last repo request was already successfully Processed"
       when (null requests || resubmit) $ do
         checkNoPagureRepo
@@ -89,17 +91,16 @@ requestRepo mock skipcheck resubmit breq pkg = do
     existingRepoRequests :: IO [IssueTitleStatus]
     existingRepoRequests = do
       fasid <- fasIdFromKrb
-      erecent <-
+      eissues <-
         retry 2 $
-        pagureListProjectIssueTitlesStatus pagureio
-        "releng/fedora-scm-requests"
-        [makeItem "author" fasid, makeItem "status" "all",
-         makeItem "per_page" "100"]
-      case erecent of
+        listRepoIssues fedoraForge "releng" "fedora-scm-requests" $
+        RepoIssueOptions (Just fasid) (Just "all")
+      case eissues of
         Left err -> error' err
-        Right recent ->
+        Right issues -> do
+          let its = mapMaybe readIssue issues
           -- don't mention "New Repo" here, since Branch requests also imply repo already exists
-          return $ filter (((" for \"rpms/" ++ pkg ++ "\"") `isSuffixOf`) . pagureIssueTitle) recent
+          return $ filter (((" for \"rpms/" ++ pkg ++ "\"") `isSuffixOf`) . forgeIssueTitle) its
 
     checkNoPagureRepo :: IO ()
     checkNoPagureRepo = do
@@ -150,7 +151,7 @@ doRequestRepo pkg bid = do
     setPagureToken
   where
     setPagureToken = do
-      ret <- P.runProcess $ P.proc "fedpkg" ["set-pagure-token"]
+      ret <- P.runProcess $ P.proc "fedpkg" ["set-forgejo-token"]
       if ret == P.ExitSuccess
         then doRequestRepo pkg bid
         else error' "Failed to set token"

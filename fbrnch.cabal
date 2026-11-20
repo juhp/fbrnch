@@ -95,6 +95,7 @@ executable fbrnch
                        Common
                        Common.System
                        Common.Text
+                       Forgejo
                        Git
                        InterleaveOutput
                        Koji
@@ -128,6 +129,7 @@ executable fbrnch
                        fedora-krb,
                        fedora-releases >= 0.3,
                        filepath,
+                       forgejo,
                        http-conduit,
                        http-directory >= 0.1.9,
                        http-query,

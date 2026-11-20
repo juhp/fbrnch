@@ -7,6 +7,7 @@ module Cmd.RequestBranch (
   ) where
 
 import Fedora.Krb (fasIdFromKrb)
+import Gitea.Forgejo (fedoraForge, listRepoIssues, RepoIssueOptions(..))
 import Network.HTTP.Query (lookupKey')
 import SimplePrompt (promptEnter)
 import qualified System.Process.Typed as P
@@ -18,11 +19,12 @@ import Common.System
 import Branches
 import Bugzilla
 import Cmd.SrcDeps (srcDeps)
+import Forgejo
 import Git
 import Koji (fedoraHub, kojiBuildTarget')
 import ListReviews
 import Package
-import Pagure
+import Pagure (pagureGroupInfo, pagureProjectInfo, srcfpo)
 
 -- FIXME option to do koji scratch build instead of mock
 requestBranchesCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Branch -> Bool
@@ -179,13 +181,14 @@ requestPkgBranches quiet multiple skipreqchk mock breq pkg = do
           else do
           fasid <- fasIdFromKrb
           -- FIXME retry on HttpExceptionRequest ... ConnectionTimeout
-          erecent <- pagureListProjectIssueTitlesStatus "pagure.io"
-                     "releng/fedora-scm-requests"
-                     [makeItem "author" fasid, makeItem "status" "all",
-                      makeItem "per_page" "100"]
-          case erecent of
+          eissues <-
+            listRepoIssues fedoraForge "releng" "fedora-scm-requests" $
+            RepoIssueOptions (Just fasid) (Just "all")
+          case eissues of
             Left err -> error' err
-            Right recent -> filterM (notExistingRequest recent) newbranches
+            Right issues -> do
+              let its = mapMaybe readIssue issues
+              filterM (notExistingRequest its) newbranches
 
     -- FIXME print invalid requests?
     notExistingRequest :: [IssueTitleStatus] -> Branch -> IO Bool
@@ -197,9 +200,9 @@ requestPkgBranches quiet multiple skipreqchk mock breq pkg = do
       return $ null processed
       where
         processedIssueFilter issue =
-          pagureIssueTitle issue == ("New Branch \"" ++ showBranch br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"")
+          forgeIssueTitle issue == ("New Branch \"" ++ showBranch br ++ "\" for \"rpms/" ++ unPackage pkg ++ "\"")
           &&
-          pagureIssueCloseStatus issue == Just "Processed"
+          hasIssueLabel "Processed" issue
 
 havePkgAccess :: Package -> IO Bool
 havePkgAccess pkg = do
