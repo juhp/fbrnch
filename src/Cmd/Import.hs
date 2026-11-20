@@ -18,7 +18,7 @@ import SimplePrompt.Internal (runPrompt, mapInput, getPromptLine)
 
 import Branches
 import Bugzilla
-import Cmd.RequestBranch (requestPkgBranches, waitForKojiPkgBranch)
+import Cmd.RequestBranch (requestPkgBranches, waitForKojiPkgBranches)
 import Git
 import Koji
 import ListReviews
@@ -74,7 +74,7 @@ importCmd showbug reporequest existingrepo mock (breq, ps) = do
             brs <- getRequestedBranches [] breq
             unless (null brs) $
               requestPkgBranches False False False mock (Branches brs) (Package pkg) >>=
-              mapM_ (waitForKojiPkgBranch False (Package pkg))
+              waitForKojiPkgBranches False (Package pkg)
       when (pkg /= takeFileName dir) $
         setCurrentDirectory dir
 

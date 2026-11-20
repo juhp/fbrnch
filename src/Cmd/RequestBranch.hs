@@ -3,7 +3,7 @@
 module Cmd.RequestBranch (
   requestBranchesCmd,
   requestPkgBranches,
-  waitForKojiPkgBranch
+  waitForKojiPkgBranches
   ) where
 
 import Fedora.Krb (fasIdFromKrb)
@@ -46,7 +46,7 @@ requestBranchesCmd quiet reviews skipreqchk skipkojicheck mrecursebr mock (breq,
       then do
         pkg <- Package <$> getDirectoryName
         requestPkgBranches quiet False skipreqchk mock breq pkg >>=
-          mapM_ (waitForKojiPkgBranch skipkojicheck pkg)
+          waitForKojiPkgBranches skipkojicheck pkg
       else error' "not a dist-git dir: specify package(s)"
     else do
     pkgs <-
@@ -68,7 +68,7 @@ requestBranchesCmd quiet reviews skipreqchk skipkojicheck mrecursebr mock (breq,
       requestPkgBranches quiet (length pkgs > 1) skipreqchk mock breq pkg
     putNewLn
     forM_ (zip pkgs newPkgBranches) $ \(pkg,newbrs) ->
-      forM_ newbrs $ waitForKojiPkgBranch skipkojicheck (Package $ takeFileName pkg)
+      waitForKojiPkgBranches skipkojicheck (Package $ takeFileName pkg) newbrs
 
 requestPkgBranches :: Bool -> Bool -> Bool -> Bool -> BranchesReq -> Package
                    -> IO [Branch]
@@ -243,6 +243,12 @@ havePkgAccess pkg = do
           commits = lookupKey' "commit" access
       in (admins, commits ++ collabs)
 
+waitForKojiPkgBranches :: Bool -> Package -> [Branch] -> IO ()
+waitForKojiPkgBranches skipkojicheck pkg brs =
+  unless (null brs) $ do
+  sleep 30 -- wait first to avoid "(undefined package)"
+  mapM_ (waitForKojiPkgBranch skipkojicheck pkg) brs
+
 waitForKojiPkgBranch :: Bool -> Package -> Branch -> IO ()
 waitForKojiPkgBranch skipkojicheck pkg br =
   unless skipkojicheck $ do
@@ -252,6 +258,7 @@ waitForKojiPkgBranch skipkojicheck pkg br =
   where
     waitBuildTag :: String -> IO ()
     waitBuildTag buildtag = do
-      sleep 30 -- wait first to avoid "(undefined package)"
       ok <- cmdBool "koji" ["list-pkgs", "--quiet", "--package=" ++ unPackage pkg, "--tag=" ++ buildtag]
-      unless ok $ waitBuildTag buildtag
+      unless ok $ do
+        sleep 30
+        waitBuildTag buildtag
