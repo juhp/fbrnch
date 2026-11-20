@@ -30,15 +30,17 @@ import RpmBuild
 -- FIXME add --debug or respect --verbose for dnf commands
 -- FIXME handle subpackage renames (eg ghc-rpm-macros-no-prof to ghc-rpm-macros-quick)
 -- FIXME allow building an srpm
-installCmd :: Bool -> Bool -> Maybe Branch -> Maybe Natural
+installCmd :: Bool -> Bool -> Bool -> Maybe Branch -> Maybe Natural
            -> Maybe ForceShort -> [BCond] -> Maybe PkgMgr -> Bool -> Bool
            -> Bool -> Bool -> Yes -> Select -> Maybe ExistingStrategy
            -> (Maybe Branch,[String]) -> IO ()
-installCmd quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall allowerasing nobuild nobuilddeps yes select mexisting (mbr, pkgs) = do
+installCmd dryrun quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall allowerasing nobuild nobuilddeps yes select mexisting (mbr, pkgs) = do
   when (recurse && isShortCircuit mforceshort) $
     error' "cannot use --recurse and --shortcircuit"
   withPackagesMaybeBranch (boolHeader (recurse || length pkgs > 1)) True Nothing installPkg (mbr, filter (/= ":") pkgs)
   where
+    yesDry = if dryrun then No else yes
+
     installPkg :: Package -> AnyBranch -> IO ()
     installPkg pkg br = do
       whenJust mbr $ gitSwitchBranch . RelBranch
@@ -79,15 +81,15 @@ installCmd quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall alloweras
                     mpkgdir <- lookForPkgDir rbr ".." dep
                     case mpkgdir of
                       Nothing -> putStrLn $ dep +-+ "not known"
-                      Just pkgdir -> installCmd quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall allowerasing nobuild nobuilddeps yes select mexisting (mbr, [pkgdir]) >> putNewLn
+                      Just pkgdir -> installCmd dryrun quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall allowerasing nobuild nobuilddeps yesDry select mexisting (mbr, [pkgdir]) >> putNewLn
                   -- FIXME option to enable/disable installing missing deps
                   -- FIXME --skip-missing-deps or prompt
-                else installDeps True spec
+                else installDeps dryrun True spec
           -- FIXME unused
           _wasbuilt <-
             if nobuild
             then return True
-            else buildRPMs quiet False False mjobs mforceshort bconds rpms br spec
+            else buildRPMs dryrun quiet False False mjobs mforceshort bconds rpms br spec
           unless (isShortCircuit mforceshort) $ do
             -- paths lost here
             let nvras = rpmsToNVRAs rpms
@@ -99,7 +101,7 @@ installCmd quiet recurse mfrom mjobs mforceshort bconds mmgr reinstall alloweras
             -- FIXME dryrun and debug
             -- FIXME return Bool?
             withCurrentDirectory rpmdir $
-              installRPMsAllowErasing False False mmgr allowerasing yes $ groupOnArch "" decided
+              installRPMsAllowErasing False False mmgr allowerasing yesDry $ groupOnArch "" decided
 
         lookForPkgDir :: Branch -> FilePath -> String -> IO (Maybe FilePath)
         lookForPkgDir rbr topdir p = do

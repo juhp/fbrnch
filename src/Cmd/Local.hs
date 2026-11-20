@@ -26,9 +26,9 @@ import Git
 import Package
 import RpmBuild
 
-localCmd :: Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
+localCmd :: Bool -> Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
          -> [BCond] -> (BranchesReq, [String]) -> IO ()
-localCmd quiet debug allowhead mjobs mforceshort bconds (breq,pkgs) =
+localCmd dryrun quiet debug allowhead mjobs mforceshort bconds (breq,pkgs) =
   if allowhead
   then if breq == Branches []
        then withPackagesMaybeBranch HeaderNone False dirtyGitHEAD localBuildPkgNoBranch (Nothing, pkgs)
@@ -43,21 +43,21 @@ localCmd quiet debug allowhead mjobs mforceshort bconds (breq,pkgs) =
               then return []
               else builtRpms br spec
       -- FIXME backup BUILD tree to .prev
-      void $ buildRPMs quiet debug True mjobs mforceshort bconds rpms br spec
+      void $ buildRPMs dryrun quiet debug True mjobs mforceshort bconds rpms br spec
       -- FIXME mark BUILD dir complete
 
     localBuildPkgNoBranch :: Package -> AnyBranch -> IO ()
     localBuildPkgNoBranch _pkg _ = do
       spec <- findSpecfile
-      void $ buildRPMsNoBranch quiet debug True mjobs mforceshort bconds spec
+      void $ buildRPMsNoBranch dryrun quiet debug True mjobs mforceshort bconds spec
 
-installDepsCmd :: (Maybe Branch,[String]) -> IO ()
-installDepsCmd =
+installDepsCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
+installDepsCmd dryrun =
   withPackagesMaybeBranch HeaderNone False Nothing installDepsPkg
   where
     installDepsPkg :: Package -> AnyBranch -> IO ()
     installDepsPkg pkg br =
-      localBranchSpecFile pkg br >>= installDeps False
+      localBranchSpecFile pkg br >>= installDeps dryrun False
 
 srpmCmd :: Bool -> (Maybe Branch,[String]) -> IO ()
 srpmCmd force =

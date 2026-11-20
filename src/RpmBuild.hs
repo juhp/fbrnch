@@ -325,14 +325,14 @@ needToBuildRPMS confirm mforceshort rpms spec =
 -- Note does not check if bcond changed
 -- FIXME check tarball timestamp
 -- FIXME handle prep (-bp) too?
-buildRPMs :: Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
+buildRPMs :: Bool -> Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
           -> [BCond] -> [FilePath] -> AnyBranch -> FilePath -> IO Bool
-buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
+buildRPMs dryrun quiet debug noclean mjobs mforceshort bconds rpms br spec = do
   needBuild <- needToBuildRPMS False mforceshort rpms spec
   if not needBuild then
     putStrLn "Existing rpms are newer than spec file (use -f to rebuild)"
     else do
-    installDeps True spec
+    installDeps dryrun True spec
     void $ getSources spec
     distopt <- distOptAny br
     autoreleaseOpt <- getAutoReleaseOptions spec
@@ -373,11 +373,15 @@ buildRPMs quiet debug noclean mjobs mforceshort bconds rpms br spec = do
           putNewLn
           -- FIXME would like to have pipeOutErr
           let buildcmd = "rpmbuild" : map quoteArg args
-          when debug $ putStrLn $ unwords buildcmd
+          when (debug || dryrun) $ putStrLn $ unwords buildcmd
+          when dryrun $
+            error' "stopped due to dryrun"
           cmdBool "script" ["-e", "-c", unwords buildcmd, buildlog]
         else do
           let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ [">&", buildlog]
-          when debug $ putStrLn buildcmd
+          when (debug || dryrun) $ putStrLn buildcmd
+          when dryrun $
+            error' "stopped due to dryrun"
           res <- shellBool buildcmd
           if res
             then putStrLn "done"
@@ -391,10 +395,10 @@ quoteArg :: String -> String
 quoteArg cs =
   if ' ' `elem` cs then '\'' : cs ++ "'" else cs
 
-buildRPMsNoBranch :: Bool -> Bool -> Bool -> Maybe Natural -> Maybe ForceShort
-                  -> [BCond] -> FilePath -> IO Bool
-buildRPMsNoBranch quiet debug noclean mjobs mforceshort bconds spec = do
-  installDeps True spec
+buildRPMsNoBranch :: Bool -> Bool -> Bool -> Bool -> Maybe Natural
+                  -> Maybe ForceShort -> [BCond] -> FilePath -> IO Bool
+buildRPMsNoBranch dryrun quiet debug noclean mjobs mforceshort bconds spec = do
+  installDeps dryrun True spec
   void $ getSources spec
   sourcediropt <- sourceDirCwdOpt
   let distopt = ["--define", "dist" +-+ "%{?distprefix}"]
@@ -428,11 +432,15 @@ buildRPMsNoBranch quiet debug noclean mjobs mforceshort bconds spec = do
         putNewLn
         -- FIXME would like to have pipeOutErr
         let buildcmd = "rpmbuild" : map quoteArg args
-        when debug $ putStrLn $ unwords buildcmd
+        when (debug || dryrun) $ putStrLn $ unwords buildcmd
+        when dryrun $
+          error' "stopped due to dryrun"
         cmdBool "script" ["-e", "-c", unwords buildcmd, buildlog]
       else do
         let buildcmd = unwords $ "rpmbuild" : map quoteArg args ++ [">&", buildlog]
-        when debug $ putStrLn buildcmd
+        when (debug || dryrun) $ putStrLn buildcmd
+        when dryrun $
+          error' "stopped due to dryrun"
         res <- shellBool buildcmd
         if res
           then putStrLn "done"
@@ -443,12 +451,13 @@ buildRPMsNoBranch quiet debug noclean mjobs mforceshort bconds spec = do
   return True
 
 -- FIXME print unavailable deps
-installDeps :: Bool -> FilePath -> IO ()
-installDeps strict spec = do
+installDeps :: Bool -> Bool -> FilePath -> IO ()
+installDeps dryrun strict spec = do
   missingdeps <- nub <$> (buildRequires spec >>= filterM notInstalled)
   unless (null missingdeps) $ do
     putStrLn $ "Running 'dnf install'" +-+ unwords missingdeps
-    cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"install": ["--skip-broken" | not strict] ++ ["--assumeyes"] ++ missingdeps
+    unless dryrun $
+      cmd_ "/usr/bin/sudo" $ "/usr/bin/dnf":"install": ["--skip-broken" | not strict] ++ ["--assumeyes"] ++ missingdeps
 
 installMissingMacros :: FilePath -> IO ()
 installMissingMacros spec = do

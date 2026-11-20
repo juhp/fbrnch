@@ -49,7 +49,7 @@ setupPkg deps pkg br = do
   unlessM (doesFileExist "dead.package") $ do
     getDynSourcesMacros $ packageSpec pkg
     when deps $
-      localBranchSpecFile pkg br >>= installDeps False
+      localBranchSpecFile pkg br >>= installDeps False False
 
 toRpmOption :: RpmWith -> [String]
 toRpmOption (RpmWith opt) = ["--with=" ++ opt]

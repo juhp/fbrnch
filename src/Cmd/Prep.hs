@@ -17,9 +17,9 @@ data PrepPre = PrepClone | PrepPull
 
 -- FIXME prompt for cloning
 -- FIXME to skip prep or deps (eg in broken toolbox when deps can't install;)
-prepCmd :: Maybe PrepPre -> Bool -> Bool -> Bool -> (Maybe Branch,[String])
-        -> IO ()
-prepCmd mpre verbose deps allowhead (mbr,pkgs) = do
+prepCmd :: Bool -> Maybe PrepPre -> Bool -> Bool -> Bool
+        -> (Maybe Branch,[String]) -> IO ()
+prepCmd dryrun mpre verbose deps allowhead (mbr,pkgs) = do
   when (mpre == Just PrepClone) $
     cloneCmd False mbr (ClonePkgs pkgs)
   withPackagesMaybeBranch HeaderNone False (if allowhead then dirtyGitHEAD else Nothing) prepPackage (mbr,pkgs)
@@ -40,7 +40,7 @@ prepCmd mpre verbose deps allowhead (mbr,pkgs) = do
           error' $ spec +-+ "not found"
         getSourcesMacros spec
         when deps $
-          installDeps False spec
+          installDeps dryrun False spec
         whenM isPkgGitRepo $
           case br of
             RelBranch rbr -> do

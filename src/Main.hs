@@ -125,7 +125,7 @@ progCommands :: [Subcommand]
 progCommands =
     [ Subcommand "clone" "Clone packages" $
       cloneCmd
-      <$> dryrunOpt "Dry run"
+      <$> dryrunOpt
       <*> optional (optionWith branchM 'b' "branch" "BRANCH" "branch")
       <*> cloneRequest
     , Subcommand "switch" "Switch branch" $
@@ -153,7 +153,7 @@ progCommands =
       <*> branchesPackages
     , Subcommand "merge" "Merge from newer branch" $
       mergeCmd
-      <$> dryrunOpt "Dry run (do not merge)"
+      <$> dryrunOptDesc "Dry run (do not merge)"
       <*> switchLongWith "no-fetch" "Skip git fetch"
       <*> nopromptOpt
       <*> optional (optionWith auto 's' "skip-bumps" "NUM" "Max num of rebuild commits to ignore [default 0]")
@@ -189,7 +189,7 @@ progCommands =
       <*> branchesPackages
     , Subcommand "parallel" "Parallel build packages in Koji" $
       parallelBuildCmd
-      <$> dryrunOpt "Dry run: do not build anything"
+      <$> dryrunOptDesc "Dry run: do not build anything"
       <*> mergeOpt
       <*> optional (optionWith branchM 'f' "from" "BRANCH" "Branch to merge from [default newer]")
       <*> optionalWith auto 'l' "skip-to-layer" "LAYERNO" "Skip the first N layers [default 0]" 0
@@ -200,21 +200,21 @@ progCommands =
       <*> branchesPackagesDesc "BRANCH... PKG1... [:] PKG2..."
     , Subcommand "sidetags" "List user's side-tags" $
       sideTagsCmd
-      <$> dryrunOpt "Dry-run: no sidetag actions"
+      <$> dryrunOptDesc "Dry-run: no sidetag actions"
       <*> optional (flagLongWith' SidetagTagged "tagged" "List tagged builds in sidetag(s)" <|>
                     flagLongWith' SidetagAdd "create" "Create one or more sidetags" <|>
                     flagLongWith' SidetagRemove "remove" "Remove one or more sidetags")
       <*> many branchArg
     , Subcommand "override" "Tag builds into buildroot override in Koji" $
       overrideCmd
-      <$> dryrunOpt "Dry run: do not override"
+      <$> dryrunOptDesc "Dry run: do not override"
       <*> overrideModeOpt
       <*> optional (optionWith auto 'd' "duration" "DAYS" "Number of days until expiry [default 4]")
       <*> switchWith 'w' "no-wait" "Skip waitrepo step"
       <*> branchesPackages
     , Subcommand "waitrepo" "Wait for build to appear in Koji buildroot" $
       waitrepoCmd
-      <$> dryrunOpt "Dry run: do not wait"
+      <$> dryrunOptDesc "Dry run: do not wait"
       <*> switchLongWith "no-package" "Generic wait-repo without a build NVR"
       <*> waitfetchOpt
       <*> optional (sidetagTargetOpt Nothing)
@@ -225,7 +225,7 @@ progCommands =
       <*> optional (argumentWith auto "TASKID")
     , Subcommand "scratch" "Scratch build package in Koji" $
       scratchCmd
-      <$> dryrunOpt "Dry run: do not build"
+      <$> dryrunOptDesc "Dry run: do not build"
       <*> switchLongWith "stagger" "Stagger archs"
       <*> rebuildSrpmOpt
       <*> noFailFastOpt
@@ -236,7 +236,7 @@ progCommands =
       <*> branchesPackages
     , Subcommand "scratch-aarch64" "Koji aarch64 scratch build of package" $
       scratchCmdAarch64
-      <$> dryrunOpt "Dry run: do not build"
+      <$> dryrunOptDesc "Dry run: do not build"
       <*> rebuildSrpmOpt
       <*> allowHeadOpt
       <*> switchWith 'X' "exclude-arch" "Exclude aarch64"
@@ -245,7 +245,7 @@ progCommands =
       <*> branchesPackages
     , Subcommand "scratch-x86_64" "Koji x86_64 scratch build of package" $
       scratchCmdX86_64
-      <$> dryrunOpt "Dry run: do not build"
+      <$> dryrunOptDesc "Dry run: do not build"
       <*> rebuildSrpmOpt
       <*> allowHeadOpt
       <*> switchWith 'X' "exclude-arch" "Exclude x86_64"
@@ -265,14 +265,16 @@ progCommands =
       <*> branchPackages
     , Subcommand "prep" "Prep sources" $
       prepCmd
-      <$> optional prepPreOpts
+      <$> dryrunOpt
+      <*> optional prepPreOpts
       <*> verboseOpt "show rpmbuild output"
       <*> switchWith 'd' "deps" "require deps to be installed"
       <*> allowHeadOpt
       <*> maybeBranchPackages False
     , Subcommand "local" "Build locally" $
       localCmd
-      <$> quietOpt "Hide the build.log until it errors"
+      <$> dryrunOpt
+      <*> quietOpt "Hide the build.log until it errors"
       <*> debugOpt "show the rpmbuild command"
       <*> allowHeadOpt
       <*> jobsOpt
@@ -316,7 +318,7 @@ progCommands =
       <*> branchPackages
     , Subcommand "mock" "Local mock build" $
       mockCmd
-      <$> dryrunOpt "Do not build (but creates srpm)"
+      <$> dryrunOptDesc "Do not build (but creates srpm)"
       <*> switchLongWith "no-bootstrap" "Use --no-bootstrap-chroot to avoid podman"
       <*> optional nocleanOpt
       <*> switchLongWith "no-pull" "Do not pull latest buildroot image"
@@ -332,11 +334,13 @@ progCommands =
       -- was install-deps
     , Subcommand "builddeps" "Install package build dependencies" $
       installDepsCmd
-      <$> maybeBranchPackages False
+      <$> dryrunOpt
+      <*> maybeBranchPackages False
     , Subcommand "install" "Build locally and install package(s)" $
       -- FIXME drop --shortcircuit from install?
       installCmd
-      <$> quietOpt "Quiet rpmbuild output"
+      <$> dryrunOpt
+      <*> quietOpt "Quiet rpmbuild output"
       <*> switchWith 'R' "recurse" "build and install missing deps packages"
       <*> optional (optionLongWith branchM "from" "BRANCH" "Merge branch first")
       <*> jobsOpt
@@ -367,7 +371,7 @@ progCommands =
       <$> manyPackages
     , Subcommand "bump" "Bump release for package" $
       bumpCmd
-      <$> dryrunOpt "Dry run: do not bump"
+      <$> dryrunOptDesc "Dry run: do not bump"
       <*> switchLongWith "strict" "Check koji if NVR was built"
       <*> optional (strOptionWith 'm' "message" "COMMITMSG"
                     "Specify commit message")
@@ -376,7 +380,7 @@ progCommands =
       <*> branchesPackages
     , Subcommand "commit" "Git commit packages" $
       commitCmd
-      <$> dryrunOpt "Dry run: do not commit"
+      <$> dryrunOptDesc "Dry run: do not commit"
       <*> switchWith 'b' "branched" "Commit to branched dist-git"
       <*> optional commitOpts
       <*> switchWith '1' "first-line" "use first line of changelog"
@@ -392,7 +396,7 @@ progCommands =
       <*> manyPackages
     , Subcommand "push" "Git push packages" $
       pushPkgs
-      <$> dryrunOpt "Dry run: do not push"
+      <$> dryrunOptDesc "Dry run: do not push"
       <*> switchLongWith "no-fetch" "Skip git fetch"
       <*> optional (strOptionWith 'r' "ref" "COMMITHASH" "git commit to push")
       <*> branchesPackages
@@ -464,7 +468,7 @@ progCommands =
       <*> branchesPackages
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
       coprCmd
-      <$> dryrunOpt "Dry run: do not build"
+      <$> dryrunOptDesc "Dry run: do not build"
       <*> (flagWith' ListChroots 'l' "list-chroots" "Show project chroots" <|>
            flagLongWith' CoprNew "new" "Create new copr repo" <|>
            -- FIXME: NonEmpty String
@@ -493,7 +497,7 @@ progCommands =
       <$> branchesPackages
     , Subcommand "ftbfs" "Check FTBFS bug status" $
       ftbfsCmd
-      <$> dryrunOpt "dry run"
+      <$> dryrunOptDesc "dry run"
       <*> switchWith 'l' "short" "Only list packages"
       <*> optional (flagWith' (FtbfsUser Nothing) 'M' "mine" "Your packages"
                     <|>
@@ -514,7 +518,7 @@ progCommands =
       <*> manyPackages
     , Subcommand "tag-build-to-sidetag" "Tag NVR for current branch to sidetag" $
       tagBuildToSidetagCmd
-      <$> dryrunOpt "Dry run"
+      <$> dryrunOptDesc "Dry run"
       <*> switchWith 'k' "allow-dirty" "Allow unclean git repo"
       <*> optionWith branchM 't' "to" "BRANCH" "Target branch of sidetag"
       <*> maybeBranchPackages False
@@ -660,7 +664,7 @@ progCommands =
       <*> optional (sidetagTargetOpt Nothing)
       <*> overrideOpt
       <*> waitrepoOpt
-      <*> dryrunOpt "Dry run: do not merge/push/build"
+      <*> dryrunOptDesc "Dry run: do not merge/push/build"
       <*> skipFetchOpt
       <*> gitrefOpt
       <*> updateOpt
@@ -691,8 +695,9 @@ progCommands =
     archesOpt :: Parser Archs
     archesOpt = Archs <$> some archOpt <|> ExcludedArchs <$> some excludeArch
 
-    dryrunOpt desc = switchWith 'n' "dry-run" desc <|>
-                     switchLongWith "dryrun" "alias for --dry-run"
+    dryrunOpt = switchLongWith "dryrun" "Dry run"
+    dryrunOptDesc desc = switchWith 'n' "dry-run" desc <|>
+                         switchLongWith "dryrun" "alias for --dry-run"
 
     debugOpt = switchWith 'd' "debug"
 
