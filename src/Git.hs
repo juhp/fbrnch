@@ -16,6 +16,7 @@ module Git (
   showCommit,
   displayCommits,
   displayHdrCommits,
+  gitDiffHEAD,
   gitOneLineLog,
   gitShortLogN,
   gitShortLog1,
@@ -408,3 +409,8 @@ conflictPrompt commits txt = do
             if lower ref == "head"
             then return $ Just c
             else conflictPrompt commits txt
+
+gitDiffHEAD :: FilePath -> IO [String]
+gitDiffHEAD file = do
+  haveHEAD <- isJust <$> cmdMaybe "git" ("rev-parse" : ["--verify", "--quiet", "HEAD"])
+  gitLines "diff" $ ["-U0"] ++ ["HEAD" | haveHEAD] ++ ["--", file]

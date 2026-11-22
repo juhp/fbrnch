@@ -58,7 +58,7 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
           then findSpecfile
           else localBranchSpecFile pkg br
   curver <- pkgVersion spec
-  rawdiff <- filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", spec]
+  rawdiff <- filter (not . ("@@ " `isPrefixOf`)) <$> gitDiffHEAD spec
   let vdiff = filter (\v -> any (`isPrefixOf` v) ["-Version:","+Version:"]) rawdiff
       mnewrel = find ("+Release:" `isPrefixOf`) rawdiff
   when (length vdiff > 2) $
@@ -148,7 +148,7 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
           cmd_ "sed" ["-i", "s/> -" +-+ newversion ++ '-' : newrelease ++ "/> -" +-+ newversion ++ '-' : replace "%{?dist}" "" newrel ++ "/" , spec]
         git_ "commit" ["-a", "-m", "Update to" +-+ newversion]
     Nothing -> do
-      rawsdiff <- filter (not . ("@@ " `isPrefixOf`)) <$> gitLines "diff" ["-U0", "HEAD", "sources"]
+      rawsdiff <- filter (not . ("@@ " `isPrefixOf`)) <$> gitDiffHEAD "sources"
       unless (null rawsdiff) $
         whenM (yesNoDefault False "Do you want to diff the sources") $
         compareTarballsCmd Nothing Nothing Nothing
