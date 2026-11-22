@@ -471,6 +471,7 @@ progCommands =
     , Subcommand "copr" "Build package(s) in Fedora Copr" $
       coprCmd
       <$> dryrunOptDesc "Dry run: do not build"
+      <*> debugOpt "Debug output"
       <*> (flagWith' ListChroots 'l' "list-chroots" "Show project chroots" <|>
            flagLongWith' CoprNew "new" "Create new copr repo" <|>
            -- FIXME: NonEmpty String

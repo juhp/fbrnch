@@ -115,6 +115,7 @@ data CoprMode = ListChroots
               | CoprNew
               | CoprFailures (Maybe String)
 
+-- FIXME directory config to exclude "branch", e.g. epel9?
 -- FIXME fbrnch: unknown release: centos-stream-9
 -- FIXME take ExclusiveArch/ExcludeArch into account
 -- FIXME -1 for only first unbuilt chroot
@@ -125,16 +126,17 @@ data CoprMode = ListChroots
 -- FIXME interact with copr dist-git
 -- FIXME parallel copr builds
 -- FIXME time builds?
-coprCmd :: Bool -> CoprMode -> Bool -> Maybe BuildBy -> Maybe Archs -> String
-        -> (BranchesReq,[String]) -> IO ()
-coprCmd dryrun mode force mbuildBy marchs copr (breq, pkgs) = do
+-- FIXME --by-release does not work for multiple packages
+coprCmd :: Bool -> Bool -> CoprMode -> Bool -> Maybe BuildBy -> Maybe Archs
+        -> String -> (BranchesReq,[String]) -> IO ()
+coprCmd dryrun debug mode force mbuildBy marchs copr (breq, pkgs) = do
   -- FIXME disallow user/project for build/new?
   (user,project) <- coprUserProject copr
   let buildBy = fromMaybe ValidateByRelease mbuildBy
   case mode of
     ListChroots -> coprGetChroots user project >>= mapM_ (putStrLn . showChroot)
     CoprMonitor mneedle nameonly -> coprMonitorPackages user project >>= mapM_ (printPkgRes mneedle nameonly)
-    CoprNew -> coprNewProject dryrun project marchs breq pkgs
+    CoprNew -> coprNewProject dryrun debug project marchs breq pkgs
     CoprFailures mgrep -> coprMonitorPackages user project >>= mapM_ (printFailures user project mgrep)
     CoprBuild -> do
       chroots <- coprGetChroots user project
@@ -184,7 +186,8 @@ coprCmd dryrun mode force mbuildBy marchs copr (breq, pkgs) = do
               else return spec -- hack to avoid generating srpm for dryrun
       verrel <- showVerRel . nvrVerRel <$> pkgNameVerRelNodist spec
       actualpkg <- cmd "rpmspec" ["-q", "--srpm", "--qf", "%{name}", spec]
-      builtChroots <- existingChrootBuilds dryrun user project (Package actualpkg) verrel chroots
+      builtChroots <- existingChrootBuilds dryrun debug user project (Package actualpkg) verrel chroots
+      when debug $ mapM_ (putStrLn . renderCoprTask)  builtChroots
       let finalChroots = chroots \\ if force then [] else map taskChroot builtChroots
       case finalChroots of
         [] -> putStrLn $ actualpkg ++ '-' : verrel +-+ "built"
@@ -267,14 +270,15 @@ coprProcessingStates =
 --   ["canceled", "failed", "skipped", "succeeded"]
 
 -- FIXME restrict to requested chroots?
-existingChrootBuilds :: Bool -> String -> String -> Package -> String
+existingChrootBuilds :: Bool -> Bool -> String -> String -> Package -> String
                      -> [Chroot] -> IO [CoprTask]
-existingChrootBuilds dryrun user project actualpkg verrel chroots = do
+existingChrootBuilds dryrun debug user project actualpkg verrel chroots = do
   monitorPkgs <- coprMonitorPackages user project
   let pkgmonitor = fromMaybe [] $ lookup actualpkg monitorPkgs
   let buildingChroots =
         filterTasks verrel (`elem` coprProcessingStates) pkgmonitor
       builds = filterTasks verrel (`notElem` ["failed","skipped","canceled"]) pkgmonitor
+  when debug $ mapM_ (putStrLn . renderCoprTask) buildingChroots
   if null buildingChroots
     then return builds
     else do
@@ -499,9 +503,9 @@ coprWaitPackage build = do
       let mname = lookupKey "name" source
       return (bid :: Int, state :: String, mname :: Maybe String)
 
-coprNewProject :: Bool -> String -> Maybe Archs -> BranchesReq -> [String]
-               -> IO ()
-coprNewProject dryrun project marchs breq pkgs = do
+coprNewProject :: Bool -> Bool -> String -> Maybe Archs -> BranchesReq
+               -> [String] -> IO ()
+coprNewProject dryrun debug project marchs breq pkgs = do
   branches <- listOfBranches False False breq
   let archs =
         case marchs of
@@ -511,4 +515,4 @@ coprNewProject dryrun project marchs breq pkgs = do
   let chroots = [ Chroot b a | b <- branches, a <- archs]
   (if dryrun then cmdN else cmd_) "copr" $ "create" : concatMap (\ch -> ["--chroot", showChroot ch]) chroots ++ [project]
   unless (null pkgs) $
-    coprCmd False CoprBuild False Nothing Nothing project (breq, pkgs)
+    coprCmd False debug CoprBuild False Nothing Nothing project (breq, pkgs)
