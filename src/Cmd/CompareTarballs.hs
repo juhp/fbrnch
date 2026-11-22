@@ -31,7 +31,11 @@ compareTarballsCmd mmaxlen Nothing Nothing = do
   if havesrc
     then do
     -- was "origin"
-    diff <- git "diff" ["-U0", "--cached", sourcesfile]
+    diff <- do
+      ds <- git "diff" ["-U0", "--cached", sourcesfile]
+      if null ds
+        then git "diff" ["-U0", "HEAD^!", sourcesfile]
+        else return ds
     case lines diff of
       [] -> error' $ "no uncommitted version changes in" +-+ show sourcesfile
       ls ->
