@@ -175,9 +175,9 @@ doInteractiveReview dryrun importsrpm mspec srpm = do
         [d] -> return $ "BUILD" </> d
         -- FIXME not good enough! use nvr
         ds -> return $ "BUILD" </> last ds
-    builddirls <- listDirectory builddir
+    builddirls <- listDirectory builddir >>= filterM (doesDirectoryExist . (builddir +/+))
     builddir2 <-
-      case sort $ builddirls \\ ["BUILDROOT","SPECPARTS","rpmbuild.env"]  of
+      case sort $ builddirls \\ ["BUILDROOT","SPECPARTS",".pyproject-builddir","pyproject-wheeldir"]  of
         [] -> error' $ "empty" +-+ "BUILD" </> builddir
         [d] -> return $ builddir </> d
         -- FIXME? some projects might have more than one topdir
