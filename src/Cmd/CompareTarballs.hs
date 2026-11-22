@@ -1,28 +1,76 @@
 module Cmd.CompareTarballs (
-  compareTarballsCmd
+  compareTarballsCmd,
+  Src(..),
+  readSrc
   )
 where
 
-import Safe (tailSafe)
+import Data.Char (isDigit)
+import Safe (headMay, tailSafe)
 import SimpleCmd.Git
 import System.Console.Pretty (supportsPretty)
 import System.IO.Extra (withTempDir)
 
 import Common
 import Common.System
-import Package (findSpecfile, isArchiveFile, pkgVersion)
+import Package (findSpecfile, isArchiveFile, pkgVersion, sourceFieldFile)
 import Patch (simplifyMinimalDiff)
 
-compareTarballsCmd :: Maybe Natural -> Maybe String -> Maybe String -> IO ()
-compareTarballsCmd mmaxlen (Just nv1) (Just nv2) = do
+data Src = SrcVer String | SrcNameVer String | SrcArchive String
+
+readSrc :: String -> Src
+readSrc s =
+  if isArchiveFile s
+  then SrcArchive s
+  else
+    case headMay s of
+      Just h | isDigit h -> SrcVer s
+      _ -> SrcNameVer s
+
+srcToArchive :: FilePath -> Src -> IO FilePath
+srcToArchive spec src =
+  case src of
+    SrcArchive f -> return f
+    SrcNameVer nv -> do
+      let (n,v) = breakEnd (== '-') $ takeFileName nv
+      cur <- pkgVersion spec
+      sources <- filter isArchiveFile . map sourceFieldFile <$>
+                 cmdLines "spectool" ["-S", spec]
+      case filter (n `isPrefixOf`) $ map takeFileName sources of
+        [] -> error' $ "unknown source" +-+ n
+        [f] -> return $ replace cur v f
+        _ -> do
+          let f = nv <.> "tar.gz"
+          putStrLn $ "trying with" +-+ f
+          return f
+    SrcVer v -> do
+      sources <- filter isArchiveFile . map sourceFieldFile <$>
+                 cmdLines "spectool" ["-S", spec]
+      case sources of
+        [] -> error' $ "unknown source for" +-+ v
+        [f] -> do
+          cur <- pkgVersion spec
+          return $ replace cur v $ takeFileName f
+        _ -> do
+          warning "multiple source files"
+          pkg <- getDirectoryName
+          putStrLn $ "trying with" +-+ pkg
+          return $ pkg ++ '-' : v <.> "tar.gz"
+
+compareTarballsCmd :: Maybe Natural -> Maybe Src -> Maybe Src -> IO ()
+compareTarballsCmd mmaxlen (Just src1) (Just src2) = do
   spec <- findSpecfile
+  nv1 <- srcToArchive spec src1
+  nv2 <- srcToArchive spec src2
   diffTarballs spec mmaxlen nv1 nv2
-compareTarballsCmd mmaxlen (Just nv) Nothing = do
+compareTarballsCmd mmaxlen (Just src) Nothing = do
   spec <- findSpecfile
+  nv <- srcToArchive spec src
   cur <- pkgVersion spec
-  if nv == cur
-    then error' "same source version!"
-    else diffTarballs spec mmaxlen nv cur
+  nv' <- srcToArchive spec $ SrcVer cur
+  if nv == nv'
+    then error' "same source/version!"
+    else diffTarballs spec mmaxlen nv nv'
 compareTarballsCmd _ Nothing (Just _) = error' "impossible happened: only second arg"
 compareTarballsCmd mmaxlen Nothing Nothing = do
   spec <- findSpecfile
@@ -89,6 +137,7 @@ diffTarballs spec mmaxlen src1 src2 = do
     pipe_
       -- FIXME add option to filter out certain files
       ("diff", ["--color=always" | color] ++ ["-u", "-r", "-w", "a" </> adir, "b" </> bdir])
+      -- filter out very long lines (often machine generated/formatted)
       ("grep", ["-v", ".\\{" ++ maybe "200" show mmaxlen ++ ",\\}"])
   where
     getDirTop :: FilePath -> FilePath -> FilePath -> IO FilePath

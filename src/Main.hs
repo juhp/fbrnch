@@ -309,8 +309,8 @@ progCommands =
     , Subcommand "compare-tarballs" "Diff source tarballs" $
       compareTarballsCmd
       <$> optional (optionLongWith auto "max-line-length" "LENGTH" "Skip diff files longer than this [default 200]")
-      <*> optional (strArg "[NAME-]VERSION1[.tar.gz]")
-      <*> optional (strArg "[NAME-]VERSION2[.tar.gz]")
+      <*> optional (readSrc <$> strArg "[NAME-]VERSION1[.tar.gz]")
+      <*> optional (readSrc <$> strArg "[NAME-]VERSION2[.tar.gz]")
     , Subcommand "src-deps" "List source package dependencies" $
       srcDepsCmd
       <$> switchWith 'r' "reverse" "Reverse dependencies"

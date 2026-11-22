@@ -78,10 +78,7 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
             case map extractFieldValue vdiff of
               [old,new] -> Just (old,new)
               _ -> Nothing
-  when (isJust mver) $
-    when (isJust moldnewver) $ do
-    (oldver,newver) <-
-      maybe (error' "complex version change") return moldnewver
+  whenJust moldnewver $ \(oldver,newver) -> do
     -- FIXME take epoch into account
     when (rpmVerCompare oldver newver == GT) $
       putStrLn $ "current" +-+ oldver +-+ "is newer!"
@@ -95,17 +92,17 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
           error' "Please edit complex 'Version' fields with macro(s) by hand"
         _ -> error' "Please edit package with multiple versions by hand"
       editSpecField "Version" newver spec
-      autorelease <- isAutoRelease spec
-      if autorelease
-        then do
-        autoreset <- autoReleaseReset spec
-        when autoreset $
-          editSpecField "Release" "%autorelease" spec
-        -- FIXME if multiple versions need to bump release
-        else editSpecField "Release" "0%{?dist}" spec
+    autorelease <- isAutoRelease spec
+    if autorelease
+      then do
+      autoreset <- autoReleaseReset spec
+      when autoreset $
+        editSpecField "Release" "%autorelease" spec
+      -- FIXME if multiple versions need to bump release
+      else editSpecField "Release" "0%{?dist}" spec
       -- FIXME should be sure sources exists for distgit
-      whenM (doesFileExist "sources") $
-        cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
+    whenM (doesFileExist "sources") $
+      cmd_ "sed" ["-i", "/" ++ unPackage pkg ++ "-" ++ oldver ++ "./d", "sources"]
   when distgit $ do
     -- FIXME forM_
     sources <- map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
@@ -125,19 +122,21 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
       forM_ archives removeFile
       cmd_ "spectool" ["-g", "-S", spec]
     krbTicket
+    -- FIXME ideally we could diff first, but new-sources sets up sources for diff
     fedpkg_ "new-sources" archives
     unless (null textsources) $
       git_ "add" textsources
   case moldnewver of
-    Just (_old,newver) -> do
+    Just (old,newver) -> do
       whenM (yesNoDefault False "Do you want to diff the sources") $
-        compareTarballsCmd Nothing Nothing Nothing
+        compareTarballsCmd Nothing (Just $ SrcVer old) (Just $ SrcVer newver)
       versions <- changelogVersions spec
       let missing =
             case versions of
               [] -> True
               (h:_) -> not $ (newver ++ "-") `isPrefixOf` h
-      when missing $ do
+      if missing
+        then do
         -- FIXME newver may contain macros!
         newversion <- pkgVersion spec
         cmd_ "rpmdev-bumpspec" ["-c", "Update to" +-+ newversion, spec]
@@ -147,10 +146,11 @@ updateSourcesPkg force allowHEAD distgit mver pkg br = do
           editSpecField "Release" newrel spec
           cmd_ "sed" ["-i", "s/> -" +-+ newversion ++ '-' : newrelease ++ "/> -" +-+ newversion ++ '-' : replace "%{?dist}" "" newrel ++ "/" , spec]
         git_ "commit" ["-a", "-m", "Update to" +-+ newversion]
+        else warning $ "Changelog for" +-+ newver +-+ "already exists"
     Nothing -> do
       rawsdiff <- filter (not . ("@@ " `isPrefixOf`)) <$> gitDiffHEAD "sources"
       unless (null rawsdiff) $
-        whenM (yesNoDefault False "Do you want to diff the sources") $
+        whenM (yesNoDefault False "Do you want to try to diff the sources") $
         compareTarballsCmd Nothing Nothing Nothing
   putStr "Prepping in temp dir... "
   sourcediropt <- sourceDirCwdOpt
