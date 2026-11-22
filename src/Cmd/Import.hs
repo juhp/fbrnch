@@ -7,6 +7,7 @@ module Cmd.Import (
   )
 where
 
+import Control.Exception.Extra (retry)
 import Fedora.Krb (krbTicket)
 import Network.URI
 import SimplePrompt (promptEnter)
@@ -140,7 +141,7 @@ downloadReviewSRPM showbug getspec prompt update pkg bid session = do
                 putStrLn $ srpmfile +-+ "already exists"
               when (not havesrpm || update) $
                 -- was "--silent"
-                cmd_ "curl" ["--show-error", "--remote-name", srpmurl]
+                retry 3 $ cmd_ "curl" ["--show-error", "--remote-name", srpmurl]
               return srpmfile
             srpmurls -> error' $ "multiple srpm urls:" +-+ unwords srpmurls
 
@@ -155,7 +156,7 @@ downloadReviewSRPM showbug getspec prompt update pkg bid session = do
             [] -> error "no valid spec urls found"
             [specurl] -> do
               let specfile = upstreamDir </> takeFileName specurl
-              cmd_ "curl" ["--silent", "--show-error", "--create-dirs", "--output", specfile, specurl]
+              retry 3 $ cmd_ "curl" ["--silent", "--show-error", "--create-dirs", "--output", specfile, specurl]
             specurls -> error' $ "multiple spec urls:" +-+ unwords specurls
       unless (null specs) putNewLn
 
