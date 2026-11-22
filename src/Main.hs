@@ -419,7 +419,9 @@ progCommands =
       <*> optional (strArg "SPECFILE")
     , Subcommand "review-package" "Run fedora-review on a package Review Request bug" $
       reviewPackage
-      <$> switchWith 'f' "full" "Download and check package review with fedora-review mock build"
+      <$> dryrunOpt
+      <*> switchWith 'f' "full" "Download and check package review with fedora-review mock build"
+      <*> switchWith 'u' "update" "Retrieve latest packaging from review"
       <*> optional (pkgArg "PACKAGE/BZID")
     , Subcommand "reviews" "List package reviews" $
       reviewsCmd

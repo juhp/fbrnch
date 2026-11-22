@@ -7,10 +7,6 @@ module Cmd.Import (
   )
 where
 
-import Common
-import Common.System
-import qualified Common.Text as T
-
 import Fedora.Krb (krbTicket)
 import Network.URI
 import SimplePrompt (promptEnter)
@@ -19,6 +15,9 @@ import SimplePrompt.Internal (runPrompt, mapInput, getPromptLine)
 import Branches
 import Bugzilla
 import Cmd.RequestBranch (requestPkgBranches, waitForKojiPkgBranches)
+import Common
+import Common.System
+import qualified Common.Text as T
 import Git
 import Koji
 import ListReviews
@@ -53,7 +52,7 @@ importCmd showbug reporequest existingrepo mock (breq, ps) = do
         -- FIXME get session from importPkgs
         (bid,session) <- approvedReviewBugIdSession pkg
         putBugId bid
-        srpmfile <- downloadReviewSRPM showbug False True pkg bid session
+        srpmfile <- downloadReviewSRPM showbug False True False pkg bid session
         putNewLn
         promptEnter $ "Press Enter to import" +-+ srpmfile
         krbTicket
@@ -93,9 +92,9 @@ importCmd showbug reporequest existingrepo mock (breq, ps) = do
             "no" -> Just (Just False)
             _ -> Nothing
 
-downloadReviewSRPM :: Bool -> Bool -> Bool -> String -> Int -> BugzillaSession
-                   -> IO FilePath
-downloadReviewSRPM showbug getspec prompt pkg bid session = do
+downloadReviewSRPM :: Bool -> Bool -> Bool -> Bool -> String -> Int
+                   -> BugzillaSession -> IO FilePath
+downloadReviewSRPM showbug getspec prompt update pkg bid session = do
   comments <- getComments session bid
   when showbug $ do
     putNewLn
@@ -137,9 +136,9 @@ downloadReviewSRPM showbug getspec prompt pkg bid session = do
               let srpmfile = takeFileName srpmurl
               -- FIXME if havesrpm then print local filename
               havesrpm <- doesFileExist srpmfile
-              if havesrpm
-                then putStrLn $ srpmfile +-+ "already exists"
-                else
+              when havesrpm $
+                putStrLn $ srpmfile +-+ "already exists"
+              when (not havesrpm || update) $
                 -- was "--silent"
                 cmd_ "curl" ["--show-error", "--remote-name", srpmurl]
               return srpmfile

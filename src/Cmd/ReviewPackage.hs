@@ -20,22 +20,25 @@ import Cmd.Import (downloadReviewSRPM, upstreamDir)
 import Cmd.Install (installCmd)
 import Cmd.Local (localCmd)
 import Cmd.Prep (prepCmd)
-import Git (isGitRepo, git_, gitBool)
+import Git (isGitDirClean, isGitRepo, git_, gitBool)
 import Package
 import RpmBuild
 
 -- FIXME does not work with pkg dir/spec: 'fbrnch: No spec file found'
 -- FIXME --user to download all user's review requests
-reviewPackage :: Bool -> Maybe String -> IO ()
-reviewPackage full Nothing = do
+reviewPackage :: Bool -> Bool -> Bool -> Maybe String -> IO ()
+reviewPackage dryrun full update Nothing = do
   -- FIXME catch no spec file
   spec <- findSpecfile
   srpm <- generateSrpm Nothing spec
   if not full
-    then doInteractiveReview False (Just spec) srpm
+    then
+    if update
+    then reviewPackage dryrun full update (Just $ takeBaseName spec)
+    else doInteractiveReview dryrun update (Just spec) srpm
     else do
     cmd_ "fedora-review" ["-rn", srpm]
-reviewPackage full (Just pkgbug) = do
+reviewPackage dryrun full update (Just pkgbug) = do
   let epkgbid =
         if all isDigit pkgbug
         then Right $ read pkgbug
@@ -54,7 +57,7 @@ reviewPackage full (Just pkgbug) = do
       let bid = bugId bug
           pkg = reviewBugToPackage bug
       if not full
-        then reviewPackageInteractive bid pkg session bug
+        then reviewPackageInteractive dryrun update bid pkg session bug
         else do
         promptEnter "Press Enter to run fedora-review"
         -- FIXME support copr build
@@ -63,36 +66,45 @@ reviewPackage full (Just pkgbug) = do
     [] -> error' $ "No package review found for" +-+ pkgbug
     _ -> error' $ "More than one review bug found for" +-+ pkgbug
 
-reviewPackageInteractive :: Int -> String -> BugzillaSession -> Bug -> IO ()
-reviewPackageInteractive bid pkg session bug = do
+reviewPackageInteractive :: Bool -> Bool -> Int -> String
+                         -> BugzillaSession -> Bug -> IO ()
+reviewPackageInteractive dryrun update bid pkg session bug = do
   let dir = show bid ++ '-' : pkg
   -- FIXME check if current directory
   exists <- doesDirectoryExist dir
-  unless exists $
-    createDirectory dir
-  setCurrentDirectory dir
-  srpm <- downloadReviewSRPM True True False pkg bid session
+  unless update $ do
+    unless exists $
+      createDirectory dir
+    setCurrentDirectory dir
+  srpm <- downloadReviewSRPM True True False update pkg bid session
   importsrpm <-
-    if exists
-    then do
-    putStrLn $ "in" +-+ dir </> ":\n"
-    cmd_ "ls" ["-F"]
-    putNewLn
-    -- FIXME default to no if nvr unchanged?
-    yesNoDefault True "Press Enter to install/prep srpm"
-    else return True
+    if update
+    then return True
+    else
+      if exists
+      then do
+        putStrLn $ "in" +-+ dir </> ":\n"
+        cmd_ "ls" ["-F"]
+        putNewLn
+        -- FIXME default to no if nvr unchanged?
+        yesNoDefault True "Press Enter to install/prep srpm"
+      else return True
   -- review and package name may be different (eg ramalama)
-  doInteractiveReview importsrpm Nothing srpm
+  doInteractiveReview dryrun importsrpm Nothing srpm
   putNewLn
   putReviewBug False bug
   putNewLn
   putStrLn $ "Review dir is" +-+ dir
 
-doInteractiveReview :: Bool -> Maybe FilePath -> FilePath -> IO ()
-doInteractiveReview importsrpm mspec srpm = do
+doInteractiveReview :: Bool -> Bool -> Maybe FilePath -> FilePath -> IO ()
+doInteractiveReview dryrun importsrpm mspec srpm = do
   when importsrpm $ do
     isgit <- isGitRepo
-    unless isgit $ git_ "init" []
+    if isgit
+      then
+      unlessM isGitDirClean $
+      promptEnter "git dir not clean: commit and Press Enter"
+      else git_ "init" []
     -- FIXME override %_sourcedir so it doesn't put elsewhere?
     sourcediropt <- sourceDirCwdOpt
     putStrLn "installing srpm:"
