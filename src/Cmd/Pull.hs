@@ -47,7 +47,7 @@ pullPkgs pullopt (breq,args) =
           current <- getReleaseBranchWarn
           unless (breq == Branches [] || RelBranch current == br) $
             gitSwitchBranch br
-          retry 2 $
+          retry 3 $
             if pullopt == Just PullRebase
             then git_ "pull" ["origin"]
             else gitMergeOrigin current

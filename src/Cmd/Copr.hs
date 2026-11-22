@@ -330,7 +330,7 @@ zeroBuildId bid =
 coprWatchBuild :: Maybe String -> Either CoprTask Int -> IO Bool
 coprWatchBuild mstate ebuild = do
   let bid = either taskBuild id ebuild
-  res <- retry 2 $ coprGetBuild fedoraCopr bid
+  res <- retry 3 $ coprGetBuild fedoraCopr bid
   case lookupKey "state" res of
     Just state ->
       if mstate == Just state
