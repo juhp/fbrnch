@@ -269,6 +269,9 @@ coprProcessingStates =
 -- coprEndedStates =
 --   ["canceled", "failed", "skipped", "succeeded"]
 
+coprNotOkStates :: [String]
+coprNotOkStates = ["canceled", "failed", "skipped"]
+
 -- FIXME restrict to requested chroots?
 existingChrootBuilds :: Bool -> Bool -> String -> String -> Package -> String
                      -> [Chroot] -> IO [CoprTask]
@@ -489,12 +492,16 @@ coprWaitPackage :: Object -> IO ()
 coprWaitPackage build = do
   case buildResult of
     Nothing -> error' "unknown source_package"
-    Just (_, "failed", _) -> return ()
-    Just (_, _, Just _pkg) -> return ()
-    Just (bid, _, Nothing) -> do
-      sleep 5
-      print bid
-      coprGetBuild fedoraCopr bid >>= coprWaitPackage
+    Just (bid, state, mpkg) ->
+      if state `elem` coprNotOkStates
+      then return ()
+      else
+        case mpkg of
+          Just _ -> return ()
+          Nothing -> do
+            print bid
+            sleep 10
+            coprGetBuild fedoraCopr bid >>= coprWaitPackage
   where
     buildResult = do
       bid <- lookupKey "id" build
