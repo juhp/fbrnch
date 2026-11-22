@@ -427,8 +427,8 @@ printPkgRes (Just needle) nameonly (pkg,chroots) = do
       $ filterResults cs
 
 renderCoprTask :: CoprTask -> String
-renderCoprTask (CoprTask chr build status version) =
-  version +-+ status +-+ "on" +-+ showChroot chr +-+ show build
+renderCoprTask (CoprTask chr build status verrel) =
+  verrel +-+ status +-+ "on" +-+ showChroot chr +-+ show build
 
 printCoprTask :: CoprTask -> IO ()
 printCoprTask =
