@@ -10,9 +10,10 @@ import Common.System
 import Data.Char
 import Data.Either (isRight)
 import Data.Tuple.Extra (second)
-import Safe (headDef, headMay, tailSafe)
+import Safe (headDef, headMay, lastMay, tailSafe)
 import SelectRPMs (selectDefault, Yes(No))
 import SimplePrompt (promptEnter, yesNoDefault)
+import System.Console.Pretty (color, Color(Red))
 
 import Branches
 import Bugzilla
@@ -123,7 +124,12 @@ doInteractiveReview dryrun importsrpm mspec srpm = do
     let filterdiff = filter (\d -> not (any (`isSuffixOf` d) ["SPEC","SRPMS","RPMS","BUILD","BUILDROOT","src.rpm",".log", ".git", upstreamDir])) diff
     if null filterdiff
       then putStrLn $ "no difference with" +-+ upstreamDir ++ "/"
-      else mapM_ putStrLn filterdiff
+      else do
+      let colorDiffer cs =
+            case lastMay $ words cs of
+              Just l | l == "differ" -> color Red cs
+              _ -> cs
+      mapM_ (putStrLn . colorDiffer) filterdiff
     unlessM (gitBool "diff" ["--quiet", "--cached"]) $
       git_ "commit" ["-m", srpm]
   putNewLn
