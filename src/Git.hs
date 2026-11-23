@@ -321,8 +321,8 @@ gitSwitchBranchVerbose verbose _ br = do
     remotebranch <- do
       exists <- checkIfRemoteBranchExists br
       if exists
-      then return True
-      else gitFetchSilent False >> checkIfRemoteBranchExists br
+        then return True
+        else gitFetchSilent False >> checkIfRemoteBranchExists br
     if not remotebranch
       then do
       name <- getDirectoryName
