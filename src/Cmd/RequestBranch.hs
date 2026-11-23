@@ -11,6 +11,9 @@ import Gitea.Forgejo (fedoraForge, listRepoIssues, RepoIssueOptions(..))
 import Network.HTTP.Query (lookupKey')
 import SimplePrompt (promptEnter)
 import qualified System.Process.Typed as P
+#if !MIN_VERSION_base(4,14,0)
+import qualified System.Exit as P
+#endif
 import System.Time.Extra (sleep)
 
 import Common

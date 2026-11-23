@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Cmd.RequestRepo (requestRepos) where
@@ -12,6 +13,9 @@ import SimplePrompt (promptEnter, promptInitial, yesNo)
 import System.Directory (doesFileExist)
 import System.Environment.XDG.BaseDir (getUserConfigFile)
 import qualified System.Process.Typed as P
+#if !MIN_VERSION_base(4,14,0)
+import qualified System.Exit as P
+#endif
 import System.Time.Extra (sleep)
 
 import Branches
