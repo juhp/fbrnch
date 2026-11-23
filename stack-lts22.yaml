@@ -1,9 +1,12 @@
 resolver: lts-22.44
-ghc-options:
-  HsOpenSSL: -optc=-Wno-incompatible-pointer-types
 extra-deps:
   - select-rpms-0.3.1
   - fedora-releases-0.3.0
-  - pagure-0.2.1
-  - fedora-krb-0.1.0
+  - pagure-0.2.2
+  - fedora-krb-0.1.1
   - rpmbuild-order-0.4.13
+  - pagure-cli-0.3
+  - forgejo-0.1.0
+  - gitea-api-1.23.1.0
+  # for openssl 4
+  - HsOpenSSL-0.11.7.11
