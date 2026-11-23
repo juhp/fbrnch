@@ -24,6 +24,7 @@ import Bodhi
 import Bugzilla
 import Branches
 import Cmd.Merge (mergeBranch)
+import Cmd.RequestBranch
 import Git
 import Koji
 import Package
@@ -157,7 +158,13 @@ parallelBuildCmd dryrun mmerge mfrom firstlayer msidetagTarget mustpush delay mu
 
     mergeFromBranch :: Package -> Branch -> IO ()
     mergeFromBranch pkg br = do
-      gitSwitchBranch (RelBranch br)
+      ok <- gitSwitchBranch' False br
+      unless ok $ do
+        yes <- yesNo "Request branch?"
+        if yes
+          then requestBranchesCmd False False False False Nothing False (Branches [br],[])
+          else error' "Aborting: missing branch"
+        gitSwitchBranch (RelBranch br)
       (mancestor,unmerged,from) <- mergeable pkg br mfrom
       unless dryrun $
         mergeBranch dryrun False False (mmerge == Just True) False pkg (mancestor,unmerged) from br
