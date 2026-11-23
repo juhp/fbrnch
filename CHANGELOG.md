@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.8.4 (2026-11-23)
+- 'build','parallel': list open PRs before proceeding to building
+- 'compare-tarballs','update-sources': improved source name/version logic
+- 'compare-tarballs': download (older) tarball if missing
+- 'copr': improved state wait logic
+- 'import': don't ask for branches again if coming from request-repos
+- 'mock': add --no-bootstrap and use it by default inside a container
+- 'parallel': better pseudo sidetag for --dryrun
+- 'prs': new command to list open PRs for a package
+- 'request-branches': add --skip-request-check
+- 'request-branches': intercept expired token to allow creating a new one
+- 'request-branches': rename --skip-check to --skip-koji-check
+- 'request-repos': intercept expired token to allow creating a new one inline
+- 'request-repos','request-branches': now use forgejo to check Fedora Forge
+- 'review-package': prefix prep timing output
+- 'review-package': specify files to rpmlint
+- 'review-package': highlight differing source with red
+- 'sort','graph': add --deps (closes #74)
+- add `--dryrun` option to many more commands
+- Bodhi: retry without re-asking for notes when update creation failed
+- RpmBuild getSources: be pedantic about spectool result (#74)
+- RpmBuild: use "script -e" to exit with error code
+- improve header/fetch output handling
+- introduce new monadic `error'`
+- main: output list of subcommands in vertical columns when no args
+- add --list-commands hidden option
+- use fedora-krb-0.1.1
+
 ## 1.8.3 (2026-06-03)
 - 'compare-tarballs': order tarballs by removal and addition
 

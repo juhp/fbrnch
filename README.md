@@ -270,7 +270,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 `$ fbrnch --version`
 
 ```
-1.8.3
+1.8.4
 ```
 
 `$ fbrnch --help`
@@ -324,6 +324,7 @@ Available commands:
   not-installed            Packages not installed locally
   uninstall                Remove installed package(s)
   bugs                     List package bugs
+  prs                      List package PRs
   bump                     Bump release for package
   commit                   Git commit packages
   pull                     Git pull packages
