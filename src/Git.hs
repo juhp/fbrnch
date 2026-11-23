@@ -294,6 +294,7 @@ grepGitConfig' key = do
     if not exists
       then return False
       else do
+      -- FIXME should ideally check for "gitdir: ..."
       gitdir <- last . words <$> readFile ".git"
       if "/worktrees/" `isInfixOf` gitdir
         then egrep_ key (takeDirectory (takeDirectory gitdir) </> "config")

@@ -97,6 +97,7 @@ bumpPkg dryrun strict mcmsg mclog pkg br = do
       then putStrLn $ color Green "already bumped"
       else do
       git_ "log" ["origin..HEAD", "--pretty=oneline"]
+      -- FIXME improve default behavior to not worry about clog vs cmsg
       let clog =
             case mclog of
               Just cl -> cl

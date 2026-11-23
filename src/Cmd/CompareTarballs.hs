@@ -127,6 +127,7 @@ diffTarballs spec mmaxlen src1 src2 = do
   cwd <- getCurrentDirectory
   withTempDir $ \tmp ->
     withCurrentDirectory tmp $ do
+    -- print (src1,src2)
     adir <- getDirTop "a" cwd src1
     bdir <- getDirTop "b" cwd src2
       -- createDirectory "b"
