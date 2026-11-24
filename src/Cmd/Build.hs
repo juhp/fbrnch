@@ -13,6 +13,7 @@ import SimplePrompt (promptEnter, yesNo)
 import Bodhi
 import Bugzilla
 import Branches
+import Cmd.RequestBranch (gitSwitchOrRequestBranch)
 import Common
 import Common.System
 import Cmd.Merge
@@ -79,11 +80,11 @@ buildCmd opts (breq, pkgs) = do
 buildBranch :: Maybe Package -> BuildOpts -> Package -> AnyBranch -> IO ()
 buildBranch _ _ _ (OtherBranch _) =
   error' "build only defined for release branches"
-buildBranch mlastpkg opts pkg rbr@(RelBranch br) = do
+buildBranch mlastpkg opts pkg (RelBranch br) = do
   let moverride = buildoptOverride opts
   whenJust moverride $ \days ->
     when (days < 1) $ error "override duration must be positive number of days"
-  gitSwitchBranch rbr
+  gitSwitchOrRequestBranch Nothing br
   gitMergeOrigin br
   newrepo <- initialPkgRepo
   tty <- isTty

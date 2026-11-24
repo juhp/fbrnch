@@ -3,13 +3,14 @@
 module Cmd.RequestBranch (
   requestBranchesCmd,
   requestPkgBranches,
-  waitForKojiPkgBranches
+  waitForKojiPkgBranches,
+  gitSwitchOrRequestBranch
   ) where
 
 import Fedora.Krb (fasIdFromKrb)
 import Gitea.Forgejo (fedoraForge, listRepoIssues, RepoIssueOptions(..))
 import Network.HTTP.Query (lookupKey')
-import SimplePrompt (promptEnter)
+import SimplePrompt (promptEnter, yesNo)
 import qualified System.Process.Typed as P
 #if !MIN_VERSION_base(4,14,0)
 import qualified System.Exit as P
@@ -265,3 +266,13 @@ waitForKojiPkgBranch skipkojicheck pkg br =
       unless ok $ do
         sleep 30
         waitBuildTag buildtag
+
+gitSwitchOrRequestBranch :: Maybe Package -> Branch -> IO ()
+gitSwitchOrRequestBranch mpkg br = do
+  ok <- gitSwitchBranch' False br
+  unless ok $ do
+    yes <- yesNo $ "Request branch for" +-+ maybe "" unPackage mpkg
+    if yes
+      then requestBranchesCmd False False False False Nothing False (Branches [br],[])
+      else error' "Aborting: missing branch"
+    gitSwitchBranch (RelBranch br)
