@@ -97,7 +97,7 @@ requestRepo mock skipcheck resubmit breq pkg = do
       fasid <- fasIdFromKrb
       eissues <-
         retry 2 $
-        listRepoIssues fedoraForge "releng" "fedora-scm-requests" $
+        listRepoIssues fedoraForge Nothing "releng" "fedora-scm-requests" $
         RepoIssueOptions (Just fasid) (Just "all")
       case eissues of
         Left err -> error' err

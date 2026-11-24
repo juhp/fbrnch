@@ -129,7 +129,7 @@ executable fbrnch
                        fedora-krb >= 0.1.1,
                        fedora-releases >= 0.3,
                        filepath,
-                       forgejo,
+                       forgejo >= 0.2,
                        http-conduit,
                        http-directory >= 0.1.9,
                        http-query,

@@ -19,7 +19,7 @@ extra-deps:
   - simple-cmd-0.2.7
   - http-directory-0.1.9
   - pagure-cli-0.3
-  - forgejo-0.1.0
+  - forgejo-0.2.0
   - gitea-api-1.23.1.0
   # for openssl 4
   - HsOpenSSL-0.11.7.11

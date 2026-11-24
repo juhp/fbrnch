@@ -3,6 +3,6 @@ extra-deps:
   - ../../haskell/http-streams
   - pagure-0.2.2
   - pagure-cli-0.3
-  - forgejo-0.1.0
+  - forgejo-0.2.0
   - gitea-api-1.23.1.0
   - fedora-krb-0.1.1
