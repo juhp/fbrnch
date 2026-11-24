@@ -1,12 +1,12 @@
 # Changelog
 
 ## 1.8.5 (2026-11-24)
-- 'build','parallel': offer to request missing branch
+- 'build', 'parallel': offer to request missing branch
 - update to forgejo-0.2
 
 ## 1.8.4 (2026-11-23)
-- 'build','parallel': list open PRs before proceeding to building
-- 'compare-tarballs','update-sources': improved source name/version logic
+- 'build', 'parallel': list open PRs before proceeding to building
+- 'compare-tarballs', 'update-sources': improved source name/version logic
 - 'compare-tarballs': download (older) tarball if missing
 - 'copr': improved state wait logic
 - 'import': don't ask for branches again if coming from request-repos
@@ -17,11 +17,11 @@
 - 'request-branches': intercept expired token to allow creating a new one
 - 'request-branches': rename --skip-check to --skip-koji-check
 - 'request-repos': intercept expired token to allow creating a new one inline
-- 'request-repos','request-branches': now use forgejo to check Fedora Forge
+- 'request-repos', 'request-branches': now use forgejo to check Fedora Forge
 - 'review-package': prefix prep timing output
 - 'review-package': specify files to rpmlint
 - 'review-package': highlight differing source with red
-- 'sort','graph': add --deps (closes #74)
+- 'sort', 'graph': add --deps (closes #74)
 - add `--dryrun` option to many more commands
 - Bodhi: retry without re-asking for notes when update creation failed
 - RpmBuild getSources: be pedantic about spectool result (#74)
@@ -50,7 +50,7 @@
 - 'compare-tarballs': include extension in file args help
 - 'copr': retry coprGetBuild when watching a build
 - 'install': take %_rpmdir into account
-- 'local','install': rename --rebuild to --force-build
+- 'local', 'install': rename --rebuild to --force-build
 - 'parallel': for single package do full kojiWaitTask
 - 'parallel': notify-send for failure or --must-push failure
 - 'parallel': use reverse text to highlight problem prompts
@@ -80,7 +80,7 @@
 - 'branch-log': logic to warn about older branch being ahead
 - 'build --sidetag': fix "release not found for branch f43" rawhide regression
 - 'build': use --ref to build from a commit
-- 'build','parallel': can now merge --from a particular branch
+- 'build', 'parallel': can now merge --from a particular branch
 - 'commit': error if changelog is unstaged
 - 'commit': require -b option to confirm non-rawhide commit
 - 'compare-branches': renamed from 'compare'
@@ -209,9 +209,9 @@
 - withPackagesByBranches: print package header earlier before fetching
 
 ## 1.6.1 (2024-12-17)
-- 'build','parallel': waitrepo now just uses "koji wait-repo --request"
+- 'build', 'parallel': waitrepo now just uses "koji wait-repo --request"
 - 'build': now respects --waitrepo
-- 'local','install': new --jobs option for _smp_ncpus_max
+- 'local', 'install': new --jobs option for _smp_ncpus_max
 - waitrepo is timed
 - Koji targetMaybeSidetag: print sidetags if more than one
 
@@ -231,7 +231,7 @@
 * 'review-package': allow --interactive also for local review
 - 'review-package': summarize long rpmlint error output
 - 'reviews --created': now uses REL_PREP state
-- 'scratch-x86_64','scratch-aarch64': --exclude-arch no longer fast fails
+- 'scratch-x86_64', 'scratch-aarch64': --exclude-arch no longer fast fails
 - 'sidetag': add --create
 - 'update': remove %autorelease -b bump when updating version
 - Common.System: override cmdFull to avoid weird lazy IO crash
@@ -273,7 +273,7 @@
 - 'parallel': koji-tool use --children to get failed buildArch
 - 'parallel': only do parallelBranches build if more than 1 branch
 * 'parallel': better concurrent output with say library
-* 'prep','update': use cwd for %_sourcedir
+* 'prep', 'update': use cwd for %_sourcedir
 - 'prep': --allow-head
 - 'pull': add --rebase
 - 'push': print log relative to origin
@@ -314,13 +314,13 @@
 - 'commit': don't print singleline commit msg unnecessarily
 - 'commit': unquote macros from changelog diff for commit msg
 - 'copr': don't use localBranchSpecFile rawhide
-- 'copr','scratch': doc --exclude-arch only takes a single arch
+- 'copr', 'scratch': doc --exclude-arch only takes a single arch
 - 'create-review': set bug url field with spec url
 - 'ftbfs': include Modified bugs
 - 'import': use Yes/no prompt to push
 - 'install': now defaults to verbose build output with a --quiet option
-- 'local','install': -c short option for --short-compile
-- 'local','install': re-backup previous buildlog if bigger than current
+- 'local', 'install': -c short option for --short-compile
+- 'local', 'install': re-backup previous buildlog if bigger than current
 - 'merge': add newline after unmerged commits
 - 'mock': can now build from non-dist-git
 - 'move-artifacts': allow dirty
@@ -341,7 +341,7 @@
 
 earlier changes from November:
 
-- 'build','parallel': checkSourcesMatch now offers to 'update-sources'
+- 'build', 'parallel': checkSourcesMatch now offers to 'update-sources'
 - 'build': only check tags if overriding
 - 'builddeps': renamed from 'install-deps'
 - 'commit': if 2 lines then add second without - prefix
@@ -365,7 +365,7 @@ earlier changes from November:
 ## 1.3.3 (2023-10-19)
 - 'bump': add --dry-run
 - 'copr': track pkg name to output build results url on failure
-- 'create-review','update-review': prompt to offer scratch build (#43)
+- 'create-review', 'update-review': prompt to offer scratch build (#43)
 - 'diff': allow origin as alias for origin/<branch>
 - 'import': encode url from bz comment if needed (#40)
 - 'import': prefix bug# with rhbz in commit (#38)
@@ -513,7 +513,7 @@ earlier changes from November:
 - new 'fetch' command
 - new 'list-local' command: lists packages in branch with spec file
 - new 'src-deps' command: wrapper of rpmbuild-order (r)deps
-- 'override','waitrepo': print message before waiting
+- 'override', 'waitrepo': print message before waiting
 - 'parallel' build: respect --no-merge
 - 'parallel': also accept "n" for "no" update
 - 'parallel': also time parallel branches dir
@@ -532,8 +532,8 @@ earlier changes from November:
 - 'request-branches': improve --quiet help
 - 'request-branches': output if exists, again
 - 'scratch' builds now support multiple (serial) targets
-- 'scratch','waitrepo': now also accept --sidetag
-- 'scratch-x86_64','scratch-aarch64': add --exclude-arch to invert arch selection
+- 'scratch', 'waitrepo': now also accept --sidetag
+- 'scratch-x86_64', 'scratch-aarch64': add --exclude-arch to invert arch selection
 - 'sidetags': add --remove option
 - srcDeps uses depsGraphDeps from rpmbuild-order-0.4.10
 - targetMaybeSidetag: add dryrun parameter
@@ -747,7 +747,7 @@ earlier changes from November:
 ## 0.9 (2021-05-30)
 - 'override' --duration and run waitrepo after all overrides
 - new 'waitrepo' command
-- 'create-review','rename-master': take no branches
+- 'create-review', 'rename-master': take no branches
 - branchPrompt now correctly defaults to two branches
 - prompts now reset stdin (#20)
 - 'build': add --no-merge and rename --no-prompt to --merge
@@ -760,7 +760,7 @@ earlier changes from November:
 - 'scratch': display nvr before building
 - 'parallel': native koji waitTask
 - 'sidetags': default to all user's sidetags
-- 'create-review','update-review': --scratch-build TASKID option
+- 'create-review', 'update-review': --scratch-build TASKID option
 - Koji: timeouts to handle for network connection failures
 - 'parallel': error if no branch given
 - gitFetchSilent: show git reponame instead of dirname
@@ -787,7 +787,7 @@ earlier changes from November:
 ## 0.7.3 (2021-03-23)
 - 'scratch': don't get sources for pushed git build
 - changes/improvements to package header output
-- 'merge','build': show/query diverging newer commits
+- 'merge', 'build': show/query diverging newer commits
 - 'merge': add --no-prompt option
 - Build: refine the "still in testing" logic to check testing repo with prompt
 - Koji: offer to resubmit build on error
@@ -810,7 +810,7 @@ earlier changes from November:
 - Bodhi overrides: error if failed; use 4 days
 - 'build': no longer override the last of built packages
 - 'review-package': new experimental command
-- 'local','install': print package name when build fails
+- 'local', 'install': print package name when build fails
 - 'copr': abort on failure
 - 'sort': only switch branch for dist-git
 - bunch of other tweaks and smaller fixes
