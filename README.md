@@ -270,7 +270,7 @@ There are a lot more commands, like eg `copr` and `graph`:
 `$ fbrnch --version`
 
 ```
-1.8.4
+1.8.5
 ```
 
 `$ fbrnch --help`

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.5 (2026-11-24)
+- 'build','parallel': offer to request missing branch
+- update to forgejo-0.2
+
 ## 1.8.4 (2026-11-23)
 - 'build','parallel': list open PRs before proceeding to building
 - 'compare-tarballs','update-sources': improved source name/version logic
